@@ -2,7 +2,7 @@
 
 namespace mu {
 
-	Shader::Shader(const char* vertShaderPath, const char* fragShaderPath)
+	Shader::Shader(const std::string& vertShaderPath, const std::string& fragShaderPath)
 	{
 		std::cout << "loading shader " << vertShaderPath << ", " << fragShaderPath << std::endl;
 
@@ -74,27 +74,28 @@ namespace mu {
 		glUseProgram(id);
 	}
 
-	void Shader::setInt(const char* name, int value) 
+	void Shader::setInt(const std::string& name, int value) 
 	{
-		glUniform1i(glGetUniformLocation(id, name), value);
+		glUniform1i(glGetUniformLocation(id, name.c_str()), value);
 	}
 
-	void Shader::setFloat(const char* name, float value) 
+	void Shader::setFloat(const std::string& name, float value) 
 	{
-		glUniform1f(glGetUniformLocation(id, name), value);
+		glUniform1f(glGetUniformLocation(id, name.c_str()), value);
 	}
 
-	void Shader::setVec3(const char* name, const glm::vec3& value)
+	void Shader::setVec3(const std::string& name, const glm::vec3& value)
 	{
-		glUniform3fv(glGetUniformLocation(id, name), 1, &value[0]);
+		glUniform3fv(glGetUniformLocation(id, name.c_str()), 1, &value[0]);
 	}
 
-	void Shader::setMat4(const char* name, const glm::mat4& value)
+	void Shader::setMat4(const std::string& name, const glm::mat4& value)
 	{
-		glUniformMatrix4fv(glGetUniformLocation(id, name), 1, GL_FALSE, &value[0][0]);
+		glUniformMatrix4fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE, &value[0][0]);
 	}
 	
 	Geometry::Geometry(const std::vector<float>& vertices)
+		: count(vertices.size() / (6))
 	{
 		glGenVertexArrays(1, &m_vao);
 		glGenBuffers(1, &m_vbo);
@@ -125,25 +126,28 @@ namespace mu {
         glBindVertexArray(m_vao); 
 	}
 
+
+	void Geometry::write(const std::vector<float>& vertices)
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices[0]) * vertices.size(), &vertices[0], GL_STATIC_DRAW);
+	}
+
 	void Renderer::render(Camera& camera, Object3D& scene)
 	{
 		scene.draw(camera);
 	}
 
 	Camera::Camera()
-		: 
-		view(1.0),
+		: view(1.0),
 		projection(1.0)
-	{
-	}
+	{}
 
 	Object3D::Object3D()
-		: 
-		dirty(true),
+		: dirty(true),
 		transform(1.0), 
 		worldTransform(1.0)
-	{
-	}
+	{}
 
 	void Object3D::draw(Camera& camera)
 	{}
@@ -160,18 +164,16 @@ namespace mu {
 		shader.setVec3("lightPos", glm::vec3(0,10,0));
 		shader.setVec3("viewPos", glm::vec3(0,0,-3));
 		shader.setVec3("lightColor", glm::vec3(1.0f));
-		shader.setVec3("objectColor", glm::vec3(1,0,0));
+		shader.setVec3("objectColor", m_material.color);
 
 		m_geometry.use();
 
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-        //glDrawArrays(GL_TRIANGLES, 0, 3);
+		glDrawArrays(GL_TRIANGLES, 0, m_geometry.count);
 	}
 
-
-	Material::Material(const char* vertPath, const char* fragPath)
-		: shader(vertPath, fragPath)
+	Material::Material(const std::string& vertPath, const std::string& fragPath)
+		: shader(vertPath, fragPath), 
+		color(1.0f, 0.0f, 0.0f)
 	{
 	}
-
 }

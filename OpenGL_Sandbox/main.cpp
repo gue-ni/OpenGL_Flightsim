@@ -26,7 +26,7 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "OpenGL Sandbox", NULL, NULL);
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -92,16 +92,15 @@ int main()
     mu::Renderer renderer(window);
     mu::Camera camera;
 
-    mu::Material basic("shaders/cube.vert", "shaders/cube.frag");
-    //mu::Material phong("shaders/phong.vert", "shaders/phong.frag");
+    mu::Material basic("shaders/basic.vert", "shaders/basic.frag");
+    mu::Material phong("shaders/phong.vert", "shaders/phong.frag");
 
     mu::Geometry geometry(cube);
-    mu::Mesh mesh(geometry, basic);
+    mu::Mesh mesh(geometry, phong);
 
     camera.view = glm::translate(glm::mat4(1.0), glm::vec3(0.0f, 0.0f, -3.0f));
     camera.projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
-    float t = 0.01;
 
     while (!glfwWindowShouldClose(window))
     {
@@ -110,7 +109,7 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		mesh.worldTransform = glm::rotate(mesh.worldTransform, glm::radians(t), glm::vec3(1.0f, 0.3f, 0.5f));
+		mesh.worldTransform = glm::rotate(mesh.worldTransform, glm::radians(0.01f), glm::vec3(1.0f, 0.3f, 0.5f));
 
         renderer.render(camera, mesh);
 

@@ -138,8 +138,8 @@
     <ClCompile Include="mu.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\cube.frag" />
-    <None Include="shaders\cube.vert" />
+    <None Include="shaders\basic.frag" />
+    <None Include="shaders\basic.vert" />
     <None Include="shaders\phong.frag" />
     <None Include="shaders\phong.vert" />
   </ItemGroup>

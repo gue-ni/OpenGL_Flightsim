@@ -14,32 +14,17 @@
 #include <vector>
 
 namespace mu {
-	class Camera;
-	class Object3D;
-
-	class Renderer {
-	public:
-
-		Renderer(GLFWwindow* window)
-			: m_window(window)
-		{}
-
-		void render(Camera& camera, Object3D& scene);
-
-	private:
-		GLFWwindow* m_window;
-	};
 
 	class Shader {
 	public:
 		unsigned int id;
-		Shader(const char* vertShaderPath, const char* fragShaderPath);
+		Shader(const std::string& vertShaderPath, const std::string& fragShaderPath);
 		~Shader();
 		void use();
-		void setInt(const char* name, int value);
-		void setFloat(const char* name, float value);
-		void setVec3(const char* name, const glm::vec3& value);
-		void setMat4(const char* name, const glm::mat4& value);
+		void setInt(const std::string& name, int value);
+		void setFloat(const std::string& name, float value);
+		void setVec3(const std::string& name, const glm::vec3& value);
+		void setMat4(const std::string& name, const glm::mat4& value);
 	};
 
 	class Camera {
@@ -64,9 +49,17 @@ namespace mu {
 
 	class Geometry {
 	public:
+		/*
+			Vertices must be of the structure:
+			{ ...,
+			pos.x, pos.y, pos.z, normal.x, normal.y, normal.z,
+			..., }
+		*/
 		Geometry(const std::vector<float>& vertices);
 		~Geometry();
+		void write(const std::vector<float>& vertices);
 		void use();
+		int count;
 
 	private:
 		unsigned int m_vao;
@@ -75,9 +68,9 @@ namespace mu {
 
 	class Material  {
 	public:
-		Material(const char* vertPath, const char* fragPath);
-		
+		Material(const std::string& vertPath, const std::string& fragPath);
 		Shader shader;
+		glm::vec3 color;
 	};
 
 	class Mesh : public Object3D {
@@ -91,6 +84,14 @@ namespace mu {
 	private:
 		Geometry m_geometry;
 		Material m_material;
+	};
+
+	class Renderer {
+	public:
+		Renderer(GLFWwindow* window) : m_window(window) {}
+		void render(Camera& camera, Object3D& scene);
+	private:
+		GLFWwindow* m_window;
 	};
 };
 
