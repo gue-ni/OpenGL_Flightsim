@@ -28,6 +28,8 @@
   <ItemGroup>
     <None Include="shaders\cube.frag" />
     <None Include="shaders\cube.vert" />
+    <None Include="shaders\phong.vert" />
+    <None Include="shaders\phong.frag" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mu.h">

@@ -11,6 +11,7 @@
 #include <sstream>
 #include <fstream>
 #include <string>
+#include <vector>
 
 namespace mu {
 	class Camera;
@@ -34,18 +35,16 @@ namespace mu {
 		unsigned int id;
 		Shader(const char* vertShaderPath, const char* fragShaderPath);
 		~Shader();
-
 		void use();
-		void setMat4(const char* name, glm::mat4& val);
-		void setFloat(const char* name, float val);
-
-	private:
+		void setInt(const char* name, int value);
+		void setFloat(const char* name, float value);
+		void setVec3(const char* name, const glm::vec3& value);
+		void setMat4(const char* name, const glm::mat4& value);
 	};
 
 	class Camera {
 	public:
 		Camera();
-		
 		glm::mat4 view;
 		glm::mat4 projection;
 	};
@@ -65,7 +64,7 @@ namespace mu {
 
 	class Geometry {
 	public:
-		Geometry();
+		Geometry(const std::vector<float>& vertices);
 		~Geometry();
 		void use();
 
@@ -83,7 +82,7 @@ namespace mu {
 
 	class Mesh : public Object3D {
 	public:
-		Mesh(Geometry geometry, Material material)
+		Mesh(Geometry& geometry, Material& material)
 			: m_geometry(geometry), m_material(material)
 		{}
 

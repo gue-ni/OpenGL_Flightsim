@@ -74,76 +74,40 @@ namespace mu {
 		glUseProgram(id);
 	}
 
-	void Shader::setMat4(const char* name, glm::mat4& val)
+	void Shader::setInt(const char* name, int value) 
 	{
-		glUniformMatrix4fv(glGetUniformLocation(id, name), 1, GL_FALSE, &val[0][0]);
+		glUniform1i(glGetUniformLocation(id, name), value);
+	}
+
+	void Shader::setFloat(const char* name, float value) 
+	{
+		glUniform1f(glGetUniformLocation(id, name), value);
+	}
+
+	void Shader::setVec3(const char* name, const glm::vec3& value)
+	{
+		glUniform3fv(glGetUniformLocation(id, name), 1, &value[0]);
+	}
+
+	void Shader::setMat4(const char* name, const glm::mat4& value)
+	{
+		glUniformMatrix4fv(glGetUniformLocation(id, name), 1, GL_FALSE, &value[0][0]);
 	}
 	
-	Geometry::Geometry()
+	Geometry::Geometry(const std::vector<float>& vertices)
 	{
-#if 0
-		float vertices[] = {
-	  -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-	   0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-	   0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	   0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	  -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-	  -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-
-	  -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	   0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-	   0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-	   0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-	  -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-	  -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-
-	  -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	  -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	  -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	  -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	  -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	  -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-	   0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	   0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	   0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	   0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	   0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	   0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-	  -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	   0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-	   0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-	   0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-	  -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	  -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-
-	  -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-	   0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	   0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	   0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	  -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-	  -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-		};
-#else
-	float vertices[] = {
-	   -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, // left  
-		0.5f, -0.5f, 0.0f, 0.0f, 0.0f,// right 
-		0.0f,  0.5f, 0.0f, 0.0f, 0.0f, // top  
-		};
-#endif
 		glGenVertexArrays(1, &m_vao);
 		glGenBuffers(1, &m_vbo);
 
 		glBindVertexArray(m_vbo);
 
 		glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices[0]) * vertices.size(), &vertices[0], GL_STATIC_DRAW);
 
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
 		glEnableVertexAttribArray(0);
 
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
 		glEnableVertexAttribArray(1);
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -186,17 +150,22 @@ namespace mu {
 
 	void Mesh::draw(Camera& camera)
 	{
-		std::cout << "draw mesh\n";
+		Shader& shader = m_material.shader;
 
-		m_material.shader.use();
-		m_material.shader.setMat4("view", camera.view);
-		m_material.shader.setMat4("proj", camera.projection);
-		m_material.shader.setMat4("model", worldTransform);
+		shader.use();
+		shader.setMat4("view", camera.view);
+		shader.setMat4("proj", camera.projection);
+		shader.setMat4("model", worldTransform);
+
+		shader.setVec3("lightPos", glm::vec3(0,10,0));
+		shader.setVec3("viewPos", glm::vec3(0,0,-3));
+		shader.setVec3("lightColor", glm::vec3(1.0f));
+		shader.setVec3("objectColor", glm::vec3(1,0,0));
 
 		m_geometry.use();
 
-		//glDrawArrays(GL_TRIANGLES, 0, 36);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+        //glDrawArrays(GL_TRIANGLES, 0, 3);
 	}
 
 
