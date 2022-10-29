@@ -90,17 +90,26 @@ int main()
 	};
 
     mu::Renderer renderer(window);
-    mu::Camera camera;
+    mu::Camera camera(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
     mu::Material basic("shaders/basic.vert", "shaders/basic.frag");
     mu::Material phong("shaders/phong.vert", "shaders/phong.frag");
 
     mu::Geometry geometry(cube);
-    mu::Mesh mesh(geometry, phong);
+    mu::Mesh mesh1(geometry, phong);
+    mu::Mesh mesh2(geometry, phong);
+    mu::Mesh mesh3(geometry, phong);
 
-    camera.view = glm::translate(glm::mat4(1.0), glm::vec3(0.0f, 0.0f, -3.0f));
-    camera.projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+    camera.view = glm::translate(glm::mat4(1.0), glm::vec3(0.0f, 0.0f, -7.0f));
 
+    mesh2.localTransform = glm::translate(mesh2.localTransform, glm::vec3(0, 2, 0));
+    mesh2.localTransform = glm::scale(mesh2.localTransform, glm::vec3(0.5));
+
+    mesh3.localTransform = glm::translate(mesh3.localTransform, glm::vec3(0, 2, 0));
+    mesh3.localTransform = glm::scale(mesh3.localTransform, glm::vec3(0.5));
+
+    mesh1.addChild(&mesh2);
+    mesh2.addChild(&mesh3);
 
     while (!glfwWindowShouldClose(window))
     {
@@ -109,9 +118,11 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		mesh.worldTransform = glm::rotate(mesh.worldTransform, glm::radians(0.01f), glm::vec3(1.0f, 0.3f, 0.5f));
+		mesh1.localTransform = glm::rotate(mesh1.localTransform, glm::radians(0.01f), glm::vec3(1.0f, 0.3f, 0.5f));
+		mesh2.localTransform = glm::rotate(mesh2.localTransform, glm::radians(0.02f), glm::vec3(1.0f, 0.3f, 0.5f));
+		mesh3.localTransform = glm::rotate(mesh3.localTransform, glm::radians(0.03f), glm::vec3(1.0f, 0.3f, 0.5f));
 
-        renderer.render(camera, mesh);
+        renderer.render(camera, mesh1);
 
         glfwSwapBuffers(window);
         glfwPollEvents();

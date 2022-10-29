@@ -1,28 +1,21 @@
 #include "mu.h"
 
+
 namespace mu {
 
 	Shader::Shader(const std::string& vertShaderPath, const std::string& fragShaderPath)
 	{
-		std::cout << "loading shader " << vertShaderPath << ", " << fragShaderPath << std::endl;
-
 		std::fstream vfile(vertShaderPath);
 		std::stringstream vbuffer;
 		vbuffer << vfile.rdbuf();
 		std::string vsource = vbuffer.str();
 		const char* vertexShaderSource = vsource.c_str();
 
-
-		std::cout << vertexShaderSource << std::endl;
-
 		std::fstream ffile(fragShaderPath);
 		std::stringstream fbuffer;
 		fbuffer << ffile.rdbuf();
 		std::string fsource = fbuffer.str();
 		const char* fragmentShaderSource = fsource.c_str();
-
-
-		std::cout << fragmentShaderSource << std::endl;
 
 		unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
 		glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
@@ -135,22 +128,44 @@ namespace mu {
 
 	void Renderer::render(Camera& camera, Object3D& scene)
 	{
+		scene.update();
 		scene.draw(camera);
 	}
 
-	Camera::Camera()
+	Camera::Camera(float fov, float aspect, float near, float far)
 		: view(1.0),
-		projection(1.0)
+		projection(glm::perspective(fov, aspect, near, far))
 	{}
 
 	Object3D::Object3D()
 		: dirty(true),
 		transform(1.0), 
-		worldTransform(1.0)
+		worldTransform(1.0),
+		localTransform(1.0),
+		parent(nullptr)
 	{}
 
 	void Object3D::draw(Camera& camera)
 	{}
+
+	void Object3D::update()
+	{
+		if (parent)
+			transform = parent->transform * localTransform;
+		else
+			transform = localTransform;
+
+		for (auto child : children)
+		{
+			child->update();
+		}
+	}
+	
+	void Object3D::addChild(Object3D* child)
+	{
+		child->parent = this;
+		children.push_back(child);
+	}
 
 	void Mesh::draw(Camera& camera)
 	{
@@ -159,16 +174,21 @@ namespace mu {
 		shader.use();
 		shader.setMat4("view", camera.view);
 		shader.setMat4("proj", camera.projection);
-		shader.setMat4("model", worldTransform);
+		shader.setMat4("model", transform);
 
 		shader.setVec3("lightPos", glm::vec3(0,10,0));
-		shader.setVec3("viewPos", glm::vec3(0,0,-3));
+		shader.setVec3("viewPos", glm::vec3(0,0,-7));
 		shader.setVec3("lightColor", glm::vec3(1.0f));
 		shader.setVec3("objectColor", m_material.color);
 
 		m_geometry.use();
 
 		glDrawArrays(GL_TRIANGLES, 0, m_geometry.count);
+
+		for (auto child : children)
+		{
+			child->draw(camera);
+		}
 	}
 
 	Material::Material(const std::string& vertPath, const std::string& fragPath)

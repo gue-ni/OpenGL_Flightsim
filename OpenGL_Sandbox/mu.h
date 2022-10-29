@@ -6,6 +6,7 @@
 // glm
 #include <vec3.hpp>
 #include <mat4x4.hpp>
+#include <gtc/matrix_transform.hpp>
 
 #include <iostream>
 #include <sstream>
@@ -15,7 +16,7 @@
 
 namespace mu {
 
-	class Shader {
+	struct Shader {
 	public:
 		unsigned int id;
 		Shader(const std::string& vertShaderPath, const std::string& fragShaderPath);
@@ -27,9 +28,8 @@ namespace mu {
 		void setMat4(const std::string& name, const glm::mat4& value);
 	};
 
-	class Camera {
-	public:
-		Camera();
+	struct Camera {
+		Camera(float fov, float aspect, float near, float far);
 		glm::mat4 view;
 		glm::mat4 projection;
 	};
@@ -41,10 +41,18 @@ namespace mu {
 		bool dirty;
 		glm::mat4 transform;
 		glm::mat4 worldTransform;
+		glm::mat4 localTransform;
+
+		Object3D* parent;
+		std::vector<Object3D*> children;
+
+		void addChild(Object3D* child);
+		virtual void draw(Camera& camera);
 
 	private:
 		friend class Renderer;
-		virtual void draw(Camera& camera);
+		void update();
+		void updateMatrix();
 	};
 
 	class Geometry {
@@ -66,8 +74,7 @@ namespace mu {
 		unsigned int m_vbo;
 	};
 
-	class Material  {
-	public:
+	struct Material  {
 		Material(const std::string& vertPath, const std::string& fragPath);
 		Shader shader;
 		glm::vec3 color;
