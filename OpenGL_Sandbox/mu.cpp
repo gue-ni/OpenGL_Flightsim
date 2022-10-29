@@ -127,7 +127,7 @@ namespace mu {
 
 	void Renderer::render(Camera& camera, Object3D& scene)
 	{
-		scene.update();
+		scene.updateWorldMatrix(false);
 		scene.draw(camera);
 	}
 
@@ -137,11 +137,14 @@ namespace mu {
 	{}
 
 	Object3D::Object3D()
-		: dirty(true),
+		: m_dirty(true),
 		transform(1.0), 
 		worldTransform(1.0),
 		localTransform(1.0),
-		parent(nullptr)
+		parent(nullptr),
+		m_position(0.0f),
+		m_rotation(0.0f),
+		m_scale(0.0f)
 	{}
 
 	void Object3D::draw(Camera& camera)
@@ -150,17 +153,73 @@ namespace mu {
 			child->draw(camera);
 	}
 
-	void Object3D::update()
+	const glm::vec3& Object3D::getPosition()
 	{
-		if (parent)
-			transform = parent->transform * localTransform;
-		else
-			transform = localTransform;
+		return m_position;
+	}
 
+	const glm::vec3& Object3D::getRotation()
+	{
+		return m_rotation;
+	}
+
+	void Object3D::setPosition(float x, float y, float z)
+	{
+		m_position = glm::vec3(x,y,z); m_dirty = true;
+	}
+
+	void Object3D::setRotation(float x, float y, float z)
+	{
+		m_rotation = glm::vec3(x,y,z); m_dirty = true;
+	}
+
+	void Object3D::setScale(float x, float y, float z)
+	{
+		m_scale = glm::vec3(x,y,z); m_dirty = true;
+	}
+
+	void Object3D::setPosition(glm::vec3& pos)
+	{
+		m_position = pos; m_dirty = true;
+	}
+
+	void Object3D::setRotation(glm::vec3& rot)
+	{
+		m_rotation = rot; m_dirty = true;
+	}
+
+	glm::mat4 Object3D::getLocalTransform()
+	{
+		// Y * X * Z
+		//const glm::mat4 roationMatrix = transformY * transformX * transformZ;
+
+		auto R = glm::eulerAngleYXZ(m_rotation.x, m_rotation.y, m_rotation.z);
+		auto T = glm::translate(glm::mat4(1.0f), m_position);
+		//auto S = glm::scale(glm::mat4(1.0f), m_scale);
+		
+		// translation * rotation * scale (also know as TRS matrix)
+		return T * R;
+
+		//return localTransform;
+	}
+
+	void Object3D::updateWorldMatrix(bool dirtyParent)
+	{
+		if (m_dirty || dirtyParent)
+		{
+			if (parent)
+				transform = parent->transform * getLocalTransform();
+			else
+				transform = getLocalTransform();
+			
+		}
+	
 		for (auto child : children)
 		{
-			child->update();
+			child->updateWorldMatrix(m_dirty || dirtyParent);
 		}
+
+		// m_dirty = false;
 	}
 	
 	void Object3D::addChild(Object3D* child)

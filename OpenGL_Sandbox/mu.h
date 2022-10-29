@@ -7,6 +7,7 @@
 #include <vec3.hpp>
 #include <mat4x4.hpp>
 #include <gtc/matrix_transform.hpp>
+#include <gtx/euler_angles.hpp >
 
 #include <iostream>
 #include <sstream>
@@ -38,7 +39,6 @@ namespace mu {
 	public:
 		Object3D();
 
-		bool dirty;
 		glm::mat4 transform;
 		glm::mat4 worldTransform;
 		glm::mat4 localTransform;
@@ -49,10 +49,21 @@ namespace mu {
 		void addChild(Object3D* child);
 		virtual void draw(Camera& camera);
 
+		const glm::vec3& getPosition();
+		const glm::vec3& getRotation();
+
+		void setPosition(glm::vec3& pos);
+		void setPosition(float x, float y, float z);
+		void setRotation(glm::vec3& rot);
+		void setRotation(float x, float y, float z);
+		void setScale(float x, float y, float z);
+
 	private:
 		friend class Renderer;
-		void update();
-		void updateMatrix();
+		bool m_dirty;
+		glm::vec3 m_rotation, m_position, m_scale;
+		void updateWorldMatrix(bool dirtyParent);
+		glm::mat4 getLocalTransform();
 	};
 
 	class Geometry {
