@@ -119,7 +119,6 @@ namespace mu {
         glBindVertexArray(m_vao); 
 	}
 
-
 	void Geometry::write(const std::vector<float>& vertices)
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
@@ -146,7 +145,10 @@ namespace mu {
 	{}
 
 	void Object3D::draw(Camera& camera)
-	{}
+	{
+		for (auto child : children)
+			child->draw(camera);
+	}
 
 	void Object3D::update()
 	{

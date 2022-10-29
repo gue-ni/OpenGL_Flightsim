@@ -96,6 +96,7 @@ int main()
     mu::Material phong("shaders/phong.vert", "shaders/phong.frag");
 
     mu::Geometry geometry(cube);
+    mu::Object3D scene;
     mu::Mesh mesh1(geometry, phong);
     mu::Mesh mesh2(geometry, phong);
     mu::Mesh mesh3(geometry, phong);
@@ -108,6 +109,7 @@ int main()
     mesh3.localTransform = glm::translate(mesh3.localTransform, glm::vec3(0, 2, 0));
     mesh3.localTransform = glm::scale(mesh3.localTransform, glm::vec3(0.5));
 
+    scene.addChild(&mesh1);
     mesh1.addChild(&mesh2);
     mesh2.addChild(&mesh3);
 
@@ -122,7 +124,7 @@ int main()
 		mesh2.localTransform = glm::rotate(mesh2.localTransform, glm::radians(0.02f), glm::vec3(1.0f, 0.3f, 0.5f));
 		mesh3.localTransform = glm::rotate(mesh3.localTransform, glm::radians(0.03f), glm::vec3(1.0f, 0.3f, 0.5f));
 
-        renderer.render(camera, mesh1);
+        renderer.render(camera, scene);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
