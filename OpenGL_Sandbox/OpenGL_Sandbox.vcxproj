@@ -140,8 +140,8 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="shader.frag" />
-    <None Include="shader.vert" />
+    <None Include="triangle.frag" />
+    <None Include="triangle.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

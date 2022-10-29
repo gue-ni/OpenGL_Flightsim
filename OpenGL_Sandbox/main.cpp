@@ -31,8 +31,8 @@ int main()
     // glfw: initialize and configure
     // ------------------------------
     glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     // glfw window creation
@@ -61,7 +61,7 @@ int main()
     // vertex shader
 
     std::string source;
-    source = read_file("shader.vert");
+    source = read_file("triangle.vert");
     const char* vertexShaderSource = source.c_str();
 
     unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -78,7 +78,7 @@ int main()
     }
 
 
-    source = read_file("shader.frag");
+    source = read_file("triangle.frag");
     const char* fragmentShaderSource = source.c_str();
 
     // fragment shader
