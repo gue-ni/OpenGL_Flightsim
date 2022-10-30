@@ -16,12 +16,98 @@
 #include <vector>
 
 namespace mu {
+	const std::string phong_vert = R"(
+#version 330 core
+layout (location = 0) in vec3 aPos;
+layout (location = 1) in vec3 aNormal;
+layout (location = 2) in vec2 aTexCoord;
+
+out vec3 FragPos;
+out vec3 Normal;
+
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 proj;
+
+void main()
+{
+    FragPos = vec3(model * vec4(aPos, 1.0));
+    Normal = mat3(transpose(inverse(model))) * aNormal;  
+    gl_Position = proj * view * vec4(FragPos, 1.0);
+}
+	)";
+	const std::string phong_frag = R"(
+#version 330 core
+out vec4 FragColor;
+
+in vec3 Normal;  
+in vec3 FragPos;  
+  
+uniform vec3 camera; 
+
+uniform vec3 lightPos; 
+uniform vec3 lightColor;
+
+uniform vec3 objectColor;
+
+// phong parameters
+uniform float ka;
+uniform float kd;
+uniform float ks;
+uniform float alpha;
+
+void main()
+{
+    // ambient
+    vec3 ambient = ka * lightColor;
+  	
+    // diffuse 
+    vec3 norm = normalize(Normal);
+    vec3 lightDir = normalize(lightPos - FragPos);
+    vec3 diffuse = kd * max(dot(norm, lightDir), 0.0) * lightColor;
+    
+    // specular
+    vec3 viewDir = normalize(camera - FragPos);
+    vec3 reflectDir = reflect(-lightDir, norm);  
+    vec3 specular = ks * pow(max(dot(viewDir, reflectDir), 0.0), alpha) * lightColor;
+        
+    vec3 result = (ambient + diffuse + specular) * objectColor;
+    FragColor = vec4(result, 1.0);
+}
+	)";
+
+	const std::string basic_vert = R"(
+#version 330 core
+layout (location = 0) in vec3 aPos;
+layout (location = 1) in vec2 aNormal;
+
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 proj;
+
+void main()
+{
+	gl_Position = proj* view * model * vec4(aPos, 1.0f);
+}
+	)";
+	const std::string basic_frag = R"(
+#version 330 core
+out vec4 FragColor;
+
+uniform vec3 objectColor;
+
+void main()
+{
+	FragColor = vec4(objectColor.rgb, 1.0f);
+}
+)";
+
 	class Camera;
 
 	struct Shader {
 	public:
 		unsigned int id;
-		Shader(const std::string& vertShaderPath, const std::string& fragShaderPath);
+		Shader(const std::string& vertShader, const std::string& fragShader);
 		~Shader();
 		void use();
 		void setInt(const std::string& name, int value);
@@ -32,7 +118,14 @@ namespace mu {
 
 	class Object3D {
 	public:
-		Object3D();
+		Object3D()
+			: m_dirty(true),
+			transform(1.0), 
+			parent(nullptr),
+			m_position(0.0f),
+			m_rotation(0.0f),
+			m_scale(1.0f)
+		{}
 
 		glm::mat4 transform;
 
@@ -53,7 +146,7 @@ namespace mu {
 		void setScale(float x, float y, float z);
 		void setScale(const glm::vec3& scale);
 
-	private:
+	protected:
 		friend class Renderer;
 		bool m_dirty;
 		glm::vec3 m_rotation, m_position, m_scale; // relative to parent
@@ -63,30 +156,36 @@ namespace mu {
 
 	class Camera : public Object3D  {
 	public:
-		Camera(float fov, float aspect, float near, float far);
+		Camera(float fov, float aspect, float near, float far)
+			: projection(glm::perspective(fov, aspect, near, far)), 
+			m_up(0.0f, 1.0f, 0.0f),
+			m_front(0,0,1)
+		{}
+
 		glm::mat4 projection;
+		glm::mat4 getViewMatrix();
+	private:
+		glm::vec3 m_up, m_front;
 	};
 
-	enum VertexLayout {
-		POS,
-		POS_UV,
-		POS_NORM,
-		POS_NORM_UV
-	}; 
+	class Light : public Object3D {
+	};
+
 
 	class Geometry {
 	public:
-		/*
-			Vertices must be of the structure:
-			{ ...,
-			pos.x, pos.y, pos.z, normal.x, normal.y, normal.z, uv.x, uv.y,
-			..., }
-		*/
+		enum VertexLayout {
+			POS,			// pos
+			POS_UV,			// pos, uv
+			POS_NORM,		// pos, normal
+			POS_NORM_UV		// pos, normal, uv
+		};
+
 		Geometry(const std::vector<float>& vertices, const VertexLayout& layout);
 		Geometry(const Geometry& geometry);
 		~Geometry();
-		void write(const std::vector<float>& vertices);
 		void use();
+		void write(const std::vector<float>& vertices);
 		int count;
 
 	private:
@@ -95,10 +194,44 @@ namespace mu {
 		static int getStride(const VertexLayout& layout);
 	};
 
-	struct Material  {
-		Material(const std::string& vertPath, const std::string& fragPath);
+	class Material  {
+	public:
+		Material(const std::string& vertPath, const std::string& fragPath)
+			: Material(vertPath, fragPath, glm::vec3(1, 0.5, 0.2), 0.1f, 1.0f, 0.5f, 10.0f)
+		{}
+
+		Material(const std::string& vertPath, const std::string& fragPath, const glm::vec3& color_)
+			: Material(vertPath, fragPath, color_, 0.1f, 1.0f, 0.5f, 10.0f)
+		{}
+
+		Material(const std::string& vertPath, const std::string& fragPath, const glm::vec3& color_, float ka_, float kd_, float ks_, float alpha_)
+		: shader(vertPath, fragPath), 
+		color(color_),
+		ka(ka_),
+		kd(kd_),
+		ks(ks_),
+		alpha(alpha_)
+		{}
+
 		Shader shader;
 		glm::vec3 color;
+		float ka, kd, ks, alpha;
+	};
+
+	class Phong : public Material {
+	public:
+		Phong(const glm::vec3& color_) : Phong(color_, 0.2f, 1.0f, 0.5f, 10.0f) {}
+
+		Phong(const glm::vec3& color_, float ka_, float kd_, float ks_, float alpha_)
+			: Material(phong_vert, phong_frag, color_, ka_, kd_, ks_, alpha_)
+		{}
+	};
+
+	class Basic : public Material {
+	public:
+		Basic(const glm::vec3& color_) 
+			: Material(basic_vert, basic_frag, color_)
+		{}
 	};
 
 	class Mesh : public Object3D {
@@ -106,17 +239,10 @@ namespace mu {
 		Mesh(std::shared_ptr<Geometry> geometry, std::shared_ptr<Material> material)
 			: m_geometry(geometry), m_material(material)
 		{}
-
 		void draw(Camera& camera);
-
 	private:
-		// not sure about this
-		//Geometry& m_geometry;
-		// Material& m_material;
-		// geometry can be shared
 		std::shared_ptr<Geometry> m_geometry;
 		std::shared_ptr<Material> m_material;
-
 	};
 
 	class Renderer {

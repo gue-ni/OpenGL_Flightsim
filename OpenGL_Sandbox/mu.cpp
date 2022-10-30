@@ -3,24 +3,24 @@
 
 namespace mu {
 
-	Shader::Shader(const std::string& vertShaderPath, const std::string& fragShaderPath)
+	Shader::Shader(const std::string& vertShader, const std::string& fragShader)
 	{
 		std::cout << "create Shader\n";
-
-		std::fstream vfile(vertShaderPath);
+#if 0
+		std::fstream vfile(vertShader);
 		std::stringstream vbuffer;
 		vbuffer << vfile.rdbuf();
 		std::string vsource = vbuffer.str();
 		const char* vertexShaderSource = vsource.c_str();
 
-		std::fstream ffile(fragShaderPath);
+		std::fstream ffile(fragShader);
 		std::stringstream fbuffer;
 		fbuffer << ffile.rdbuf();
 		std::string fsource = fbuffer.str();
 		const char* fragmentShaderSource = fsource.c_str();
-#if 0
-		std::cout << vertexShaderSource << std::endl;
-		std::cout << fragmentShaderSource << std::endl;
+#else
+		const char* vertexShaderSource = vertShader.c_str();
+		const char* fragmentShaderSource = fragShader.c_str();
 #endif
 
 		unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -217,18 +217,11 @@ namespace mu {
 		scene.draw(camera);
 	}
 
-	Camera::Camera(float fov, float aspect, float near, float far)
-		: projection(glm::perspective(fov, aspect, near, far))
-	{}
-
-	Object3D::Object3D()
-		: m_dirty(true),
-		transform(1.0), 
-		parent(nullptr),
-		m_position(0.0f),
-		m_rotation(0.0f),
-		m_scale(1.0f)
-	{}
+	glm::mat4 Camera::getViewMatrix()
+	{
+		return glm::lookAt(m_position, glm::vec3(0), m_up);
+		//return transform;
+	}
 
 	void Object3D::draw(Camera& camera)
 	{
@@ -320,19 +313,26 @@ namespace mu {
 		Shader& shader = m_material.get()->shader;
 
 		shader.use();
-		shader.setMat4("view", camera.transform);
+		shader.setMat4("view", camera.getViewMatrix());
 		shader.setMat4("proj", camera.projection);
 		shader.setMat4("model", transform);
+		shader.setVec3("camera", camera.getPosition());
 
-		shader.setVec3("cameraPos", camera.getPosition());
+		// TODO: improve
+		glm::vec3 lightPos(1.2, 1.0f, 2.0f), lightColor(1.0f);
 
-		shader.setVec3("lightPos", glm::vec3(2.5f));
-		shader.setVec3("lightColor", glm::vec3(1.0f));
+		// light
+		shader.setVec3("lightPos", lightPos);
+		shader.setVec3("lightColor", lightColor);
 
+		// phong
+		shader.setFloat("ka", m_material.get()->ka);
+		shader.setFloat("kd", m_material.get()->kd);
+		shader.setFloat("ks", m_material.get()->ks);
+		shader.setFloat("alpha", m_material.get()->alpha);
 		shader.setVec3("objectColor", m_material.get()->color);
 
 		m_geometry.get()->use();
-
 		glDrawArrays(GL_TRIANGLES, 0, m_geometry.get()->count);
 
 		for (auto child : children)
@@ -341,9 +341,4 @@ namespace mu {
 		}
 	}
 
-	Material::Material(const std::string& vertPath, const std::string& fragPath)
-		: shader(vertPath, fragPath), 
-		color(1.0f, 0.5f, 0.2f)
-	{
-	}
 }

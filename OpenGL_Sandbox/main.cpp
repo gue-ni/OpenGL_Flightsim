@@ -16,9 +16,23 @@
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
 
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_WIDTH = 1280;
+const unsigned int SCR_HEIGHT = 720;
 
+constexpr glm::vec3 color(int r, int g, int b)
+{
+    return glm::vec3(static_cast<float>(r), static_cast<float>(g), static_cast<float>(b)) / 255.0f;
+}
+
+constexpr glm::vec3 color(uint32_t hex)
+{
+    assert(hex <= 0xffffffU);
+    return glm::vec3(
+        static_cast<float>((hex & 0xff0000U) >> 16) / 255.0f, 
+        static_cast<float>((hex & 0x00ff00U) >>  8) / 255.0f, 
+        static_cast<float>((hex & 0x0000ffU) >>  0) / 255.0f
+    );
+}
 
 int main()
 {
@@ -46,7 +60,7 @@ int main()
     
     glEnable(GL_DEPTH_TEST);
 
-	std::vector<float> cube = {
+	const std::vector<float> cube = {
 		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
 		 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
 		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
@@ -91,62 +105,70 @@ int main()
 	};
 
     mu::Renderer renderer(window);
-    mu::Camera camera(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
-    std::shared_ptr<mu::Material> phong 
-        = std::make_shared<mu::Material>("shaders/phong.vert", "shaders/phong.frag");;
+    std::shared_ptr<mu::Phong> phong 
+        = std::make_shared<mu::Phong>(color(165, 113, 100), 0.3f, 0.7f, 0.99f, 27.0f);
 
-    std::shared_ptr<mu::Material> basic 
-        = std::make_shared<mu::Material>("shaders/basic.vert", "shaders/basic.frag");;
+    std::shared_ptr<mu::Basic> basic2
+        = std::make_shared<mu::Basic>(glm::vec3(1.0f));
 
-    basic.get()->color = glm::vec3(1.0f);
-
-    std::shared_ptr<mu::Material> phong2 
-        = std::make_shared<mu::Material>("shaders/phong.vert", "shaders/phong.frag");;
-
-    phong.get()->color = glm::vec3(0, 0, 1);
+    std::shared_ptr<mu::Phong> phong2 
+        = std::make_shared<mu::Phong>(color(0x0000ff));;
 
     std::shared_ptr<mu::Geometry> geometry 
-        = std::make_shared<mu::Geometry>(cube, mu::POS_NORM);
+        = std::make_shared<mu::Geometry>(cube, mu::Geometry::POS_NORM);
 
-    mu::Object3D scene;
-    mu::Mesh light(geometry, basic);
+    mu::Camera camera(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+    camera.setPosition(glm::vec3(0, 0, 5));
+
     mu::Mesh mesh1(geometry, phong);
+    mesh1.setPosition(glm::vec3(0, 0, 0));
+
     mu::Mesh mesh2(geometry, phong2);
-    mu::Mesh mesh3(geometry, phong);
-
-    camera.setPosition(glm::vec3(0, 0, -10));
-
     mesh2.setPosition(glm::vec3(0.0f, 2.0f, 0.0f));
     mesh2.setScale(glm::vec3(0.5f));
 
+    mu::Mesh mesh3(geometry, phong);
     mesh3.setPosition(glm::vec3(2.0f, 0.0f, 0.0f));
     mesh3.setScale(glm::vec3(0.5f));
 
-    light.setPosition(glm::vec3(2.5));
+    mu::Mesh light(geometry, basic2);
+    light.setPosition(glm::vec3(1.2, 1.0f, 2.0f));
     light.setScale(glm::vec3(0.25));
 
+    mu::Object3D scene;
     scene.addChild(&camera);
     scene.addChild(&light);
     scene.addChild(&mesh1);
     mesh1.addChild(&mesh2);
     mesh2.addChild(&mesh3);
 
-    //phong.color = glm::vec3(0, 0, 1);
+    int frames = 0;
+    double currentTime, previousTime = 0;
 
     while (!glfwWindowShouldClose(window))
     {
+        currentTime = glfwGetTime();
+        frames++;
+        if (currentTime - previousTime >= 1.0)
+        {
+            std::cout
+                << 1000.0 / static_cast<double>(frames)
+                << " ms/frame\n";
+
+            frames = 0;
+            previousTime = currentTime;
+        }
+
         processInput(window);
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        float t = 0.0005;
+        float t = 0.0005f;
         mesh1.setRotation(mesh1.getRotation() + glm::vec3(t, 0, t));
         mesh2.setRotation(mesh2.getRotation() + glm::vec3(0, t, t));
         mesh3.setRotation(mesh3.getRotation() + glm::vec3(t, t, t));
-
-        //camera.setPosition(camera.getPosition() + glm::vec3(0, 0,-t));
 
         renderer.render(camera, scene);
 
