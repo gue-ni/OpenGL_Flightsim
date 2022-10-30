@@ -107,6 +107,7 @@ void main()
 	struct Shader {
 	public:
 		unsigned int id;
+		Shader(const std::string& path);
 		Shader(const std::string& vertShader, const std::string& fragShader);
 		~Shader();
 		void use();
@@ -157,20 +158,17 @@ void main()
 	class Camera : public Object3D  {
 	public:
 		Camera(float fov, float aspect, float near, float far)
-			: projection(glm::perspective(fov, aspect, near, far)), 
+			: m_projection(glm::perspective(fov, aspect, near, far)), 
 			m_up(0.0f, 1.0f, 0.0f),
 			m_front(0,0,1)
 		{}
 
-		glm::mat4 projection;
 		glm::mat4 getViewMatrix();
+		glm::mat4 getProjectionMatrix();
 	private:
+		glm::mat4 m_projection;
 		glm::vec3 m_up, m_front;
 	};
-
-	class Light : public Object3D {
-	};
-
 
 	class Geometry {
 	public:
@@ -196,21 +194,17 @@ void main()
 
 	class Material  {
 	public:
-		Material(const std::string& vertPath, const std::string& fragPath)
-			: Material(vertPath, fragPath, glm::vec3(1, 0.5, 0.2), 0.1f, 1.0f, 0.5f, 10.0f)
+		Material(const std::string& vert, const std::string& frag)
+			: Material(vert, frag, glm::vec3(1, 0.5, 0.2), 0.1f, 1.0f, 0.5f, 10.0f)
 		{}
 
-		Material(const std::string& vertPath, const std::string& fragPath, const glm::vec3& color_)
-			: Material(vertPath, fragPath, color_, 0.1f, 1.0f, 0.5f, 10.0f)
+		Material(const std::string& vert, const std::string& frag, const glm::vec3& color_)
+			: Material(vert, frag, color_, 0.1f, 1.0f, 0.5f, 10.0f)
 		{}
 
-		Material(const std::string& vertPath, const std::string& fragPath, const glm::vec3& color_, float ka_, float kd_, float ks_, float alpha_)
-		: shader(vertPath, fragPath), 
-		color(color_),
-		ka(ka_),
-		kd(kd_),
-		ks(ks_),
-		alpha(alpha_)
+		Material(const std::string& vert, const std::string& frag, 
+			const glm::vec3& color_, float ka_, float kd_, float ks_, float alpha_)
+		: shader(vert, frag), color(color_), ka(ka_), kd(kd_), ks(ks_), alpha(alpha_)
 		{}
 
 		Shader shader;

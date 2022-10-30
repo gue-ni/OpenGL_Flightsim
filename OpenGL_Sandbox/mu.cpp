@@ -1,8 +1,19 @@
 #include "mu.h"
 
+std::string read_shader(const std::string& path)
+{
+		std::fstream file(path);
+		if (!file.is_open())
+			return std::string();
+
+		std::stringstream buffer;
+		buffer << file.rdbuf();
+		return buffer.str();
+}
 
 namespace mu {
-
+	Shader::Shader(const std::string& path) : Shader(read_shader(path + ".vert"), read_shader(path + ".frag")) {}
+	
 	Shader::Shader(const std::string& vertShader, const std::string& fragShader)
 	{
 		std::cout << "create Shader\n";
@@ -219,10 +230,15 @@ namespace mu {
 
 	glm::mat4 Camera::getViewMatrix()
 	{
-		return glm::lookAt(m_position, glm::vec3(0), m_up);
-		//return transform;
+		//return glm::lookAt(m_position, glm::vec3(0), m_up);
+		return glm::inverse(transform);
 	}
 
+	glm::mat4 Camera::getProjectionMatrix()
+	{
+		return m_projection;
+	}
+	
 	void Object3D::draw(Camera& camera)
 	{
 		for (auto child : children)
@@ -314,7 +330,7 @@ namespace mu {
 
 		shader.use();
 		shader.setMat4("view", camera.getViewMatrix());
-		shader.setMat4("proj", camera.projection);
+		shader.setMat4("proj", camera.getProjectionMatrix());
 		shader.setMat4("model", transform);
 		shader.setVec3("camera", camera.getPosition());
 
