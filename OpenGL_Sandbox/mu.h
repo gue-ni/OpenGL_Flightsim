@@ -79,10 +79,11 @@ namespace mu {
 		/*
 			Vertices must be of the structure:
 			{ ...,
-			pos.x, pos.y, pos.z, normal.x, normal.y, normal.z,
+			pos.x, pos.y, pos.z, normal.x, normal.y, normal.z, uv.x, uv.y,
 			..., }
 		*/
 		Geometry(const std::vector<float>& vertices, const VertexLayout& layout);
+		Geometry(const Geometry& geometry);
 		~Geometry();
 		void write(const std::vector<float>& vertices);
 		void use();
@@ -102,15 +103,20 @@ namespace mu {
 
 	class Mesh : public Object3D {
 	public:
-		Mesh(Geometry& geometry, Material& material)
+		Mesh(std::shared_ptr<Geometry> geometry, std::shared_ptr<Material> material)
 			: m_geometry(geometry), m_material(material)
 		{}
 
 		void draw(Camera& camera);
 
 	private:
-		Geometry& m_geometry;
-		Material& m_material;
+		// not sure about this
+		//Geometry& m_geometry;
+		// Material& m_material;
+		// geometry can be shared
+		std::shared_ptr<Geometry> m_geometry;
+		std::shared_ptr<Material> m_material;
+
 	};
 
 	class Renderer {

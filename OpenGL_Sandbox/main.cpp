@@ -93,16 +93,29 @@ int main()
     mu::Renderer renderer(window);
     mu::Camera camera(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
-    mu::Material basic("shaders/basic.vert", "shaders/basic.frag");
-    mu::Material phong("shaders/phong.vert", "shaders/phong.frag");
+    std::shared_ptr<mu::Material> phong 
+        = std::make_shared<mu::Material>("shaders/phong.vert", "shaders/phong.frag");;
 
-    mu::Geometry geometry(cube, mu::POS_NORM);
+    std::shared_ptr<mu::Material> basic 
+        = std::make_shared<mu::Material>("shaders/basic.vert", "shaders/basic.frag");;
+
+    basic.get()->color = glm::vec3(1.0f);
+
+    std::shared_ptr<mu::Material> phong2 
+        = std::make_shared<mu::Material>("shaders/phong.vert", "shaders/phong.frag");;
+
+    phong.get()->color = glm::vec3(0, 0, 1);
+
+    std::shared_ptr<mu::Geometry> geometry 
+        = std::make_shared<mu::Geometry>(cube, mu::POS_NORM);
+
     mu::Object3D scene;
+    mu::Mesh light(geometry, basic);
     mu::Mesh mesh1(geometry, phong);
-    mu::Mesh mesh2(geometry, phong);
+    mu::Mesh mesh2(geometry, phong2);
     mu::Mesh mesh3(geometry, phong);
 
-    camera.setPosition(glm::vec3(0, 0, -7));
+    camera.setPosition(glm::vec3(0, 0, -10));
 
     mesh2.setPosition(glm::vec3(0.0f, 2.0f, 0.0f));
     mesh2.setScale(glm::vec3(0.5f));
@@ -110,12 +123,16 @@ int main()
     mesh3.setPosition(glm::vec3(2.0f, 0.0f, 0.0f));
     mesh3.setScale(glm::vec3(0.5f));
 
+    light.setPosition(glm::vec3(2.5));
+    light.setScale(glm::vec3(0.25));
+
     scene.addChild(&camera);
+    scene.addChild(&light);
     scene.addChild(&mesh1);
     mesh1.addChild(&mesh2);
     mesh2.addChild(&mesh3);
 
-    phong.color = glm::vec3(0, 0, 1);
+    //phong.color = glm::vec3(0, 0, 1);
 
     while (!glfwWindowShouldClose(window))
     {

@@ -5,6 +5,8 @@ namespace mu {
 
 	Shader::Shader(const std::string& vertShaderPath, const std::string& fragShaderPath)
 	{
+		std::cout << "create Shader\n";
+
 		std::fstream vfile(vertShaderPath);
 		std::stringstream vbuffer;
 		vbuffer << vfile.rdbuf();
@@ -16,9 +18,10 @@ namespace mu {
 		fbuffer << ffile.rdbuf();
 		std::string fsource = fbuffer.str();
 		const char* fragmentShaderSource = fsource.c_str();
-
+#if 0
 		std::cout << vertexShaderSource << std::endl;
 		std::cout << fragmentShaderSource << std::endl;
+#endif
 
 		unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
 		glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
@@ -62,6 +65,7 @@ namespace mu {
 
 	Shader::~Shader()
 	{
+		std::cout << "destroy Shader\n";
 		glDeleteProgram(id);
 	}
 
@@ -93,6 +97,8 @@ namespace mu {
 	Geometry::Geometry(const std::vector<float>& vertices, const VertexLayout& layout)
 		: count(static_cast<int>(vertices.size()) / (getStride(layout)))
 	{
+		std::cout << "create Geometry\n";
+
 		const int stride = getStride(layout);
 		glGenVertexArrays(1, &m_vao);
 		glGenBuffers(1, &m_vbo);
@@ -167,8 +173,17 @@ namespace mu {
 		glBindVertexArray(0);
 	}
 
+	Geometry::Geometry(const Geometry& geometry)
+	{
+		std::cout << "copy Geometry\n";
+		count = geometry.count;
+		m_vao = geometry.m_vao;
+		m_vbo = geometry.m_vbo;
+	}
+
 	Geometry::~Geometry()
 	{
+		std::cout << "destroy Geometry\n";
 		glDeleteVertexArrays(1, &m_vao);
 		glDeleteBuffers(1, &m_vbo);
 	}
@@ -302,23 +317,23 @@ namespace mu {
 
 	void Mesh::draw(Camera& camera)
 	{
-		Shader& shader = m_material.shader;
+		Shader& shader = m_material.get()->shader;
 
 		shader.use();
 		shader.setMat4("view", camera.transform);
 		shader.setMat4("proj", camera.projection);
 		shader.setMat4("model", transform);
 
-		shader.setVec3("viewPos", camera.getPosition());
+		shader.setVec3("cameraPos", camera.getPosition());
 
-		shader.setVec3("lightPos", glm::vec3(3.0f, 10.0f ,3.0f));
+		shader.setVec3("lightPos", glm::vec3(2.5f));
 		shader.setVec3("lightColor", glm::vec3(1.0f));
 
-		shader.setVec3("objectColor", m_material.color);
+		shader.setVec3("objectColor", m_material.get()->color);
 
-		m_geometry.use();
+		m_geometry.get()->use();
 
-		glDrawArrays(GL_TRIANGLES, 0, m_geometry.count);
+		glDrawArrays(GL_TRIANGLES, 0, m_geometry.get()->count);
 
 		for (auto child : children)
 		{
@@ -328,7 +343,7 @@ namespace mu {
 
 	Material::Material(const std::string& vertPath, const std::string& fragPath)
 		: shader(vertPath, fragPath), 
-		color(1.0f, 0.5f, 1.0f)
+		color(1.0f, 0.5f, 0.2f)
 	{
 	}
 }
