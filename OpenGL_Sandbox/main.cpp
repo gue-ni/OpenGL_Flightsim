@@ -110,7 +110,7 @@ int main()
         = std::make_shared<mu::Phong>(color(165, 113, 100));
 
     std::shared_ptr<mu::Basic> basic
-        = std::make_shared<mu::Basic>(color(0x00ff00));
+        = std::make_shared<mu::Basic>(color(0xff0000));
 
     std::shared_ptr<mu::Phong> phong2 
         = std::make_shared<mu::Phong>(color(0x0000ff));;

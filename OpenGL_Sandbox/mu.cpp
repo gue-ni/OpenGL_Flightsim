@@ -329,29 +329,27 @@ namespace mu {
 
 	void Mesh::draw(Camera& camera)
 	{
-		auto mat = m_material.get();
+		Shader* shader = m_material.get()->getShader();
 
-		Shader& shader = mat->shader;
-
-		shader.use();
-		shader.setMat4("view", camera.getViewMatrix());
-		shader.setMat4("proj", camera.getProjectionMatrix());
-		shader.setMat4("model", transform);
-		shader.setVec3("camera", camera.getPosition());
+		shader->use();
+		shader->setMat4("view", camera.getViewMatrix());
+		shader->setMat4("proj", camera.getProjectionMatrix());
+		shader->setMat4("model", transform);
+		shader->setVec3("camera", camera.getPosition());
 
 		// TODO: improve
 		glm::vec3 lightPos(1.2, 1.0f, 2.0f), lightColor(1.0f);
 
 		// light
-		shader.setVec3("lightPos", lightPos);
-		shader.setVec3("lightColor", lightColor);
+		shader->setVec3("lightPos", lightPos);
+		shader->setVec3("lightColor", lightColor);
 
 		// phong
-		shader.setFloat("ka", m_material.get()->ka);
-		shader.setFloat("kd", m_material.get()->kd);
-		shader.setFloat("ks", m_material.get()->ks);
-		shader.setFloat("alpha", m_material.get()->alpha);
-		shader.setVec3("objectColor", m_material.get()->color);
+		shader->setFloat("ka", m_material.get()->ka);
+		shader->setFloat("kd", m_material.get()->kd);
+		shader->setFloat("ks", m_material.get()->ks);
+		shader->setFloat("alpha", m_material.get()->alpha);
+		shader->setVec3("objectColor", m_material.get()->color);
 
 		m_geometry.get()->use();
 		glDrawArrays(GL_TRIANGLES, 0, m_geometry.get()->count);

@@ -196,48 +196,56 @@ void main()
 
 	class Material  {
 	public:
-		Material(const std::string& vert, const std::string& frag)
-			: Material(vert, frag, glm::vec3(1, 0.5, 0.2), 0.1f, 1.0f, 0.5f, 10.0f) {}
+		Material()
+			: Material(glm::vec3(1, 0.5, 0.2), 0.1f, 1.0f, 0.5f, 10.0f) {}
 
-		Material(const std::string& vert, const std::string& frag, const glm::vec3& color_)
-			: Material(vert, frag, color_, 0.1f, 1.0f, 0.5f, 10.0f) {}
+		Material(const glm::vec3& color_)
+			: Material(color_, 0.1f, 1.0f, 0.5f, 10.0f) {}
 
-		Material(const std::string& vert, const std::string& frag,
-				const glm::vec3& color_, float ka_, float kd_, float ks_, float alpha_)
-			: shader(vert, frag), color(color_), ka(ka_), kd(kd_), ks(ks_), alpha(alpha_) {}
+		Material(const glm::vec3& color_, float ka_, float kd_, float ks_, float alpha_)
+			: color(color_), ka(ka_), kd(kd_), ks(ks_), alpha(alpha_) {}
 
-		Shader shader;
 		glm::vec3 color;
 		float ka, kd, ks, alpha;
+
+		virtual Shader* getShader()
+		{
+			return nullptr;
+		}
 	};
 
 	template<class Derived>
 	class MaterialX : public Material {
 	public:
-		MaterialX(const glm::vec3& color_, float ka_, float kd_, float ks_, float alpha_)
-			: Material(phong_vert, phong_frag, color_, ka_, kd_, ks_, alpha_) 
+		MaterialX(const std::string& vert, const std::string& frag, const glm::vec3& color_, float ka_, float kd_, float ks_, float alpha_)
+			: Material(color_, ka_, kd_, ks_, alpha_) 
 		{
 			if (staticShader == nullptr)
 			{
-				std::cout << "create static shader\n";
-				staticShader = std::make_shared<Shader>(phong_vert, phong_frag);
+				staticShader = std::make_shared<Shader>(vert, frag);
 			}
 		}
 
-		MaterialX(const glm::vec3& color_)
-			: MaterialX<Derived>(color_, 0.2f, 1.0f, 0.5f, 10.0f) {}
+		MaterialX( const std::string& vert, const std::string& frag, const glm::vec3& color_)
+			: MaterialX<Derived>(vert, frag, color_, 0.2f, 1.0f, 0.5f, 10.0f) {}
 		
 		static std::shared_ptr<Shader> staticShader;
+
+		Shader* getShader()
+		{
+			return staticShader.get();
+		}
+
 	};
 
 	class Phong : public MaterialX<Phong> {
 	public:
-		Phong(const glm::vec3& color_) : MaterialX<Phong>(color_, 0.2f, 1.0f, 0.5f, 10.0f) {}
+		Phong(const glm::vec3& color_) : MaterialX<Phong>(phong_vert, phong_frag, color_, 0.2f, 1.0f, 0.5f, 10.0f) {}
 	};
 
 	class Basic : public MaterialX<Basic> {
 	public:
-		Basic(const glm::vec3& color_) : MaterialX<Basic>(color_){}
+		Basic(const glm::vec3& color_) : MaterialX<Basic>(basic_vert, basic_frag, color_){}
 	};
 
 	class Mesh : public Object3D {
