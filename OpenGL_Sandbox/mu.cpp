@@ -91,7 +91,7 @@ namespace mu {
 	}
 	
 	Geometry::Geometry(const std::vector<float>& vertices, const VertexLayout& layout)
-		: count(vertices.size() / (getStride(layout)))
+		: count(static_cast<int>(vertices.size()) / (getStride(layout)))
 	{
 		const int stride = getStride(layout);
 		glGenVertexArrays(1, &m_vao);
@@ -102,12 +102,27 @@ namespace mu {
 		glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices[0]) * vertices.size(), &vertices[0], GL_STATIC_DRAW);
 
+		unsigned int index = 0;
+		glVertexAttribPointer(index, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(index);
+
+		if (layout == POS_NORM || layout == POS_NORM_UV) // add normal
+		{
+			index++;
+			glVertexAttribPointer(index, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(3 * sizeof(float)));
+			glEnableVertexAttribArray(index);
+		}
+
+		if (layout == POS_UV || layout == POS_NORM_UV) // add uv
+		{
+			index++;
+			glVertexAttribPointer(index, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(static_cast<int>(index) * 3 * sizeof(float)));
+			glEnableVertexAttribArray(index);
+		}
+
+#if 0
 		switch (layout)
 		{
-		case POS:
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
-			glEnableVertexAttribArray(0);
-			break;
 
 		case POS_UV:
 			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
@@ -136,10 +151,17 @@ namespace mu {
 			glEnableVertexAttribArray(1);
 			break;
 
+		case POS:
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
+			glEnableVertexAttribArray(0);
+			break;
+
+
 		default:
 			assert(false);
 			break;
 		}
+#endif
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glBindVertexArray(0);
