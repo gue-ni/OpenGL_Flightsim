@@ -16,6 +16,7 @@
 #include <vector>
 
 namespace mu {
+	class Camera;
 
 	struct Shader {
 	public:
@@ -29,19 +30,11 @@ namespace mu {
 		void setMat4(const std::string& name, const glm::mat4& value);
 	};
 
-	struct Camera {
-		Camera(float fov, float aspect, float near, float far);
-		glm::mat4 view;
-		glm::mat4 projection;
-	};
-
 	class Object3D {
 	public:
 		Object3D();
 
 		glm::mat4 transform;
-		glm::mat4 worldTransform;
-		glm::mat4 localTransform;
 
 		Object3D* parent;
 		std::vector<Object3D*> children;
@@ -51,19 +44,27 @@ namespace mu {
 
 		const glm::vec3& getPosition();
 		const glm::vec3& getRotation();
+		const glm::vec3& getScale();
 
-		void setPosition(glm::vec3& pos);
+		void setPosition(const glm::vec3& pos);
 		void setPosition(float x, float y, float z);
-		void setRotation(glm::vec3& rot);
+		void setRotation(const glm::vec3& rot);
 		void setRotation(float x, float y, float z);
 		void setScale(float x, float y, float z);
+		void setScale(const glm::vec3& scale);
 
 	private:
 		friend class Renderer;
 		bool m_dirty;
-		glm::vec3 m_rotation, m_position, m_scale;
+		glm::vec3 m_rotation, m_position, m_scale; // relative to parent
 		void updateWorldMatrix(bool dirtyParent);
 		glm::mat4 getLocalTransform();
+	};
+
+	class Camera : public Object3D  {
+	public:
+		Camera(float fov, float aspect, float near, float far);
+		glm::mat4 projection;
 	};
 
 	class Geometry {

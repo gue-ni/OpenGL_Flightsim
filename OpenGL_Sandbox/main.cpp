@@ -19,6 +19,7 @@ void processInput(GLFWwindow* window);
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
+
 int main()
 {
     glfwInit();
@@ -101,12 +102,16 @@ int main()
     mu::Mesh mesh2(geometry, phong);
     mu::Mesh mesh3(geometry, phong);
 
-    camera.view = glm::translate(glm::mat4(1.0), glm::vec3(0.0f, 0.0f, -7.0f));
+    camera.setPosition(glm::vec3(0, 0, -7));
 
-    //mesh2.setPosition(glm::vec3(1));
-    //mesh2.setPosition(0, 2, 0);
-    //mesh3.setPosition(0, 2, 0);
+    mesh2.setPosition(glm::vec3(0.0f, 2.0f, 0.0f));
+    mesh2.setScale(glm::vec3(0.5f));
 
+    mesh3.setPosition(glm::vec3(2.0f, 0.0f, 0.0f));
+    mesh3.setScale(glm::vec3(0.5f));
+
+
+    scene.addChild(&camera);
     scene.addChild(&mesh1);
     mesh1.addChild(&mesh2);
     mesh2.addChild(&mesh3);
@@ -120,14 +125,11 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		//mesh1.localTransform = glm::rotate(mesh1.localTransform, glm::radians(0.01f), glm::vec3(1.0f, 0.3f, 0.5f));
-		//mesh2.localTransform = glm::rotate(mesh2.localTransform, glm::radians(0.02f), glm::vec3(1.0f, 0.3f, 0.5f));
-		//mesh3.localTransform = glm::rotate(mesh3.localTransform, glm::radians(0.03f), glm::vec3(1.0f, 0.3f, 0.5f));
+        float t = 0.0005;
+        mesh1.setRotation(mesh1.getRotation() + glm::vec3(t, t, 0));
+        mesh2.setRotation(mesh2.getRotation() + glm::vec3(t, 0, t));
 
-        float t = 0.001;
-        r.x += t;
-        r.y += t;
-        mesh1.setRotation(r);
+        camera.setPosition(camera.getPosition() + glm::vec3(0, 0,-t));
 
         renderer.render(camera, scene);
 

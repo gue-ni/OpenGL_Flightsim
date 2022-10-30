@@ -17,6 +17,9 @@ namespace mu {
 		std::string fsource = fbuffer.str();
 		const char* fragmentShaderSource = fsource.c_str();
 
+		std::cout << vertexShaderSource << std::endl;
+		std::cout << fragmentShaderSource << std::endl;
+
 		unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
 		glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
 		glCompileShader(vertexShader);
@@ -132,19 +135,16 @@ namespace mu {
 	}
 
 	Camera::Camera(float fov, float aspect, float near, float far)
-		: view(1.0),
-		projection(glm::perspective(fov, aspect, near, far))
+		: projection(glm::perspective(fov, aspect, near, far))
 	{}
 
 	Object3D::Object3D()
 		: m_dirty(true),
 		transform(1.0), 
-		worldTransform(1.0),
-		localTransform(1.0),
 		parent(nullptr),
 		m_position(0.0f),
 		m_rotation(0.0f),
-		m_scale(0.0f)
+		m_scale(1.0f)
 	{}
 
 	void Object3D::draw(Camera& camera)
@@ -163,6 +163,11 @@ namespace mu {
 		return m_rotation;
 	}
 
+	const glm::vec3& Object3D::getScale()
+	{
+		return m_scale;
+	}
+
 	void Object3D::setPosition(float x, float y, float z)
 	{
 		m_position = glm::vec3(x,y,z); m_dirty = true;
@@ -178,48 +183,47 @@ namespace mu {
 		m_scale = glm::vec3(x,y,z); m_dirty = true;
 	}
 
-	void Object3D::setPosition(glm::vec3& pos)
+	void Object3D::setScale(const glm::vec3& scale)
+	{
+		m_scale = scale; m_dirty = true;
+	}
+
+	void Object3D::setPosition(const glm::vec3& pos)
 	{
 		m_position = pos; m_dirty = true;
 	}
 
-	void Object3D::setRotation(glm::vec3& rot)
+	void Object3D::setRotation(const glm::vec3& rot)
 	{
 		m_rotation = rot; m_dirty = true;
 	}
 
 	glm::mat4 Object3D::getLocalTransform()
 	{
-		// Y * X * Z
-		//const glm::mat4 roationMatrix = transformY * transformX * transformZ;
-
-		auto R = glm::eulerAngleYXZ(m_rotation.x, m_rotation.y, m_rotation.z);
+		auto S = glm::scale(glm::mat4(1.0f), m_scale);
 		auto T = glm::translate(glm::mat4(1.0f), m_position);
-		//auto S = glm::scale(glm::mat4(1.0f), m_scale);
-		
-		// translation * rotation * scale (also know as TRS matrix)
-		return T * R;
-
-		//return localTransform;
+		auto R = glm::eulerAngleYXZ(m_rotation.x, m_rotation.y, m_rotation.z);
+		return T * R * S;
 	}
 
 	void Object3D::updateWorldMatrix(bool dirtyParent)
 	{
-		if (m_dirty || dirtyParent)
+		bool dirty = m_dirty || dirtyParent;
+
+		if (dirty)
 		{
 			if (parent)
 				transform = parent->transform * getLocalTransform();
 			else
 				transform = getLocalTransform();
-			
 		}
 	
 		for (auto child : children)
 		{
-			child->updateWorldMatrix(m_dirty || dirtyParent);
+			child->updateWorldMatrix(dirty);
 		}
 
-		// m_dirty = false;
+		m_dirty = false;
 	}
 	
 	void Object3D::addChild(Object3D* child)
@@ -233,13 +237,15 @@ namespace mu {
 		Shader& shader = m_material.shader;
 
 		shader.use();
-		shader.setMat4("view", camera.view);
+		shader.setMat4("view", camera.transform);
 		shader.setMat4("proj", camera.projection);
 		shader.setMat4("model", transform);
 
-		shader.setVec3("lightPos", glm::vec3(0,10,0));
-		shader.setVec3("viewPos", glm::vec3(0,0,-7));
+		shader.setVec3("viewPos", camera.getPosition());
+
+		shader.setVec3("lightPos", glm::vec3(3.0f, 10.0f ,3.0f));
 		shader.setVec3("lightColor", glm::vec3(1.0f));
+
 		shader.setVec3("objectColor", m_material.color);
 
 		m_geometry.use();
