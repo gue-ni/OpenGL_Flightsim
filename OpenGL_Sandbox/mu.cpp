@@ -90,9 +90,10 @@ namespace mu {
 		glUniformMatrix4fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE, &value[0][0]);
 	}
 	
-	Geometry::Geometry(const std::vector<float>& vertices)
-		: count(vertices.size() / (6))
+	Geometry::Geometry(const std::vector<float>& vertices, const VertexLayout& layout)
+		: count(vertices.size() / (getStride(layout)))
 	{
+		const int stride = getStride(layout);
 		glGenVertexArrays(1, &m_vao);
 		glGenBuffers(1, &m_vbo);
 
@@ -101,11 +102,44 @@ namespace mu {
 		glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices[0]) * vertices.size(), &vertices[0], GL_STATIC_DRAW);
 
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-		glEnableVertexAttribArray(0);
+		switch (layout)
+		{
+		case POS:
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
+			glEnableVertexAttribArray(0);
+			break;
 
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-		glEnableVertexAttribArray(1);
+		case POS_UV:
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
+			glEnableVertexAttribArray(0);
+
+			glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(3 * sizeof(float)));
+			glEnableVertexAttribArray(1);
+			break;
+
+		case POS_NORM:
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
+			glEnableVertexAttribArray(0);
+
+			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(3 * sizeof(float)));
+			glEnableVertexAttribArray(1);
+			break;
+
+		case POS_NORM_UV:
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
+			glEnableVertexAttribArray(0);
+
+			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(3 * sizeof(float)));
+			glEnableVertexAttribArray(1);
+
+			glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(6 * sizeof(float)));
+			glEnableVertexAttribArray(1);
+			break;
+
+		default:
+			assert(false);
+			break;
+		}
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glBindVertexArray(0);
@@ -120,6 +154,18 @@ namespace mu {
 	void Geometry::use()
 	{
         glBindVertexArray(m_vao); 
+	}
+
+	int Geometry::getStride(const VertexLayout& layout)
+	{
+		switch (layout)
+		{
+		case POS:			return 3;
+		case POS_UV:		return 5;
+		case POS_NORM:		return 6;
+		case POS_NORM_UV:	return 8;
+		}
+		return 0;
 	}
 
 	void Geometry::write(const std::vector<float>& vertices)
@@ -260,7 +306,7 @@ namespace mu {
 
 	Material::Material(const std::string& vertPath, const std::string& fragPath)
 		: shader(vertPath, fragPath), 
-		color(1.0f, 0.0f, 0.0f)
+		color(1.0f, 0.5f, 1.0f)
 	{
 	}
 }

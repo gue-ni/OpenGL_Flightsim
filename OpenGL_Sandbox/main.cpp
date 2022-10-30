@@ -96,7 +96,7 @@ int main()
     mu::Material basic("shaders/basic.vert", "shaders/basic.frag");
     mu::Material phong("shaders/phong.vert", "shaders/phong.frag");
 
-    mu::Geometry geometry(cube);
+    mu::Geometry geometry(cube, mu::POS_NORM);
     mu::Object3D scene;
     mu::Mesh mesh1(geometry, phong);
     mu::Mesh mesh2(geometry, phong);
@@ -110,13 +110,12 @@ int main()
     mesh3.setPosition(glm::vec3(2.0f, 0.0f, 0.0f));
     mesh3.setScale(glm::vec3(0.5f));
 
-
     scene.addChild(&camera);
     scene.addChild(&mesh1);
     mesh1.addChild(&mesh2);
     mesh2.addChild(&mesh3);
 
-    auto r = glm::vec3();
+    phong.color = glm::vec3(0, 0, 1);
 
     while (!glfwWindowShouldClose(window))
     {
@@ -126,10 +125,11 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         float t = 0.0005;
-        mesh1.setRotation(mesh1.getRotation() + glm::vec3(t, t, 0));
-        mesh2.setRotation(mesh2.getRotation() + glm::vec3(t, 0, t));
+        mesh1.setRotation(mesh1.getRotation() + glm::vec3(t, 0, t));
+        mesh2.setRotation(mesh2.getRotation() + glm::vec3(0, t, t));
+        mesh3.setRotation(mesh3.getRotation() + glm::vec3(t, t, t));
 
-        camera.setPosition(camera.getPosition() + glm::vec3(0, 0,-t));
+        //camera.setPosition(camera.getPosition() + glm::vec3(0, 0,-t));
 
         renderer.render(camera, scene);
 

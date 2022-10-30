@@ -67,6 +67,13 @@ namespace mu {
 		glm::mat4 projection;
 	};
 
+	enum VertexLayout {
+		POS,
+		POS_UV,
+		POS_NORM,
+		POS_NORM_UV
+	}; 
+
 	class Geometry {
 	public:
 		/*
@@ -75,7 +82,7 @@ namespace mu {
 			pos.x, pos.y, pos.z, normal.x, normal.y, normal.z,
 			..., }
 		*/
-		Geometry(const std::vector<float>& vertices);
+		Geometry(const std::vector<float>& vertices, const VertexLayout& layout);
 		~Geometry();
 		void write(const std::vector<float>& vertices);
 		void use();
@@ -84,6 +91,7 @@ namespace mu {
 	private:
 		unsigned int m_vao;
 		unsigned int m_vbo;
+		static int getStride(const VertexLayout& layout);
 	};
 
 	struct Material  {
@@ -101,8 +109,8 @@ namespace mu {
 		void draw(Camera& camera);
 
 	private:
-		Geometry m_geometry;
-		Material m_material;
+		Geometry& m_geometry;
+		Material& m_material;
 	};
 
 	class Renderer {
