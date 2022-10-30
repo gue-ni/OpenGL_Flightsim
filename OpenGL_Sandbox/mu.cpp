@@ -230,14 +230,17 @@ namespace mu {
 
 	glm::mat4 Camera::getViewMatrix()
 	{
-		//return glm::lookAt(m_position, glm::vec3(0), m_up);
-		return glm::inverse(transform);
+		return glm::lookAt(m_position, glm::vec3(0), m_up);
+		//return glm::inverse(transform);
 	}
 
 	glm::mat4 Camera::getProjectionMatrix()
 	{
 		return m_projection;
 	}
+
+	template<class Derived>
+	std::shared_ptr<Shader> MaterialX<Derived>::staticShader = nullptr;
 	
 	void Object3D::draw(Camera& camera)
 	{
@@ -326,7 +329,9 @@ namespace mu {
 
 	void Mesh::draw(Camera& camera)
 	{
-		Shader& shader = m_material.get()->shader;
+		auto mat = m_material.get();
+
+		Shader& shader = mat->shader;
 
 		shader.use();
 		shader.setMat4("view", camera.getViewMatrix());

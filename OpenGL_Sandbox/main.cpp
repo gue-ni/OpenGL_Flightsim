@@ -106,33 +106,36 @@ int main()
 
     mu::Renderer renderer(window);
 
-    std::shared_ptr<mu::Phong> phong 
-        = std::make_shared<mu::Phong>(color(165, 113, 100), 0.3f, 0.7f, 0.99f, 27.0f);
+    std::shared_ptr<mu::Phong> phong1
+        = std::make_shared<mu::Phong>(color(165, 113, 100));
 
-    std::shared_ptr<mu::Basic> basic2
-        = std::make_shared<mu::Basic>(glm::vec3(1.0f));
+    std::shared_ptr<mu::Basic> basic
+        = std::make_shared<mu::Basic>(color(0x00ff00));
 
     std::shared_ptr<mu::Phong> phong2 
         = std::make_shared<mu::Phong>(color(0x0000ff));;
+
+    std::shared_ptr<mu::Phong> phong3
+        = std::make_shared<mu::Phong>(color(0xff00ff));;
 
     std::shared_ptr<mu::Geometry> geometry 
         = std::make_shared<mu::Geometry>(cube, mu::Geometry::POS_NORM);
 
     mu::Camera camera(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-    camera.setPosition(glm::vec3(0, 0, 5));
+    camera.setPosition(glm::vec3(0, 1, 7));
 
-    mu::Mesh mesh1(geometry, phong);
-    mesh1.setPosition(glm::vec3(0, 0, 0));
+    mu::Mesh mesh1(geometry, phong1);
+    mesh1.setPosition(glm::vec3(0, 1, 0));
 
     mu::Mesh mesh2(geometry, phong2);
-    mesh2.setPosition(glm::vec3(0.0f, 2.0f, 0.0f));
-    mesh2.setScale(glm::vec3(0.5f));
+    mesh2.setPosition(glm::vec3(0.0f, 1.5f, 0.0f));
+    mesh2.setScale(glm::vec3(0.25f));
 
-    mu::Mesh mesh3(geometry, phong);
-    mesh3.setPosition(glm::vec3(2.0f, 0.0f, 0.0f));
-    mesh3.setScale(glm::vec3(0.5f));
+    mu::Mesh mesh3(geometry, phong3);
+    mesh3.setPosition(glm::vec3(0.0f, -1.0f, 0.0f));
+    mesh3.setScale(glm::vec3(15, 0.1, 15));
 
-    mu::Mesh light(geometry, basic2);
+    mu::Mesh light(geometry, basic);
     light.setPosition(glm::vec3(1.2, 1.0f, 2.0f));
     light.setScale(glm::vec3(0.25));
 
@@ -141,7 +144,7 @@ int main()
     scene.addChild(&light);
     scene.addChild(&mesh1);
     mesh1.addChild(&mesh2);
-    mesh2.addChild(&mesh3);
+    scene.addChild(&mesh3);
 
     int frames = 0;
     double currentTime, previousTime = 0;
@@ -168,7 +171,6 @@ int main()
         float t = 0.0005f;
         mesh1.setRotation(mesh1.getRotation() + glm::vec3(t, 0, t));
         mesh2.setRotation(mesh2.getRotation() + glm::vec3(0, t, t));
-        mesh3.setRotation(mesh3.getRotation() + glm::vec3(t, t, t));
 
         renderer.render(camera, scene);
 

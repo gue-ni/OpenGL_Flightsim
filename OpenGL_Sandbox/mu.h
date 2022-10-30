@@ -117,6 +117,8 @@ void main()
 		void setMat4(const std::string& name, const glm::mat4& value);
 	};
 
+	struct ShadowMap {};
+
 	class Object3D {
 	public:
 		Object3D()
@@ -195,44 +197,53 @@ void main()
 	class Material  {
 	public:
 		Material(const std::string& vert, const std::string& frag)
-			: Material(vert, frag, glm::vec3(1, 0.5, 0.2), 0.1f, 1.0f, 0.5f, 10.0f)
-		{}
+			: Material(vert, frag, glm::vec3(1, 0.5, 0.2), 0.1f, 1.0f, 0.5f, 10.0f) {}
 
 		Material(const std::string& vert, const std::string& frag, const glm::vec3& color_)
-			: Material(vert, frag, color_, 0.1f, 1.0f, 0.5f, 10.0f)
-		{}
+			: Material(vert, frag, color_, 0.1f, 1.0f, 0.5f, 10.0f) {}
 
-		Material(const std::string& vert, const std::string& frag, 
-			const glm::vec3& color_, float ka_, float kd_, float ks_, float alpha_)
-		: shader(vert, frag), color(color_), ka(ka_), kd(kd_), ks(ks_), alpha(alpha_)
-		{}
+		Material(const std::string& vert, const std::string& frag,
+				const glm::vec3& color_, float ka_, float kd_, float ks_, float alpha_)
+			: shader(vert, frag), color(color_), ka(ka_), kd(kd_), ks(ks_), alpha(alpha_) {}
 
 		Shader shader;
 		glm::vec3 color;
 		float ka, kd, ks, alpha;
 	};
 
-	class Phong : public Material {
+	template<class Derived>
+	class MaterialX : public Material {
 	public:
-		Phong(const glm::vec3& color_) : Phong(color_, 0.2f, 1.0f, 0.5f, 10.0f) {}
+		MaterialX(const glm::vec3& color_, float ka_, float kd_, float ks_, float alpha_)
+			: Material(phong_vert, phong_frag, color_, ka_, kd_, ks_, alpha_) 
+		{
+			if (staticShader == nullptr)
+			{
+				std::cout << "create static shader\n";
+				staticShader = std::make_shared<Shader>(phong_vert, phong_frag);
+			}
+		}
 
-		Phong(const glm::vec3& color_, float ka_, float kd_, float ks_, float alpha_)
-			: Material(phong_vert, phong_frag, color_, ka_, kd_, ks_, alpha_)
-		{}
+		MaterialX(const glm::vec3& color_)
+			: MaterialX<Derived>(color_, 0.2f, 1.0f, 0.5f, 10.0f) {}
+		
+		static std::shared_ptr<Shader> staticShader;
 	};
 
-	class Basic : public Material {
+	class Phong : public MaterialX<Phong> {
 	public:
-		Basic(const glm::vec3& color_) 
-			: Material(basic_vert, basic_frag, color_)
-		{}
+		Phong(const glm::vec3& color_) : MaterialX<Phong>(color_, 0.2f, 1.0f, 0.5f, 10.0f) {}
+	};
+
+	class Basic : public MaterialX<Basic> {
+	public:
+		Basic(const glm::vec3& color_) : MaterialX<Basic>(color_){}
 	};
 
 	class Mesh : public Object3D {
 	public:
 		Mesh(std::shared_ptr<Geometry> geometry, std::shared_ptr<Material> material)
-			: m_geometry(geometry), m_material(material)
-		{}
+			: m_geometry(geometry), m_material(material) {}
 		void draw(Camera& camera);
 	private:
 		std::shared_ptr<Geometry> m_geometry;
