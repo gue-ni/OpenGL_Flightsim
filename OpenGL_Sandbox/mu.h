@@ -220,22 +220,19 @@ void main()
 		MaterialX(const std::string& vert, const std::string& frag, const glm::vec3& color_, float ka_, float kd_, float ks_, float alpha_)
 			: Material(color_, ka_, kd_, ks_, alpha_) 
 		{
-			if (staticShader == nullptr)
-			{
-				staticShader = std::make_shared<Shader>(vert, frag);
-			}
+			if (shader == nullptr)
+				shader = std::make_shared<Shader>(vert, frag);
 		}
 
 		MaterialX( const std::string& vert, const std::string& frag, const glm::vec3& color_)
 			: MaterialX<Derived>(vert, frag, color_, 0.2f, 1.0f, 0.5f, 10.0f) {}
-		
-		static std::shared_ptr<Shader> staticShader;
 
 		Shader* getShader()
 		{
-			return staticShader.get();
+			return shader.get();
 		}
-
+		
+		static std::shared_ptr<Shader> shader;
 	};
 
 	class Phong : public MaterialX<Phong> {

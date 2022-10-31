@@ -29,8 +29,8 @@ constexpr glm::vec3 color(uint32_t hex)
     assert(hex <= 0xffffffU);
     return glm::vec3(
         static_cast<float>((hex & 0xff0000U) >> 16) / 255.0f, 
-        static_cast<float>((hex & 0x00ff00U) >>  8) / 255.0f, 
-        static_cast<float>((hex & 0x0000ffU) >>  0) / 255.0f
+        static_cast<float>((hex & 0x00ff00U) >>  8) / 255.0f,
+        static_cast<float>((hex & 0x0000ffU) >>  0) / 255.0f 
     );
 }
 
@@ -107,13 +107,13 @@ int main()
     mu::Renderer renderer(window);
 
     std::shared_ptr<mu::Phong> phong1
-        = std::make_shared<mu::Phong>(color(165, 113, 100));
+        = std::make_shared<mu::Phong>(color(165, 113, 100)); // bronze
 
     std::shared_ptr<mu::Basic> basic
-        = std::make_shared<mu::Basic>(color(0xff0000));
+        = std::make_shared<mu::Basic>(color(0xffffff));
 
     std::shared_ptr<mu::Phong> phong2 
-        = std::make_shared<mu::Phong>(color(0x0000ff));;
+        = std::make_shared<mu::Phong>(color(0x00ff00));;
 
     std::shared_ptr<mu::Phong> phong3
         = std::make_shared<mu::Phong>(color(0xff00ff));;

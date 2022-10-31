@@ -240,7 +240,7 @@ namespace mu {
 	}
 
 	template<class Derived>
-	std::shared_ptr<Shader> MaterialX<Derived>::staticShader = nullptr;
+	std::shared_ptr<Shader> MaterialX<Derived>::shader = nullptr;
 	
 	void Object3D::draw(Camera& camera)
 	{
@@ -359,5 +359,4 @@ namespace mu {
 			child->draw(camera);
 		}
 	}
-
 }
