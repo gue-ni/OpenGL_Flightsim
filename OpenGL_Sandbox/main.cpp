@@ -41,21 +41,6 @@ struct FPS_Controller {
 
 FPS_Controller fps;
 
-constexpr glm::vec3 color(int r, int g, int b)
-{
-    return glm::vec3(static_cast<float>(r), static_cast<float>(g), static_cast<float>(b)) / 255.0f;
-}
-
-constexpr glm::vec3 color(uint32_t hex)
-{
-    assert(hex <= 0xffffffU);
-    return glm::vec3(
-        static_cast<float>((hex & 0xff0000U) >> 16) / 255.0f, 
-        static_cast<float>((hex & 0x00ff00U) >>  8) / 255.0f,
-        static_cast<float>((hex & 0x0000ffU) >>  0) / 255.0f 
-    );
-}
-
 int main()
 {
     glfwInit();
@@ -85,7 +70,7 @@ int main()
     
     glEnable(GL_DEPTH_TEST);
 
-	const std::vector<float> cube = {
+	const std::vector<float> cube_vertices = {
 		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
 		 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
 		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
@@ -131,46 +116,59 @@ int main()
 
     mu::Renderer renderer(window);
 
-    auto phong1 = std::make_shared<mu::Phong>(color(165, 113, 100)); // bronze
+    auto phong1 = std::make_shared<mu::Phong>(mu::color(165, 113, 100)); // bronze
 
-    auto basic = std::make_shared<mu::Basic>(color(0xffffff));
+    auto basic = std::make_shared<mu::Basic>(mu::color(0xffffff));
 
-    auto phong2 = std::make_shared<mu::Phong>(color(0x00ff00));;
+    auto red = std::make_shared<mu::Phong>(mu::color(0x000000));
 
-    auto phong3 = std::make_shared<mu::Phong>(color(0xff00ff));;
+    auto phong2 = std::make_shared<mu::Phong>(mu::color(0x00ff00));;
 
-    auto geometry = std::make_shared<mu::Geometry>(cube, mu::Geometry::POS_NORM);
+    auto phong3 = std::make_shared<mu::Phong>(mu::color(0xff00ff));;
 
-    mu::Camera camera(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+    auto cube = std::make_shared<mu::Geometry>(cube_vertices, mu::Geometry::POS_NORM);
+
+    mu::Camera camera(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100000.0f);
     camera.setPosition(glm::vec3(0, 1, 7));
 
-    mu::Mesh mesh1(geometry, phong1);
+    mu::Mesh skybox(cube, red);
+    skybox.setScale(glm::vec3(5000.0f));
+
+    mu::Mesh mesh1(cube, phong1);
     mesh1.setPosition(glm::vec3(0, 1, 0));
 
-    mu::Mesh mesh2(geometry, phong2);
+    mu::Mesh mesh2(cube, phong2);
     mesh2.setPosition(glm::vec3(0.0f, 1.5f, 0.0f));
     mesh2.setScale(glm::vec3(0.25f));
 
-    mu::Mesh mesh3(geometry, phong3);
+    mu::Mesh mesh3(cube, phong3);
     mesh3.setPosition(glm::vec3(0.0f, -1.0f, 0.0f));
     mesh3.setScale(glm::vec3(15, 0.1, 15));
 
-    mu::Mesh light(geometry, basic);
+    mu::Mesh light(cube, basic);
     light.setPosition(glm::vec3(1.2, 1.0f, 2.0f));
     light.setScale(glm::vec3(0.25));
 
     mu::Object3D scene;
+    scene.addChild(&skybox);
     scene.addChild(&camera);
     scene.addChild(&light);
     scene.addChild(&mesh1);
     mesh1.addChild(&mesh2);
     scene.addChild(&mesh3);
 
+    glm::vec3 A(0.0f, 1.0f, 0.0f), B(0.0f), C(2.0f, 0.0f, 0.0f);
+
+    float distacne = glm::length(glm::cross(A - B, C - B)) / glm::length(C - B);
+    std::cout << "distance = " << distacne << std::endl;
+
+
     int frames = 0;
     double currentTime, previousTime = 0;
 
     while (!glfwWindowShouldClose(window))
     {
+#if 0
         currentTime = glfwGetTime();
         frames++;
         if (currentTime - previousTime >= 1.0)
@@ -182,10 +180,12 @@ int main()
             frames = 0;
             previousTime = currentTime;
         }
+#endif
 
         processInput(window);
 
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        //glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         const float t = 0.0005f;

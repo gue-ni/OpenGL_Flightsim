@@ -16,7 +16,7 @@ namespace mu {
 	
 	Shader::Shader(const std::string& vertShader, const std::string& fragShader)
 	{
-		std::cout << "create Shader\n";
+		//std::cout << "create Shader\n";
 #if 0
 		std::fstream vfile(vertShader);
 		std::stringstream vbuffer;
@@ -76,7 +76,7 @@ namespace mu {
 
 	Shader::~Shader()
 	{
-		std::cout << "destroy Shader\n";
+		//std::cout << "destroy Shader\n";
 		glDeleteProgram(id);
 	}
 
@@ -108,7 +108,7 @@ namespace mu {
 	Geometry::Geometry(const std::vector<float>& vertices, const VertexLayout& layout)
 		: count(static_cast<int>(vertices.size()) / (getStride(layout)))
 	{
-		std::cout << "create Geometry\n";
+		//std::cout << "create Geometry\n";
 
 		const int stride = getStride(layout);
 		glGenVertexArrays(1, &m_vao);
@@ -186,7 +186,7 @@ namespace mu {
 
 	Geometry::Geometry(const Geometry& geometry)
 	{
-		std::cout << "copy Geometry\n";
+		//std::cout << "copy Geometry\n";
 		count = geometry.count;
 		m_vao = geometry.m_vao;
 		m_vbo = geometry.m_vbo;
@@ -194,7 +194,7 @@ namespace mu {
 
 	Geometry::~Geometry()
 	{
-		std::cout << "destroy Geometry\n";
+		//std::cout << "destroy Geometry\n";
 		glDeleteVertexArrays(1, &m_vao);
 		glDeleteBuffers(1, &m_vbo);
 	}
@@ -342,10 +342,11 @@ namespace mu {
 		shader->setMat4("view", camera.getViewMatrix());
 		shader->setMat4("proj", camera.getProjectionMatrix());
 		shader->setMat4("model", transform);
-		shader->setVec3("camera", camera.getPosition());
+		shader->setVec3("cameraPos", camera.getPosition());
 
-		// TODO: improve
-		glm::vec3 lightPos(1.2, 1.0f, 2.0f), lightColor(1.0f);
+		// TODO: make this dynamic
+		// TOOD: multiple lights
+		glm::vec3 lightPos(1.2, 1.0f, 2.0f), lightColor(color(154, 219, 172));
 
 		// light
 		shader->setVec3("lightPos", lightPos);

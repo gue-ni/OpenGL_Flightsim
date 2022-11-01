@@ -15,9 +15,7 @@
 #include <string>
 #include <vector>
 
-#ifndef PI
-#define PI 3.14159265359f
-#endif
+constexpr float PI = 3.14159265359f;
 
 namespace mu {
 	const std::string phong_vert = R"(
@@ -47,35 +45,66 @@ out vec4 FragColor;
 in vec3 Normal;  
 in vec3 FragPos;  
   
-uniform vec3 camera; 
+uniform vec3 cameraPos; 
 
 uniform vec3 lightPos; 
 uniform vec3 lightColor;
 
 uniform vec3 objectColor;
 
-// phong parameters
+// phong lighting parameters
 uniform float ka;
 uniform float kd;
 uniform float ks;
 uniform float alpha;
 
-void main()
+struct PointLight {
+	vec3 position;
+	vec3 color;
+};
+
+
+vec3 calculatePointLight(PointLight light)
 {
     // ambient
-    vec3 ambient = ka * lightColor;
+    vec3 ambient = ka * light.color;
   	
     // diffuse 
     vec3 norm = normalize(Normal);
-    vec3 lightDir = normalize(lightPos - FragPos);
-    vec3 diffuse = kd * max(dot(norm, lightDir), 0.0) * lightColor;
+    vec3 lightDir = normalize(light.position - FragPos);
+    vec3 diffuse = kd * max(dot(norm, lightDir), 0.0) * light.color;
     
     // specular
-    vec3 viewDir = normalize(camera - FragPos);
+    vec3 viewDir = normalize(cameraPos - FragPos);
     vec3 reflectDir = reflect(-lightDir, norm);  
-    vec3 specular = ks * pow(max(dot(viewDir, reflectDir), 0.0), alpha) * lightColor;
+    vec3 specular = ks * pow(max(dot(viewDir, reflectDir), 0.0), alpha) * light.color;
         
-    vec3 result = (ambient + diffuse + specular) * objectColor;
+    vec3 phong = (ambient + diffuse + specular) * objectColor;
+
+	// fog
+	// https://ijdykeman.github.io/graphics/simple_fog_shader
+	vec3 cameraDir = viewDir;
+	float a = 0;
+	float b = length(cameraDir);
+
+	float h = length(cross(lightPos - cameraPos, cameraDir)) / length(cameraDir);
+	float fog = (atan(b / h) / h) - (atan(a / h) / h);
+
+	float density = 0.15;
+	vec3 scattered = lightColor * (fog * density);
+
+	return phong + scattered;
+}
+
+void main()
+{
+
+	PointLight light;
+	light.position = lightPos;
+	light.color = lightColor;
+	
+	vec3 result = calculatePointLight(light);
+
     FragColor = vec4(result, 1.0);
 }
 	)";
@@ -105,6 +134,22 @@ void main()
 	FragColor = vec4(objectColor.rgb, 1.0f);
 }
 )";
+
+
+	constexpr glm::vec3 color(int r, int g, int b)
+	{
+		return glm::vec3(static_cast<float>(r), static_cast<float>(g), static_cast<float>(b)) / 255.0f;
+	}
+
+	constexpr glm::vec3 color(uint32_t hex)
+	{
+		assert(hex <= 0xffffffU);
+		return glm::vec3(
+			static_cast<float>((hex & 0xff0000U) >> 16) / 255.0f, 
+			static_cast<float>((hex & 0x00ff00U) >>  8) / 255.0f,
+			static_cast<float>((hex & 0x0000ffU) >>  0) / 255.0f 
+		);
+	}
 
 	class Camera;
 
