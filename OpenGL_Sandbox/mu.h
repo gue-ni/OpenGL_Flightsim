@@ -15,6 +15,10 @@
 #include <string>
 #include <vector>
 
+#ifndef PI
+#define PI 3.14159265359f
+#endif
+
 namespace mu {
 	const std::string phong_vert = R"(
 #version 330 core
@@ -123,6 +127,7 @@ void main()
 	public:
 		Object3D()
 			: m_dirty(true),
+			m_dirty_transform(false),
 			transform(1.0), 
 			parent(nullptr),
 			m_position(0.0f),
@@ -148,10 +153,13 @@ void main()
 		void setRotation(float x, float y, float z);
 		void setScale(float x, float y, float z);
 		void setScale(const glm::vec3& scale);
+		void overrideTransform(const glm::mat4& matrix);
 
 	protected:
 		friend class Renderer;
 		bool m_dirty;
+		bool m_dirty_transform;
+		// radians
 		glm::vec3 m_rotation, m_position, m_scale; // relative to parent
 		void updateWorldMatrix(bool dirtyParent);
 		glm::mat4 getLocalTransform();

@@ -7,17 +7,39 @@
 #include <gtc/type_ptr.hpp>
 
 #include <iostream>
+#include <cstdio>
 #include <fstream>
 #include <sstream>
 #include <vector>
 
 #include "mu.h"
 
+#define PRESSED(key) (glfwGetKey(window, key) == GLFW_PRESS)
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void processInput(GLFWwindow* window);
 
 const unsigned int SCR_WIDTH = 1280;
 const unsigned int SCR_HEIGHT = 720;
+
+std::ostream& operator<<(std::ostream& os, const glm::vec3 v)
+{
+    return os << v.x << ", " << v.y << ", " << v.z;
+}
+
+struct FPS_Controller {
+    bool initialized = false;
+    glm::vec2 last_pos;
+    float yaw, pitch;
+    glm::vec3 front, velocity, up;
+
+    FPS_Controller() 
+        : initialized(false), last_pos(0.0f), yaw(-90.0f), pitch(0.0f), front(0,0,-1), velocity(0.0f), up(0.0f,1.0f,0.0f)
+    {}
+};
+
+FPS_Controller fps;
 
 constexpr glm::vec3 color(int r, int g, int b)
 {
@@ -51,6 +73,9 @@ int main()
 
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
@@ -106,20 +131,15 @@ int main()
 
     mu::Renderer renderer(window);
 
-    std::shared_ptr<mu::Phong> phong1
-        = std::make_shared<mu::Phong>(color(165, 113, 100)); // bronze
+    auto phong1 = std::make_shared<mu::Phong>(color(165, 113, 100)); // bronze
 
-    std::shared_ptr<mu::Basic> basic
-        = std::make_shared<mu::Basic>(color(0xffffff));
+    auto basic = std::make_shared<mu::Basic>(color(0xffffff));
 
-    std::shared_ptr<mu::Phong> phong2 
-        = std::make_shared<mu::Phong>(color(0x00ff00));;
+    auto phong2 = std::make_shared<mu::Phong>(color(0x00ff00));;
 
-    std::shared_ptr<mu::Phong> phong3
-        = std::make_shared<mu::Phong>(color(0xff00ff));;
+    auto phong3 = std::make_shared<mu::Phong>(color(0xff00ff));;
 
-    std::shared_ptr<mu::Geometry> geometry 
-        = std::make_shared<mu::Geometry>(cube, mu::Geometry::POS_NORM);
+    auto geometry = std::make_shared<mu::Geometry>(cube, mu::Geometry::POS_NORM);
 
     mu::Camera camera(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
     camera.setPosition(glm::vec3(0, 1, 7));
@@ -168,9 +188,12 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        float t = 0.0005f;
+        const float t = 0.0005f;
         mesh1.setRotation(mesh1.getRotation() + glm::vec3(t, 0, t));
         mesh2.setRotation(mesh2.getRotation() + glm::vec3(0, t, t));
+
+        camera.setPosition(camera.getPosition() + fps.velocity);
+        camera.overrideTransform(glm::inverse(glm::lookAt(camera.getPosition(), camera.getPosition() + fps.front, fps.up)));
 
         renderer.render(camera, scene);
 
@@ -184,11 +207,58 @@ int main()
 
 void processInput(GLFWwindow* window)
 {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    const float speed = 0.01;
+    fps.velocity = glm::vec3(0);
+
+    if (PRESSED(GLFW_KEY_ESCAPE))
         glfwSetWindowShouldClose(window, true);
+
+    if (PRESSED(GLFW_KEY_W))
+        fps.velocity = (speed * fps.front);
+
+    if (PRESSED(GLFW_KEY_S))
+        fps.velocity = -(speed * fps.front);
+
+    if (PRESSED(GLFW_KEY_A))
+        fps.velocity = -(speed * glm::normalize(glm::cross(fps.front, fps.up)));
+
+    if (PRESSED(GLFW_KEY_D))
+        fps.velocity = (speed * glm::normalize(glm::cross(fps.front, fps.up)));
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
+}
+
+void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+{
+    if (!fps.initialized) 
+    {
+        fps.last_pos.x = xpos;
+        fps.last_pos.y = ypos;
+        fps.initialized = true;
+    }
+
+    glm::vec2 pos(xpos, ypos);
+
+    glm::vec2 offset(
+        fps.last_pos.x - pos.x, 
+        fps.last_pos.y - pos.y
+    );
+
+    fps.last_pos = pos;
+
+    const float sensitivity = 0.05f;
+
+    offset      *= sensitivity;
+    fps.yaw     -= offset.x;
+    fps.pitch   += offset.y;
+
+    glm::vec3 front(0);
+    front.x = cos(glm::radians(fps.yaw)) * cos(glm::radians(fps.pitch));
+    front.y = sin(glm::radians(fps.pitch));
+    front.z = sin(glm::radians(fps.yaw)) * cos(glm::radians(fps.pitch));
+
+    fps.front = glm::normalize(front);
 }

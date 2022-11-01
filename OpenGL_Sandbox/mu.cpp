@@ -230,8 +230,8 @@ namespace mu {
 
 	glm::mat4 Camera::getViewMatrix()
 	{
-		return glm::lookAt(m_position, glm::vec3(0), m_up);
-		//return glm::inverse(transform);
+		//return glm::lookAt(m_position, glm::vec3(0), m_up);
+		return glm::inverse(transform);
 	}
 
 	glm::mat4 Camera::getProjectionMatrix()
@@ -301,11 +301,18 @@ namespace mu {
 		return T * R * S;
 	}
 
+
+	void Object3D::overrideTransform(const glm::mat4& matrix)
+	{
+		m_dirty_transform = true;
+		transform = matrix;
+	}
+
 	void Object3D::updateWorldMatrix(bool dirtyParent)
 	{
 		bool dirty = m_dirty || dirtyParent;
 
-		if (dirty)
+		if (dirty && !m_dirty_transform)
 		{
 			if (parent)
 				transform = parent->transform * getLocalTransform();
@@ -315,10 +322,10 @@ namespace mu {
 	
 		for (auto child : children)
 		{
-			child->updateWorldMatrix(dirty);
+			child->updateWorldMatrix(dirty || m_dirty_transform);
 		}
 
-		m_dirty = false;
+		m_dirty = m_dirty_transform = false;
 	}
 	
 	void Object3D::addChild(Object3D* child)
