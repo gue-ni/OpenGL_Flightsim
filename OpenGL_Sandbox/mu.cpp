@@ -1,5 +1,6 @@
 #include "mu.h"
 
+
 std::string read_shader(const std::string& path)
 {
 		std::fstream file(path);
@@ -224,8 +225,29 @@ namespace mu {
 
 	void Renderer::render(Camera& camera, Object3D& scene)
 	{
+		RenderContext context;
+		context.camera = &camera;
+
+		// TODO find camera
+		// TODO find lights
+
+		context.lights.clear();
+
+		scene.traverse([&context](mu::Object3D* obj) {
+			auto ptr = dynamic_cast<mu::Light*>(obj);
+			if (ptr)
+			{
+				context.lights.push_back(ptr);
+			}
+		});
+
+
+
+		//std::cout << "lights " << context.lights.size() << std::endl;
+
+
 		scene.updateWorldMatrix(false);
-		scene.draw(camera);
+		scene.draw(context);
 	}
 
 	glm::mat4 Camera::getViewMatrix()
@@ -242,10 +264,10 @@ namespace mu {
 	template<class Derived>
 	std::shared_ptr<Shader> MaterialX<Derived>::shader = nullptr;
 	
-	void Object3D::draw(Camera& camera)
+	void Object3D::draw(RenderContext& context)
 	{
 		for (auto child : children)
-			child->draw(camera);
+			child->draw(context);
 	}
 
 	const glm::vec3& Object3D::getPosition()
@@ -301,7 +323,6 @@ namespace mu {
 		return T * R * S;
 	}
 
-
 	void Object3D::overrideTransform(const glm::mat4& matrix)
 	{
 		m_dirty_transform = true;
@@ -334,23 +355,28 @@ namespace mu {
 		children.push_back(child);
 	}
 
-	void Mesh::draw(Camera& camera)
+	void Mesh::draw(RenderContext& context)
 	{
 		Shader* shader = m_material.get()->getShader();
 
 		shader->use();
-		shader->setMat4("view", camera.getViewMatrix());
-		shader->setMat4("proj", camera.getProjectionMatrix());
+		shader->setMat4("view", context.camera->getViewMatrix());
+		shader->setMat4("proj", context.camera->getProjectionMatrix());
 		shader->setMat4("model", transform);
-		shader->setVec3("cameraPos", camera.getPosition());
+		shader->setVec3("cameraPos", context.camera->getPosition());
 
 		// TODO: make this dynamic
 		// TOOD: multiple lights
-		glm::vec3 lightPos(1.2, 1.0f, 2.0f), lightColor(color(154, 219, 172));
 
-		// light
-		shader->setVec3("lightPos", lightPos);
-		shader->setVec3("lightColor", lightColor);
+		shader->setInt("numPointLights", context.lights.size());
+
+		for (int i = 0; i < context.lights.size(); i++)
+		{
+			auto index = std::to_string(i);
+			shader->setVec3("pointLights[" + index + "].color", context.lights[i]->color);
+			shader->setVec3("pointLights[" + index + "].position", context.lights[i]->getPosition());
+		}
+
 
 		// phong
 		shader->setFloat("ka", m_material.get()->ka);
@@ -364,7 +390,7 @@ namespace mu {
 
 		for (auto child : children)
 		{
-			child->draw(camera);
+			child->draw(context);
 		}
 	}
 }

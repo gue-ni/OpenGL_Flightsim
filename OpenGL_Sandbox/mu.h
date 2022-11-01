@@ -47,9 +47,6 @@ in vec3 FragPos;
   
 uniform vec3 cameraPos; 
 
-uniform vec3 lightPos; 
-uniform vec3 lightColor;
-
 uniform vec3 objectColor;
 
 // phong lighting parameters
@@ -59,52 +56,59 @@ uniform float ks;
 uniform float alpha;
 
 struct PointLight {
-	vec3 position;
 	vec3 color;
+	vec3 position;
 };
 
+#define MAX_POINT_LIGHTS 4
+uniform int numPointLights;
+uniform PointLight pointLights[MAX_POINT_LIGHTS];
 
 vec3 calculatePointLight(PointLight light)
 {
+	vec3 result;
+
     // ambient
     vec3 ambient = ka * light.color;
   	
     // diffuse 
     vec3 norm = normalize(Normal);
     vec3 lightDir = normalize(light.position - FragPos);
-    vec3 diffuse = kd * max(dot(norm, lightDir), 0.0) * light.color;
+	float theta  =max(dot(norm, lightDir), 0.0);
+    vec3 diffuse = kd * theta * light.color;
     
     // specular
     vec3 viewDir = normalize(cameraPos - FragPos);
     vec3 reflectDir = reflect(-lightDir, norm);  
     vec3 specular = ks * pow(max(dot(viewDir, reflectDir), 0.0), alpha) * light.color;
         
-    vec3 phong = (ambient + diffuse + specular) * objectColor;
+    result += (ambient + diffuse + specular) * objectColor;
 
-	// fog
 	// https://ijdykeman.github.io/graphics/simple_fog_shader
 	vec3 cameraDir = viewDir;
-	float a = 0;
-	float b = length(cameraDir);
+	float a = 0, b = length(cameraDir);
 
-	float h = length(cross(lightPos - cameraPos, cameraDir)) / length(cameraDir);
+	float h = length(cross(light.position - cameraPos, cameraDir)) / length(cameraDir);
 	float fog = (atan(b / h) / h) - (atan(a / h) / h);
 
 	float density = 0.15;
-	vec3 scattered = lightColor * (fog * density);
 
-	return phong + scattered;
+	vec3 scattered = light.color * (fog * density) * theta;
+
+	result += scattered;
+
+	return result;
 }
 
 void main()
 {
+	vec3 result;
 
-	PointLight light;
-	light.position = lightPos;
-	light.color = lightColor;
+	for (int i = 0; i < numPointLights; i++)
+	{
+		result += calculatePointLight(pointLights[i]);
+	}
 	
-	vec3 result = calculatePointLight(light);
-
     FragColor = vec4(result, 1.0);
 }
 	)";
@@ -135,7 +139,6 @@ void main()
 }
 )";
 
-
 	constexpr glm::vec3 color(int r, int g, int b)
 	{
 		return glm::vec3(static_cast<float>(r), static_cast<float>(g), static_cast<float>(b)) / 255.0f;
@@ -152,6 +155,7 @@ void main()
 	}
 
 	class Camera;
+	class Light;
 
 	struct Shader {
 	public:
@@ -168,8 +172,15 @@ void main()
 
 	struct ShadowMap {};
 
+	struct RenderContext {
+		Camera* camera;
+		std::vector<Light*> lights;
+	};
+
 	class Object3D {
 	public:
+
+
 		Object3D()
 			: m_dirty(true),
 			m_dirty_transform(false),
@@ -186,7 +197,7 @@ void main()
 		std::vector<Object3D*> children;
 
 		void addChild(Object3D* child);
-		virtual void draw(Camera& camera);
+		virtual void draw(RenderContext& context);
 
 		const glm::vec3& getPosition();
 		const glm::vec3& getRotation();
@@ -199,6 +210,18 @@ void main()
 		void setScale(float x, float y, float z);
 		void setScale(const glm::vec3& scale);
 		void overrideTransform(const glm::mat4& matrix);
+
+		template <typename F>
+		void traverse(const F& func)
+		{
+			func(this);
+
+			for (const auto& child : children)
+			{
+				child->traverse(func);
+			}
+		}
+
 
 	protected:
 		friend class Renderer;
@@ -223,6 +246,17 @@ void main()
 	private:
 		glm::mat4 m_projection;
 		glm::vec3 m_up, m_front;
+	};
+
+	class Light : public Object3D {
+	public:
+		glm::vec3 color;
+		Light(glm::vec3 color_) : color(color_), Object3D()
+		{}
+	};
+
+	class PointLight : public Light {
+
 	};
 
 	class Geometry {
@@ -302,7 +336,7 @@ void main()
 	public:
 		Mesh(std::shared_ptr<Geometry> geometry, std::shared_ptr<Material> material)
 			: m_geometry(geometry), m_material(material) {}
-		void draw(Camera& camera);
+		void draw(RenderContext& context);
 	private:
 		std::shared_ptr<Geometry> m_geometry;
 		std::shared_ptr<Material> m_material;
@@ -312,8 +346,15 @@ void main()
 	public:
 		Renderer(GLFWwindow* window) : m_window(window) {}
 		void render(Camera& camera, Object3D& scene);
+
+
+
+
 	private:
 		GLFWwindow* m_window;
+		Camera* m_camera;
+		std::vector<Light*> m_lights;
+		
 	};
 };
 

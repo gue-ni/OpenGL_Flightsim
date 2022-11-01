@@ -39,6 +39,24 @@ struct FPS_Controller {
     {}
 };
 
+std::vector<float> invert_normals(const std::vector<float> vertices)
+{
+    std::vector<float> inverted;
+
+    std::copy(vertices.begin(), vertices.end(), std::back_inserter(inverted));
+
+    int stride = 6;
+    for (int i = 0; i < vertices.size(); i += stride)
+    {
+        for (int j = 3; j < 6; j++)
+        {
+            inverted[i + j] = -inverted[i + j];
+        }
+    }
+
+    return inverted;
+}
+
 FPS_Controller fps;
 
 int main()
@@ -128,10 +146,12 @@ int main()
 
     auto cube = std::make_shared<mu::Geometry>(cube_vertices, mu::Geometry::POS_NORM);
 
+    auto inv_cube = std::make_shared<mu::Geometry>(invert_normals(cube_vertices), mu::Geometry::POS_NORM);
+
     mu::Camera camera(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100000.0f);
     camera.setPosition(glm::vec3(0, 1, 7));
 
-    mu::Mesh skybox(cube, red);
+    mu::Mesh skybox(inv_cube, red);
     skybox.setScale(glm::vec3(5000.0f));
 
     mu::Mesh mesh1(cube, phong1);
@@ -145,30 +165,33 @@ int main()
     mesh3.setPosition(glm::vec3(0.0f, -1.0f, 0.0f));
     mesh3.setScale(glm::vec3(15, 0.1, 15));
 
-    mu::Mesh light(cube, basic);
-    light.setPosition(glm::vec3(1.2, 1.0f, 2.0f));
-    light.setScale(glm::vec3(0.25));
+    mu::Mesh light_cube(cube, basic);
+    light_cube.setPosition(glm::vec3(1.2, 1.0f, 2.0f));
+    light_cube.setScale(glm::vec3(0.25));
+
+	glm::vec3 lightPos(1.2, 1.0f, 2.0f), lightColor(mu::color(154, 219, 172));
+    mu::Light light(lightColor);
+    light.setPosition(lightPos);
+
+    mu::Light light2(lightColor);
+    light2.setPosition(glm::vec3(-3.5, 1.2f, 5.7f));
 
     mu::Object3D scene;
     scene.addChild(&skybox);
     scene.addChild(&camera);
-    scene.addChild(&light);
+    scene.addChild(&light_cube);
     scene.addChild(&mesh1);
     mesh1.addChild(&mesh2);
     scene.addChild(&mesh3);
-
-    glm::vec3 A(0.0f, 1.0f, 0.0f), B(0.0f), C(2.0f, 0.0f, 0.0f);
-
-    float distacne = glm::length(glm::cross(A - B, C - B)) / glm::length(C - B);
-    std::cout << "distance = " << distacne << std::endl;
-
+    scene.addChild(&light);
+    scene.addChild(&light2);
 
     int frames = 0;
     double currentTime, previousTime = 0;
 
     while (!glfwWindowShouldClose(window))
     {
-#if 0
+#if 1
         currentTime = glfwGetTime();
         frames++;
         if (currentTime - previousTime >= 1.0)
