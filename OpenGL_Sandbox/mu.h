@@ -55,26 +55,55 @@ uniform float kd;
 uniform float ks;
 uniform float alpha;
 
-struct PointLight {
+struct Light {
+	int type;
 	vec3 color;
-	vec3 position;
+	vec3 position_or_direction; // depending on light type 
 };
 
-#define MAX_POINT_LIGHTS 4
-uniform int numPointLights;
-uniform PointLight pointLights[MAX_POINT_LIGHTS];
+#define MAX_LIGHTS 4
+uniform int numLights;
+uniform Light lights[MAX_LIGHTS];
 
-vec3 calculatePointLight(PointLight light)
+float calculateAttenuation(float constant, float linear, float quadratic, float distance)
 {
-	vec3 result;
+	return 1.0 / (constant + linear * distance + quadratic * (distance * distance));
+}
 
+
+
+
+vec3 calculateDirLight(Light light)
+{
+	vec3 direction = light.position_or_direction;
 
     // ambient
     vec3 ambient = ka * light.color;
   	
     // diffuse 
     vec3 norm = normalize(Normal);
-    vec3 lightDir = normalize(light.position - FragPos);
+    vec3 lightDir = normalize(-direction);
+    vec3 diffuse = kd * max(dot(norm, lightDir), 0.0) * light.color;
+    
+    // specular
+    vec3 viewDir = normalize(cameraPos - FragPos);
+    vec3 reflectDir = reflect(-lightDir, norm);  
+    vec3 specular = ks * pow(max(dot(viewDir, reflectDir), 0.0), alpha) * light.color;
+
+    return (ambient + diffuse + specular) * objectColor;
+}
+
+vec3 calculatePointLight(Light light)
+{
+	vec3 result;
+	vec3 position = light.position_or_direction;
+
+    // ambient
+    vec3 ambient = ka * light.color;
+  	
+    // diffuse 
+    vec3 norm = normalize(Normal);
+    vec3 lightDir = normalize(position - FragPos);
     vec3 diffuse = kd * max(dot(norm, lightDir), 0.0) * light.color;
     
     // specular
@@ -86,32 +115,29 @@ vec3 calculatePointLight(PointLight light)
 	float constant		= 1.0;
 	float linear		= 0.09;
 	float quadratic		= 0.032;
-	float distance		= length(light.position - FragPos);
-	float attenuation	= 1.0 / (constant + linear * distance + quadratic * (distance * distance));  
+	float distance		= length(position - FragPos);
+	float attenuation	= calculateAttenuation(constant, linear, quadratic, distance);  
 	
-	ambient		*= attenuation;
-	diffuse		*= attenuation;
-	specular	*= attenuation;
-        
-    result += (ambient + diffuse + specular) * objectColor;
+    result += (ambient + diffuse + specular) * attenuation * objectColor;
 
 	// https://ijdykeman.github.io/graphics/simple_fog_shader
-	vec3 cameraDir = cameraPos - FragPos;
+	//vec3 cameraDir = cameraPos - FragPos;
 	//vec3 cameraDir = -viewDir;
-	float a = 0, b = length(cameraDir);
+	//float b = length(light.position - cameraPos);
 
-	float h = length(cross(light.position - cameraPos, cameraDir)) / length(cameraDir);
-	float dropoff = 1.0;
-	float fog = (atan(b / h) / (h * dropoff)) - (atan(a / h) / (h * dropoff));
+	//float h = length(cross(light.position - cameraPos, cameraDir)) / length(cameraDir);
+	//float dropoff = 1.0;
+	//float fog = (atan(b / h) / (h * dropoff));
 
-	float density = 1.0;
+	//float density = 0.1;
 
-	float theta = max(dot(norm, lightDir), 0.0);
+	// TODO: improve this
+	//float theta = dot(norm, viewDir) >= 0 ? 1 : 0;
 
-	vec3 scattered = light.color * (fog * density) * theta;
-	scattered *= attenuation;
-
-	result += scattered;
+	//vec3 scattered = light.color * (fog * density) * theta;
+	//scattered *= calculateAttenuation(constant, linear, quadratic, length(cameraDir));
+	
+	//result += scattered;
 
 	return result;
 }
@@ -120,9 +146,18 @@ void main()
 {
 	vec3 result;
 
-	for (int i = 0; i < numPointLights; i++)
+	for (int i = 0; i < numLights; i++)
 	{
-		result += calculatePointLight(pointLights[i]);
+		switch (lights[i].type) {
+			case 0:
+				result += calculatePointLight(lights[i]);
+				break;
+			
+			case 1:
+				result += calculateDirLight(lights[i]);
+				break;
+	
+		}
 	}
 	
     FragColor = vec4(result, 1.0);
@@ -246,7 +281,6 @@ void main()
 				child->traverse(func);
 		}
 
-
 	protected:
 		friend class Renderer;
 		bool m_dirty;
@@ -262,7 +296,7 @@ void main()
 		Camera(float fov, float aspect, float near, float far)
 			: m_projection(glm::perspective(fov, aspect, near, far)), 
 			m_up(0.0f, 1.0f, 0.0f),
-			m_front(0,0,1)
+			m_front(0.0f, 0.0f, 1.0f)
 		{}
 
 		glm::mat4 getViewMatrix();
@@ -274,10 +308,22 @@ void main()
 
 	class Light : public Object3D {
 	public:
-		glm::vec3 color;
-		Light(glm::vec3 color_) : color(color_), Object3D() {}
+		enum LightType {
+			POINT			= 0,
+			DIRECTIONAL		= 1,
+		};
+
+		Light(glm::vec3 color_) : color(color_), type(POINT), Object3D() {}
+
+		Light(LightType type_, glm::vec3 color_, glm::vec3 direction_) 
+			: color(color_), type(type_), direction(direction_), Object3D() 
+		{}
 
 		bool isLight();
+
+		LightType type;
+		glm::vec3 color;
+		glm::vec3 direction;
 	};
 
 	class Geometry {

@@ -142,7 +142,7 @@ int main()
 
     auto phong2 = std::make_shared<mu::Phong>(mu::color(0x00ff00));
 
-    auto phong3 = std::make_shared<mu::Phong>(mu::color(0x000000));
+    auto phong3 = std::make_shared<mu::Phong>(mu::color(0x00f0f0));
 
     auto cube = std::make_shared<mu::Geometry>(cube_vertices, mu::Geometry::POS_NORM);
 
@@ -169,17 +169,22 @@ int main()
     light_cube.setScale(glm::vec3(0.25));
 
     mu::Light light(mu::color(154, 219, 172));
-    light.setPosition(glm::vec3(1.2, 1.0f, 2.0f));
+    light.setPosition(glm::vec3(0.0, 1.6f, 0.0f));
+
+    mu::Light sun(mu::Light::DIRECTIONAL, mu::color(154, 219, 172), glm::normalize(glm::vec3(1,-1,1)));
+
     
     mu::Object3D scene;
     scene.add(&skybox);
     scene.add(&camera);
-    scene.add(&big_cube);
+    scene.add(&sun);
     scene.add(&ground);
+    scene.add(&big_cube);
     scene.add(&small_cube);
 
-    big_cube.add(&light);
-    light.add(&light_cube);
+
+    //big_cube.add(&light);
+    //light.add(&light_cube);
 
     int frames = 0;
     double currentTime, previousTime = 0;
@@ -211,7 +216,7 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
-        const float t = 0.0005f;
+        const float t = 0.001f;
         big_cube.setRotation(big_cube.getRotation() + glm::vec3(t, 0, t));
         small_cube.setRotation(small_cube.getRotation() + glm::vec3(0, t, t));
 

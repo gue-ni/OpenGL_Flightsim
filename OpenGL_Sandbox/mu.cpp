@@ -375,16 +375,18 @@ namespace mu {
 		shader->setVec3("cameraPos", context.camera->getPosition()); // not world position, transform is applied twice
 
 
-		shader->setInt("numPointLights", context.lights.size());
+		shader->setInt("numLights", context.lights.size());
 
 		for (int i = 0; i < context.lights.size(); i++)
 		{
-			auto localPos = context.lights[i]->getPosition();
 			auto worldPos = context.lights[i]->getWorldPosition();
-			//std::cout << worldPos << std::endl;
 			auto index = std::to_string(i);
-			shader->setVec3("pointLights[" + index + "].color", context.lights[i]->color);
-			shader->setVec3("pointLights[" + index + "].position", worldPos);
+			auto type = context.lights[i]->type;
+
+			shader->setInt( "lights[" + index + "].type", type);
+			shader->setVec3("lights[" + index + "].color", context.lights[i]->color);
+			shader->setVec3("lights[" + index + "].position_or_direction", 
+				(type == Light::DIRECTIONAL) ? context.lights[i]->direction : worldPos);
 		}
 
 		// phong
