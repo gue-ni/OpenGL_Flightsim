@@ -20,12 +20,12 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void processInput(GLFWwindow* window);
 
-const unsigned int SCR_WIDTH = 1280;
-const unsigned int SCR_HEIGHT = 720;
+constexpr unsigned int SCR_WIDTH = 1280;
+constexpr unsigned int SCR_HEIGHT = 720;
 
 std::ostream& operator<<(std::ostream& os, const glm::vec3 v)
 {
-    return os << v.x << ", " << v.y << ", " << v.z;
+	return os << v.x << ", " << v.y << ", " << v.z;
 }
 
 struct FPS_Controller {
@@ -138,11 +138,11 @@ int main()
 
     auto basic = std::make_shared<mu::Basic>(mu::color(0xffffff));
 
-    auto red = std::make_shared<mu::Phong>(mu::color(0x000000));
+    auto red = std::make_shared<mu::Phong>(mu::color(0xff00ff));
 
-    auto phong2 = std::make_shared<mu::Phong>(mu::color(0x00ff00));;
+    auto phong2 = std::make_shared<mu::Phong>(mu::color(0x00ff00));
 
-    auto phong3 = std::make_shared<mu::Phong>(mu::color(0xff00ff));;
+    auto phong3 = std::make_shared<mu::Phong>(mu::color(0x000000));
 
     auto cube = std::make_shared<mu::Geometry>(cube_vertices, mu::Geometry::POS_NORM);
 
@@ -152,39 +152,34 @@ int main()
     camera.setPosition(glm::vec3(0, 1, 7));
 
     mu::Mesh skybox(inv_cube, red);
-    skybox.setScale(glm::vec3(5000.0f));
+    skybox.setScale(glm::vec3(50.0f));
 
-    mu::Mesh mesh1(cube, phong1);
-    mesh1.setPosition(glm::vec3(0, 1, 0));
+    mu::Mesh big_cube(cube, phong1);
+    big_cube.setPosition(glm::vec3(0, 1, 0));
 
-    mu::Mesh mesh2(cube, phong2);
-    mesh2.setPosition(glm::vec3(0.0f, 1.5f, 0.0f));
-    mesh2.setScale(glm::vec3(0.25f));
+    mu::Mesh small_cube(cube, phong2);
+    small_cube.setPosition(glm::vec3(5.0f, 2.5f, 0.0f));
+    small_cube.setScale(glm::vec3(2.25f));
 
-    mu::Mesh mesh3(cube, phong3);
-    mesh3.setPosition(glm::vec3(0.0f, -1.0f, 0.0f));
-    mesh3.setScale(glm::vec3(15, 0.1, 15));
+    mu::Mesh ground(cube, phong3);
+    ground.setPosition(glm::vec3(0.0f, -1.0f, 0.0f));
+    ground.setScale(glm::vec3(50, 0.1, 50));
 
     mu::Mesh light_cube(cube, basic);
-    light_cube.setPosition(glm::vec3(1.2, 1.0f, 2.0f));
     light_cube.setScale(glm::vec3(0.25));
 
-	glm::vec3 lightPos(1.2, 1.0f, 2.0f), lightColor(mu::color(154, 219, 172));
-    mu::Light light(lightColor);
-    light.setPosition(lightPos);
-
-    mu::Light light2(lightColor);
-    light2.setPosition(glm::vec3(-3.5, 1.2f, 5.7f));
-
+    mu::Light light(mu::color(154, 219, 172));
+    light.setPosition(glm::vec3(1.2, 1.0f, 2.0f));
+    
     mu::Object3D scene;
-    scene.addChild(&skybox);
-    scene.addChild(&camera);
-    scene.addChild(&light_cube);
-    scene.addChild(&mesh1);
-    mesh1.addChild(&mesh2);
-    scene.addChild(&mesh3);
-    scene.addChild(&light);
-    scene.addChild(&light2);
+    scene.add(&skybox);
+    scene.add(&camera);
+    scene.add(&big_cube);
+    scene.add(&ground);
+    scene.add(&small_cube);
+
+    big_cube.add(&light);
+    light.add(&light_cube);
 
     int frames = 0;
     double currentTime, previousTime = 0;
@@ -202,21 +197,27 @@ int main()
 
             frames = 0;
             previousTime = currentTime;
+
+
+            std::cout << "local: " << light.getPosition() << std::endl;
+            std::cout << "world: " << light.getWorldPosition() << std::endl;
+
         }
 #endif
 
         processInput(window);
 
-        //glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+
         const float t = 0.0005f;
-        mesh1.setRotation(mesh1.getRotation() + glm::vec3(t, 0, t));
-        mesh2.setRotation(mesh2.getRotation() + glm::vec3(0, t, t));
+        big_cube.setRotation(big_cube.getRotation() + glm::vec3(t, 0, t));
+        small_cube.setRotation(small_cube.getRotation() + glm::vec3(0, t, t));
 
         camera.setPosition(camera.getPosition() + fps.velocity);
         camera.overrideTransform(glm::inverse(glm::lookAt(camera.getPosition(), camera.getPosition() + fps.front, fps.up)));
+
 
         renderer.render(camera, scene);
 

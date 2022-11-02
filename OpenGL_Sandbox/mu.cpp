@@ -12,6 +12,7 @@ std::string read_shader(const std::string& path)
 		return buffer.str();
 }
 
+
 namespace mu {
 	Shader::Shader(const std::string& path) : Shader(read_shader(path + ".vert"), read_shader(path + ".frag")) {}
 	
@@ -225,34 +226,23 @@ namespace mu {
 
 	void Renderer::render(Camera& camera, Object3D& scene)
 	{
+		scene.updateWorldMatrix(false);
+
 		RenderContext context;
 		context.camera = &camera;
 
-		// TODO find camera
-		// TODO find lights
-
-		context.lights.clear();
-
-		scene.traverse([&context](mu::Object3D* obj) {
-			auto ptr = dynamic_cast<mu::Light*>(obj);
-			if (ptr)
+		scene.traverse([&context](Object3D* obj) {
+			if (obj->isLight())
 			{
-				context.lights.push_back(ptr);
+				context.lights.push_back(dynamic_cast<Light*>(obj));
 			}
 		});
 
-
-
-		//std::cout << "lights " << context.lights.size() << std::endl;
-
-
-		scene.updateWorldMatrix(false);
 		scene.draw(context);
 	}
 
 	glm::mat4 Camera::getViewMatrix()
 	{
-		//return glm::lookAt(m_position, glm::vec3(0), m_up);
 		return glm::inverse(transform);
 	}
 
@@ -349,10 +339,29 @@ namespace mu {
 		m_dirty = m_dirty_transform = false;
 	}
 	
-	void Object3D::addChild(Object3D* child)
+	Object3D& Object3D::add(Object3D* child)
 	{
 		child->parent = this;
 		children.push_back(child);
+		return (*this);
+	}
+
+
+	glm::vec3 Object3D::getWorldPosition()
+	{
+		updateWorldMatrix(true);
+		auto world = transform * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+		return glm::vec3(world.x, world.y, world.z);
+	}
+
+	bool Object3D::isLight()
+	{
+		return false;
+	}
+
+	bool Light::isLight()
+	{
+		return true;
 	}
 
 	void Mesh::draw(RenderContext& context)
@@ -363,20 +372,20 @@ namespace mu {
 		shader->setMat4("view", context.camera->getViewMatrix());
 		shader->setMat4("proj", context.camera->getProjectionMatrix());
 		shader->setMat4("model", transform);
-		shader->setVec3("cameraPos", context.camera->getPosition());
+		shader->setVec3("cameraPos", context.camera->getPosition()); // not world position, transform is applied twice
 
-		// TODO: make this dynamic
-		// TOOD: multiple lights
 
 		shader->setInt("numPointLights", context.lights.size());
 
 		for (int i = 0; i < context.lights.size(); i++)
 		{
+			auto localPos = context.lights[i]->getPosition();
+			auto worldPos = context.lights[i]->getWorldPosition();
+			//std::cout << worldPos << std::endl;
 			auto index = std::to_string(i);
 			shader->setVec3("pointLights[" + index + "].color", context.lights[i]->color);
-			shader->setVec3("pointLights[" + index + "].position", context.lights[i]->getPosition());
+			shader->setVec3("pointLights[" + index + "].position", worldPos);
 		}
-
 
 		// phong
 		shader->setFloat("ka", m_material.get()->ka);

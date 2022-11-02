@@ -68,32 +68,48 @@ vec3 calculatePointLight(PointLight light)
 {
 	vec3 result;
 
+
     // ambient
     vec3 ambient = ka * light.color;
   	
     // diffuse 
     vec3 norm = normalize(Normal);
     vec3 lightDir = normalize(light.position - FragPos);
-	float theta  =max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = kd * theta * light.color;
+    vec3 diffuse = kd * max(dot(norm, lightDir), 0.0) * light.color;
     
     // specular
     vec3 viewDir = normalize(cameraPos - FragPos);
     vec3 reflectDir = reflect(-lightDir, norm);  
     vec3 specular = ks * pow(max(dot(viewDir, reflectDir), 0.0), alpha) * light.color;
+
+	// attenuation
+	float constant		= 1.0;
+	float linear		= 0.09;
+	float quadratic		= 0.032;
+	float distance		= length(light.position - FragPos);
+	float attenuation	= 1.0 / (constant + linear * distance + quadratic * (distance * distance));  
+	
+	ambient		*= attenuation;
+	diffuse		*= attenuation;
+	specular	*= attenuation;
         
     result += (ambient + diffuse + specular) * objectColor;
 
 	// https://ijdykeman.github.io/graphics/simple_fog_shader
-	vec3 cameraDir = viewDir;
+	vec3 cameraDir = cameraPos - FragPos;
+	//vec3 cameraDir = -viewDir;
 	float a = 0, b = length(cameraDir);
 
 	float h = length(cross(light.position - cameraPos, cameraDir)) / length(cameraDir);
-	float fog = (atan(b / h) / h) - (atan(a / h) / h);
+	float dropoff = 1.0;
+	float fog = (atan(b / h) / (h * dropoff)) - (atan(a / h) / (h * dropoff));
 
-	float density = 0.15;
+	float density = 1.0;
+
+	float theta = max(dot(norm, lightDir), 0.0);
 
 	vec3 scattered = light.color * (fog * density) * theta;
+	scattered *= attenuation;
 
 	result += scattered;
 
@@ -124,7 +140,7 @@ uniform mat4 proj;
 
 void main()
 {
-	gl_Position = proj* view * model * vec4(aPos, 1.0f);
+	gl_Position = proj * view * model * vec4(aPos, 1.0f);
 }
 	)";
 	const std::string basic_frag = R"(
@@ -137,6 +153,15 @@ void main()
 {
 	FragColor = vec4(objectColor.rgb, 1.0f);
 }
+)";
+
+
+	const std::string sky_vert = R"(
+
+)";
+	
+	const std::string sky_frag = R"(
+
 )";
 
 	constexpr glm::vec3 color(int r, int g, int b)
@@ -179,8 +204,6 @@ void main()
 
 	class Object3D {
 	public:
-
-
 		Object3D()
 			: m_dirty(true),
 			m_dirty_transform(false),
@@ -196,30 +219,31 @@ void main()
 		Object3D* parent;
 		std::vector<Object3D*> children;
 
-		void addChild(Object3D* child);
+		Object3D& add(Object3D* child);
 		virtual void draw(RenderContext& context);
 
 		const glm::vec3& getPosition();
 		const glm::vec3& getRotation();
 		const glm::vec3& getScale();
-
 		void setPosition(const glm::vec3& pos);
 		void setPosition(float x, float y, float z);
 		void setRotation(const glm::vec3& rot);
 		void setRotation(float x, float y, float z);
 		void setScale(float x, float y, float z);
 		void setScale(const glm::vec3& scale);
+
 		void overrideTransform(const glm::mat4& matrix);
+
+		glm::vec3 getWorldPosition();
+
+		virtual bool isLight();
 
 		template <typename F>
 		void traverse(const F& func)
 		{
 			func(this);
-
 			for (const auto& child : children)
-			{
 				child->traverse(func);
-			}
 		}
 
 
@@ -251,12 +275,9 @@ void main()
 	class Light : public Object3D {
 	public:
 		glm::vec3 color;
-		Light(glm::vec3 color_) : color(color_), Object3D()
-		{}
-	};
+		Light(glm::vec3 color_) : color(color_), Object3D() {}
 
-	class PointLight : public Light {
-
+		bool isLight();
 	};
 
 	class Geometry {
@@ -346,15 +367,8 @@ void main()
 	public:
 		Renderer(GLFWwindow* window) : m_window(window) {}
 		void render(Camera& camera, Object3D& scene);
-
-
-
-
 	private:
 		GLFWwindow* m_window;
-		Camera* m_camera;
-		std::vector<Light*> m_lights;
-		
 	};
 };
 
