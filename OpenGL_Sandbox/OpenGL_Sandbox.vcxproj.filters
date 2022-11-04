@@ -21,7 +21,7 @@
     <ClCompile Include="..\..\..\libraries\glad\src\glad.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="mu.cpp">
+    <ClCompile Include="gfx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -32,7 +32,7 @@
     <None Include="shaders\phong.frag" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="mu.h">
+    <ClInclude Include="gfx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

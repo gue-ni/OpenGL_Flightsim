@@ -12,16 +12,17 @@
 #include <sstream>
 #include <vector>
 
-#include "mu.h"
+#include "gfx.h"
 
 #define PRESSED(key) (glfwGetKey(window, key) == GLFW_PRESS)
+
+constexpr unsigned int SCR_WIDTH = 1280;
+constexpr unsigned int SCR_HEIGHT = 720;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void processInput(GLFWwindow* window);
-
-constexpr unsigned int SCR_WIDTH = 1280;
-constexpr unsigned int SCR_HEIGHT = 720;
+std::vector<float> invert_normals(const std::vector<float> vertices);
 
 std::ostream& operator<<(std::ostream& os, const glm::vec3 v)
 {
@@ -38,24 +39,6 @@ struct FPS_Controller {
         : initialized(false), last_pos(0.0f), yaw(-90.0f), pitch(0.0f), front(0,0,-1), velocity(0.0f), up(0.0f,1.0f,0.0f)
     {}
 };
-
-std::vector<float> invert_normals(const std::vector<float> vertices)
-{
-    std::vector<float> inverted;
-
-    std::copy(vertices.begin(), vertices.end(), std::back_inserter(inverted));
-
-    int stride = 6;
-    for (int i = 0; i < vertices.size(); i += stride)
-    {
-        for (int j = 3; j < 6; j++)
-        {
-            inverted[i + j] = -inverted[i + j];
-        }
-    }
-
-    return inverted;
-}
 
 FPS_Controller fps;
 
@@ -132,56 +115,63 @@ int main()
 		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
 	};
 
-    mu::Renderer renderer(window);
+    const std::vector<float> plane_vertices = {
+        // positions            // normals         // texcoords
+     0.5f, -0.5f,  0.5f,  0.0f, 1.0f, 0.0f,  0.5f,  0.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, 1.0f, 0.0f,   0.0f,  0.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, 0.0f,   0.0f, 0.5f,
 
-    auto phong1 = std::make_shared<mu::Phong>(mu::color(165, 113, 100)); // bronze
+     0.5f, -0.5f,  0.5f,  0.0f, 1.0f, 0.0f,  0.5f,  0.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, 0.0f,   0.0f, 0.5f,
+     0.5f, -0.5f, -0.5f,  0.0f, 1.0f, 0.0f,  0.5f, 0.5f
+    };
 
-    auto basic = std::make_shared<mu::Basic>(mu::color(0xffffff));
+    gfx::Renderer renderer(window, SCR_WIDTH, SCR_HEIGHT);
 
-    auto red = std::make_shared<mu::Phong>(mu::color(0xff00ff));
+    auto basic  = std::make_shared<gfx::Basic>(gfx::color(0xffffff));
+    auto red    = std::make_shared<gfx::Phong>(gfx::color(0xff00ff));
 
-    auto phong2 = std::make_shared<mu::Phong>(mu::color(0x00ff00));
+    auto phong1 = std::make_shared<gfx::Phong>(gfx::color(165, 113, 100)); // bronze
+    auto phong2 = std::make_shared<gfx::Phong>(gfx::color(0x00ff00));
+    auto phong3 = std::make_shared<gfx::Phong>(gfx::color(0x00f0f0));
 
-    auto phong3 = std::make_shared<mu::Phong>(mu::color(0x00f0f0));
+    auto cube       = std::make_shared<gfx::Geometry>(cube_vertices, gfx::Geometry::POS_NORM);
+    auto plane      = std::make_shared<gfx::Geometry>(plane_vertices, gfx::Geometry::POS_NORM_UV);
+    auto inv_cube   = std::make_shared<gfx::Geometry>(invert_normals(cube_vertices), gfx::Geometry::POS_NORM);
 
-    auto cube = std::make_shared<mu::Geometry>(cube_vertices, mu::Geometry::POS_NORM);
-
-    auto inv_cube = std::make_shared<mu::Geometry>(invert_normals(cube_vertices), mu::Geometry::POS_NORM);
-
-    mu::Camera camera(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100000.0f);
+    gfx::Camera camera(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1000.0f);
     camera.setPosition(glm::vec3(0, 1, 7));
 
-    mu::Mesh skybox(inv_cube, red);
+    gfx::Mesh skybox(inv_cube, red);
     skybox.setScale(glm::vec3(50.0f));
 
-    mu::Mesh big_cube(cube, phong1);
+    gfx::Mesh big_cube(cube, phong1);
     big_cube.setPosition(glm::vec3(0, 1, 0));
 
-    mu::Mesh small_cube(cube, phong2);
-    small_cube.setPosition(glm::vec3(5.0f, 2.5f, 0.0f));
-    small_cube.setScale(glm::vec3(2.25f));
+    gfx::Mesh plane_mesh(plane, phong2);
+    plane_mesh.setPosition(glm::vec3(5.0f, 2.5f, 0.0f));
+    plane_mesh.setScale(glm::vec3(2.25f));
 
-    mu::Mesh ground(cube, phong3);
+    gfx::Mesh ground(cube, phong3);
     ground.setPosition(glm::vec3(0.0f, -1.0f, 0.0f));
-    ground.setScale(glm::vec3(50, 0.1, 50));
+    ground.setScale(glm::vec3(500, 0.1, 500));
 
-    mu::Mesh light_cube(cube, basic);
+    gfx::Mesh light_cube(cube, basic);
     light_cube.setScale(glm::vec3(0.25));
 
-    mu::Light light(mu::color(154, 219, 172));
-    light.setPosition(glm::vec3(0.0, 1.6f, 0.0f));
+    //gfx::Light light(gfx::color(154, 219, 172));
+    //light.setPosition(glm::vec3(0.0, 1.6f, 0.0f));
 
-    mu::Light sun(mu::Light::DIRECTIONAL, mu::color(154, 219, 172), glm::normalize(glm::vec3(1,-1,1)));
-
+    glm::vec3 lightPos(-2, 4, -1);
+    gfx::Light sun(gfx::Light::DIRECTIONAL, gfx::color(154, 219, 172), glm::normalize(glm::vec3(0) - lightPos));
     
-    mu::Object3D scene;
-    scene.add(&skybox);
-    scene.add(&camera);
+    gfx::Object3D scene;
     scene.add(&sun);
+    //scene.add(&skybox);
+    scene.add(&camera);
     scene.add(&ground);
     scene.add(&big_cube);
-    scene.add(&small_cube);
-
+    scene.add(&plane_mesh);
 
     //big_cube.add(&light);
     //light.add(&light_cube);
@@ -202,11 +192,6 @@ int main()
 
             frames = 0;
             previousTime = currentTime;
-
-
-            std::cout << "local: " << light.getPosition() << std::endl;
-            std::cout << "world: " << light.getWorldPosition() << std::endl;
-
         }
 #endif
 
@@ -215,14 +200,12 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-
         const float t = 0.001f;
         big_cube.setRotation(big_cube.getRotation() + glm::vec3(t, 0, t));
-        small_cube.setRotation(small_cube.getRotation() + glm::vec3(0, t, t));
+        plane_mesh.setRotation(plane_mesh.getRotation() + glm::vec3(0, t, t));
 
         camera.setPosition(camera.getPosition() + fps.velocity);
         camera.overrideTransform(glm::inverse(glm::lookAt(camera.getPosition(), camera.getPosition() + fps.front, fps.up)));
-
 
         renderer.render(camera, scene);
 
@@ -291,3 +274,23 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 
     fps.front = glm::normalize(front);
 }
+
+std::vector<float> invert_normals(const std::vector<float> vertices)
+{
+    std::vector<float> inverted;
+
+    std::copy(vertices.begin(), vertices.end(), std::back_inserter(inverted));
+
+    int stride = 6;
+    for (int i = 0; i < vertices.size(); i += stride)
+    {
+        for (int j = 3; j < 6; j++)
+        {
+            inverted[i + j] = -inverted[i + j];
+        }
+    }
+
+    return inverted;
+}
+
+

@@ -1,4 +1,4 @@
-#include "mu.h"
+#include "gfx.h"
 
 
 std::string read_shader(const std::string& path)
@@ -13,7 +13,7 @@ std::string read_shader(const std::string& path)
 }
 
 
-namespace mu {
+namespace gfx {
 	Shader::Shader(const std::string& path) : Shader(read_shader(path + ".vert"), read_shader(path + ".frag")) {}
 	
 	Shader::Shader(const std::string& vertShader, const std::string& fragShader)
@@ -85,6 +85,11 @@ namespace mu {
 	void Shader::use()
 	{
 		glUseProgram(id);
+	}
+
+	void Shader::reset()
+	{
+		glUseProgram(0);
 	}
 
 	void Shader::setInt(const std::string& name, int value) 
@@ -231,12 +236,36 @@ namespace mu {
 		RenderContext context;
 		context.camera = &camera;
 
+
 		scene.traverse([&context](Object3D* obj) {
 			if (obj->isLight())
 			{
 				context.lights.push_back(dynamic_cast<Light*>(obj));
 			}
 		});
+
+#if 1
+		if (m_shadowMap)
+		{
+			context.shadowPass	= true;
+			context.shadowMap	= m_shadowMap;
+
+			glViewport(0, 0, m_shadowMap->width, m_shadowMap->height);
+			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_shadowMap->fbo);
+			glClear(GL_DEPTH_BUFFER_BIT);
+
+			scene.draw(context);
+	
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, m_shadowMap->depthMap);
+		}
+#endif
+
+		context.shadowPass = false;
+
+		glViewport(0, 0, m_width, m_height);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		scene.draw(context);
 	}
@@ -346,10 +375,8 @@ namespace mu {
 		return (*this);
 	}
 
-
 	glm::vec3 Object3D::getWorldPosition()
 	{
-		updateWorldMatrix(true);
 		auto world = transform * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		return glm::vec3(world.x, world.y, world.z);
 	}
@@ -366,35 +393,58 @@ namespace mu {
 
 	void Mesh::draw(RenderContext& context)
 	{
-		Shader* shader = m_material.get()->getShader();
+		float near_plane = 0.1f, far_plane = 70.5f;
+		float m = 20.0f;
+		glm::vec3 lightPos(-2, 10, -1);
+		glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
-		shader->use();
-		shader->setMat4("view", context.camera->getViewMatrix());
-		shader->setMat4("proj", context.camera->getProjectionMatrix());
-		shader->setMat4("model", transform);
-		shader->setVec3("cameraPos", context.camera->getPosition()); // not world position, transform is applied twice
+		glm::mat4 lightProjection = glm::ortho(-m, m, -m, m, near_plane, far_plane);
 
+		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
 
-		shader->setInt("numLights", context.lights.size());
-
-		for (int i = 0; i < context.lights.size(); i++)
+		if (context.shadowPass)
 		{
-			auto worldPos = context.lights[i]->getWorldPosition();
-			auto index = std::to_string(i);
-			auto type = context.lights[i]->type;
+			Shader* shader = &context.shadowMap->shader;
 
-			shader->setInt( "lights[" + index + "].type", type);
-			shader->setVec3("lights[" + index + "].color", context.lights[i]->color);
-			shader->setVec3("lights[" + index + "].position_or_direction", 
-				(type == Light::DIRECTIONAL) ? context.lights[i]->direction : worldPos);
+			shader->use();
+			shader->setMat4("model", transform);
+			shader->setMat4("lightSpaceMatrix", lightSpaceMatrix);
 		}
+		else {
+			Shader* shader = m_material.get()->getShader();
 
-		// phong
-		shader->setFloat("ka", m_material.get()->ka);
-		shader->setFloat("kd", m_material.get()->kd);
-		shader->setFloat("ks", m_material.get()->ks);
-		shader->setFloat("alpha", m_material.get()->alpha);
-		shader->setVec3("objectColor", m_material.get()->color);
+			shader->use();
+			shader->setMat4("model", transform);
+			shader->setMat4("view", context.camera->getViewMatrix());
+			shader->setMat4("proj", context.camera->getProjectionMatrix());
+
+			shader->setMat4("lightSpaceMatrix", lightSpaceMatrix);
+
+			shader->setVec3("cameraPos", context.camera->getWorldPosition()); 
+
+			shader->setInt("numLights", context.lights.size());
+
+			for (int i = 0; i < context.lights.size(); i++)
+			{
+				auto worldPos = context.lights[i]->getWorldPosition();
+				auto index = std::to_string(i);
+				auto type = context.lights[i]->type;
+
+				shader->setInt( "lights[" + index + "].type", type);
+				shader->setVec3("lights[" + index + "].color", context.lights[i]->color);
+				shader->setVec3("lights[" + index + "].position_or_direction", 
+					(type == Light::DIRECTIONAL) ? context.lights[i]->direction : worldPos);
+			}
+
+			shader->setInt("shadowMap", context.shadowMap->depthMap);
+
+			// phong
+			shader->setFloat("ka", m_material.get()->ka);
+			shader->setFloat("kd", m_material.get()->kd);
+			shader->setFloat("ks", m_material.get()->ks);
+			shader->setFloat("alpha", m_material.get()->alpha);
+			shader->setVec3("objectColor", m_material.get()->color);
+		}
 
 		m_geometry.get()->use();
 		glDrawArrays(GL_TRIANGLES, 0, m_geometry.get()->count);
@@ -402,6 +452,33 @@ namespace mu {
 		for (auto child : children)
 		{
 			child->draw(context);
+		}
+	}
+
+	ShadowMap::ShadowMap(unsigned int shadow_width, unsigned int shadow_height)
+		: width(shadow_width), height(shadow_height), shader(depth_vert, depth_frag)
+	{
+
+		glGenFramebuffers(1, &fbo);
+
+		glGenTextures(1, &depthMap);
+		glBindTexture(GL_TEXTURE_2D, depthMap);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+		glDrawBuffer(GL_NONE);
+		glReadBuffer(GL_NONE);
+
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		{
+			std::cout << "failure\n";
+			exit(-1);
 		}
 	}
 }

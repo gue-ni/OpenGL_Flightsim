@@ -17,7 +17,7 @@
 
 constexpr float PI = 3.14159265359f;
 
-namespace mu {
+namespace gfx {
 	const std::string phong_vert = R"(
 #version 330 core
 layout (location = 0) in vec3 aPos;
@@ -26,15 +26,24 @@ layout (location = 2) in vec2 aTexCoord;
 
 out vec3 FragPos;
 out vec3 Normal;
+out vec2 TexCoords;
+out vec4 FragPosLightSpace;
 
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 proj;
+uniform mat4 lightSpaceMatrix;
 
 void main()
 {
+	TexCoords = aTexCoord;
+
     FragPos = vec3(model * vec4(aPos, 1.0));
+
     Normal = mat3(transpose(inverse(model))) * aNormal;  
+
+    FragPosLightSpace = lightSpaceMatrix * vec4(FragPos, 1.0);
+
     gl_Position = proj * view * vec4(FragPos, 1.0);
 }
 	)";
@@ -44,6 +53,8 @@ out vec4 FragColor;
 
 in vec3 Normal;  
 in vec3 FragPos;  
+in vec2 TexCoords;
+in vec4 FragPosLightSpace;
   
 uniform vec3 cameraPos; 
 
@@ -55,8 +66,10 @@ uniform float kd;
 uniform float ks;
 uniform float alpha;
 
+uniform sampler2D shadowMap;
+
 struct Light {
-	int type;
+	int type; // POINT = 0, DIRECTIONAL = 1
 	vec3 color;
 	vec3 position_or_direction; // depending on light type 
 };
@@ -70,12 +83,26 @@ float calculateAttenuation(float constant, float linear, float quadratic, float 
 	return 1.0 / (constant + linear * distance + quadratic * (distance * distance));
 }
 
+float calculateShadow(vec4 fragPosLightSpace)
+{
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    // transform to [0,1] range
+    projCoords = projCoords * 0.5 + 0.5;
+    // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
+    float closestDepth = texture(shadowMap, projCoords.xy).r; 
+    // get depth of current fragment from light's perspective
+    float currentDepth = projCoords.z;
+    // check whether current frag pos is in shadow
+    float shadow = currentDepth > closestDepth  ? 1.0 : 0.0;
 
-
+    return shadow;
+}
 
 vec3 calculateDirLight(Light light)
 {
 	vec3 direction = light.position_or_direction;
+	//vec3 color = vec3(texture(shadowMap, TexCoords.xy));
+	vec3 color = objectColor;
 
     // ambient
     vec3 ambient = ka * light.color;
@@ -90,7 +117,10 @@ vec3 calculateDirLight(Light light)
     vec3 reflectDir = reflect(-lightDir, norm);  
     vec3 specular = ks * pow(max(dot(viewDir, reflectDir), 0.0), alpha) * light.color;
 
-    return (ambient + diffuse + specular) * objectColor;
+    float shadow = calculateShadow(FragPosLightSpace);       
+	//shadow = 0.0;
+
+    return (ambient + (1.0 - shadow) * (diffuse + specular)) * color;
 }
 
 vec3 calculatePointLight(Light light)
@@ -120,30 +150,37 @@ vec3 calculatePointLight(Light light)
 	
     result += (ambient + diffuse + specular) * attenuation * objectColor;
 
+#if 0
 	// https://ijdykeman.github.io/graphics/simple_fog_shader
-	//vec3 cameraDir = cameraPos - FragPos;
-	//vec3 cameraDir = -viewDir;
-	//float b = length(light.position - cameraPos);
+	vec3 cameraDir = cameraPos - FragPos;
+	vec3 cameraDir = -viewDir;
+	float b = length(light.position - cameraPos);
 
-	//float h = length(cross(light.position - cameraPos, cameraDir)) / length(cameraDir);
-	//float dropoff = 1.0;
-	//float fog = (atan(b / h) / (h * dropoff));
+	float h = length(cross(light.position - cameraPos, cameraDir)) / length(cameraDir);
+	float dropoff = 1.0;
+	float fog = (atan(b / h) / (h * dropoff));
 
-	//float density = 0.1;
+	float density = 0.1;
 
 	// TODO: improve this
-	//float theta = dot(norm, viewDir) >= 0 ? 1 : 0;
+	float theta = dot(norm, viewDir) >= 0 ? 1 : 0;
 
-	//vec3 scattered = light.color * (fog * density) * theta;
-	//scattered *= calculateAttenuation(constant, linear, quadratic, length(cameraDir));
+	vec3 scattered = light.color * (fog * density) * theta;
+	scattered *= calculateAttenuation(constant, linear, quadratic, length(cameraDir));
 	
-	//result += scattered;
+	result += scattered;
+#endif
 
 	return result;
 }
 
 void main()
 {
+	float depth = texture(shadowMap, TexCoords).x;
+    depth = 1.0 - (1.0 - depth) * 25.0;
+    FragColor = vec4(depth);
+	//return;
+
 	vec3 result;
 
 	for (int i = 0; i < numLights; i++)
@@ -156,7 +193,6 @@ void main()
 			case 1:
 				result += calculateDirLight(lights[i]);
 				break;
-	
 		}
 	}
 	
@@ -191,12 +227,26 @@ void main()
 )";
 
 
-	const std::string sky_vert = R"(
+	const std::string depth_vert = R"(
+#version 330 core
+layout(location = 0) in vec3 aPos;
 
+uniform mat4 model;
+uniform mat4 lightSpaceMatrix;
+
+void main()
+{
+	gl_Position = lightSpaceMatrix * model * vec4(aPos, 1.0);
+}
 )";
 	
-	const std::string sky_frag = R"(
+	const std::string depth_frag = R"(
+#version 330 core
 
+void main() 
+{
+    // gl_FragDepth = gl_FragCoord.z;
+}
 )";
 
 	constexpr glm::vec3 color(int r, int g, int b)
@@ -224,17 +274,28 @@ void main()
 		Shader(const std::string& vertShader, const std::string& fragShader);
 		~Shader();
 		void use();
+		void reset();
 		void setInt(const std::string& name, int value);
 		void setFloat(const std::string& name, float value);
 		void setVec3(const std::string& name, const glm::vec3& value);
 		void setMat4(const std::string& name, const glm::mat4& value);
 	};
 
-	struct ShadowMap {};
+	struct ShadowMap {
+		ShadowMap(unsigned int shadow_width, unsigned int shadow_height);
+		void use();
+	
+		unsigned int fbo;
+		unsigned int depthMap;
+		unsigned int width, height;
+		Shader shader;
+	};
 
 	struct RenderContext {
 		Camera* camera;
 		std::vector<Light*> lights;
+		ShadowMap *shadowMap;
+		bool shadowPass;
 	};
 
 	class Object3D {
@@ -381,6 +442,9 @@ void main()
 		MaterialX( const std::string& vert, const std::string& frag, const glm::vec3& color_)
 			: MaterialX<Derived>(vert, frag, color_, 0.2f, 1.0f, 0.5f, 10.0f) {}
 
+		MaterialX( const std::string& vert, const std::string& frag)
+			: MaterialX<Derived>(vert, frag, glm::vec3(0.5f), 0.2f, 1.0f, 0.5f, 10.0f) {}
+
 		Shader* getShader()
 		{
 			return shader.get();
@@ -399,6 +463,11 @@ void main()
 		Basic(const glm::vec3& color_) : MaterialX<Basic>(basic_vert, basic_frag, color_){}
 	};
 
+	class ShaderMaterial : public MaterialX<ShaderMaterial> {
+	public:
+		ShaderMaterial(const std::string& vert, const std::string& frag) : MaterialX<ShaderMaterial>(vert, frag) {}
+	};
+
 	class Mesh : public Object3D {
 	public:
 		Mesh(std::shared_ptr<Geometry> geometry, std::shared_ptr<Material> material)
@@ -411,10 +480,21 @@ void main()
 
 	class Renderer {
 	public:
-		Renderer(GLFWwindow* window) : m_window(window) {}
+		Renderer(GLFWwindow* window, unsigned int width, unsigned int height) 
+			: m_window(window), m_shadowMap(new ShadowMap(1024, 1024)), m_width(width), m_height(height) 
+		{}
+
+		~Renderer()
+		{
+			if (m_shadowMap)
+				delete m_shadowMap;
+		}
+
 		void render(Camera& camera, Object3D& scene);
 	private:
 		GLFWwindow* m_window;
+		unsigned int m_width, m_height;
+		ShadowMap* m_shadowMap;
 	};
 };
 

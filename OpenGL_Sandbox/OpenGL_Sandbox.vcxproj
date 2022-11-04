@@ -135,7 +135,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\..\libraries\glad\src\glad.c" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="mu.cpp" />
+    <ClCompile Include="gfx.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\basic.frag" />
@@ -144,7 +144,7 @@
     <None Include="shaders\phong.vert" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="mu.h" />
+    <ClInclude Include="gfx.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
