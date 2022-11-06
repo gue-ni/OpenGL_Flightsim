@@ -249,6 +249,34 @@ void main()
 }
 )";
 
+	const std::string screen_vert = R"(
+#version 330 core
+layout (location = 0) in vec3 aPos;
+layout (location = 1) in vec2 aTexCoords;
+
+out vec2 TexCoords;
+
+void main()
+{
+	TexCoords = aTexCoords;
+	gl_Position = vec4(aPos, 1.0);
+}
+)";
+	const std::string screen_frag = R"(
+#version 330 core
+out vec4 FragColor;
+
+in vec2 TexCoords;
+
+uniform sampler2D shadowMap;
+
+void main()
+{             
+    float depthValue = texture(shadowMap, TexCoords).r;
+    FragColor = vec4(vec3(depthValue), 1.0); // orthographic
+}
+)";
+
 	constexpr glm::vec3 color(int r, int g, int b)
 	{
 		return glm::vec3(static_cast<float>(r), static_cast<float>(g), static_cast<float>(b)) / 255.0f;
@@ -482,7 +510,22 @@ void main()
 	public:
 		Renderer(GLFWwindow* window, unsigned int width, unsigned int height) 
 			: m_window(window), m_shadowMap(new ShadowMap(1024, 1024)), m_width(width), m_height(height) 
-		{}
+		{
+			
+			const std::vector<float> quad_vertices = {
+				-1.0f,  1.0f, 0.0f, 0.0f, 1.0f, // top left
+				-1.0f, -1.0f, 0.0f, 0.0f, 0.0f, // bottom left
+				 1.0f,  1.0f, 0.0f, 1.0f, 1.0f, // top right
+
+				 1.0f,  1.0f, 0.0f, 1.0f, 1.0f, // top right
+				-1.0f, -1.0f, 0.0f, 0.0f, 0.0f, // bottom left
+				 1.0f, -1.0f, 0.0f, 1.0f, 0.0f, // bottom right
+			};
+
+			auto geometry = std::make_shared<Geometry>(quad_vertices, Geometry::POS_UV);
+			auto material = std::make_shared<ShaderMaterial>(screen_vert, screen_frag);
+			m_quad = std::make_shared<Mesh>(geometry, material);
+		}
 
 		~Renderer()
 		{
@@ -495,6 +538,7 @@ void main()
 		GLFWwindow* m_window;
 		unsigned int m_width, m_height;
 		ShadowMap* m_shadowMap;
+		std::shared_ptr<Mesh> m_quad;
 	};
 };
 

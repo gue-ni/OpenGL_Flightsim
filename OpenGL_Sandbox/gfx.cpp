@@ -144,49 +144,6 @@ namespace gfx {
 			glEnableVertexAttribArray(index);
 		}
 
-#if 0
-		switch (layout)
-		{
-
-		case POS_UV:
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
-			glEnableVertexAttribArray(0);
-
-			glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(3 * sizeof(float)));
-			glEnableVertexAttribArray(1);
-			break;
-
-		case POS_NORM:
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
-			glEnableVertexAttribArray(0);
-
-			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(3 * sizeof(float)));
-			glEnableVertexAttribArray(1);
-			break;
-
-		case POS_NORM_UV:
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
-			glEnableVertexAttribArray(0);
-
-			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(3 * sizeof(float)));
-			glEnableVertexAttribArray(1);
-
-			glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(6 * sizeof(float)));
-			glEnableVertexAttribArray(1);
-			break;
-
-		case POS:
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
-			glEnableVertexAttribArray(0);
-			break;
-
-
-		default:
-			assert(false);
-			break;
-		}
-#endif
-
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glBindVertexArray(0);
 	}
@@ -234,7 +191,8 @@ namespace gfx {
 		scene.updateWorldMatrix(false);
 
 		RenderContext context;
-		context.camera = &camera;
+		context.camera		= &camera;
+		context.shadowMap	= m_shadowMap;
 
 
 		scene.traverse([&context](Object3D* obj) {
@@ -247,13 +205,11 @@ namespace gfx {
 #if 1
 		if (m_shadowMap)
 		{
-			context.shadowPass	= true;
-			context.shadowMap	= m_shadowMap;
-
 			glViewport(0, 0, m_shadowMap->width, m_shadowMap->height);
 			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_shadowMap->fbo);
 			glClear(GL_DEPTH_BUFFER_BIT);
 
+			context.shadowPass	= true;
 			scene.draw(context);
 	
 			glActiveTexture(GL_TEXTURE0);
@@ -261,13 +217,14 @@ namespace gfx {
 		}
 #endif
 
-		context.shadowPass = false;
 
 		glViewport(0, 0, m_width, m_height);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		context.shadowPass = false;
 		scene.draw(context);
+		//m_quad.get()->draw(context);
 	}
 
 	glm::mat4 Camera::getViewMatrix()
@@ -393,9 +350,10 @@ namespace gfx {
 
 	void Mesh::draw(RenderContext& context)
 	{
-		float near_plane = 0.1f, far_plane = 70.5f;
-		float m = 20.0f;
+		float near_plane = 0.1f, far_plane = 50.0f, m = 20.0f;
+
 		glm::vec3 lightPos(-2, 10, -1);
+
 		glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
 		glm::mat4 lightProjection = glm::ortho(-m, m, -m, m, near_plane, far_plane);
@@ -422,6 +380,8 @@ namespace gfx {
 
 			shader->setVec3("cameraPos", context.camera->getWorldPosition()); 
 
+			shader->setInt("shadowMap", 0);
+
 			shader->setInt("numLights", context.lights.size());
 
 			for (int i = 0; i < context.lights.size(); i++)
@@ -436,7 +396,6 @@ namespace gfx {
 					(type == Light::DIRECTIONAL) ? context.lights[i]->direction : worldPos);
 			}
 
-			shader->setInt("shadowMap", context.shadowMap->depthMap);
 
 			// phong
 			shader->setFloat("ka", m_material.get()->ka);
@@ -459,11 +418,12 @@ namespace gfx {
 		: width(shadow_width), height(shadow_height), shader(depth_vert, depth_frag)
 	{
 
+#if 1
 		glGenFramebuffers(1, &fbo);
 
 		glGenTextures(1, &depthMap);
 		glBindTexture(GL_TEXTURE_2D, depthMap);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadow_width, shadow_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -474,11 +434,14 @@ namespace gfx {
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
 		glDrawBuffer(GL_NONE);
 		glReadBuffer(GL_NONE);
+		glBindBuffer(GL_FRAMEBUFFER, 0);
+
 
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
 			std::cout << "failure\n";
 			exit(-1);
 		}
+#endif
 	}
 }
