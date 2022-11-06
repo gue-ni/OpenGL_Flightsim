@@ -14,6 +14,9 @@
 
 #include "gfx.h"
 
+using std::shared_ptr;
+using std::make_shared;
+
 #define PRESSED(key) (glfwGetKey(window, key) == GLFW_PRESS)
 
 constexpr unsigned int SCR_WIDTH = 1280;
@@ -62,8 +65,8 @@ int main()
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+    //if (!gladLoadGLLoader(static_cast<GLADloadproc>(glfwGetProcAddress))
     {
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
@@ -128,16 +131,16 @@ int main()
 
     gfx::Renderer renderer(window, SCR_WIDTH, SCR_HEIGHT);
 
-    auto basic  = std::make_shared<gfx::Basic>(gfx::color(0xffffff));
-    auto red    = std::make_shared<gfx::Phong>(gfx::color(0xff00ff));
+    auto basic  = make_shared<gfx::Basic>(gfx::color(0xffffff));
+    auto red    = make_shared<gfx::Phong>(gfx::color(0xff00ff));
 
-    auto phong1 = std::make_shared<gfx::Phong>(gfx::color(165, 113, 100)); // bronze
-    auto phong2 = std::make_shared<gfx::Phong>(gfx::color(0x00ff00));
-    auto phong3 = std::make_shared<gfx::Phong>(gfx::color(0x00f0f0));
+    auto phong1 = make_shared<gfx::Phong>(gfx::color(165, 113, 100)); // bronze
+    auto phong2 = make_shared<gfx::Phong>(gfx::color(0x00ff00));
+    auto phong3 = make_shared<gfx::Phong>(gfx::color(0x00f0f0));
 
-    auto cube       = std::make_shared<gfx::Geometry>(cube_vertices, gfx::Geometry::POS_NORM);
-    auto plane      = std::make_shared<gfx::Geometry>(plane_vertices, gfx::Geometry::POS_NORM_UV);
-    auto inv_cube   = std::make_shared<gfx::Geometry>(invert_normals(cube_vertices), gfx::Geometry::POS_NORM);
+    auto cube       = make_shared<gfx::Geometry>(cube_vertices, gfx::Geometry::POS_NORM);
+    auto plane      = make_shared<gfx::Geometry>(cube_vertices, gfx::Geometry::POS_NORM);
+    auto inv_cube   = make_shared<gfx::Geometry>(invert_normals(cube_vertices), gfx::Geometry::POS_NORM);
 
     gfx::Camera camera(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1000.0f);
     camera.setPosition(glm::vec3(0, 1, 7));
@@ -154,27 +157,20 @@ int main()
 
     gfx::Mesh ground(cube, phong3);
     ground.setPosition(glm::vec3(0.0f, -1.0f, 0.0f));
-    ground.setScale(glm::vec3(500, 0.1, 500));
+    ground.setScale(glm::vec3(50, 0.1, 50));
 
     gfx::Mesh light_cube(cube, basic);
     light_cube.setScale(glm::vec3(0.25));
-
-    //gfx::Light light(gfx::color(154, 219, 172));
-    //light.setPosition(glm::vec3(0.0, 1.6f, 0.0f));
 
     glm::vec3 lightPos(-2, 4, -1);
     gfx::Light sun(gfx::Light::DIRECTIONAL, gfx::color(154, 219, 172), glm::normalize(glm::vec3(0) - lightPos));
     
     gfx::Object3D scene;
     scene.add(&sun);
-    //scene.add(&skybox);
     scene.add(&camera);
     scene.add(&ground);
     scene.add(&big_cube);
     scene.add(&plane_mesh);
-
-    //big_cube.add(&light);
-    //light.add(&light_cube);
 
     int frames = 0;
     double currentTime, previousTime = 0;
@@ -219,7 +215,7 @@ int main()
 
 void processInput(GLFWwindow* window)
 {
-    const float speed = 0.01;
+    const float speed = 0.05;
     fps.velocity = glm::vec3(0);
 
     if (PRESSED(GLFW_KEY_ESCAPE))

@@ -86,14 +86,15 @@ float calculateAttenuation(float constant, float linear, float quadratic, float 
 float calculateShadow(vec4 fragPosLightSpace)
 {
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-    // transform to [0,1] range
+
     projCoords = projCoords * 0.5 + 0.5;
-    // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
+
     float closestDepth = texture(shadowMap, projCoords.xy).r; 
-    // get depth of current fragment from light's perspective
+
     float currentDepth = projCoords.z;
-    // check whether current frag pos is in shadow
-    float shadow = currentDepth > closestDepth  ? 1.0 : 0.0;
+
+	float bias = 0.005;
+    float shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
 
     return shadow;
 }
@@ -242,11 +243,7 @@ void main()
 	
 	const std::string depth_frag = R"(
 #version 330 core
-
-void main() 
-{
-    // gl_FragDepth = gl_FragCoord.z;
-}
+void main() {}
 )";
 
 	const std::string screen_vert = R"(
@@ -311,8 +308,6 @@ void main()
 
 	struct ShadowMap {
 		ShadowMap(unsigned int shadow_width, unsigned int shadow_height);
-		void use();
-	
 		unsigned int fbo;
 		unsigned int depthMap;
 		unsigned int width, height;
@@ -338,44 +333,38 @@ void main()
 			m_scale(1.0f)
 		{}
 
-		glm::mat4 transform;
-
 		Object3D* parent;
 		std::vector<Object3D*> children;
+		glm::mat4 transform;
 
 		Object3D& add(Object3D* child);
+		void drawChildren(RenderContext& context);
 		virtual void draw(RenderContext& context);
 
-		const glm::vec3& getPosition();
-		const glm::vec3& getRotation();
-		const glm::vec3& getScale();
-		void setPosition(const glm::vec3& pos);
-		void setPosition(float x, float y, float z);
-		void setRotation(const glm::vec3& rot);
-		void setRotation(float x, float y, float z);
-		void setScale(float x, float y, float z);
 		void setScale(const glm::vec3& scale);
+		const glm::vec3& getScale();
+
+		const glm::vec3& getRotation();
+		void setRotation(const glm::vec3& rot);
+
+		const glm::vec3& getPosition();
+		void setPosition(const glm::vec3& pos);
 
 		void overrideTransform(const glm::mat4& matrix);
-
 		glm::vec3 getWorldPosition();
-
 		virtual bool isLight();
 
 		template <typename F>
 		void traverse(const F& func)
 		{
 			func(this);
-			for (const auto& child : children)
-				child->traverse(func);
+			for (const auto& child : children) child->traverse(func);
 		}
 
 	protected:
 		friend class Renderer;
-		bool m_dirty;
-		bool m_dirty_transform;
-		// radians
-		glm::vec3 m_rotation, m_position, m_scale; // relative to parent
+		bool m_dirty, m_dirty_transform;
+		glm::vec3 m_rotation, m_position, m_scale; 
 		void updateWorldMatrix(bool dirtyParent);
 		glm::mat4 getLocalTransform();
 	};
@@ -428,7 +417,6 @@ void main()
 		Geometry(const Geometry& geometry);
 		~Geometry();
 		void use();
-		void write(const std::vector<float>& vertices);
 		int count;
 
 	private:

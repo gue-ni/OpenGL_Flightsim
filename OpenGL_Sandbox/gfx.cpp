@@ -1,6 +1,5 @@
 #include "gfx.h"
 
-
 std::string read_shader(const std::string& path)
 {
 		std::fstream file(path);
@@ -11,7 +10,6 @@ std::string read_shader(const std::string& path)
 		buffer << file.rdbuf();
 		return buffer.str();
 }
-
 
 namespace gfx {
 	Shader::Shader(const std::string& path) : Shader(read_shader(path + ".vert"), read_shader(path + ".frag")) {}
@@ -180,12 +178,6 @@ namespace gfx {
 		return 0;
 	}
 
-	void Geometry::write(const std::vector<float>& vertices)
-	{
-		glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices[0]) * vertices.size(), &vertices[0], GL_STATIC_DRAW);
-	}
-
 	void Renderer::render(Camera& camera, Object3D& scene)
 	{
 		scene.updateWorldMatrix(false);
@@ -194,12 +186,9 @@ namespace gfx {
 		context.camera		= &camera;
 		context.shadowMap	= m_shadowMap;
 
-
 		scene.traverse([&context](Object3D* obj) {
 			if (obj->isLight())
-			{
 				context.lights.push_back(dynamic_cast<Light*>(obj));
-			}
 		});
 
 #if 1
@@ -217,14 +206,16 @@ namespace gfx {
 		}
 #endif
 
-
 		glViewport(0, 0, m_width, m_height);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		context.shadowPass = false;
+#if 1
 		scene.draw(context);
-		//m_quad.get()->draw(context);
+#else
+		m_quad.get()->draw(context);
+#endif
 	}
 
 	glm::mat4 Camera::getViewMatrix()
@@ -242,8 +233,12 @@ namespace gfx {
 	
 	void Object3D::draw(RenderContext& context)
 	{
-		for (auto child : children)
-			child->draw(context);
+		drawChildren(context);
+	}
+
+	void Object3D::drawChildren(RenderContext& context)
+	{
+		for (auto child : children) child->draw(context);
 	}
 
 	const glm::vec3& Object3D::getPosition()
@@ -259,21 +254,6 @@ namespace gfx {
 	const glm::vec3& Object3D::getScale()
 	{
 		return m_scale;
-	}
-
-	void Object3D::setPosition(float x, float y, float z)
-	{
-		m_position = glm::vec3(x,y,z); m_dirty = true;
-	}
-
-	void Object3D::setRotation(float x, float y, float z)
-	{
-		m_rotation = glm::vec3(x,y,z); m_dirty = true;
-	}
-
-	void Object3D::setScale(float x, float y, float z)
-	{
-		m_scale = glm::vec3(x,y,z); m_dirty = true;
 	}
 
 	void Object3D::setScale(const glm::vec3& scale)
@@ -350,14 +330,12 @@ namespace gfx {
 
 	void Mesh::draw(RenderContext& context)
 	{
-		float near_plane = 0.1f, far_plane = 50.0f, m = 20.0f;
+		float near_plane = 0.1f, far_plane = 15.0f, m = 10.0f;
 
-		glm::vec3 lightPos(-2, 10, -1);
+		glm::vec3 lightPos(-2, 5, -1);
 
 		glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-
 		glm::mat4 lightProjection = glm::ortho(-m, m, -m, m, near_plane, far_plane);
-
 		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
 
 		if (context.shadowPass)
@@ -375,27 +353,21 @@ namespace gfx {
 			shader->setMat4("model", transform);
 			shader->setMat4("view", context.camera->getViewMatrix());
 			shader->setMat4("proj", context.camera->getProjectionMatrix());
-
 			shader->setMat4("lightSpaceMatrix", lightSpaceMatrix);
-
 			shader->setVec3("cameraPos", context.camera->getWorldPosition()); 
-
 			shader->setInt("shadowMap", 0);
-
 			shader->setInt("numLights", context.lights.size());
 
 			for (int i = 0; i < context.lights.size(); i++)
 			{
-				auto worldPos = context.lights[i]->getWorldPosition();
 				auto index = std::to_string(i);
 				auto type = context.lights[i]->type;
 
 				shader->setInt( "lights[" + index + "].type", type);
 				shader->setVec3("lights[" + index + "].color", context.lights[i]->color);
 				shader->setVec3("lights[" + index + "].position_or_direction", 
-					(type == Light::DIRECTIONAL) ? context.lights[i]->direction : worldPos);
+					(type == Light::DIRECTIONAL) ? context.lights[i]->direction : context.lights[i]->getWorldPosition());
 			}
-
 
 			// phong
 			shader->setFloat("ka", m_material.get()->ka);
@@ -408,22 +380,28 @@ namespace gfx {
 		m_geometry.get()->use();
 		glDrawArrays(GL_TRIANGLES, 0, m_geometry.get()->count);
 
-		for (auto child : children)
-		{
-			child->draw(context);
-		}
+		drawChildren(context);
 	}
 
 	ShadowMap::ShadowMap(unsigned int shadow_width, unsigned int shadow_height)
 		: width(shadow_width), height(shadow_height), shader(depth_vert, depth_frag)
 	{
-
 #if 1
 		glGenFramebuffers(1, &fbo);
 
 		glGenTextures(1, &depthMap);
 		glBindTexture(GL_TEXTURE_2D, depthMap);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadow_width, shadow_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+		glTexImage2D(
+			GL_TEXTURE_2D, 
+			0, 
+			GL_DEPTH_COMPONENT, 
+			shadow_width, 
+			shadow_height, 
+			0, 
+			GL_DEPTH_COMPONENT, 
+			GL_FLOAT, 
+			NULL
+		);
 
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -435,7 +413,6 @@ namespace gfx {
 		glDrawBuffer(GL_NONE);
 		glReadBuffer(GL_NONE);
 		glBindBuffer(GL_FRAMEBUFFER, 0);
-
 
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
