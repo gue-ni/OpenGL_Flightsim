@@ -14,6 +14,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <functional>
 
 constexpr float PI = 3.14159265359f;
 
@@ -71,11 +72,12 @@ uniform sampler2D shadowMap;
 struct Light {
 	int type; // POINT = 0, DIRECTIONAL = 1
 	vec3 color;
-	vec3 position_or_direction; // depending on light type 
+	vec3 position;  
 };
 
 #define MAX_LIGHTS 4
 uniform int numLights;
+uniform int receiveShadow;
 uniform Light lights[MAX_LIGHTS];
 
 float calculateAttenuation(float constant, float linear, float quadratic, float distance)
@@ -94,14 +96,13 @@ float calculateShadow(vec4 fragPosLightSpace)
     float currentDepth = projCoords.z;
 
 	float bias = 0.005;
-    float shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
-
+    float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
     return shadow;
 }
 
 vec3 calculateDirLight(Light light)
 {
-	vec3 direction = light.position_or_direction;
+	vec3 direction = light.position;
 	//vec3 color = vec3(texture(shadowMap, TexCoords.xy));
 	vec3 color = objectColor;
 
@@ -110,7 +111,7 @@ vec3 calculateDirLight(Light light)
   	
     // diffuse 
     vec3 norm = normalize(Normal);
-    vec3 lightDir = normalize(-direction);
+    vec3 lightDir = normalize(direction);
     vec3 diffuse = kd * max(dot(norm, lightDir), 0.0) * light.color;
     
     // specular
@@ -118,8 +119,11 @@ vec3 calculateDirLight(Light light)
     vec3 reflectDir = reflect(-lightDir, norm);  
     vec3 specular = ks * pow(max(dot(viewDir, reflectDir), 0.0), alpha) * light.color;
 
-    float shadow = calculateShadow(FragPosLightSpace);       
-	//shadow = 0.0;
+	float shadow = 0.0;
+	if (receiveShadow == 1)
+	{
+		shadow = calculateShadow(FragPosLightSpace);       
+	}
 
     return (ambient + (1.0 - shadow) * (diffuse + specular)) * color;
 }
@@ -127,7 +131,7 @@ vec3 calculateDirLight(Light light)
 vec3 calculatePointLight(Light light)
 {
 	vec3 result;
-	vec3 position = light.position_or_direction;
+	vec3 position = light.position;
 
     // ambient
     vec3 ambient = ka * light.color;
@@ -318,7 +322,8 @@ void main()
 		Camera* camera;
 		std::vector<Light*> lights;
 		ShadowMap *shadowMap;
-		bool shadowPass;
+		Light* shadowCaster;
+		bool isShadowPass;
 	};
 
 	class Object3D {
@@ -326,6 +331,7 @@ void main()
 		Object3D()
 			: m_dirty(true),
 			m_dirty_transform(false),
+			receiveShadow(true),
 			transform(1.0), 
 			parent(nullptr),
 			m_position(0.0f),
@@ -336,26 +342,27 @@ void main()
 		Object3D* parent;
 		std::vector<Object3D*> children;
 		glm::mat4 transform;
+		bool receiveShadow;
 
 		Object3D& add(Object3D* child);
 		void drawChildren(RenderContext& context);
 		virtual void draw(RenderContext& context);
 
 		void setScale(const glm::vec3& scale);
-		const glm::vec3& getScale();
+		glm::vec3 getScale();
 
-		const glm::vec3& getRotation();
+		// yaw, roll, pitch
 		void setRotation(const glm::vec3& rot);
+		glm::vec3 getRotation();
 
-		const glm::vec3& getPosition();
+		glm::vec3 getPosition();
 		void setPosition(const glm::vec3& pos);
 
 		void overrideTransform(const glm::mat4& matrix);
 		glm::vec3 getWorldPosition();
 		virtual bool isLight();
 
-		template <typename F>
-		void traverse(const F& func)
+		void traverse(const std::function<void(Object3D*)>& func)
 		{
 			func(this);
 			for (const auto& child : children) child->traverse(func);
@@ -391,17 +398,19 @@ void main()
 			DIRECTIONAL		= 1,
 		};
 
-		Light(glm::vec3 color_) : color(color_), type(POINT), Object3D() {}
+		Light(glm::vec3 color_) 
+			: color(color_), type(POINT), castShadow(false), Object3D() 
+		{}
 
-		Light(LightType type_, glm::vec3 color_, glm::vec3 direction_) 
-			: color(color_), type(type_), direction(direction_), Object3D() 
+		Light(LightType type_, glm::vec3 color_) 
+			: color(color_), type(type_), castShadow(false), Object3D() 
 		{}
 
 		bool isLight();
 
 		LightType type;
+		bool castShadow;
 		glm::vec3 color;
-		glm::vec3 direction;
 	};
 
 	class Geometry {

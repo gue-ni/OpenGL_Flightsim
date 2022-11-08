@@ -178,46 +178,6 @@ namespace gfx {
 		return 0;
 	}
 
-	void Renderer::render(Camera& camera, Object3D& scene)
-	{
-		scene.updateWorldMatrix(false);
-
-		RenderContext context;
-		context.camera		= &camera;
-		context.shadowMap	= m_shadowMap;
-
-		scene.traverse([&context](Object3D* obj) {
-			if (obj->isLight())
-				context.lights.push_back(dynamic_cast<Light*>(obj));
-		});
-
-#if 1
-		if (m_shadowMap)
-		{
-			glViewport(0, 0, m_shadowMap->width, m_shadowMap->height);
-			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_shadowMap->fbo);
-			glClear(GL_DEPTH_BUFFER_BIT);
-
-			context.shadowPass	= true;
-			scene.draw(context);
-	
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, m_shadowMap->depthMap);
-		}
-#endif
-
-		glViewport(0, 0, m_width, m_height);
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		context.shadowPass = false;
-#if 1
-		scene.draw(context);
-#else
-		m_quad.get()->draw(context);
-#endif
-	}
-
 	glm::mat4 Camera::getViewMatrix()
 	{
 		return glm::inverse(transform);
@@ -241,17 +201,17 @@ namespace gfx {
 		for (auto child : children) child->draw(context);
 	}
 
-	const glm::vec3& Object3D::getPosition()
+	glm::vec3 Object3D::getPosition()
 	{
 		return m_position;
 	}
 
-	const glm::vec3& Object3D::getRotation()
+	glm::vec3 Object3D::getRotation()
 	{
 		return m_rotation;
 	}
 
-	const glm::vec3& Object3D::getScale()
+	glm::vec3 Object3D::getScale()
 	{
 		return m_scale;
 	}
@@ -281,7 +241,7 @@ namespace gfx {
 
 	void Object3D::overrideTransform(const glm::mat4& matrix)
 	{
-		m_dirty_transform = true;
+		m_dirty_transform = true; m_dirty = true;
 		transform = matrix;
 	}
 
@@ -328,17 +288,76 @@ namespace gfx {
 		return true;
 	}
 
+	void Renderer::render(Camera& camera, Object3D& scene)
+	{
+		scene.updateWorldMatrix(false);
+
+		RenderContext context;
+		context.camera			= &camera;
+		context.shadowMap		= m_shadowMap;
+		context.shadowCaster	= nullptr;
+
+		scene.traverse([&context](Object3D* obj) {
+			if (obj->isLight())
+			{
+				Light* light = dynamic_cast<Light*>(obj);
+				if (light->castShadow)
+				{
+					context.shadowCaster = light;
+				}
+				context.lights.push_back(light);
+			}
+		});
+
+#if 1
+		if (m_shadowMap)
+		{
+			glViewport(0, 0, m_shadowMap->width, m_shadowMap->height);
+			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_shadowMap->fbo);
+			glClear(GL_DEPTH_BUFFER_BIT);
+
+			context.isShadowPass	= true;
+			scene.draw(context);
+	
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, m_shadowMap->depthMap);
+		}
+#endif
+
+		glViewport(0, 0, m_width, m_height);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		context.isShadowPass = false;
+#if 1
+
+
+#ifdef WIREFRAME
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+#endif
+		scene.draw(context);
+#ifdef WIREFRAME
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+#endif
+
+#else
+		m_quad.get()->draw(context);
+#endif
+	}
+
 	void Mesh::draw(RenderContext& context)
 	{
-		float near_plane = 0.1f, far_plane = 15.0f, m = 10.0f;
+		float near_plane = 0.1f, far_plane = 25.0f, m = 10.0f;
 
-		glm::vec3 lightPos(-2, 5, -1);
+		assert(context.shadowCaster);
+
+		auto lightPos = context.shadowCaster->getWorldPosition();
 
 		glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		glm::mat4 lightProjection = glm::ortho(-m, m, -m, m, near_plane, far_plane);
+		glm::mat4 lightProjection = glm::ortho(-m, m, -m, m, -10.0f, 20.0f);
 		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
 
-		if (context.shadowPass)
+		if (context.isShadowPass)
 		{
 			Shader* shader = &context.shadowMap->shader;
 
@@ -357,6 +376,7 @@ namespace gfx {
 			shader->setVec3("cameraPos", context.camera->getWorldPosition()); 
 			shader->setInt("shadowMap", 0);
 			shader->setInt("numLights", context.lights.size());
+			shader->setInt("receiveShadow", receiveShadow);
 
 			for (int i = 0; i < context.lights.size(); i++)
 			{
@@ -365,8 +385,7 @@ namespace gfx {
 
 				shader->setInt( "lights[" + index + "].type", type);
 				shader->setVec3("lights[" + index + "].color", context.lights[i]->color);
-				shader->setVec3("lights[" + index + "].position_or_direction", 
-					(type == Light::DIRECTIONAL) ? context.lights[i]->direction : context.lights[i]->getWorldPosition());
+				shader->setVec3("lights[" + index + "].position", context.lights[i]->getWorldPosition());
 			}
 
 			// phong
