@@ -30,6 +30,10 @@
     <None Include="shaders\basic.vert" />
     <None Include="shaders\phong.vert" />
     <None Include="shaders\phong.frag" />
+    <None Include="shaders\depth.vert" />
+    <None Include="shaders\depth.frag" />
+    <None Include="shaders\screen.frag" />
+    <None Include="shaders\screen.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="gfx.h">

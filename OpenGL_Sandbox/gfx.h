@@ -19,271 +19,12 @@
 constexpr float PI = 3.14159265359f;
 
 namespace gfx {
-	const std::string phong_vert = R"(
-#version 330 core
-layout (location = 0) in vec3 aPos;
-layout (location = 1) in vec3 aNormal;
-layout (location = 2) in vec2 aTexCoord;
-
-out vec3 FragPos;
-out vec3 Normal;
-out vec2 TexCoords;
-out vec4 FragPosLightSpace;
-
-uniform mat4 model;
-uniform mat4 view;
-uniform mat4 proj;
-uniform mat4 lightSpaceMatrix;
-
-void main()
-{
-	TexCoords = aTexCoord;
-
-    FragPos = vec3(model * vec4(aPos, 1.0));
-
-    Normal = mat3(transpose(inverse(model))) * aNormal;  
-
-    FragPosLightSpace = lightSpaceMatrix * vec4(FragPos, 1.0);
-
-    gl_Position = proj * view * vec4(FragPos, 1.0);
-}
-	)";
-	const std::string phong_frag = R"(
-#version 330 core
-out vec4 FragColor;
-
-in vec3 Normal;  
-in vec3 FragPos;  
-in vec2 TexCoords;
-in vec4 FragPosLightSpace;
-  
-uniform vec3 cameraPos; 
-
-uniform vec3 objectColor;
-
-// phong lighting parameters
-uniform float ka;
-uniform float kd;
-uniform float ks;
-uniform float alpha;
-
-uniform sampler2D shadowMap;
-
-struct Light {
-	int type; // POINT = 0, DIRECTIONAL = 1
-	vec3 color;
-	vec3 position;  
-};
-
-#define MAX_LIGHTS 4
-uniform int numLights;
-uniform int receiveShadow;
-uniform Light lights[MAX_LIGHTS];
-
-float calculateAttenuation(float constant, float linear, float quadratic, float distance)
-{
-	return 1.0 / (constant + linear * distance + quadratic * (distance * distance));
-}
-
-float calculateShadow(vec4 fragPosLightSpace)
-{
-    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-
-    projCoords = projCoords * 0.5 + 0.5;
-
-    float closestDepth = texture(shadowMap, projCoords.xy).r; 
-
-    float currentDepth = projCoords.z;
-
-	float bias = 0.005;
-    float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
-    return shadow;
-}
-
-vec3 calculateDirLight(Light light)
-{
-	vec3 direction = light.position;
-	//vec3 color = vec3(texture(shadowMap, TexCoords.xy));
-	vec3 color = objectColor;
-
-    // ambient
-    vec3 ambient = ka * light.color;
-  	
-    // diffuse 
-    vec3 norm = normalize(Normal);
-    vec3 lightDir = normalize(direction);
-    vec3 diffuse = kd * max(dot(norm, lightDir), 0.0) * light.color;
-    
-    // specular
-    vec3 viewDir = normalize(cameraPos - FragPos);
-    vec3 reflectDir = reflect(-lightDir, norm);  
-    vec3 specular = ks * pow(max(dot(viewDir, reflectDir), 0.0), alpha) * light.color;
-
-	float shadow = 0.0;
-	if (receiveShadow == 1)
-	{
-		shadow = calculateShadow(FragPosLightSpace);       
-	}
-
-    return (ambient + (1.0 - shadow) * (diffuse + specular)) * color;
-}
-
-vec3 calculatePointLight(Light light)
-{
-	vec3 result;
-	vec3 position = light.position;
-
-    // ambient
-    vec3 ambient = ka * light.color;
-  	
-    // diffuse 
-    vec3 norm = normalize(Normal);
-    vec3 lightDir = normalize(position - FragPos);
-    vec3 diffuse = kd * max(dot(norm, lightDir), 0.0) * light.color;
-    
-    // specular
-    vec3 viewDir = normalize(cameraPos - FragPos);
-    vec3 reflectDir = reflect(-lightDir, norm);  
-    vec3 specular = ks * pow(max(dot(viewDir, reflectDir), 0.0), alpha) * light.color;
-
-	// attenuation
-	float constant		= 1.0;
-	float linear		= 0.09;
-	float quadratic		= 0.032;
-	float distance		= length(position - FragPos);
-	float attenuation	= calculateAttenuation(constant, linear, quadratic, distance);  
-	
-    result += (ambient + diffuse + specular) * attenuation * objectColor;
-
-#if 0
-	// https://ijdykeman.github.io/graphics/simple_fog_shader
-	vec3 cameraDir = cameraPos - FragPos;
-	vec3 cameraDir = -viewDir;
-	float b = length(light.position - cameraPos);
-
-	float h = length(cross(light.position - cameraPos, cameraDir)) / length(cameraDir);
-	float dropoff = 1.0;
-	float fog = (atan(b / h) / (h * dropoff));
-
-	float density = 0.1;
-
-	// TODO: improve this
-	float theta = dot(norm, viewDir) >= 0 ? 1 : 0;
-
-	vec3 scattered = light.color * (fog * density) * theta;
-	scattered *= calculateAttenuation(constant, linear, quadratic, length(cameraDir));
-	
-	result += scattered;
-#endif
-
-	return result;
-}
-
-void main()
-{
-	float depth = texture(shadowMap, TexCoords).x;
-    depth = 1.0 - (1.0 - depth) * 25.0;
-    FragColor = vec4(depth);
-	//return;
-
-	vec3 result;
-
-	for (int i = 0; i < numLights; i++)
-	{
-		switch (lights[i].type) {
-			case 0:
-				result += calculatePointLight(lights[i]);
-				break;
-			
-			case 1:
-				result += calculateDirLight(lights[i]);
-				break;
-		}
-	}
-	
-    FragColor = vec4(result, 1.0);
-}
-	)";
-
-	const std::string basic_vert = R"(
-#version 330 core
-layout (location = 0) in vec3 aPos;
-layout (location = 1) in vec2 aNormal;
-
-uniform mat4 model;
-uniform mat4 view;
-uniform mat4 proj;
-
-void main()
-{
-	gl_Position = proj * view * model * vec4(aPos, 1.0f);
-}
-	)";
-	const std::string basic_frag = R"(
-#version 330 core
-out vec4 FragColor;
-
-uniform vec3 objectColor;
-
-void main()
-{
-	FragColor = vec4(objectColor.rgb, 1.0f);
-}
-)";
-
-
-	const std::string depth_vert = R"(
-#version 330 core
-layout(location = 0) in vec3 aPos;
-
-uniform mat4 model;
-uniform mat4 lightSpaceMatrix;
-
-void main()
-{
-	gl_Position = lightSpaceMatrix * model * vec4(aPos, 1.0);
-}
-)";
-	
-	const std::string depth_frag = R"(
-#version 330 core
-void main() {}
-)";
-
-	const std::string screen_vert = R"(
-#version 330 core
-layout (location = 0) in vec3 aPos;
-layout (location = 1) in vec2 aTexCoords;
-
-out vec2 TexCoords;
-
-void main()
-{
-	TexCoords = aTexCoords;
-	gl_Position = vec4(aPos, 1.0);
-}
-)";
-	const std::string screen_frag = R"(
-#version 330 core
-out vec4 FragColor;
-
-in vec2 TexCoords;
-
-uniform sampler2D shadowMap;
-
-void main()
-{             
-    float depthValue = texture(shadowMap, TexCoords).r;
-    FragColor = vec4(vec3(depthValue), 1.0); // orthographic
-}
-)";
-
-	constexpr glm::vec3 color(int r, int g, int b)
+	constexpr glm::vec3 rgb(int r, int g, int b)
 	{
 		return glm::vec3(static_cast<float>(r), static_cast<float>(g), static_cast<float>(b)) / 255.0f;
 	}
 
-	constexpr glm::vec3 color(uint32_t hex)
+	constexpr glm::vec3 rgb(uint32_t hex)
 	{
 		assert(hex <= 0xffffffU);
 		return glm::vec3(
@@ -307,6 +48,7 @@ void main()
 		void setInt(const std::string& name, int value);
 		void setFloat(const std::string& name, float value);
 		void setVec3(const std::string& name, const glm::vec3& value);
+		void setVec4(const std::string& name, const glm::vec4& value);
 		void setMat4(const std::string& name, const glm::mat4& value);
 	};
 
@@ -324,6 +66,7 @@ void main()
 		ShadowMap *shadowMap;
 		Light* shadowCaster;
 		bool isShadowPass;
+		glm::vec3 backgroundColor;
 	};
 
 	class Object3D {
@@ -399,18 +142,18 @@ void main()
 		};
 
 		Light(glm::vec3 color_) 
-			: color(color_), type(POINT), castShadow(false), Object3D() 
+			: rgb(color_), type(POINT), castShadow(false), Object3D() 
 		{}
 
 		Light(LightType type_, glm::vec3 color_) 
-			: color(color_), type(type_), castShadow(false), Object3D() 
+			: rgb(color_), type(type_), castShadow(false), Object3D() 
 		{}
 
 		bool isLight();
 
 		LightType type;
 		bool castShadow;
-		glm::vec3 color;
+		glm::vec3 rgb;
 	};
 
 	class Geometry {
@@ -443,9 +186,9 @@ void main()
 			: Material(color_, 0.1f, 1.0f, 0.5f, 10.0f) {}
 
 		Material(const glm::vec3& color_, float ka_, float kd_, float ks_, float alpha_)
-			: color(color_), ka(ka_), kd(kd_), ks(ks_), alpha(alpha_) {}
+			: rgb(color_), ka(ka_), kd(kd_), ks(ks_), alpha(alpha_) {}
 
-		glm::vec3 color;
+		glm::vec3 rgb;
 		float ka, kd, ks, alpha;
 
 		virtual Shader* getShader()
@@ -464,13 +207,27 @@ void main()
 				shader = std::make_shared<Shader>(vert, frag);
 		}
 
-		MaterialX( const std::string& vert, const std::string& frag, const glm::vec3& color_)
+		MaterialX(const std::string& path, const glm::vec3& color_, float ka_, float kd_, float ks_, float alpha_)
+			: Material(color_, ka_, kd_, ks_, alpha_) 
+		{
+			if (shader == nullptr)
+				shader = std::make_shared<Shader>(path);
+		}
+
+		MaterialX(const std::string& vert, const std::string& frag, const glm::vec3& color_)
 			: MaterialX<Derived>(vert, frag, color_, 0.2f, 1.0f, 0.5f, 10.0f) {}
+
+		MaterialX(const std::string& path, const glm::vec3& color_)
+			: MaterialX<Derived>(path, color_, 0.2f, 1.0f, 0.5f, 10.0f) {}
 
 		MaterialX( const std::string& vert, const std::string& frag)
 			: MaterialX<Derived>(vert, frag, glm::vec3(0.5f), 0.2f, 1.0f, 0.5f, 10.0f) {}
 
-		Shader* getShader()
+		MaterialX( const std::string& path)
+			: MaterialX<Derived>(path, glm::vec3(0.5f), 0.2f, 1.0f, 0.5f, 10.0f) {}
+
+
+		Shader* getShader() 
 		{
 			return shader.get();
 		}
@@ -480,17 +237,17 @@ void main()
 
 	class Phong : public MaterialX<Phong> {
 	public:
-		Phong(const glm::vec3& color_) : MaterialX<Phong>(phong_vert, phong_frag, color_, 0.2f, 1.0f, 0.5f, 10.0f) {}
+		Phong(const glm::vec3& color_) : MaterialX<Phong>("shaders/phong", color_, 0.2f, 1.0f, 0.5f, 10.0f) {}
 	};
 
 	class Basic : public MaterialX<Basic> {
 	public:
-		Basic(const glm::vec3& color_) : MaterialX<Basic>(basic_vert, basic_frag, color_){}
+		Basic(const glm::vec3& color_) : MaterialX<Basic>("shaders/basic", color_) {}
 	};
 
 	class ShaderMaterial : public MaterialX<ShaderMaterial> {
 	public:
-		ShaderMaterial(const std::string& vert, const std::string& frag) : MaterialX<ShaderMaterial>(vert, frag) {}
+		ShaderMaterial(const std::string& path) : MaterialX<ShaderMaterial>(path) {}
 	};
 
 	class Mesh : public Object3D {
@@ -506,7 +263,7 @@ void main()
 	class Renderer {
 	public:
 		Renderer(GLFWwindow* window, unsigned int width, unsigned int height) 
-			: m_window(window), m_shadowMap(new ShadowMap(1024, 1024)), m_width(width), m_height(height) 
+			: m_window(window), m_shadowMap(new ShadowMap(1024, 1024)), m_width(width), m_height(height), background(rgb(18, 100, 132))
 		{
 			
 			const std::vector<float> quad_vertices = {
@@ -520,7 +277,7 @@ void main()
 			};
 
 			auto geometry = std::make_shared<Geometry>(quad_vertices, Geometry::POS_UV);
-			auto material = std::make_shared<ShaderMaterial>(screen_vert, screen_frag);
+			auto material = std::make_shared<ShaderMaterial>("shaders/screen");
 			m_quad = std::make_shared<Mesh>(geometry, material);
 		}
 
@@ -531,6 +288,7 @@ void main()
 		}
 
 		void render(Camera& camera, Object3D& scene);
+		glm::vec3 background;
 	private:
 		GLFWwindow* m_window;
 		unsigned int m_width, m_height;

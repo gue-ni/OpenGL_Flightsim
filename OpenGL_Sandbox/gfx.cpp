@@ -105,6 +105,11 @@ namespace gfx {
 		glUniform3fv(glGetUniformLocation(id, name.c_str()), 1, &value[0]);
 	}
 
+	void Shader::setVec4(const std::string& name, const glm::vec4& value)
+	{
+		glUniform4fv(glGetUniformLocation(id, name.c_str()), 1, &value[0]);
+	}
+
 	void Shader::setMat4(const std::string& name, const glm::mat4& value)
 	{
 		glUniformMatrix4fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE, &value[0][0]);
@@ -296,6 +301,7 @@ namespace gfx {
 		context.camera			= &camera;
 		context.shadowMap		= m_shadowMap;
 		context.shadowCaster	= nullptr;
+		context.backgroundColor = background;
 
 		scene.traverse([&context](Object3D* obj) {
 			if (obj->isLight())
@@ -377,6 +383,8 @@ namespace gfx {
 			shader->setInt("shadowMap", 0);
 			shader->setInt("numLights", context.lights.size());
 			shader->setInt("receiveShadow", receiveShadow);
+			shader->setVec3("backgroundColor", context.backgroundColor);
+
 
 			for (int i = 0; i < context.lights.size(); i++)
 			{
@@ -384,7 +392,7 @@ namespace gfx {
 				auto type = context.lights[i]->type;
 
 				shader->setInt( "lights[" + index + "].type", type);
-				shader->setVec3("lights[" + index + "].color", context.lights[i]->color);
+				shader->setVec3("lights[" + index + "].color", context.lights[i]->rgb);
 				shader->setVec3("lights[" + index + "].position", context.lights[i]->getWorldPosition());
 			}
 
@@ -393,7 +401,7 @@ namespace gfx {
 			shader->setFloat("kd", m_material.get()->kd);
 			shader->setFloat("ks", m_material.get()->ks);
 			shader->setFloat("alpha", m_material.get()->alpha);
-			shader->setVec3("objectColor", m_material.get()->color);
+			shader->setVec3("objectColor", m_material.get()->rgb);
 		}
 
 		m_geometry.get()->use();
@@ -403,7 +411,7 @@ namespace gfx {
 	}
 
 	ShadowMap::ShadowMap(unsigned int shadow_width, unsigned int shadow_height)
-		: width(shadow_width), height(shadow_height), shader(depth_vert, depth_frag)
+		: width(shadow_width), height(shadow_height), shader("shaders/depth")
 	{
 #if 1
 		glGenFramebuffers(1, &fbo);

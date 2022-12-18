@@ -194,12 +194,12 @@ int main()
 
     gfx::Renderer renderer(window, SCR_WIDTH, SCR_HEIGHT);
 
-    auto basic  = make_shared<gfx::Basic>(gfx::color(0xffffff));
-    auto red    = make_shared<gfx::Phong>(gfx::color(0xff00ff));
+    auto basic  = make_shared<gfx::Basic>(gfx::rgb(0xffffff));
+    auto red    = make_shared<gfx::Phong>(renderer.background);
 
-    auto phong1 = make_shared<gfx::Phong>(gfx::color(165, 113, 100)); // bronze
-    auto phong2 = make_shared<gfx::Phong>(gfx::color(0x00ff00));
-    auto phong3 = make_shared<gfx::Phong>(gfx::color(0x00f0f0));
+    auto phong1 = make_shared<gfx::Phong>(gfx::rgb(165, 113, 100)); // bronze
+    auto phong2 = make_shared<gfx::Phong>(gfx::rgb(0x00ff00));
+    auto phong3 = make_shared<gfx::Phong>(gfx::rgb(0x00f0f0));
 
     auto cube_geometry       = make_shared<gfx::Geometry>(cube_vertices, gfx::Geometry::POS_NORM);
     auto plane_geometry      = make_shared<gfx::Geometry>(generatePlane(2,3,1,1), gfx::Geometry::POS_NORM);
@@ -207,37 +207,38 @@ int main()
 
     gfx::Camera camera(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1000.0f);
 
+    /*
     float xz = 15.0f, y = 15.0f;
     auto isometric_offset = glm::vec3(xz, y, xz);
     auto isometric_rotation = glm::vec3(glm::radians(45.0f), glm::radians(-35.264f), 0);
-    
-    //auto isometric = glm::mat4(1.0f);
-    //isometric = glm::translate(isometric, glm::vec3(10, 0, 10));
-    //isometric = glm::rotate(isometric, glm::radians(35.0f), glm::vec3(0, 0, 1));
-    //isometric = glm::rotate(isometric, glm::radians(45.0f), glm::vec3(0, 1, 0));
-    //auto R = glm::eulerAngleYXZ(glm::radians(35.0f), glm::radians(45.0f), 0.0f);
-    //camera.overrideTransform(R * isometric);
-
     camera.setPosition(isometric_offset);
     camera.setRotation(isometric_rotation);
+    */
+   
+    auto isometric = glm::mat4(1.0f);
+    isometric = glm::translate(isometric, glm::vec3(10, 10, 10));
+    isometric = glm::rotate(isometric, glm::radians(-35.0f), glm::vec3(1, 0, 0));
+    isometric = glm::rotate(isometric, glm::radians(45.0f), glm::vec3(0, 1, 0));
+    camera.overrideTransform(isometric);
+
 
     gfx::Mesh skybox(inv_cube, red);
     skybox.setScale(glm::vec3(50.0f));
 
     gfx::Mesh cube(cube_geometry, phong1);
-    cube.setPosition(glm::vec3(0, 1, 0));
+    cube.setPosition(glm::vec3(5, 1, 5));
     cube.setScale(glm::vec3(2, 0.5, 1));
     cube.receiveShadow = false;
 
-    gfx::Mesh plane(plane_geometry, phong2);
-    plane.setPosition(glm::vec3(0.0f));
+    gfx::Mesh plane(cube_geometry, phong2);
+    plane.setPosition(glm::vec3(0.0f, 2.0f, -2.0f));
     plane.setScale(glm::vec3(2.25f));
 
     gfx::Mesh ground(cube_geometry, phong3);
     ground.setPosition(glm::vec3(0.0f, -1.0f, 0.0f));
     ground.setScale(glm::vec3(20, 1, 20));
 
-    gfx::Light sun(gfx::Light::DIRECTIONAL, gfx::color(154, 219, 172));
+    gfx::Light sun(gfx::Light::DIRECTIONAL, gfx::rgb(154, 219, 172));
     sun.setPosition(glm::vec3(0.5f, 2.0f, 2.0f));
     sun.castShadow = true;
     
@@ -247,6 +248,7 @@ int main()
     scene.add(&ground);
     scene.add(&cube);
     scene.add(&plane);
+    //scene.add(&skybox);
 
     int frames = 0;
     double currentTime, previousTime = 0;
@@ -258,10 +260,7 @@ int main()
         frames++;
         if (currentTime - previousTime >= 1.0)
         {
-            std::cout
-                << 1000.0 / static_cast<double>(frames)
-                << " ms/frame\n";
-
+            std::cout << 1000.0 / static_cast<double>(frames) << " ms/frame\n";
             frames = 0;
             previousTime = currentTime;
         }
@@ -271,7 +270,7 @@ int main()
 			glfwSetWindowShouldClose(window, true);
 
 
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClearColor(renderer.background.r, renderer.background.g, renderer.background.b, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         const float t = 0.001f;
