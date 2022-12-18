@@ -17,22 +17,8 @@ namespace gfx {
 	Shader::Shader(const std::string& vertShader, const std::string& fragShader)
 	{
 		//std::cout << "create Shader\n";
-#if 0
-		std::fstream vfile(vertShader);
-		std::stringstream vbuffer;
-		vbuffer << vfile.rdbuf();
-		std::string vsource = vbuffer.str();
-		const char* vertexShaderSource = vsource.c_str();
-
-		std::fstream ffile(fragShader);
-		std::stringstream fbuffer;
-		fbuffer << ffile.rdbuf();
-		std::string fsource = fbuffer.str();
-		const char* fragmentShaderSource = fsource.c_str();
-#else
 		const char* vertexShaderSource = vertShader.c_str();
 		const char* fragmentShaderSource = fragShader.c_str();
-#endif
 
 		unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
 		glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
@@ -76,7 +62,6 @@ namespace gfx {
 
 	Shader::~Shader()
 	{
-		//std::cout << "destroy Shader\n";
 		glDeleteProgram(id);
 	}
 
@@ -118,8 +103,6 @@ namespace gfx {
 	Geometry::Geometry(const std::vector<float>& vertices, const VertexLayout& layout)
 		: count(static_cast<int>(vertices.size()) / (getStride(layout)))
 	{
-		//std::cout << "create Geometry\n";
-
 		const int stride = getStride(layout);
 		glGenVertexArrays(1, &m_vao);
 		glGenBuffers(1, &m_vbo);
@@ -191,6 +174,19 @@ namespace gfx {
 	glm::mat4 Camera::getProjectionMatrix()
 	{
 		return m_projection;
+	}
+
+	void Camera::lookAt(const glm::vec3& target)
+	{
+		overrideTransform(
+			glm::inverse(
+				glm::lookAt(
+					m_position,
+					target,
+					m_up	
+				)
+			)
+		);
 	}
 
 	template<class Derived>

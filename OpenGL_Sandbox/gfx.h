@@ -1,7 +1,6 @@
 #pragma once
 
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
+#include <GL/glew.h>
 
 // glm
 #include <vec3.hpp>
@@ -129,6 +128,8 @@ namespace gfx {
 
 		glm::mat4 getViewMatrix();
 		glm::mat4 getProjectionMatrix();
+		void lookAt(const glm::vec3& target);
+
 	private:
 		glm::mat4 m_projection;
 		glm::vec3 m_up, m_front;
@@ -254,7 +255,9 @@ namespace gfx {
 	public:
 		Mesh(std::shared_ptr<Geometry> geometry, std::shared_ptr<Material> material)
 			: m_geometry(geometry), m_material(material) {}
+
 		void draw(RenderContext& context);
+
 	private:
 		std::shared_ptr<Geometry> m_geometry;
 		std::shared_ptr<Material> m_material;
@@ -262,10 +265,9 @@ namespace gfx {
 
 	class Renderer {
 	public:
-		Renderer(GLFWwindow* window, unsigned int width, unsigned int height) 
-			: m_window(window), m_shadowMap(new ShadowMap(1024, 1024)), m_width(width), m_height(height), background(rgb(18, 100, 132))
+		Renderer(unsigned int width, unsigned int height) 
+			: m_shadowMap(new ShadowMap(1024, 1024)),  m_width(width), m_height(height), background(rgb(18, 100, 132))
 		{
-			
 			const std::vector<float> quad_vertices = {
 				-1.0f,  1.0f, 0.0f, 0.0f, 1.0f, // top left
 				-1.0f, -1.0f, 0.0f, 0.0f, 0.0f, // bottom left
@@ -290,9 +292,8 @@ namespace gfx {
 		void render(Camera& camera, Object3D& scene);
 		glm::vec3 background;
 	private:
-		GLFWwindow* m_window;
 		unsigned int m_width, m_height;
-		ShadowMap* m_shadowMap;
+		ShadowMap* m_shadowMap = nullptr;
 		std::shared_ptr<Mesh> m_quad;
 	};
 };
