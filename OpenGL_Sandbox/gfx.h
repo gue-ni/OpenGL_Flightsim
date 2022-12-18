@@ -44,11 +44,11 @@ namespace gfx {
 		~Shader();
 		void use();
 		void reset();
-		void setInt(const std::string& name, int value);
-		void setFloat(const std::string& name, float value);
-		void setVec3(const std::string& name, const glm::vec3& value);
-		void setVec4(const std::string& name, const glm::vec4& value);
-		void setMat4(const std::string& name, const glm::mat4& value);
+		void set_int(const std::string& name, int value);
+		void set_float(const std::string& name, float value);
+		void set_vec3(const std::string& name, const glm::vec3& value);
+		void set_vec4(const std::string& name, const glm::vec4& value);
+		void set_mat4(const std::string& name, const glm::mat4& value);
 	};
 
 	struct ShadowMap {
@@ -87,22 +87,21 @@ namespace gfx {
 		bool receiveShadow;
 
 		Object3D& add(Object3D* child);
-		void drawChildren(RenderContext& context);
+		
 		virtual void draw(RenderContext& context);
+		void draw_children(RenderContext& context);
 
-		void setScale(const glm::vec3& scale);
-		glm::vec3 getScale();
+		void set_scale(const glm::vec3& scale); // yaw, roll, pitch
+		void set_rotation(const glm::vec3& rot);
+		void set_position(const glm::vec3& pos);
 
-		// yaw, roll, pitch
-		void setRotation(const glm::vec3& rot);
-		glm::vec3 getRotation();
+		glm::vec3 get_scale();
+		glm::vec3 get_rotation();
+		glm::vec3 get_position();
 
-		glm::vec3 getPosition();
-		void setPosition(const glm::vec3& pos);
-
-		void overrideTransform(const glm::mat4& matrix);
-		glm::vec3 getWorldPosition();
-		virtual bool isLight();
+		virtual bool is_light();
+		glm::vec3 get_world_position();
+		void override_transform(const glm::mat4& matrix);
 
 		void traverse(const std::function<void(Object3D*)>& func)
 		{
@@ -114,8 +113,8 @@ namespace gfx {
 		friend class Renderer;
 		bool m_dirty, m_dirty_transform;
 		glm::vec3 m_rotation, m_position, m_scale; 
-		void updateWorldMatrix(bool dirtyParent);
-		glm::mat4 getLocalTransform();
+		void update_world_matrix(bool dirtyParent);
+		glm::mat4 get_local_transform();
 	};
 
 	class Camera : public Object3D  {
@@ -126,9 +125,9 @@ namespace gfx {
 			m_front(0.0f, 0.0f, 1.0f)
 		{}
 
-		glm::mat4 getViewMatrix();
-		glm::mat4 getProjectionMatrix();
-		void lookAt(const glm::vec3& target);
+		glm::mat4 get_view_matrix();
+		glm::mat4 get_projection_matrix();
+		void look_at(const glm::vec3& target);
 
 	private:
 		glm::mat4 m_projection;
@@ -150,7 +149,7 @@ namespace gfx {
 			: rgb(color_), type(type_), castShadow(false), Object3D() 
 		{}
 
-		bool isLight();
+		bool is_light();
 
 		LightType type;
 		bool castShadow;
@@ -192,7 +191,7 @@ namespace gfx {
 		glm::vec3 rgb;
 		float ka, kd, ks, alpha;
 
-		virtual Shader* getShader()
+		virtual Shader* get_shader()
 		{
 			return nullptr;
 		}
@@ -201,13 +200,6 @@ namespace gfx {
 	template<class Derived>
 	class MaterialX : public Material {
 	public:
-		MaterialX(const std::string& vert, const std::string& frag, const glm::vec3& color_, float ka_, float kd_, float ks_, float alpha_)
-			: Material(color_, ka_, kd_, ks_, alpha_) 
-		{
-			if (shader == nullptr)
-				shader = std::make_shared<Shader>(vert, frag);
-		}
-
 		MaterialX(const std::string& path, const glm::vec3& color_, float ka_, float kd_, float ks_, float alpha_)
 			: Material(color_, ka_, kd_, ks_, alpha_) 
 		{
@@ -215,24 +207,13 @@ namespace gfx {
 				shader = std::make_shared<Shader>(path);
 		}
 
-		MaterialX(const std::string& vert, const std::string& frag, const glm::vec3& color_)
-			: MaterialX<Derived>(vert, frag, color_, 0.2f, 1.0f, 0.5f, 10.0f) {}
-
 		MaterialX(const std::string& path, const glm::vec3& color_)
 			: MaterialX<Derived>(path, color_, 0.2f, 1.0f, 0.5f, 10.0f) {}
 
-		MaterialX( const std::string& vert, const std::string& frag)
-			: MaterialX<Derived>(vert, frag, glm::vec3(0.5f), 0.2f, 1.0f, 0.5f, 10.0f) {}
-
-		MaterialX( const std::string& path)
+		MaterialX(const std::string& path)
 			: MaterialX<Derived>(path, glm::vec3(0.5f), 0.2f, 1.0f, 0.5f, 10.0f) {}
 
-
-		Shader* getShader() 
-		{
-			return shader.get();
-		}
-		
+		Shader* get_shader() { return shader.get(); }
 		static std::shared_ptr<Shader> shader;
 	};
 

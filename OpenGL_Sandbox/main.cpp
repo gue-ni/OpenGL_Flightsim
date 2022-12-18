@@ -15,10 +15,10 @@ using std::shared_ptr;
 using std::make_shared;
 
 
-#define SCR_WIDTH  640
-#define SCR_HEIGHT 380
+#define SCREEN_WIDTH  640
+#define SCREEN_HEIGHT 380
 
-std::ostream& operator<<(std::ostream& os, const glm::vec3 v)
+std::ostream& operator<<(std::ostream& os, const glm::vec3& v)
 {
 	return os << v.x << ", " << v.y << ", " << v.z;
 }
@@ -32,27 +32,16 @@ int main(void)
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 
-    SDL_Window* window = SDL_CreateWindow(
-        "HELLO",
-        40,
-        40,
-        SCR_WIDTH,
-        SCR_HEIGHT,
-        SDL_WINDOW_OPENGL);
+    SDL_Window* window = SDL_CreateWindow("", 40, 40, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_OPENGL);
 
     SDL_GLContext glContext = SDL_GL_CreateContext(window);
     glewExperimental = GL_TRUE;
 
     if (GLEW_OK != glewInit())
-    {
-        std::cout << "FAiled to init\n";
         return -1;
-    }
 
-    glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+    glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
     glEnable(GL_DEPTH_TEST);
-    
-    SDL_Event windowEvent;
 
 	const std::vector<float> cube_vertices = {
 		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
@@ -98,28 +87,24 @@ int main(void)
 		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
 	};
 
+    gfx::Renderer renderer(SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    gfx::Renderer renderer(SCR_WIDTH, SCR_HEIGHT);
+    auto blue   = make_shared<gfx::Phong>(gfx::rgb(0, 0, 255));
+    auto red    = make_shared<gfx::Phong>(gfx::rgb(255, 0, 0));
+    auto geom  = std::make_shared<gfx::Geometry>(cube_vertices, gfx::Geometry::POS_NORM);
 
-
-    auto phong = make_shared<gfx::Phong>(gfx::rgb(165, 113, 100)); // bronze
-    auto red = make_shared<gfx::Phong>(gfx::rgb(255, 0, 0)); // bronze
-
-    auto cube_geometry = std::make_shared<gfx::Geometry>(cube_vertices, gfx::Geometry::POS_NORM);
-
-    gfx::Camera camera(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1000.0f);
-    camera.setPosition(glm::vec3(0, 0.5, 2));
-
+    gfx::Camera camera(glm::radians(45.0f), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 1000.0f);
+    camera.set_position(glm::vec3(2, 2, 2));
   
-    gfx::Mesh cube(cube_geometry, phong);
+    gfx::Mesh cube(geom, blue);
     
-    gfx::Mesh ground(cube_geometry, red);
-    ground.setScale(glm::vec3(50, 0.5, 50));
-    ground.setPosition(glm::vec3(0, -1, 0));
+    gfx::Mesh ground(geom, red);
+    ground.set_scale(glm::vec3(10, 0.5, 10));
+    ground.set_position(glm::vec3(0, -1, 0));
     ground.receiveShadow = true;
 
     gfx::Light sun(gfx::Light::DIRECTIONAL, gfx::rgb(154, 219, 172));
-    sun.setPosition(glm::vec3(0.5f, 2.0f, 2.0f));
+    sun.set_position(glm::vec3(0.5f, 2.0f, 2.0f));
     sun.castShadow = true;
     
     gfx::Object3D scene;
@@ -128,28 +113,22 @@ int main(void)
     scene.add(&cube);
     scene.add(&ground);
 
-
-
-
-    bool close = false;
-    while (!close)
+    SDL_Event event;
+    bool quit = false;
+    while (!quit)
     {
-        if (SDL_PollEvent(&windowEvent))
+        while (SDL_PollEvent(&event) != 0)
         {
-            if (SDL_QUIT == windowEvent.type)
-                close = true;
+            if (SDL_QUIT == event.type)
+                quit = true;
         }
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        camera.setPosition(camera.getPosition() + glm::vec3(0,0.00001, 0.001));
-        std::cout << camera.getPosition() << std::endl;
+        camera.set_position(camera.get_position() + glm::vec3(0,0.00001, 0.001));
+        camera.look_at(glm::vec3(0, 0, 0));
 
-        camera.lookAt(glm::vec3(0, 0, 0));
-
-
-        // drawing
         renderer.render(camera, scene);
 
         SDL_GL_SwapWindow(window);

@@ -1,11 +1,11 @@
 ﻿# OpenGL Sandbox
 
-## Setup OpenGL
+## Setup OpenGL with GLFW
 
 [Video](https://www.youtube.com/watch?v=HzFatL3WT6g&ab_channel=BoostMyTool)
 
 1.	Download GLFW precompiled binary from [here](https://www.glfw.org/download.html)
-2.	Save binary to somewhere like `C:\User\jakob\libraries`
+2.	Save to somewhere like `C:\User\jakob\libraries`
 3.	In Visual Studio, go to *Project* -> *Properties* 
 	-	Add the path of the *include* directory to *C/C++* -> *General* -> *Additional Include Directories*
 	-	Add the path of *lib-vc2022* to *Linker* -> *General* -> *Additional Library Directories*
@@ -15,7 +15,7 @@
   - Add *glad.c* to sources
 
 
-
+## Setup OpenGL with SDL2
 
 
 

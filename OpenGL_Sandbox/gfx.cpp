@@ -75,27 +75,27 @@ namespace gfx {
 		glUseProgram(0);
 	}
 
-	void Shader::setInt(const std::string& name, int value) 
+	void Shader::set_int(const std::string& name, int value) 
 	{
 		glUniform1i(glGetUniformLocation(id, name.c_str()), value);
 	}
 
-	void Shader::setFloat(const std::string& name, float value) 
+	void Shader::set_float(const std::string& name, float value) 
 	{
 		glUniform1f(glGetUniformLocation(id, name.c_str()), value);
 	}
 
-	void Shader::setVec3(const std::string& name, const glm::vec3& value)
+	void Shader::set_vec3(const std::string& name, const glm::vec3& value)
 	{
 		glUniform3fv(glGetUniformLocation(id, name.c_str()), 1, &value[0]);
 	}
 
-	void Shader::setVec4(const std::string& name, const glm::vec4& value)
+	void Shader::set_vec4(const std::string& name, const glm::vec4& value)
 	{
 		glUniform4fv(glGetUniformLocation(id, name.c_str()), 1, &value[0]);
 	}
 
-	void Shader::setMat4(const std::string& name, const glm::mat4& value)
+	void Shader::set_mat4(const std::string& name, const glm::mat4& value)
 	{
 		glUniformMatrix4fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE, &value[0][0]);
 	}
@@ -166,19 +166,19 @@ namespace gfx {
 		return 0;
 	}
 
-	glm::mat4 Camera::getViewMatrix()
+	glm::mat4 Camera::get_view_matrix()
 	{
 		return glm::inverse(transform);
 	}
 
-	glm::mat4 Camera::getProjectionMatrix()
+	glm::mat4 Camera::get_projection_matrix()
 	{
 		return m_projection;
 	}
 
-	void Camera::lookAt(const glm::vec3& target)
+	void Camera::look_at(const glm::vec3& target)
 	{
-		overrideTransform(
+		override_transform(
 			glm::inverse(
 				glm::lookAt(
 					m_position,
@@ -194,45 +194,45 @@ namespace gfx {
 	
 	void Object3D::draw(RenderContext& context)
 	{
-		drawChildren(context);
+		draw_children(context);
 	}
 
-	void Object3D::drawChildren(RenderContext& context)
+	void Object3D::draw_children(RenderContext& context)
 	{
 		for (auto child : children) child->draw(context);
 	}
 
-	glm::vec3 Object3D::getPosition()
+	glm::vec3 Object3D::get_position()
 	{
 		return m_position;
 	}
 
-	glm::vec3 Object3D::getRotation()
+	glm::vec3 Object3D::get_rotation()
 	{
 		return m_rotation;
 	}
 
-	glm::vec3 Object3D::getScale()
+	glm::vec3 Object3D::get_scale()
 	{
 		return m_scale;
 	}
 
-	void Object3D::setScale(const glm::vec3& scale)
+	void Object3D::set_scale(const glm::vec3& scale)
 	{
 		m_scale = scale; m_dirty = true;
 	}
 
-	void Object3D::setPosition(const glm::vec3& pos)
+	void Object3D::set_position(const glm::vec3& pos)
 	{
 		m_position = pos; m_dirty = true;
 	}
 
-	void Object3D::setRotation(const glm::vec3& rot)
+	void Object3D::set_rotation(const glm::vec3& rot)
 	{
 		m_rotation = rot; m_dirty = true;
 	}
 
-	glm::mat4 Object3D::getLocalTransform()
+	glm::mat4 Object3D::get_local_transform()
 	{
 		auto S = glm::scale(glm::mat4(1.0f), m_scale);
 		auto T = glm::translate(glm::mat4(1.0f), m_position);
@@ -240,27 +240,27 @@ namespace gfx {
 		return T * R * S;
 	}
 
-	void Object3D::overrideTransform(const glm::mat4& matrix)
+	void Object3D::override_transform(const glm::mat4& matrix)
 	{
 		m_dirty_transform = true; m_dirty = true;
 		transform = matrix;
 	}
 
-	void Object3D::updateWorldMatrix(bool dirtyParent)
+	void Object3D::update_world_matrix(bool dirtyParent)
 	{
 		bool dirty = m_dirty || dirtyParent;
 
 		if (dirty && !m_dirty_transform)
 		{
 			if (parent)
-				transform = parent->transform * getLocalTransform();
+				transform = parent->transform * get_local_transform();
 			else
-				transform = getLocalTransform();
+				transform = get_local_transform();
 		}
 	
 		for (auto child : children)
 		{
-			child->updateWorldMatrix(dirty || m_dirty_transform);
+			child->update_world_matrix(dirty || m_dirty_transform);
 		}
 
 		m_dirty = m_dirty_transform = false;
@@ -273,25 +273,25 @@ namespace gfx {
 		return (*this);
 	}
 
-	glm::vec3 Object3D::getWorldPosition()
+	glm::vec3 Object3D::get_world_position()
 	{
 		auto world = transform * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		return glm::vec3(world.x, world.y, world.z);
 	}
 
-	bool Object3D::isLight()
+	bool Object3D::is_light()
 	{
 		return false;
 	}
 
-	bool Light::isLight()
+	bool Light::is_light()
 	{
 		return true;
 	}
 
 	void Renderer::render(Camera& camera, Object3D& scene)
 	{
-		scene.updateWorldMatrix(false);
+		scene.update_world_matrix(false);
 
 		RenderContext context;
 		context.camera			= &camera;
@@ -300,7 +300,7 @@ namespace gfx {
 		context.backgroundColor = background;
 
 		scene.traverse([&context](Object3D* obj) {
-			if (obj->isLight())
+			if (obj->is_light())
 			{
 				Light* light = dynamic_cast<Light*>(obj);
 				if (light->castShadow)
@@ -353,7 +353,7 @@ namespace gfx {
 
 		assert(context.shadowCaster);
 
-		auto lightPos = context.shadowCaster->getWorldPosition();
+		auto lightPos = context.shadowCaster->get_world_position();
 
 		glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		glm::mat4 lightProjection = glm::ortho(-m, m, -m, m, -10.0f, 20.0f);
@@ -364,22 +364,22 @@ namespace gfx {
 			Shader* shader = &context.shadowMap->shader;
 
 			shader->use();
-			shader->setMat4("model", transform);
-			shader->setMat4("lightSpaceMatrix", lightSpaceMatrix);
+			shader->set_mat4("model", transform);
+			shader->set_mat4("lightSpaceMatrix", lightSpaceMatrix);
 		}
 		else {
-			Shader* shader = m_material.get()->getShader();
+			Shader* shader = m_material.get()->get_shader();
 
 			shader->use();
-			shader->setMat4("model", transform);
-			shader->setMat4("view", context.camera->getViewMatrix());
-			shader->setMat4("proj", context.camera->getProjectionMatrix());
-			shader->setMat4("lightSpaceMatrix", lightSpaceMatrix);
-			shader->setVec3("cameraPos", context.camera->getWorldPosition()); 
-			shader->setInt("shadowMap", 0);
-			shader->setInt("numLights", context.lights.size());
-			shader->setInt("receiveShadow", receiveShadow);
-			shader->setVec3("backgroundColor", context.backgroundColor);
+			shader->set_mat4("model", transform);
+			shader->set_mat4("view", context.camera->get_view_matrix());
+			shader->set_mat4("proj", context.camera->get_projection_matrix());
+			shader->set_mat4("lightSpaceMatrix", lightSpaceMatrix);
+			shader->set_vec3("cameraPos", context.camera->get_world_position()); 
+			shader->set_int("shadowMap", 0);
+			shader->set_int("numLights", context.lights.size());
+			shader->set_int("receiveShadow", receiveShadow);
+			shader->set_vec3("backgroundColor", context.backgroundColor);
 
 
 			for (int i = 0; i < context.lights.size(); i++)
@@ -387,23 +387,23 @@ namespace gfx {
 				auto index = std::to_string(i);
 				auto type = context.lights[i]->type;
 
-				shader->setInt( "lights[" + index + "].type", type);
-				shader->setVec3("lights[" + index + "].color", context.lights[i]->rgb);
-				shader->setVec3("lights[" + index + "].position", context.lights[i]->getWorldPosition());
+				shader->set_int( "lights[" + index + "].type", type);
+				shader->set_vec3("lights[" + index + "].color", context.lights[i]->rgb);
+				shader->set_vec3("lights[" + index + "].position", context.lights[i]->get_world_position());
 			}
 
 			// phong
-			shader->setFloat("ka", m_material.get()->ka);
-			shader->setFloat("kd", m_material.get()->kd);
-			shader->setFloat("ks", m_material.get()->ks);
-			shader->setFloat("alpha", m_material.get()->alpha);
-			shader->setVec3("objectColor", m_material.get()->rgb);
+			shader->set_float("ka", m_material.get()->ka);
+			shader->set_float("kd", m_material.get()->kd);
+			shader->set_float("ks", m_material.get()->ks);
+			shader->set_float("alpha", m_material.get()->alpha);
+			shader->set_vec3("objectColor", m_material.get()->rgb);
 		}
 
 		m_geometry.get()->use();
 		glDrawArrays(GL_TRIANGLES, 0, m_geometry.get()->count);
 
-		drawChildren(context);
+		draw_children(context);
 	}
 
 	ShadowMap::ShadowMap(unsigned int shadow_width, unsigned int shadow_height)
