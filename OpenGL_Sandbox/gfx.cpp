@@ -289,36 +289,44 @@ namespace gfx {
 		return true;
 	}
 
+	glm::mat4 Light::light_space_matrix()
+	{
+		float near_plane = 0.1f, far_plane = 25.0f, m = 10.0f;
+		glm::mat4 lightView = glm::lookAt(get_world_position(), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		glm::mat4 lightProjection = glm::ortho(-m, m, -m, m, -10.0f, 20.0f);
+		return lightProjection * lightView;
+	}
+
 	void Renderer::render(Camera& camera, Object3D& scene)
 	{
 		scene.update_world_matrix(false);
 
 		RenderContext context;
 		context.camera			= &camera;
-		context.shadowMap		= m_shadowMap;
-		context.shadowCaster	= nullptr;
-		context.backgroundColor = background;
+		context.shadow_map		= m_shadowMap;
+		context.shadow_caster	= nullptr;
+		context.background_color = background;
 
 		scene.traverse([&context](Object3D* obj) {
 			if (obj->is_light())
 			{
 				Light* light = dynamic_cast<Light*>(obj);
-				if (light->castShadow)
+				if (light->cast_shadow)
 				{
-					context.shadowCaster = light;
+					context.shadow_caster = light;
 				}
 				context.lights.push_back(light);
 			}
 		});
 
 #if 1
-		if (m_shadowMap)
+		if (m_shadowMap && context.shadow_caster)
 		{
 			glViewport(0, 0, m_shadowMap->width, m_shadowMap->height);
 			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_shadowMap->fbo);
 			glClear(GL_DEPTH_BUFFER_BIT);
 
-			context.isShadowPass	= true;
+			context.is_shadow_pass	= true;
 			scene.draw(context);
 	
 			glActiveTexture(GL_TEXTURE0);
@@ -330,7 +338,7 @@ namespace gfx {
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		context.isShadowPass = false;
+		context.is_shadow_pass = false;
 #if 1
 
 
@@ -349,23 +357,17 @@ namespace gfx {
 
 	void Mesh::draw(RenderContext& context)
 	{
-		float near_plane = 0.1f, far_plane = 25.0f, m = 10.0f;
+		glm::mat4 lightSpaceMatrix(1.0f);
 
-		assert(context.shadowCaster);
-
-		auto lightPos = context.shadowCaster->get_world_position();
-
-		glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		glm::mat4 lightProjection = glm::ortho(-m, m, -m, m, -10.0f, 20.0f);
-		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
-
-		if (context.isShadowPass)
+		if (context.is_shadow_pass)
 		{
-			Shader* shader = &context.shadowMap->shader;
+			assert(context.shadow_caster);
+
+			Shader* shader = &context.shadow_map->shader;
 
 			shader->use();
 			shader->set_mat4("model", transform);
-			shader->set_mat4("lightSpaceMatrix", lightSpaceMatrix);
+			shader->set_mat4("lightSpaceMatrix", context.shadow_caster->light_space_matrix());
 		}
 		else {
 			Shader* shader = m_material.get()->get_shader();
@@ -374,13 +376,15 @@ namespace gfx {
 			shader->set_mat4("model", transform);
 			shader->set_mat4("view", context.camera->get_view_matrix());
 			shader->set_mat4("proj", context.camera->get_projection_matrix());
-			shader->set_mat4("lightSpaceMatrix", lightSpaceMatrix);
-			shader->set_vec3("cameraPos", context.camera->get_world_position()); 
-			shader->set_int("shadowMap", 0);
-			shader->set_int("numLights", context.lights.size());
-			shader->set_int("receiveShadow", receiveShadow);
-			shader->set_vec3("backgroundColor", context.backgroundColor);
 
+			if (context.shadow_caster)
+				shader->set_mat4("lightSpaceMatrix", context.shadow_caster->light_space_matrix());
+			
+			shader->set_int("shadowMap", 0);
+			shader->set_vec3("backgroundColor", context.background_color);
+			shader->set_int("numLights", static_cast<int>(context.lights.size()));
+			shader->set_vec3("cameraPos", context.camera->get_world_position()); 
+			shader->set_int("receiveShadow", (receive_shadow && context.shadow_caster) ? 1 : 0);
 
 			for (int i = 0; i < context.lights.size(); i++)
 			{
@@ -392,12 +396,7 @@ namespace gfx {
 				shader->set_vec3("lights[" + index + "].position", context.lights[i]->get_world_position());
 			}
 
-			// phong
-			shader->set_float("ka", m_material.get()->ka);
-			shader->set_float("kd", m_material.get()->kd);
-			shader->set_float("ks", m_material.get()->ks);
-			shader->set_float("alpha", m_material.get()->alpha);
-			shader->set_vec3("objectColor", m_material.get()->rgb);
+			m_material.get()->use();
 		}
 
 		m_geometry.get()->use();
@@ -443,5 +442,69 @@ namespace gfx {
 			exit(-1);
 		}
 #endif
+	}
+
+	void Movement::update(Object3D* object)
+	{
+	}
+
+	void Movement::move_mouse(float x, float y)
+	{
+		std::cout << "move mouse " << x << ", " << y << std::endl;
+
+	
+		const float sensitivity = 0.05f;
+		x *= sensitivity;
+		y *= sensitivity;
+
+		m_yaw	-= x;
+		m_pitch += y;
+
+		glm::vec3 front_(0);
+		front_.x = cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
+		front_.y = sin(glm::radians(m_pitch));
+		front_.z = sin(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
+		m_front = glm::normalize(front_);
+	}
+
+	void Movement::move(const Direction& direction)
+	{
+		switch (direction)
+		{
+		case FORWARD: {
+
+			break;
+		}
+		case BACKWARD: {
+			break;
+		}
+		case LEFT: {
+			break;
+		}
+		case RIGHT: {
+			break;
+		}
+		default:
+			break;
+		}
+	}
+	void Phong::use()
+	{
+		Shader* shader = get_shader();
+		shader->set_float("ka", ka);
+		shader->set_float("kd", kd);
+		shader->set_float("ks", ks);
+		shader->set_float("alpha", alpha);
+		shader->set_vec3("objectColor", rgb);
+	}
+
+	void Basic::use()
+	{
+		Shader* shader = get_shader();
+		shader->set_float("ka", 0.6f);
+		shader->set_float("kd", 0.8f);
+		shader->set_float("ks", 0.2f);
+		shader->set_float("alpha", 10.0f);
+		shader->set_vec3("objectColor", rgb);
 	}
 }

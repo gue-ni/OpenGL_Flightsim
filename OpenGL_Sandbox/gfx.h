@@ -62,10 +62,10 @@ namespace gfx {
 	struct RenderContext {
 		Camera* camera;
 		std::vector<Light*> lights;
-		ShadowMap *shadowMap;
-		Light* shadowCaster;
-		bool isShadowPass;
-		glm::vec3 backgroundColor;
+		ShadowMap *shadow_map;
+		Light* shadow_caster;
+		bool is_shadow_pass;
+		glm::vec3 background_color;
 	};
 
 	class Object3D {
@@ -73,7 +73,7 @@ namespace gfx {
 		Object3D()
 			: m_dirty(true),
 			m_dirty_transform(false),
-			receiveShadow(true),
+			receive_shadow(true),
 			transform(1.0), 
 			parent(nullptr),
 			m_position(0.0f),
@@ -84,7 +84,7 @@ namespace gfx {
 		Object3D* parent;
 		std::vector<Object3D*> children;
 		glm::mat4 transform;
-		bool receiveShadow;
+		bool receive_shadow;
 
 		Object3D& add(Object3D* child);
 		
@@ -142,17 +142,19 @@ namespace gfx {
 		};
 
 		Light(glm::vec3 color_) 
-			: rgb(color_), type(POINT), castShadow(false), Object3D() 
+			: rgb(color_), type(POINT), cast_shadow(false), Object3D() 
 		{}
 
 		Light(LightType type_, glm::vec3 color_) 
-			: rgb(color_), type(type_), castShadow(false), Object3D() 
+			: rgb(color_), type(type_), cast_shadow(false), Object3D() 
 		{}
 
 		bool is_light();
 
+		glm::mat4 light_space_matrix();
+
 		LightType type;
-		bool castShadow;
+		bool cast_shadow;
 		glm::vec3 rgb;
 	};
 
@@ -179,39 +181,22 @@ namespace gfx {
 
 	class Material  {
 	public:
-		Material()
-			: Material(glm::vec3(1, 0.5, 0.2), 0.1f, 1.0f, 0.5f, 10.0f) {}
-
-		Material(const glm::vec3& color_)
-			: Material(color_, 0.1f, 1.0f, 0.5f, 10.0f) {}
-
-		Material(const glm::vec3& color_, float ka_, float kd_, float ks_, float alpha_)
-			: rgb(color_), ka(ka_), kd(kd_), ks(ks_), alpha(alpha_) {}
-
-		glm::vec3 rgb;
-		float ka, kd, ks, alpha;
-
 		virtual Shader* get_shader()
 		{
 			return nullptr;
 		}
+
+		virtual void use() {}
 	};
 
 	template<class Derived>
 	class MaterialX : public Material {
 	public:
-		MaterialX(const std::string& path, const glm::vec3& color_, float ka_, float kd_, float ks_, float alpha_)
-			: Material(color_, ka_, kd_, ks_, alpha_) 
+		MaterialX(const std::string& path)
 		{
 			if (shader == nullptr)
 				shader = std::make_shared<Shader>(path);
 		}
-
-		MaterialX(const std::string& path, const glm::vec3& color_)
-			: MaterialX<Derived>(path, color_, 0.2f, 1.0f, 0.5f, 10.0f) {}
-
-		MaterialX(const std::string& path)
-			: MaterialX<Derived>(path, glm::vec3(0.5f), 0.2f, 1.0f, 0.5f, 10.0f) {}
 
 		Shader* get_shader() { return shader.get(); }
 		static std::shared_ptr<Shader> shader;
@@ -219,12 +204,25 @@ namespace gfx {
 
 	class Phong : public MaterialX<Phong> {
 	public:
-		Phong(const glm::vec3& color_) : MaterialX<Phong>("shaders/phong", color_, 0.2f, 1.0f, 0.5f, 10.0f) {}
+		glm::vec3 rgb;
+		float ka, kd, ks, alpha;
+
+		Phong(const glm::vec3& color_, float ka_, float kd_, float ks_, float alpha_) 
+			: MaterialX<Phong>("shaders/phong"), rgb(color_), ka(ka_), kd(kd_), ks(ks_), alpha(alpha_) 
+		{}
+
+		Phong(const glm::vec3& color_)
+			: MaterialX<Phong>("shaders/phong"), rgb(color_), ka(0.1f), kd(1.0f), ks(0.5f), alpha(10.0f) 
+		{}
+
+		void use();
 	};
 
 	class Basic : public MaterialX<Basic> {
 	public:
-		Basic(const glm::vec3& color_) : MaterialX<Basic>("shaders/basic", color_) {}
+		glm::vec3 rgb;
+		Basic(const glm::vec3& color_) : MaterialX<Basic>("shaders/basic"), rgb(color_) {}
+		void use();
 	};
 
 	class ShaderMaterial : public MaterialX<ShaderMaterial> {
@@ -276,6 +274,30 @@ namespace gfx {
 		unsigned int m_width, m_height;
 		ShadowMap* m_shadowMap = nullptr;
 		std::shared_ptr<Mesh> m_quad;
+	};
+
+	class Movement 
+	{
+	public:
+		enum Direction {
+			FORWARD,
+			RIGHT,
+			BACKWARD,
+			LEFT,
+		};
+
+		Movement(float speed) 
+			: m_pos_delta(0.0f), m_speed(speed), m_yaw(-90.0f), m_pitch(0.0f) 
+		{}
+
+		void update(Object3D* object);
+		void move_mouse(float x, float y);
+		void move(const Direction& direction);
+	
+	private:
+		float m_speed, m_yaw, m_pitch;
+		glm::vec3 m_pos_delta;
+		glm::vec3 m_front;
 	};
 };
 
