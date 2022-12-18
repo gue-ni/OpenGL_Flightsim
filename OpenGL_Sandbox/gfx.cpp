@@ -101,9 +101,9 @@ namespace gfx {
 	}
 	
 	Geometry::Geometry(const std::vector<float>& vertices, const VertexLayout& layout)
-		: count(static_cast<int>(vertices.size()) / (getStride(layout)))
+		: count(static_cast<int>(vertices.size()) / (get_stride(layout)))
 	{
-		const int stride = getStride(layout);
+		const int stride = get_stride(layout);
 		glGenVertexArrays(1, &m_vao);
 		glGenBuffers(1, &m_vbo);
 
@@ -154,7 +154,7 @@ namespace gfx {
         glBindVertexArray(m_vao); 
 	}
 
-	int Geometry::getStride(const VertexLayout& layout)
+	int Geometry::get_stride(const VertexLayout& layout)
 	{
 		switch (layout)
 		{
@@ -330,7 +330,7 @@ namespace gfx {
 			scene.draw(context);
 	
 			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, m_shadowMap->depthMap);
+			glBindTexture(GL_TEXTURE_2D, m_shadowMap->depth_map);
 		}
 #endif
 
@@ -411,8 +411,8 @@ namespace gfx {
 #if 1
 		glGenFramebuffers(1, &fbo);
 
-		glGenTextures(1, &depthMap);
-		glBindTexture(GL_TEXTURE_2D, depthMap);
+		glGenTextures(1, &depth_map);
+		glBindTexture(GL_TEXTURE_2D, depth_map);
 		glTexImage2D(
 			GL_TEXTURE_2D, 
 			0, 
@@ -431,7 +431,7 @@ namespace gfx {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_map, 0);
 		glDrawBuffer(GL_NONE);
 		glReadBuffer(GL_NONE);
 		glBindBuffer(GL_FRAMEBUFFER, 0);
