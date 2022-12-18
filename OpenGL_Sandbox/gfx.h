@@ -54,7 +54,7 @@ namespace gfx {
 	struct ShadowMap {
 		ShadowMap(unsigned int shadow_width, unsigned int shadow_height);
 		unsigned int fbo;
-		unsigned int depthMap;
+		unsigned int depth_map;
 		unsigned int width, height;
 		Shader shader;
 	};
@@ -174,9 +174,8 @@ namespace gfx {
 		int count;
 
 	private:
-		unsigned int m_vao;
-		unsigned int m_vbo;
-		static int getStride(const VertexLayout& layout);
+		unsigned int m_vao, m_vbo;
+		static int get_stride(const VertexLayout& layout);
 	};
 
 	class Material  {
@@ -287,7 +286,7 @@ namespace gfx {
 		};
 
 		Movement(float speed) 
-			: m_pos_delta(0.0f), m_speed(speed), m_yaw(-90.0f), m_pitch(0.0f) 
+			: m_pos_delta(0.0f), m_speed(speed), m_yaw(-90.0f), m_pitch(0.0f), m_front(1.0f, 0.0f, 0.0f)
 		{}
 
 		void update(Object3D* object);
