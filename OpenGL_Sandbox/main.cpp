@@ -115,7 +115,7 @@ int main(void)
     scene.add(&cube);
     //scene.add(&ground);
 
-    gfx::Movement controller(10.0f);
+    gfx::Controller controller(10.0f);
 
     SDL_Event event;
     bool quit = false;
@@ -138,16 +138,16 @@ int main(void)
             case SDL_KEYDOWN: {
                 switch (event.key.keysym.sym) {
                 case SDLK_LEFT:
-                    controller.move(gfx::Movement::LEFT);
+                    controller.move(gfx::Controller::LEFT);
                     break;
                 case SDLK_RIGHT:
-                    controller.move(gfx::Movement::RIGHT);
+                    controller.move(gfx::Controller::RIGHT);
                     break;
                 case SDLK_UP:
-                    controller.move(gfx::Movement::FORWARD);
+                    controller.move(gfx::Controller::FORWARD);
                     break;
                 case SDLK_DOWN:
-                    controller.move(gfx::Movement::BACKWARD);
+                    controller.move(gfx::Controller::BACKWARD);
                     break;
 
                 case SDLK_ESCAPE: {

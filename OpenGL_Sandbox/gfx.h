@@ -3,10 +3,10 @@
 #include <GL/glew.h>
 
 // glm
-#include <vec3.hpp>
-#include <mat4x4.hpp>
-#include <gtc/matrix_transform.hpp>
-#include <gtx/euler_angles.hpp >
+#include <glm/vec3.hpp>
+#include <glm/mat4x4.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/euler_angles.hpp >
 
 #include <iostream>
 #include <sstream>
@@ -37,19 +37,36 @@ namespace gfx {
 	class Light;
 
 	struct Shader {
-	public:
 		unsigned int id;
 		Shader(const std::string& path);
 		Shader(const std::string& vertShader, const std::string& fragShader);
 		~Shader();
-		void use();
-		void reset();
+		void bind() const;
+		void unbind() const;
 		void set_int(const std::string& name, int value);
 		void set_float(const std::string& name, float value);
 		void set_vec3(const std::string& name, const glm::vec3& value);
 		void set_vec4(const std::string& name, const glm::vec4& value);
 		void set_mat4(const std::string& name, const glm::mat4& value);
 	};
+
+	struct VertexBuffer {
+		unsigned int id;
+		VertexBuffer(const void* data, size_t size);
+		~VertexBuffer();
+		void bind() const;
+		void unbind() const;
+	};
+
+#if 0
+	struct VertexArray {
+		unsigned int id;
+		VertexArray();
+		~VertexArray();
+		void bind() const;
+		void unbind() const;
+	};
+#endif
 
 	struct ShadowMap {
 		ShadowMap(unsigned int shadow_width, unsigned int shadow_height);
@@ -158,6 +175,7 @@ namespace gfx {
 		glm::vec3 rgb;
 	};
 
+
 	class Geometry {
 	public:
 		enum VertexLayout {
@@ -170,7 +188,7 @@ namespace gfx {
 		Geometry(const std::vector<float>& vertices, const VertexLayout& layout);
 		Geometry(const Geometry& geometry);
 		~Geometry();
-		void use();
+		void bind();
 		int count;
 
 	private:
@@ -185,7 +203,7 @@ namespace gfx {
 			return nullptr;
 		}
 
-		virtual void use() {}
+		virtual void bind() {}
 	};
 
 	template<class Derived>
@@ -214,14 +232,14 @@ namespace gfx {
 			: MaterialX<Phong>("shaders/phong"), rgb(color_), ka(0.1f), kd(1.0f), ks(0.5f), alpha(10.0f) 
 		{}
 
-		void use();
+		void bind();
 	};
 
 	class Basic : public MaterialX<Basic> {
 	public:
 		glm::vec3 rgb;
 		Basic(const glm::vec3& color_) : MaterialX<Basic>("shaders/basic"), rgb(color_) {}
-		void use();
+		void bind();
 	};
 
 	class ShaderMaterial : public MaterialX<ShaderMaterial> {
@@ -275,7 +293,7 @@ namespace gfx {
 		std::shared_ptr<Mesh> m_quad;
 	};
 
-	class Movement 
+	class Controller 
 	{
 	public:
 		enum Direction {
@@ -285,7 +303,7 @@ namespace gfx {
 			LEFT,
 		};
 
-		Movement(float speed) 
+		Controller(float speed) 
 			: m_pos_delta(0.0f), m_speed(speed), m_yaw(-90.0f), m_pitch(0.0f), m_front(1.0f, 0.0f, 0.0f)
 		{}
 

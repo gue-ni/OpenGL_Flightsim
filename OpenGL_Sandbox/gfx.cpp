@@ -65,12 +65,12 @@ namespace gfx {
 		glDeleteProgram(id);
 	}
 
-	void Shader::use()
+	void Shader::bind() const
 	{
 		glUseProgram(id);
 	}
 
-	void Shader::reset()
+	void Shader::unbind() const
 	{
 		glUseProgram(0);
 	}
@@ -149,7 +149,7 @@ namespace gfx {
 		glDeleteBuffers(1, &m_vbo);
 	}
 
-	void Geometry::use()
+	void Geometry::bind()
 	{
         glBindVertexArray(m_vao); 
 	}
@@ -365,14 +365,14 @@ namespace gfx {
 
 			Shader* shader = &context.shadow_map->shader;
 
-			shader->use();
+			shader->bind();
 			shader->set_mat4("model", transform);
 			shader->set_mat4("lightSpaceMatrix", context.shadow_caster->light_space_matrix());
 		}
 		else {
 			Shader* shader = m_material.get()->get_shader();
 
-			shader->use();
+			shader->bind();
 			shader->set_mat4("model", transform);
 			shader->set_mat4("view", context.camera->get_view_matrix());
 			shader->set_mat4("proj", context.camera->get_projection_matrix());
@@ -396,10 +396,10 @@ namespace gfx {
 				shader->set_vec3("lights[" + index + "].position", context.lights[i]->get_world_position());
 			}
 
-			m_material.get()->use();
+			m_material.get()->bind();
 		}
 
-		m_geometry.get()->use();
+		m_geometry.get()->bind();
 		glDrawArrays(GL_TRIANGLES, 0, m_geometry.get()->count);
 
 		draw_children(context);
@@ -444,11 +444,11 @@ namespace gfx {
 #endif
 	}
 
-	void Movement::update(Object3D* object)
+	void Controller::update(Object3D* object)
 	{
 	}
 
-	void Movement::move_mouse(float x, float y)
+	void Controller::move_mouse(float x, float y)
 	{
 		std::cout << "move mouse " << x << ", " << y << std::endl;
 
@@ -467,12 +467,11 @@ namespace gfx {
 		m_front = glm::normalize(front_);
 	}
 
-	void Movement::move(const Direction& direction)
+	void Controller::move(const Direction& direction)
 	{
 		switch (direction)
 		{
 		case FORWARD: {
-
 			break;
 		}
 		case BACKWARD: {
@@ -488,7 +487,7 @@ namespace gfx {
 			break;
 		}
 	}
-	void Phong::use()
+	void Phong::bind()
 	{
 		Shader* shader = get_shader();
 		shader->set_float("ka", ka);
@@ -498,7 +497,7 @@ namespace gfx {
 		shader->set_vec3("objectColor", rgb);
 	}
 
-	void Basic::use()
+	void Basic::bind()
 	{
 		Shader* shader = get_shader();
 		shader->set_float("ka", 0.6f);
@@ -506,5 +505,27 @@ namespace gfx {
 		shader->set_float("ks", 0.2f);
 		shader->set_float("alpha", 10.0f);
 		shader->set_vec3("objectColor", rgb);
+	}
+
+	VertexBuffer::VertexBuffer(const void* data, size_t size)
+	{
+		glGenBuffers(1, &id);
+		glBindBuffer(GL_ARRAY_BUFFER, id);
+		glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
+	}
+
+	VertexBuffer::~VertexBuffer()
+	{
+		glDeleteBuffers(1, &id);
+	}
+
+	void VertexBuffer::bind() const
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, id);
+	}
+
+	void VertexBuffer::unbind() const
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}
 }
