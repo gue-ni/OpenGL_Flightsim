@@ -279,12 +279,12 @@ namespace gfx {
 		return glm::vec3(world.x, world.y, world.z);
 	}
 
-	bool Object3D::is_light()
+	bool Object3D::is_light() const
 	{
 		return false;
 	}
 
-	bool Light::is_light()
+	bool Light::is_light() const
 	{
 		return true;
 	}

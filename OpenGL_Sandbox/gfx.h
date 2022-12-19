@@ -116,7 +116,7 @@ namespace gfx {
 		glm::vec3 get_rotation();
 		glm::vec3 get_position();
 
-		virtual bool is_light();
+		virtual bool is_light() const;
 		glm::vec3 get_world_position();
 		void override_transform(const glm::mat4& matrix);
 
@@ -166,7 +166,7 @@ namespace gfx {
 			: rgb(color_), type(type_), cast_shadow(false), Object3D() 
 		{}
 
-		bool is_light();
+		bool is_light() const;
 
 		glm::mat4 light_space_matrix();
 
