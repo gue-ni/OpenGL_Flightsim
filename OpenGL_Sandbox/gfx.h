@@ -6,7 +6,7 @@
 #include <glm/vec3.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/euler_angles.hpp >
+#include <glm/gtx/euler_angles.hpp>
 
 #include <iostream>
 #include <sstream>
@@ -14,6 +14,7 @@
 #include <string>
 #include <vector>
 #include <functional>
+#include <unordered_map>
 
 constexpr float PI = 3.14159265359f;
 
@@ -36,17 +37,14 @@ namespace gfx {
 	constexpr RGB rgb(uint32_t hex)
 	{
 		assert(hex <= 0xffffffU);
-		return RGB(
-			static_cast<float>((hex & 0xff0000U) >> 16) / 255.0f, 
-			static_cast<float>((hex & 0x00ff00U) >>  8) / 255.0f,
-			static_cast<float>((hex & 0x0000ffU) >>  0) / 255.0f 
-		);
+		return RGB{
+			static_cast<float>((hex & 0xff0000U) >> 16) / 255.0f,
+			static_cast<float>((hex & 0x00ff00U) >> 8)  / 255.0f, 
+			static_cast<float>((hex & 0x0000ffU) >> 0)  / 255.0f
+		};
 	}
 
-
-	void load_obj(const std::string path, std::vector<float>& vertices);
-
-	void load_obj(const std::string path, std::vector<float>& vertices, std::vector<float>& indices);
+	void load_obj(const std::string path, std::vector<float>& vertices, std::vector<int>& indices);
 
 	struct Shader {
 		GLuint id;

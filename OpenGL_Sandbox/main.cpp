@@ -99,9 +99,10 @@ int main(void)
 	};
 
 
-    const std::vector<float> ico_vertices = {
-    
-    };
+    std::vector<float> ico_vertices;
+    std::vector<int> ico_indices;
+
+    gfx::load_obj("assets/cube.obj", ico_vertices, ico_indices);
 
     gfx::Renderer renderer(SCREEN_WIDTH, SCREEN_HEIGHT);
 
