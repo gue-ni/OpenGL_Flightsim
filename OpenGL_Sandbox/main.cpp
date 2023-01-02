@@ -54,6 +54,7 @@ int main(void)
     SDL_CaptureMouse(SDL_TRUE);
     SDL_SetRelativeMouseMode(SDL_FALSE);
 
+#if 0
 	const std::vector<float> cube_vertices = {
         // position           // normals
 		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
@@ -98,26 +99,28 @@ int main(void)
 		-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
 		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
 	};
-
+#endif
 
     std::vector<float> ico_vertices;
-    std::vector<int> ico_indices;
+    std::vector<float> cube_vertices;
 
-    gfx::load_obj("assets/cube.obj", ico_vertices, ico_indices);
+    gfx::load_obj("assets/cube.obj", cube_vertices);
+    gfx::load_obj("assets/icosphere.obj", ico_vertices);
 
     gfx::Renderer renderer(SCREEN_WIDTH, SCREEN_HEIGHT);
 
     auto blue   = make_shared<gfx::Phong>(gfx::rgb(0, 0, 255));
     auto red    = make_shared<gfx::Phong>(gfx::rgb(255, 0, 0));
-    auto geo    = std::make_shared<gfx::Geometry>(cube_vertices, gfx::Geometry::POS_NORM);
+    auto cube_geo   = std::make_shared<gfx::Geometry>(cube_vertices, gfx::Geometry::POS_NORM);
+    auto ico_geo    = std::make_shared<gfx::Geometry>(ico_vertices, gfx::Geometry::POS_NORM);
 
     gfx::Camera camera(glm::radians(45.0f), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 1000.0f);
     camera.set_position(glm::vec3(0, 1, 3));
   
-    gfx::Mesh cube(geo, blue);
+    gfx::Mesh cube(ico_geo, blue);
     cube.set_position(glm::vec3(0, 1.0, 0));
     
-    gfx::Mesh ground(geo, red);
+    gfx::Mesh ground(cube_geo, red);
     ground.set_scale(glm::vec3(10, 0.5, 10));
     ground.set_position(glm::vec3(0, -1, 0));
     ground.receive_shadow = true;

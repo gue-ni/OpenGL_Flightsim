@@ -584,7 +584,7 @@ namespace gfx {
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}
 
-	void load_obj(const std::string path, std::vector<float>& vertices, std::vector<int>& indices)
+	void load_obj(const std::string path, std::vector<float>& vertices)
 	{
 		std::istringstream source(load_text_file(path));
 
@@ -611,16 +611,60 @@ namespace gfx {
 		printf("# of shapes    = %d\n", (int)shapes.size());
 
 
-		int i = 1;
+		for (size_t s = 0; s < shapes.size(); s++) {
+			// Loop over faces(polygon)
+			size_t index_offset = 0;
+			for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
 
+				//hardcode loading to triangles
+				int fv = 3;
+
+				// Loop over vertices in the face.
+				for (size_t v = 0; v < fv; v++) {
+					// access to vertex
+					tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
+
+					//vertex position
+					tinyobj::real_t vx = attributes.vertices[3 * idx.vertex_index + 0];
+					tinyobj::real_t vy = attributes.vertices[3 * idx.vertex_index + 1];
+					tinyobj::real_t vz = attributes.vertices[3 * idx.vertex_index + 2];
+					//vertex normal
+					tinyobj::real_t nx = attributes.normals[3 * idx.normal_index + 0];
+					tinyobj::real_t ny = attributes.normals[3 * idx.normal_index + 1];
+					tinyobj::real_t nz = attributes.normals[3 * idx.normal_index + 2];
+
+					glm::vec3 position, normal;
+
+					position.x = vx;
+					position.y = vy;
+					position.z = vz;
+
+					normal.x = nx;
+					normal.y = ny;
+					normal.z = nz;
+
+					//std::cout << position.x <<  ", " << position.y  << ", " << position.z << std::endl;
+
+					vertices.push_back(position.x);
+					vertices.push_back(position.y);
+					vertices.push_back(position.z);
+					vertices.push_back(normal.x);
+					vertices.push_back(normal.y);
+					vertices.push_back(normal.z);
+				}
+				index_offset += fv;
+			}
+		}
+
+#if 0
+		int i = 0;
 		for (const auto& shape : shapes) {
 			for (const auto& index : shape.mesh.indices) {
 
 				glm::vec3 pos;
 				glm::vec2 tex;
 
-				//vertices.push_back(vertex);
-				//indices.push_back(indices.size());
+				indices.push_back(i++);
 
 				pos = {
 					attributes.vertices[3 * index.vertex_index + 0],
@@ -633,8 +677,18 @@ namespace gfx {
 					attributes.texcoords[2 * index.texcoord_index + 1]
 				};
 
-				std::cout << "i=" << i++ << ", x=" << pos.x << ", y=" << pos.y << ", z=" << pos.z << std::endl;
+
+				vertices.push_back(pos.x);
+				vertices.push_back(pos.y);
+				vertices.push_back(pos.z);
+
+				vertices.push_back(pos.x);
+				vertices.push_back(pos.y);
+				vertices.push_back(pos.z);
+
+				std::cout << "i=" << i << ", x=" << pos.x << ", y=" << pos.y << ", z=" << pos.z << std::endl;
 			}
 		}
+#endif
 	}
 }
