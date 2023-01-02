@@ -578,4 +578,12 @@ namespace gfx {
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}
+
+	void load_obj(const std::string path, std::vector<float>& vertices)
+	{
+	}
+
+	void load_obj(const std::string path, std::vector<float>& vertices, std::vector<float>& indices)
+	{
+	}
 }

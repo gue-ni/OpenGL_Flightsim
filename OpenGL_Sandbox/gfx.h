@@ -43,6 +43,11 @@ namespace gfx {
 		);
 	}
 
+
+	void load_obj(const std::string path, std::vector<float>& vertices);
+
+	void load_obj(const std::string path, std::vector<float>& vertices, std::vector<float>& indices);
+
 	struct Shader {
 		GLuint id;
 		Shader(const std::string& path);
