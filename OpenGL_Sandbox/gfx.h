@@ -16,12 +16,23 @@
 #include <functional>
 #include <unordered_map>
 
+
+
+
+
 constexpr float PI = 3.14159265359f;
 
 typedef glm::vec3 RGB;
 typedef glm::vec4 RGBA;
 
+
+
 namespace gfx {
+
+
+
+
+	std::ostream& operator<<(std::ostream& os, const glm::vec3& v);
 
 	typedef glm::vec3 RGB;
 	typedef glm::vec4 RGBA;
@@ -329,7 +340,7 @@ namespace gfx {
 			: m_speed(speed), 
 			m_yaw(-90.0f), 
 			m_pitch(0.0f), 
-			m_front(1.0f, 0.0f, 0.0f), 
+			m_front(0.0f, 0.0f, -1.0f), 
 			m_up(0.0f, 1.0f, 0.0f),
 			m_velocity(0.0f),
 			m_direction(0.0f)

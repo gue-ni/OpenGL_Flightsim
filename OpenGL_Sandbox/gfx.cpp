@@ -17,6 +17,11 @@ std::string load_text_file(const std::string& path)
 
 namespace gfx {
 
+	std::ostream& operator<<(std::ostream& os, const glm::vec3& v)
+	{
+		return os << v.x << ", " << v.y << ", " << v.z;
+	}
+
 	Shader::Shader(const std::string& path) : Shader(load_text_file(path + ".vert"), load_text_file(path + ".frag")) {}
 	
 	Shader::Shader(const std::string& vertShader, const std::string& fragShader)
@@ -493,22 +498,21 @@ namespace gfx {
 		m_velocity = glm::vec3(0.0f);
 	}
 
+
 	void Controller::move_mouse(float x, float y)
 	{
-		if (!m_initialized)
-		{
-			m_last_pos.x = x;
-			m_last_pos.y = y;
-			m_initialized = true;
-		}
-
-		glm::vec2 offset(m_last_pos.x - x, m_last_pos.y - y);
+		glm::vec2 offset(-x, -y);
 
 		const float sensitivity = 0.1f;
 		offset *= sensitivity;
 
+
+		//std::cout << m_yaw << std::endl;
+		std::cout << m_front << std::endl;
+
 		m_yaw	-= offset.x;
 		m_pitch += offset.y;
+
 
 		glm::vec3 front(0);
 		front.x = cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
@@ -645,12 +649,12 @@ namespace gfx {
 
 					//std::cout << position.x <<  ", " << position.y  << ", " << position.z << std::endl;
 
-					vertices.push_back(position.x);
-					vertices.push_back(position.y);
-					vertices.push_back(position.z);
-					vertices.push_back(normal.x);
-					vertices.push_back(normal.y);
-					vertices.push_back(normal.z);
+					vertices.push_back(vx);
+					vertices.push_back(vy);
+					vertices.push_back(vz);
+					vertices.push_back(nx);
+					vertices.push_back(ny);
+					vertices.push_back(nz);
 				}
 				index_offset += fv;
 			}

@@ -14,13 +14,13 @@
 using std::shared_ptr;
 using std::make_shared;
 
-constexpr auto SCREEN_WIDTH = 800;
-constexpr auto SCREEN_HEIGHT = 600;
-
 std::ostream& operator<<(std::ostream& os, const glm::vec3& v)
 {
 	return os << v.x << ", " << v.y << ", " << v.z;
 }
+
+constexpr auto SCREEN_WIDTH = 800;
+constexpr auto SCREEN_HEIGHT = 600;
 
 int main(void)
 {
@@ -52,7 +52,7 @@ int main(void)
     // SDL options
     SDL_ShowCursor(SDL_FALSE);
     SDL_CaptureMouse(SDL_TRUE);
-    SDL_SetRelativeMouseMode(SDL_FALSE);
+    SDL_SetRelativeMouseMode(SDL_TRUE);
 
 #if 0
 	const std::vector<float> cube_vertices = {
