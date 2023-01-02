@@ -604,8 +604,6 @@ namespace gfx {
 			throw std::runtime_error("loadObj::Error: " + warning + error);
 		}
 
-
-
 		printf("# of vertices  = %d\n", (int)(attributes.vertices.size()) / 3);
 		printf("# of normals   = %d\n", (int)(attributes.normals.size()) / 3);
 		printf("# of texcoords = %d\n", (int)(attributes.texcoords.size()) / 2);
@@ -613,8 +611,11 @@ namespace gfx {
 		printf("# of shapes    = %d\n", (int)shapes.size());
 
 
+		int i = 1;
+
 		for (const auto& shape : shapes) {
 			for (const auto& index : shape.mesh.indices) {
+
 				glm::vec3 pos;
 				glm::vec2 tex;
 
@@ -631,48 +632,9 @@ namespace gfx {
 					attributes.texcoords[2 * index.texcoord_index + 0],
 					attributes.texcoords[2 * index.texcoord_index + 1]
 				};
+
+				std::cout << "i=" << i++ << ", x=" << pos.x << ", y=" << pos.y << ", z=" << pos.z << std::endl;
 			}
 		}
-
-
-
-
-		for (const auto& shape : shapes)
-		{
-
-			for (long i = 0; i < shape.mesh.indices.size(); i++)
-			{
-				indices.push_back(shape.mesh.indices[i].vertex_index);
-			}
-
-
-		}
-
-
-#if 0
-		std::unordered_map<glm::vec3, int> unique_vertices;
-
-		for (const auto& shape : shapes)
-		{
-			for (const auto& index : shape.mesh.indices)
-			{
-				glm::vec3 position{
-					attributes.vertices[3 * index.vertex_index + 0],
-					attributes.vertices[3 * index.vertex_index + 1],
-					attributes.vertices[3 * index.vertex_index + 2] 
-				};
-
-				if (unique_vertices.count(position) == 0)
-				{
-					//unique_vertices[position] = static_cast<int>(vertices.size());
-					vertices.push_back(position.x);
-					vertices.push_back(position.y);
-					vertices.push_back(position.z);
-				}
-
-				// indices.push_back(unique_vertices[position]);
-			}
-		}
-#endif
 	}
 }
