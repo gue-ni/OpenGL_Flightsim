@@ -65,7 +65,7 @@ namespace gfx {
 		glDeleteProgram(id);
 	}
 
-	void Shader::bind() const
+	void Shader::upload_uniforms() const
 	{
 		glUseProgram(id);
 	}
@@ -134,6 +134,42 @@ namespace gfx {
 		glBindVertexArray(0);
 	}
 
+	Geometry::Geometry(const void* data, size_t size, const VertexLayout& layout)
+	//	: count(static_cast<int>(vertices.size()) / (get_stride(layout)))
+	{
+
+		const int stride = get_stride(layout);
+		glGenVertexArrays(1, &m_vao);
+		glGenBuffers(1, &m_vbo);
+
+		glBindVertexArray(m_vbo);
+
+		glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+		glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
+
+		unsigned int index = 0;
+		glVertexAttribPointer(index, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(index);
+
+		if (layout == POS_NORM || layout == POS_NORM_UV) // add normal
+		{
+			index++;
+			glVertexAttribPointer(index, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(3 * sizeof(float)));
+			glEnableVertexAttribArray(index);
+		}
+
+		if (layout == POS_UV || layout == POS_NORM_UV) // add uv
+		{
+			index++;
+			glVertexAttribPointer(index, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(static_cast<int>(index) * 3 * sizeof(float)));
+			glEnableVertexAttribArray(index);
+		}
+
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindVertexArray(0);
+
+	}
+
 	Geometry::Geometry(const Geometry& geometry)
 	{
 		//std::cout << "copy Geometry\n";
@@ -149,7 +185,7 @@ namespace gfx {
 		glDeleteBuffers(1, &m_vbo);
 	}
 
-	void Geometry::bind()
+	void Geometry::upload_uniforms()
 	{
         glBindVertexArray(m_vao); 
 	}
@@ -365,14 +401,14 @@ namespace gfx {
 
 			Shader* shader = &context.shadow_map->shader;
 
-			shader->bind();
+			shader->upload_uniforms();
 			shader->set_mat4("model", transform);
 			shader->set_mat4("lightSpaceMatrix", context.shadow_caster->light_space_matrix());
 		}
 		else {
 			Shader* shader = m_material->get_shader();
 
-			shader->bind();
+			shader->upload_uniforms();
 			shader->set_mat4("model", transform);
 			shader->set_mat4("view", context.camera->get_view_matrix());
 			shader->set_mat4("proj", context.camera->get_projection_matrix());
@@ -396,10 +432,10 @@ namespace gfx {
 				shader->set_vec3("lights[" + index + "].position", context.lights[i]->get_world_position());
 			}
 
-			m_material->bind();
+			m_material->upload_uniforms();
 		}
 
-		m_geometry->bind();
+		m_geometry->upload_uniforms();
 		glDrawArrays(GL_TRIANGLES, 0, m_geometry->count);
 
 		draw_children(context);
@@ -444,24 +480,16 @@ namespace gfx {
 #endif
 	}
 
-	void Controller::update(Object3D& object)
+	void Controller::update(Object3D& object, float dt)
 	{
 		const auto pos = object.get_position();
-		object.set_position(pos + m_velocity);
-
-		object.override_transform(glm::inverse(glm::lookAt(
-			pos,
-			pos + m_front,
-			m_up
-		)));
-
+		object.set_position(pos + m_velocity * dt);
+		object.override_transform(glm::inverse(glm::lookAt(pos, pos + m_front, m_up)));
 		m_velocity = glm::vec3(0.0f);
 	}
 
 	void Controller::move_mouse(float x, float y)
 	{
-		//std::cout << x << ", " << y << std::endl;
-
 		if (!m_initialized)
 		{
 			m_last_pos.x = x;
@@ -486,34 +514,30 @@ namespace gfx {
 
 	void Controller::move(const Direction& direction)
 	{
-
-		//glm::vec3 m_velocity(0.0f);
-		std::cout << "move " << std::endl;
-		const float speed = 0.05f;
-
 		switch (direction)
 		{
 		case FORWARD: {
-			m_velocity += (speed * m_front);
-			break;
-		}
-		case BACKWARD: {
-			m_velocity -= (speed * m_front);
+			m_velocity += (m_speed * m_front);
 			break;
 		}
 		case LEFT: {
-			m_velocity += (speed * glm::normalize(glm::cross(m_front, m_up)));
+			m_velocity -= (m_speed * glm::normalize(glm::cross(m_front, m_up)));
+			break;
+		}
+		case BACKWARD: {
+			m_velocity -= (m_speed * m_front);
 			break;
 		}
 		case RIGHT: {
-			m_velocity -= (speed * glm::normalize(glm::cross(m_front, m_up)));
+			m_velocity += (m_speed * glm::normalize(glm::cross(m_front, m_up)));
 			break;
 		}
 		default:
 			break;
 		}
 	}
-	void Phong::bind()
+
+	void Phong::upload_uniforms()
 	{
 		Shader* shader = get_shader();
 		shader->set_float("ka", ka);
@@ -523,7 +547,7 @@ namespace gfx {
 		shader->set_vec3("objectColor", rgb);
 	}
 
-	void Basic::bind()
+	void Basic::upload_uniforms()
 	{
 		Shader* shader = get_shader();
 		shader->set_float("ka", 0.6f);
@@ -545,7 +569,7 @@ namespace gfx {
 		glDeleteBuffers(1, &id);
 	}
 
-	void VertexBuffer::bind() const
+	void VertexBuffer::upload_uniforms() const
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, id);
 	}

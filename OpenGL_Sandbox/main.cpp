@@ -14,8 +14,8 @@
 using std::shared_ptr;
 using std::make_shared;
 
-#define SCREEN_WIDTH  800
-#define SCREEN_HEIGHT 600
+constexpr auto SCREEN_WIDTH = 800;
+constexpr auto SCREEN_HEIGHT = 600;
 
 std::ostream& operator<<(std::ostream& os, const glm::vec3& v)
 {
@@ -27,11 +27,18 @@ int main(void)
     SDL_Init(SDL_INIT_EVERYTHING);
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 
-    SDL_Window* window = SDL_CreateWindow("", 40, 40, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_OPENGL);
+    SDL_Window* window = SDL_CreateWindow(
+        "OpenGL/SDL Sandbox", 
+        SDL_WINDOWPOS_CENTERED, 
+        SDL_WINDOWPOS_CENTERED, 
+        SCREEN_WIDTH, 
+        SCREEN_HEIGHT, 
+        SDL_WINDOW_OPENGL
+    );
 
     SDL_GLContext glContext = SDL_GL_CreateContext(window);
     glewExperimental = GL_TRUE;
@@ -42,7 +49,11 @@ int main(void)
     glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
     glEnable(GL_DEPTH_TEST);
 
-    //SDL_SetRelativeMouseMode(SDL_TRUE);
+    // SDL options
+    SDL_ShowCursor(SDL_FALSE);
+    SDL_CaptureMouse(SDL_TRUE);
+    SDL_SetRelativeMouseMode(SDL_FALSE);
+
 
 	const std::vector<float> cube_vertices = {
 		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
@@ -95,9 +106,10 @@ int main(void)
     auto geom  = std::make_shared<gfx::Geometry>(cube_vertices, gfx::Geometry::POS_NORM);
 
     gfx::Camera camera(glm::radians(45.0f), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 1000.0f);
-    camera.set_position(glm::vec3(0, 0, 2));
+    camera.set_position(glm::vec3(0, 1, 3));
   
     gfx::Mesh cube(geom, blue);
+    cube.set_position(glm::vec3(0, 1.0, 0));
     
     gfx::Mesh ground(geom, red);
     ground.set_scale(glm::vec3(10, 0.5, 10));
@@ -114,12 +126,26 @@ int main(void)
     scene.add(&cube);
     scene.add(&ground);
 
-    gfx::Controller controller(10.0f);
+    gfx::Controller controller(0.025f);
 
     SDL_Event event;
     bool quit = false;
+    uint64_t last = 0, now = 0;
+    float dt;
+
+    std::cout << glGetString(GL_VERSION) << std::endl;
+
     while (!quit)
     {
+        // delta time
+        last = now;
+        now = SDL_GetPerformanceCounter();
+        dt = static_cast<float>((now - last) * 1000 / static_cast<float>(SDL_GetPerformanceFrequency()));
+#if 0
+        std::cout << "FPS: " << 1000 / dt << std::endl;
+#endif
+
+        // user input
         while (SDL_PollEvent(&event) != 0)
         {
             switch (event.type) {
@@ -128,28 +154,11 @@ int main(void)
                 break;
             }
             case SDL_MOUSEMOTION: {
-                std::cout << "mouse " << event.motion.xrel << ", " << event.motion.yrel << std::endl;
-                controller.move_mouse(
-                    static_cast<float>(event.motion.xrel),
-                    static_cast<float>(event.motion.yrel) 
-                );
+                controller.move_mouse(static_cast<float>(event.motion.xrel), static_cast<float>(event.motion.yrel));
                 break;
             }
             case SDL_KEYDOWN: {
                 switch (event.key.keysym.sym) {
-                case SDLK_d:
-                    controller.move(gfx::Controller::LEFT);
-                    break;
-                case SDLK_a:
-                    controller.move(gfx::Controller::RIGHT);
-                    break;
-                case SDLK_w:
-                    controller.move(gfx::Controller::FORWARD);
-                    break;
-                case SDLK_s:
-                    controller.move(gfx::Controller::BACKWARD);
-                    break;
-
                 case SDLK_ESCAPE: {
                     quit = true;
                 }
@@ -161,17 +170,22 @@ int main(void)
             }
         }
 
+        const uint8_t* key_states = SDL_GetKeyboardState(NULL);
+        if (key_states[SDL_SCANCODE_W]) controller.move(gfx::Controller::FORWARD);
+        if (key_states[SDL_SCANCODE_A]) controller.move(gfx::Controller::LEFT);
+        if (key_states[SDL_SCANCODE_S]) controller.move(gfx::Controller::BACKWARD);
+        if (key_states[SDL_SCANCODE_D]) controller.move(gfx::Controller::RIGHT);
 
+        // clear screen
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        //camera.set_position(camera.get_position() + glm::vec3(0,0.00001, 0.001));
-        //camera.look_at(glm::vec3(0, 0, 0));
-
-        controller.update(camera);
-
+         // rendering
+        cube.set_rotation(cube.get_rotation() + glm::vec3(1.0f, 0.0f, 1.0f) * 0.001f);
+        controller.update(camera, dt);
         renderer.render(camera, scene);
 
+        // swap window
         SDL_GL_SwapWindow(window);
     }
 

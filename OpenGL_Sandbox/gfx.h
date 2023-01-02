@@ -17,31 +17,38 @@
 
 constexpr float PI = 3.14159265359f;
 
+typedef glm::vec3 RGB;
+typedef glm::vec4 RGBA;
+
 namespace gfx {
-	constexpr glm::vec3 rgb(int r, int g, int b)
+
+	typedef glm::vec3 RGB;
+	typedef glm::vec4 RGBA;
+
+	class Light;
+	class Camera;
+
+	constexpr RGB rgb(int r, int g, int b)
 	{
-		return glm::vec3(static_cast<float>(r), static_cast<float>(g), static_cast<float>(b)) / 255.0f;
+		return RGB( static_cast<float>(r), static_cast<float>(g), static_cast<float>(b) ) / 255.0f;
 	}
 
-	constexpr glm::vec3 rgb(uint32_t hex)
+	constexpr RGB rgb(uint32_t hex)
 	{
 		assert(hex <= 0xffffffU);
-		return glm::vec3(
+		return RGB(
 			static_cast<float>((hex & 0xff0000U) >> 16) / 255.0f, 
 			static_cast<float>((hex & 0x00ff00U) >>  8) / 255.0f,
 			static_cast<float>((hex & 0x0000ffU) >>  0) / 255.0f 
 		);
 	}
 
-	class Camera;
-	class Light;
-
 	struct Shader {
 		GLuint id;
 		Shader(const std::string& path);
 		Shader(const std::string& vertShader, const std::string& fragShader);
 		~Shader();
-		void bind() const;
+		void upload_uniforms() const;
 		void unbind() const;
 		void set_int(const std::string& name, int value);
 		void set_float(const std::string& name, float value);
@@ -54,7 +61,7 @@ namespace gfx {
 		GLuint id;
 		VertexBuffer(const void* data, size_t size);
 		~VertexBuffer();
-		void bind() const;
+		void upload_uniforms() const;
 		void unbind() const;
 	};
 
@@ -78,9 +85,10 @@ namespace gfx {
 
 	struct RenderContext {
 		Camera* camera;
-		std::vector<Light*> lights;
-		ShadowMap *shadow_map;
 		Light* shadow_caster;
+		ShadowMap *shadow_map;
+
+		std::vector<Light*> lights;
 		bool is_shadow_pass;
 		glm::vec3 background_color;
 	};
@@ -186,7 +194,6 @@ namespace gfx {
 		glm::vec3 rgb;
 	};
 
-
 	class Geometry {
 	public:
 		enum VertexLayout {
@@ -197,9 +204,10 @@ namespace gfx {
 		};
 
 		Geometry(const std::vector<float>& vertices, const VertexLayout& layout);
+		Geometry(const void* data, size_t size, const VertexLayout& layout);
 		Geometry(const Geometry& geometry);
 		~Geometry();
-		void bind();
+		void upload_uniforms();
 		int count;
 
 	private:
@@ -214,7 +222,7 @@ namespace gfx {
 			return nullptr;
 		}
 
-		virtual void bind() {}
+		virtual void upload_uniforms() {}
 	};
 
 	template<class Derived>
@@ -243,14 +251,14 @@ namespace gfx {
 			: MaterialX<Phong>("shaders/phong"), rgb(color_), ka(0.1f), kd(1.0f), ks(0.5f), alpha(10.0f) 
 		{}
 
-		void bind();
+		void upload_uniforms();
 	};
 
 	class Basic : public MaterialX<Basic> {
 	public:
 		glm::vec3 rgb;
 		Basic(const glm::vec3& color_) : MaterialX<Basic>("shaders/basic"), rgb(color_) {}
-		void bind();
+		void upload_uniforms();
 	};
 
 	class ShaderMaterial : public MaterialX<ShaderMaterial> {
@@ -320,10 +328,11 @@ namespace gfx {
 			m_pitch(0.0f), 
 			m_front(1.0f, 0.0f, 0.0f), 
 			m_up(0.0f, 1.0f, 0.0f),
-			m_velocity(0.0f)
+			m_velocity(0.0f),
+			m_direction(0.0f)
 		{}
 
-		void update(Object3D& object);
+		void update(Object3D& object, float dt);
 		void move_mouse(float x, float y);
 		void move(const Direction& direction);
 	
@@ -332,7 +341,7 @@ namespace gfx {
 
 		float m_speed, m_yaw, m_pitch;
 		glm::vec2 m_last_pos{};
-		glm::vec3 m_front, m_up, m_velocity;
+		glm::vec3 m_front, m_up, m_velocity, m_direction;
 	};
 };
 
