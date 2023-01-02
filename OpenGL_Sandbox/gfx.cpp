@@ -166,27 +166,24 @@ namespace gfx {
 		return 0;
 	}
 
-	glm::mat4 Camera::get_view_matrix()
+	Object3D::Type Camera::get_type() const
+	{
+		return Object3D::Type::CAMERA;
+	}
+
+	glm::mat4 Camera::get_view_matrix() const
 	{
 		return glm::inverse(transform);
 	}
 
-	glm::mat4 Camera::get_projection_matrix()
+	glm::mat4 Camera::get_projection_matrix() const
 	{
 		return m_projection;
 	}
 
 	void Camera::look_at(const glm::vec3& target)
 	{
-		override_transform(
-			glm::inverse(
-				glm::lookAt(
-					m_position,
-					target,
-					m_up	
-				)
-			)
-		);
+		override_transform(glm::inverse(glm::lookAt(m_position, target, m_up)));
 	}
 
 	template<class Derived>
@@ -202,37 +199,37 @@ namespace gfx {
 		for (auto child : children) child->draw(context);
 	}
 
-	glm::vec3 Object3D::get_position()
+	glm::vec3 Object3D::get_position() const
 	{
 		return m_position;
 	}
 
-	glm::vec3 Object3D::get_rotation()
+	glm::vec3 Object3D::get_rotation() const
 	{
 		return m_rotation;
 	}
 
-	glm::vec3 Object3D::get_scale()
+	glm::vec3 Object3D::get_scale() const
 	{
 		return m_scale;
 	}
 
 	void Object3D::set_scale(const glm::vec3& scale)
 	{
-		m_scale = scale; m_dirty = true;
+		m_scale = scale; m_dirty_dof = true;
 	}
 
 	void Object3D::set_position(const glm::vec3& pos)
 	{
-		m_position = pos; m_dirty = true;
+		m_position = pos; m_dirty_dof = true;
 	}
 
 	void Object3D::set_rotation(const glm::vec3& rot)
 	{
-		m_rotation = rot; m_dirty = true;
+		m_rotation = rot; m_dirty_dof = true;
 	}
 
-	glm::mat4 Object3D::get_local_transform()
+	glm::mat4 Object3D::get_local_transform() const
 	{
 		auto S = glm::scale(glm::mat4(1.0f), m_scale);
 		auto T = glm::translate(glm::mat4(1.0f), m_position);
@@ -242,13 +239,14 @@ namespace gfx {
 
 	void Object3D::override_transform(const glm::mat4& matrix)
 	{
-		m_dirty_transform = true; m_dirty = true;
+		m_dirty_transform = true; m_dirty_dof = true;
 		transform = matrix;
+		// TODO: relcalculate position, rotation etc
 	}
 
 	void Object3D::update_world_matrix(bool dirtyParent)
 	{
-		bool dirty = m_dirty || dirtyParent;
+		bool dirty = m_dirty_dof || dirtyParent;
 
 		if (dirty && !m_dirty_transform)
 		{
@@ -263,7 +261,7 @@ namespace gfx {
 			child->update_world_matrix(dirty || m_dirty_transform);
 		}
 
-		m_dirty = m_dirty_transform = false;
+		m_dirty_dof = m_dirty_transform = false;
 	}
 	
 	Object3D& Object3D::add(Object3D* child)
@@ -273,20 +271,20 @@ namespace gfx {
 		return (*this);
 	}
 
-	glm::vec3 Object3D::get_world_position()
+	glm::vec3 Object3D::get_world_position() const
 	{
 		auto world = transform * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		return glm::vec3(world.x, world.y, world.z);
 	}
 
-	bool Object3D::is_light() const
+	Object3D::Type Object3D::get_type() const
 	{
-		return false;
+		return Type::OBJECT3D;
 	}
 
-	bool Light::is_light() const
+	Object3D::Type Light::get_type() const
 	{
-		return true;
+		return Object3D::Type::LIGHT;
 	}
 
 	glm::mat4 Light::light_space_matrix()
@@ -308,7 +306,7 @@ namespace gfx {
 		context.background_color = background;
 
 		scene.traverse([&context](Object3D* obj) {
-			if (obj->is_light())
+			if (obj->get_type() == Object3D::Type::LIGHT)
 			{
 				Light* light = dynamic_cast<Light*>(obj);
 				if (light->cast_shadow)
@@ -317,6 +315,8 @@ namespace gfx {
 				}
 				context.lights.push_back(light);
 			}
+
+			return true;
 		});
 
 #if 1
@@ -370,7 +370,7 @@ namespace gfx {
 			shader->set_mat4("lightSpaceMatrix", context.shadow_caster->light_space_matrix());
 		}
 		else {
-			Shader* shader = m_material.get()->get_shader();
+			Shader* shader = m_material->get_shader();
 
 			shader->bind();
 			shader->set_mat4("model", transform);
@@ -396,11 +396,11 @@ namespace gfx {
 				shader->set_vec3("lights[" + index + "].position", context.lights[i]->get_world_position());
 			}
 
-			m_material.get()->bind();
+			m_material->bind();
 		}
 
-		m_geometry.get()->bind();
-		glDrawArrays(GL_TRIANGLES, 0, m_geometry.get()->count);
+		m_geometry->bind();
+		glDrawArrays(GL_TRIANGLES, 0, m_geometry->count);
 
 		draw_children(context);
 	}
@@ -444,43 +444,69 @@ namespace gfx {
 #endif
 	}
 
-	void Controller::update(Object3D* object)
+	void Controller::update(Object3D& object)
 	{
+		const auto pos = object.get_position();
+		object.set_position(pos + m_velocity);
+
+		object.override_transform(glm::inverse(glm::lookAt(
+			pos,
+			pos + m_front,
+			m_up
+		)));
+
+		m_velocity = glm::vec3(0.0f);
 	}
 
 	void Controller::move_mouse(float x, float y)
 	{
-		std::cout << "move mouse " << x << ", " << y << std::endl;
+		//std::cout << x << ", " << y << std::endl;
 
-	
-		const float sensitivity = 0.05f;
-		x *= sensitivity;
-		y *= sensitivity;
+		if (!m_initialized)
+		{
+			m_last_pos.x = x;
+			m_last_pos.y = y;
+			m_initialized = true;
+		}
 
-		m_yaw	-= x;
-		m_pitch += y;
+		glm::vec2 offset(m_last_pos.x - x, m_last_pos.y - y);
 
-		glm::vec3 front_(0);
-		front_.x = cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
-		front_.y = sin(glm::radians(m_pitch));
-		front_.z = sin(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
-		m_front = glm::normalize(front_);
+		const float sensitivity = 0.1f;
+		offset *= sensitivity;
+
+		m_yaw	-= offset.x;
+		m_pitch += offset.y;
+
+		glm::vec3 front(0);
+		front.x = cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
+		front.y = sin(glm::radians(m_pitch));
+		front.z = sin(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
+		m_front = glm::normalize(front);
 	}
 
 	void Controller::move(const Direction& direction)
 	{
+
+		//glm::vec3 m_velocity(0.0f);
+		std::cout << "move " << std::endl;
+		const float speed = 0.05f;
+
 		switch (direction)
 		{
 		case FORWARD: {
+			m_velocity += (speed * m_front);
 			break;
 		}
 		case BACKWARD: {
+			m_velocity -= (speed * m_front);
 			break;
 		}
 		case LEFT: {
+			m_velocity += (speed * glm::normalize(glm::cross(m_front, m_up)));
 			break;
 		}
 		case RIGHT: {
+			m_velocity -= (speed * glm::normalize(glm::cross(m_front, m_up)));
 			break;
 		}
 		default:

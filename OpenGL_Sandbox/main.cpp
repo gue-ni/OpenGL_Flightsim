@@ -14,7 +14,6 @@
 using std::shared_ptr;
 using std::make_shared;
 
-
 #define SCREEN_WIDTH  800
 #define SCREEN_HEIGHT 600
 
@@ -43,7 +42,7 @@ int main(void)
     glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
     glEnable(GL_DEPTH_TEST);
 
-    SDL_SetRelativeMouseMode(SDL_TRUE);
+    //SDL_SetRelativeMouseMode(SDL_TRUE);
 
 	const std::vector<float> cube_vertices = {
 		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
@@ -113,7 +112,7 @@ int main(void)
     scene.add(&sun);
     scene.add(&camera);
     scene.add(&cube);
-    //scene.add(&ground);
+    scene.add(&ground);
 
     gfx::Controller controller(10.0f);
 
@@ -129,24 +128,25 @@ int main(void)
                 break;
             }
             case SDL_MOUSEMOTION: {
+                std::cout << "mouse " << event.motion.xrel << ", " << event.motion.yrel << std::endl;
                 controller.move_mouse(
-                    static_cast<float>(event.motion.x) / SCREEN_WIDTH,
-                    static_cast<float>(event.motion.x) / SCREEN_WIDTH
+                    static_cast<float>(event.motion.xrel),
+                    static_cast<float>(event.motion.yrel) 
                 );
                 break;
             }
             case SDL_KEYDOWN: {
                 switch (event.key.keysym.sym) {
-                case SDLK_LEFT:
+                case SDLK_d:
                     controller.move(gfx::Controller::LEFT);
                     break;
-                case SDLK_RIGHT:
+                case SDLK_a:
                     controller.move(gfx::Controller::RIGHT);
                     break;
-                case SDLK_UP:
+                case SDLK_w:
                     controller.move(gfx::Controller::FORWARD);
                     break;
-                case SDLK_DOWN:
+                case SDLK_s:
                     controller.move(gfx::Controller::BACKWARD);
                     break;
 
@@ -168,7 +168,7 @@ int main(void)
         //camera.set_position(camera.get_position() + glm::vec3(0,0.00001, 0.001));
         //camera.look_at(glm::vec3(0, 0, 0));
 
-        controller.update(&camera);
+        controller.update(camera);
 
         renderer.render(camera, scene);
 

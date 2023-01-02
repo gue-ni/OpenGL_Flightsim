@@ -37,7 +37,7 @@ namespace gfx {
 	class Light;
 
 	struct Shader {
-		unsigned int id;
+		GLuint id;
 		Shader(const std::string& path);
 		Shader(const std::string& vertShader, const std::string& fragShader);
 		~Shader();
@@ -51,7 +51,7 @@ namespace gfx {
 	};
 
 	struct VertexBuffer {
-		unsigned int id;
+		GLuint id;
 		VertexBuffer(const void* data, size_t size);
 		~VertexBuffer();
 		void bind() const;
@@ -87,12 +87,16 @@ namespace gfx {
 
 	class Object3D {
 	public:
+
+		enum Type {
+			OBJECT3D,
+			LIGHT,
+			CAMERA
+		};
+
 		Object3D()
-			: m_dirty(true),
-			m_dirty_transform(false),
-			receive_shadow(true),
+			: parent(nullptr),
 			transform(1.0), 
-			parent(nullptr),
 			m_position(0.0f),
 			m_rotation(0.0f),
 			m_scale(1.0f)
@@ -101,7 +105,7 @@ namespace gfx {
 		Object3D* parent;
 		std::vector<Object3D*> children;
 		glm::mat4 transform;
-		bool receive_shadow;
+		bool receive_shadow = true;
 
 		Object3D& add(Object3D* child);
 		
@@ -112,26 +116,32 @@ namespace gfx {
 		void set_rotation(const glm::vec3& rot);
 		void set_position(const glm::vec3& pos);
 
-		glm::vec3 get_scale();
-		glm::vec3 get_rotation();
-		glm::vec3 get_position();
+		glm::vec3 get_scale() const;
+		glm::vec3 get_rotation() const;
+		glm::vec3 get_position() const;
 
-		virtual bool is_light() const;
-		glm::vec3 get_world_position();
+		virtual Object3D::Type get_type() const;
+
+		glm::vec3 get_world_position() const;
 		void override_transform(const glm::mat4& matrix);
 
-		void traverse(const std::function<void(Object3D*)>& func)
+		void traverse(const std::function<bool(Object3D*)>& func)
 		{
-			func(this);
-			for (const auto& child : children) child->traverse(func);
+			if (func(this))
+			{
+				for (const auto& child : children)
+				{
+					child->traverse(func);
+				}
+			}
 		}
 
 	protected:
 		friend class Renderer;
-		bool m_dirty, m_dirty_transform;
+		bool m_dirty_dof = false, m_dirty_transform = false;
 		glm::vec3 m_rotation, m_position, m_scale; 
 		void update_world_matrix(bool dirtyParent);
-		glm::mat4 get_local_transform();
+		glm::mat4 get_local_transform() const;
 	};
 
 	class Camera : public Object3D  {
@@ -142,8 +152,9 @@ namespace gfx {
 			m_front(0.0f, 0.0f, 1.0f)
 		{}
 
-		glm::mat4 get_view_matrix();
-		glm::mat4 get_projection_matrix();
+		Object3D::Type get_type() const override;
+		glm::mat4 get_view_matrix() const;
+		glm::mat4 get_projection_matrix() const;
 		void look_at(const glm::vec3& target);
 
 	private:
@@ -166,7 +177,7 @@ namespace gfx {
 			: rgb(color_), type(type_), cast_shadow(false), Object3D() 
 		{}
 
-		bool is_light() const;
+		Object3D::Type get_type() const override;
 
 		glm::mat4 light_space_matrix();
 
@@ -304,17 +315,24 @@ namespace gfx {
 		};
 
 		Controller(float speed) 
-			: m_pos_delta(0.0f), m_speed(speed), m_yaw(-90.0f), m_pitch(0.0f), m_front(1.0f, 0.0f, 0.0f)
+			: m_speed(speed), 
+			m_yaw(-90.0f), 
+			m_pitch(0.0f), 
+			m_front(1.0f, 0.0f, 0.0f), 
+			m_up(0.0f, 1.0f, 0.0f),
+			m_velocity(0.0f)
 		{}
 
-		void update(Object3D* object);
+		void update(Object3D& object);
 		void move_mouse(float x, float y);
 		void move(const Direction& direction);
 	
 	private:
+		bool m_initialized{ false };
+
 		float m_speed, m_yaw, m_pitch;
-		glm::vec3 m_pos_delta;
-		glm::vec3 m_front;
+		glm::vec2 m_last_pos{};
+		glm::vec3 m_front, m_up, m_velocity;
 	};
 };
 
