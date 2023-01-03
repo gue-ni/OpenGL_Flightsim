@@ -114,26 +114,32 @@ int main(void)
     auto cube_geo   = std::make_shared<gfx::Geometry>(cube_vertices, gfx::Geometry::POS_NORM);
     auto ico_geo    = std::make_shared<gfx::Geometry>(ico_vertices, gfx::Geometry::POS_NORM);
 
+
+    gfx::Object3D scene;
+
     gfx::Camera camera(glm::radians(45.0f), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 1000.0f);
     camera.set_position(glm::vec3(0, 1, 3));
+    scene.add(&camera);
   
-    gfx::Mesh cube(ico_geo, blue);
-    cube.set_position(glm::vec3(0, 1.0, 0));
+    gfx::Mesh icosphere(ico_geo, blue);
+    icosphere.set_position(glm::vec3(0, 1.0, 0));
+    scene.add(&icosphere);
+
+    gfx::Mesh cube(cube_geo, blue);
+    cube.set_position(glm::vec3(0.0f, 0.0f, -3.0f));
+    cube.set_scale(glm::vec3(0.25f));
+    icosphere.add(&cube);
     
     gfx::Mesh ground(cube_geo, red);
     ground.set_scale(glm::vec3(10, 0.5, 10));
     ground.set_position(glm::vec3(0, -1, 0));
     ground.receive_shadow = true;
+    scene.add(&ground);
 
     gfx::Light sun(gfx::Light::DIRECTIONAL, gfx::rgb(154, 219, 172));
     sun.set_position(glm::vec3(0.5f, 2.0f, 2.0f));
     sun.cast_shadow = true;
-    
-    gfx::Object3D scene;
     scene.add(&sun);
-    scene.add(&camera);
-    scene.add(&cube);
-    scene.add(&ground);
 
     gfx::Controller controller(0.025f);
 
@@ -185,12 +191,8 @@ int main(void)
         if (key_states[SDL_SCANCODE_S]) controller.move(gfx::Controller::BACKWARD);
         if (key_states[SDL_SCANCODE_D]) controller.move(gfx::Controller::RIGHT);
 
-        // clear screen
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
          // rendering
-        cube.set_rotation(cube.get_rotation() + glm::vec3(1.0f, 0.0f, 1.0f) * 0.001f);
+        icosphere.set_rotation(icosphere.get_rotation() + glm::vec3(1.0f, 0.0f, 1.0f) * 0.001f);
         controller.update(camera, dt);
         renderer.render(camera, scene);
 

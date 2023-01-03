@@ -365,12 +365,14 @@ namespace gfx {
 			return true;
 		});
 
+        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+
 #if 1
 		if (m_shadowMap && context.shadow_caster)
 		{
 			glViewport(0, 0, m_shadowMap->width, m_shadowMap->height);
 			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_shadowMap->fbo);
-			glClear(GL_DEPTH_BUFFER_BIT);
+			glClear(GL_DEPTH_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 			context.is_shadow_pass	= true;
 			scene.draw(context);
@@ -498,21 +500,15 @@ namespace gfx {
 		m_velocity = glm::vec3(0.0f);
 	}
 
-
 	void Controller::move_mouse(float x, float y)
 	{
-		glm::vec2 offset(-x, -y);
+		glm::vec2 offset(x, y);
 
 		const float sensitivity = 0.1f;
 		offset *= sensitivity;
 
-
-		//std::cout << m_yaw << std::endl;
-		std::cout << m_front << std::endl;
-
-		m_yaw	-= offset.x;
-		m_pitch += offset.y;
-
+		m_yaw	+= offset.x;
+		m_pitch -= offset.y;
 
 		glm::vec3 front(0);
 		front.x = cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
@@ -588,7 +584,7 @@ namespace gfx {
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}
 
-	void load_obj(const std::string path, std::vector<float>& vertices)
+	bool load_obj(const std::string path, std::vector<float>& vertices)
 	{
 		std::istringstream source(load_text_file(path));
 
@@ -605,15 +601,17 @@ namespace gfx {
 			&error,
 			&source))
 		{
-			throw std::runtime_error("loadObj::Error: " + warning + error);
+			std::cout << "loadObj::Error: " << warning << error << std::endl;
+			return false;
 		}
 
+#if 0
 		printf("# of vertices  = %d\n", (int)(attributes.vertices.size()) / 3);
 		printf("# of normals   = %d\n", (int)(attributes.normals.size()) / 3);
 		printf("# of texcoords = %d\n", (int)(attributes.texcoords.size()) / 2);
 		printf("# of materials = %d\n", (int)materials.size());
 		printf("# of shapes    = %d\n", (int)shapes.size());
-
+#endif
 
 		for (size_t s = 0; s < shapes.size(); s++) {
 			// Loop over faces(polygon)
@@ -659,7 +657,7 @@ namespace gfx {
 				index_offset += fv;
 			}
 		}
-
+		return true;
 #if 0
 		int i = 0;
 		for (const auto& shape : shapes) {
