@@ -82,6 +82,7 @@ namespace gfx {
 		virtual void bind(GLuint texture) const;
 		virtual void unbind() const;
 		GLint get_format(int channels);
+		void set_parameteri(GLenum target, GLenum pname, GLint param);
 	};
 
 	struct CubemapTexture : public Texture {

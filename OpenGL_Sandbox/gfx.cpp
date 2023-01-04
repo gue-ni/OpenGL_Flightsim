@@ -459,7 +459,6 @@ namespace gfx {
 		: width(shadow_width), height(shadow_height), shader("shaders/depth")
 	{
 #if 1
-		glGenFramebuffers(1, &fbo);
 
 		glGenTextures(1, &depth_map);
 		glBindTexture(GL_TEXTURE_2D, depth_map);
@@ -480,6 +479,7 @@ namespace gfx {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
+		glGenFramebuffers(1, &fbo);
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_map, 0);
 		glDrawBuffer(GL_NONE);
@@ -825,6 +825,11 @@ namespace gfx {
 			break;
 		}
 		return format;
+	}
+
+	void Texture::set_parameteri(GLenum target, GLenum pname, GLint param)
+	{
+		glTexParameteri(target, pname, param);
 	}
 
 	CubemapTexture::CubemapTexture(const std::vector<std::string>& paths)
