@@ -138,12 +138,12 @@ int main(void)
 
 #if 1
     gfx::Skybox skybox({
-        "assets/skybox/right.jpg",
-        "assets/skybox/left.jpg",
-        "assets/skybox/top.jpg",
-        "assets/skybox/bottom.jpg",
-        "assets/skybox/front.jpg",
-        "assets/skybox/back.jpg",
+        "assets/skybox/hd/right.jpg",
+        "assets/skybox/hd/left.jpg",
+        "assets/skybox/hd/top.jpg",
+        "assets/skybox/hd/bottom.jpg",
+        "assets/skybox/hd/front.jpg",
+        "assets/skybox/hd/back.jpg",
     });
     scene.add(&skybox);
 #endif
