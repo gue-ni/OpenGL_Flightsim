@@ -115,7 +115,7 @@ namespace gfx {
 	}
 	
 	Geometry::Geometry(const std::vector<float>& vertices, const VertexLayout& layout)
-		: count(static_cast<int>(vertices.size()) / (get_stride(layout)))
+		: triangle_count(static_cast<int>(vertices.size()) / (get_stride(layout)))
 	{
 		const int stride = get_stride(layout);
 		glGenVertexArrays(1, &m_vao);
@@ -187,7 +187,7 @@ namespace gfx {
 	Geometry::Geometry(const Geometry& geometry)
 	{
 		//std::cout << "copy Geometry\n";
-		count = geometry.count;
+		triangle_count = geometry.triangle_count;
 		m_vao = geometry.m_vao;
 		m_vbo = geometry.m_vbo;
 	}
@@ -371,7 +371,6 @@ namespace gfx {
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 
-#if 1
 		if (m_shadowMap && context.shadow_caster)
 		{
 			glViewport(0, 0, m_shadowMap->width, m_shadowMap->height);
@@ -384,7 +383,6 @@ namespace gfx {
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, m_shadowMap->depth_map);
 		}
-#endif
 
 		glViewport(0, 0, m_width, m_height);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -433,7 +431,6 @@ namespace gfx {
 				shader->set_mat4("lightSpaceMatrix", context.shadow_caster->light_space_matrix());
 			
 			shader->set_int("shadowMap", 0);
-			shader->set_int("texture1", 1);
 			shader->set_vec3("backgroundColor", context.background_color);
 			shader->set_int("numLights", static_cast<int>(context.lights.size()));
 			shader->set_vec3("cameraPos", context.camera->get_world_position()); 
@@ -453,7 +450,7 @@ namespace gfx {
 		}
 
 		m_geometry->bind();
-		glDrawArrays(GL_TRIANGLES, 0, m_geometry->count);
+		glDrawArrays(GL_TRIANGLES, 0, m_geometry->triangle_count);
 
 		draw_children(context);
 	}
@@ -552,8 +549,9 @@ namespace gfx {
 
 		if (texture != nullptr)
 		{
-			glActiveTexture(GL_TEXTURE1);
-			texture->bind();
+			GLuint texture_unit = 1;
+			texture->bind(texture_unit);
+			shader->set_int("texture1", texture_unit);
 			shader->set_int("useTexture", 1);
 		}
 		else
@@ -563,6 +561,7 @@ namespace gfx {
 		}
 
 		Shader* shader = get_shader();
+		shader->bind();
 		shader->set_float("ka", ka);
 		shader->set_float("kd", kd);
 		shader->set_float("ks", ks);
@@ -715,6 +714,56 @@ namespace gfx {
 		}
 #endif
 	}
+
+	std::shared_ptr<Geometry> make_cube_geometry(void)
+	{
+	    std::vector<float> vertices = {
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f,
+         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 1.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f,
+
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f,
+
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
+
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
+
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f, 0.0f, 0.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f, 1.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f, 1.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f, 0.0f, 0.0f,
+
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f, 0.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f, 1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f, 1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f, 0.0f, 0.0f,
+
+		};
+		return std::make_shared<Geometry>(vertices, Geometry::POS_NORM_UV);
+	}
+
 	Texture::Texture(const std::string& path)
 	{
 		glGenTextures(1, &id);
@@ -729,6 +778,37 @@ namespace gfx {
 
 		printf("channels = %d\n", channels);
 
+		if (data)
+		{
+			auto format = get_format(channels);
+			glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+			glGenerateMipmap(GL_TEXTURE_2D);
+		}
+		else
+		{
+			std::cout << "Failed to load texture" << std::endl;
+		}
+		stbi_image_free(data);
+	}
+
+	Texture::~Texture()
+	{
+		glDeleteTextures(1, &id);
+	}
+
+	void Texture::bind(GLuint texture) const
+	{
+		glActiveTexture(GL_TEXTURE0 + texture);
+		glBindTexture(GL_TEXTURE_2D, id);
+	}
+
+	void Texture::unbind() const
+	{
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}
+
+	GLint Texture::get_format(int channels)
+	{
 		GLint format{};
 
 		switch (channels)
@@ -744,27 +824,76 @@ namespace gfx {
 			assert(false);
 			break;
 		}
-
-
-		if (data)
-		{
-			glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-			glGenerateMipmap(GL_TEXTURE_2D);
-		}
-		else
-		{
-			std::cout << "Failed to load texture" << std::endl;
-		}
-		stbi_image_free(data);
+		return format;
 	}
 
-	void Texture::bind() const
+	CubemapTexture::CubemapTexture(const std::vector<std::string>& paths)
 	{
-		glBindTexture(GL_TEXTURE_2D, id);
+		glGenTextures(1, &id);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, id);
+
+		int width, height, channels;
+		for (int i = 0; i < paths.size(); i++)
+		{
+			unsigned char* data = stbi_load(paths[i].c_str(), &width, &height, &channels, 0);
+			if (data)
+			{
+				auto format = get_format(channels);
+				glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+				stbi_image_free(data);
+			}
+			else
+			{
+				std::cout << "Cubemap tex failed to load at path: " << paths[i] << std::endl;
+				stbi_image_free(data);
+			}
+		}
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 	}
 
-	void Texture::unbind() const
+	void CubemapTexture::bind(GLuint texture) const
 	{
-		glBindTexture(GL_TEXTURE_2D, 0);
+		glActiveTexture(GL_TEXTURE0 + texture);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, id);
+	}
+
+	Skybox::Skybox(const std::vector<std::string>& faces) 
+		: 
+		Mesh(make_cube_geometry(), 
+		std::make_shared<SkyboxMaterial>(std::make_shared<CubemapTexture>(faces)))
+	{
+	}
+
+	void Skybox::draw(RenderContext& context)
+	{
+		if (!context.is_shadow_pass)
+		{
+			glDepthMask(GL_FALSE);
+
+			m_material->bind();
+			Shader* shader = m_material->get_shader();
+
+			auto view = glm::mat4(glm::mat3(context.camera->get_view_matrix()));
+			shader->set_mat4("view", view);
+			shader->set_mat4("proj", context.camera->get_projection_matrix());
+
+			m_geometry->bind();
+			glDrawArrays(GL_TRIANGLES, 0, m_geometry->triangle_count);
+			
+			glDepthMask(GL_TRUE);
+		}
+	}
+	void SkyboxMaterial::bind()
+	{
+		Shader* shader = get_shader();
+
+		cubemap->bind(2);
+
+		shader->bind();
+		shader->set_int("skybox", 2);
 	}
 }

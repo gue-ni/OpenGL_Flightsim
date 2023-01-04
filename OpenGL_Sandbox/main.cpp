@@ -132,8 +132,21 @@ int main(void)
     gfx::Object3D scene;
 
     gfx::Camera camera(glm::radians(45.0f), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 1000.0f);
-    camera.set_position(glm::vec3(0, 1, 3));
+    camera.set_position(glm::vec3(0, 1, 7));
     scene.add(&camera);
+
+
+#if 1
+    gfx::Skybox skybox({
+        "assets/skybox/right.jpg",
+        "assets/skybox/left.jpg",
+        "assets/skybox/top.jpg",
+        "assets/skybox/bottom.jpg",
+        "assets/skybox/front.jpg",
+        "assets/skybox/back.jpg",
+    });
+    scene.add(&skybox);
+#endif
   
     gfx::Mesh icosphere(ico_geo, blue);
     icosphere.set_position(glm::vec3(0, 1.0, 0));
@@ -145,7 +158,7 @@ int main(void)
     icosphere.add(&cube);
     
     gfx::Mesh ground(cube_geo, checker);
-    ground.set_scale(glm::vec3(10, 0.5, 10));
+    ground.set_scale(glm::vec3(20, 0.5, 20));
     ground.set_position(glm::vec3(0, -1, 0));
     ground.receive_shadow = true;
     scene.add(&ground);

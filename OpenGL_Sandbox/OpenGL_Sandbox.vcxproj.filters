@@ -34,6 +34,8 @@
     <None Include="shaders\depth.frag" />
     <None Include="shaders\screen.frag" />
     <None Include="shaders\screen.vert" />
+    <None Include="shaders\skybox.frag" />
+    <None Include="shaders\skybox.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="gfx.h">

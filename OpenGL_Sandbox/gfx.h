@@ -16,29 +16,23 @@
 #include <functional>
 #include <unordered_map>
 
-
-
-
-
-constexpr float PI = 3.14159265359f;
-
-typedef glm::vec3 RGB;
-typedef glm::vec4 RGBA;
-
-
-
 namespace gfx {
-
-
-
 
 	std::ostream& operator<<(std::ostream& os, const glm::vec3& v);
 
+	constexpr float PI = 3.14159265359f;
+	
 	typedef glm::vec3 RGB;
 	typedef glm::vec4 RGBA;
 
 	class Light;
 	class Camera;
+	class Mesh;
+	class Geometry;
+	class Skybox;
+	struct Shader;
+	struct Texture;
+	class Material;
 
 	constexpr RGB rgb(int r, int g, int b)
 	{
@@ -56,6 +50,8 @@ namespace gfx {
 	}
 
 	bool load_obj(const std::string path, std::vector<float>& vertices);
+
+	std::shared_ptr<Geometry> make_cube_geometry(void);
 
 	struct Shader {
 		GLuint id;
@@ -79,13 +75,19 @@ namespace gfx {
 		void unbind() const;
 	};
 
-
 	struct Texture {
 		GLuint id;
+		Texture() : id(0) {}
 		Texture(const std::string& path);
-		~Texture() {}
-		void bind() const;
+		~Texture();
+		virtual void bind(GLuint texture) const;
 		void unbind() const;
+		GLint get_format(int channels);
+	};
+
+	struct CubemapTexture : public Texture {
+		CubemapTexture(const std::vector<std::string>& paths);
+		void bind(GLuint texture) const override;
 	};
 
 	struct ShadowMap {
@@ -221,7 +223,7 @@ namespace gfx {
 		Geometry(const Geometry& geometry);
 		~Geometry();
 		void bind();
-		int count;
+		int triangle_count;
 
 	private:
 		unsigned int m_vao, m_vbo;
@@ -234,7 +236,6 @@ namespace gfx {
 		{
 			return nullptr;
 		}
-
 		virtual void bind() {}
 	};
 
@@ -246,7 +247,6 @@ namespace gfx {
 			if (shader == nullptr)
 				shader = std::make_shared<Shader>(path);
 		}
-
 		Shader* get_shader() { return shader.get(); }
 		static std::shared_ptr<Shader> shader;
 	};
@@ -269,7 +269,7 @@ namespace gfx {
 			: MaterialX<Phong>("shaders/phong"), texture(tex), rgb(0.0f, 1.0f, 0.0f), ka(0.3f), kd(1.0f), ks(0.5f), alpha(20.0f) 
 		{}
 
-		void bind();
+		void bind() override;
 	};
 
 	class Basic : public MaterialX<Basic> {
@@ -284,16 +284,31 @@ namespace gfx {
 		ShaderMaterial(const std::string& path) : MaterialX<ShaderMaterial>(path) {}
 	};
 
+	class SkyboxMaterial : public MaterialX<SkyboxMaterial> {
+	public:
+		std::shared_ptr<CubemapTexture> cubemap = nullptr;
+		SkyboxMaterial(std::shared_ptr<CubemapTexture> map) :
+			MaterialX<SkyboxMaterial>("shaders/skybox"), cubemap(map) {}
+
+		void bind() override;
+	};
+
 	class Mesh : public Object3D {
 	public:
 		Mesh(std::shared_ptr<Geometry> geometry, std::shared_ptr<Material> material)
 			: m_geometry(geometry), m_material(material) {}
+		void draw(RenderContext& context) override;
 
-		void draw(RenderContext& context);
-
-	private:
+	protected:
 		std::shared_ptr<Geometry> m_geometry;
 		std::shared_ptr<Material> m_material;
+	};
+
+	class Skybox : public Mesh {
+	public:
+		Skybox(const std::vector<std::string>& faces);
+		void draw(RenderContext& context) override;
+		Object3D& add(Object3D* child) = delete;
 	};
 
 	class Renderer {
@@ -355,10 +370,7 @@ namespace gfx {
 		void move(const Direction& direction);
 	
 	private:
-		bool m_initialized{ false };
-
 		float m_speed, m_yaw, m_pitch;
-		glm::vec2 m_last_pos{};
 		glm::vec3 m_front, m_up, m_velocity, m_direction;
 	};
 };
