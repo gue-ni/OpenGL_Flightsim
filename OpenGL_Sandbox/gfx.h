@@ -2,7 +2,6 @@
 
 #include <GL/glew.h>
 
-// glm
 #include <glm/vec3.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -81,13 +80,14 @@ namespace gfx {
 		Texture(const std::string& path);
 		~Texture();
 		virtual void bind(GLuint texture) const;
-		void unbind() const;
+		virtual void unbind() const;
 		GLint get_format(int channels);
 	};
 
 	struct CubemapTexture : public Texture {
 		CubemapTexture(const std::vector<std::string>& paths);
 		void bind(GLuint texture) const override;
+		void unbind() const override;
 	};
 
 	struct ShadowMap {

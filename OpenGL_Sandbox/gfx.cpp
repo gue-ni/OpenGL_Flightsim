@@ -771,12 +771,12 @@ namespace gfx {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 		int width, height, channels;
 		unsigned char* data = stbi_load(path.c_str(), &width, &height, &channels, 0);
 
-		printf("channels = %d\n", channels);
+		//printf("channels = %d\n", channels);
 
 		if (data)
 		{
@@ -861,6 +861,11 @@ namespace gfx {
 		glBindTexture(GL_TEXTURE_CUBE_MAP, id);
 	}
 
+	void CubemapTexture::unbind() const
+	{
+		glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+	}
+
 	Skybox::Skybox(const std::vector<std::string>& faces) 
 		: 
 		Mesh(make_cube_geometry(), 
@@ -887,6 +892,7 @@ namespace gfx {
 			glDepthMask(GL_TRUE);
 		}
 	}
+
 	void SkyboxMaterial::bind()
 	{
 		Shader* shader = get_shader();
