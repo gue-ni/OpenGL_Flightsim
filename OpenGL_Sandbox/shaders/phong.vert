@@ -15,7 +15,7 @@ uniform mat4 lightSpaceMatrix;
 
 void main()
 {
-	TexCoords = aTexCoord;
+    TexCoords = vec2(aTexCoord.x, aTexCoord.y);
 
     Normal = mat3(transpose(inverse(model))) * aNormal;  
 

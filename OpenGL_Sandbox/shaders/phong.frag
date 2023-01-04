@@ -19,6 +19,9 @@ uniform float alpha;
 uniform vec3 backgroundColor;
 
 uniform sampler2D shadowMap;
+uniform int useTexture;
+uniform sampler2D texture1;
+
 
 struct Light {
 	int type; // POINT = 0, DIRECTIONAL = 1
@@ -54,8 +57,17 @@ float calculateShadow(vec4 fragPosLightSpace)
 vec3 calculateDirLight(Light light)
 {
 	vec3 direction = light.position;
-	//vec3 color = vec3(texture(shadowMap, TexCoords.xy));
-	vec3 color = objectColor;
+	
+	vec3 color;
+	if (useTexture == 1)
+	{
+		color = vec3(texture(texture1, TexCoords));
+		//color  = vec3(0, 1, 1);
+	}
+	else
+	{
+		color = objectColor;
+	}
 
     // ambient
     vec3 ambient = ka * light.color;

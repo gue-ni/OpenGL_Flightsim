@@ -101,19 +101,32 @@ int main(void)
 	};
 #endif
 
+    std::vector<float> triangle_vertices = {
+    // positions          // normals           // texture coords
+   0.5f,  0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   1.0f, 1.0f,   // top right
+   0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   1.0f, 0.0f,   // bottom right
+  -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
+  -0.5f,  0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 1.0f    // top left 
+    };
+
     std::vector<float> ico_vertices;
     std::vector<float> cube_vertices;
 
     gfx::load_obj("assets/cube.obj", cube_vertices);
     gfx::load_obj("assets/icosphere.obj", ico_vertices);
 
+
+    auto container_texture = make_shared<gfx::Texture>("assets/container.jpg");
+
     gfx::Renderer renderer(SCREEN_WIDTH, SCREEN_HEIGHT);
 
     auto blue   = make_shared<gfx::Phong>(gfx::rgb(0, 0, 255));
     auto red    = make_shared<gfx::Phong>(gfx::rgb(255, 0, 0));
-    auto cube_geo   = std::make_shared<gfx::Geometry>(cube_vertices, gfx::Geometry::POS_NORM);
-    auto ico_geo    = std::make_shared<gfx::Geometry>(ico_vertices, gfx::Geometry::POS_NORM);
-
+    auto green    = make_shared<gfx::Phong>(gfx::rgb(0, 255, 0));
+    auto container = make_shared<gfx::Phong>(container_texture);
+    auto cube_geo   = std::make_shared<gfx::Geometry>(cube_vertices, gfx::Geometry::POS_NORM_UV);
+    auto ico_geo    = std::make_shared<gfx::Geometry>(ico_vertices, gfx::Geometry::POS_NORM_UV);
+    auto triangle    = std::make_shared<gfx::Geometry>(triangle_vertices, gfx::Geometry::POS_NORM_UV);
 
     gfx::Object3D scene;
 
@@ -125,9 +138,9 @@ int main(void)
     icosphere.set_position(glm::vec3(0, 1.0, 0));
     scene.add(&icosphere);
 
-    gfx::Mesh cube(cube_geo, blue);
-    cube.set_position(glm::vec3(0.0f, 0.0f, -3.0f));
-    cube.set_scale(glm::vec3(0.25f));
+    gfx::Mesh cube(cube_geo, container);
+    cube.set_position(glm::vec3(0.0f, 0.0f, -5.0f));
+    cube.set_scale(glm::vec3(1.0f));
     icosphere.add(&cube);
     
     gfx::Mesh ground(cube_geo, red);
@@ -192,7 +205,7 @@ int main(void)
         if (key_states[SDL_SCANCODE_D]) controller.move(gfx::Controller::RIGHT);
 
          // rendering
-        icosphere.set_rotation(icosphere.get_rotation() + glm::vec3(1.0f, 0.0f, 1.0f) * 0.001f);
+        //icosphere.set_rotation(icosphere.get_rotation() + glm::vec3(1.0f, 0.0f, 1.0f) * 0.001f);
         controller.update(camera, dt);
         renderer.render(camera, scene);
 

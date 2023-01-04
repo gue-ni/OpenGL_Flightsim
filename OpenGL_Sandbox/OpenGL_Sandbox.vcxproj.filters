@@ -21,6 +21,9 @@
     <ClCompile Include="gfx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="phi.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\basic.frag" />
@@ -40,6 +43,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="lib\tiny_obj_loader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="phi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

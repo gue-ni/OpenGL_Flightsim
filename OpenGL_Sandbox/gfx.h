@@ -62,7 +62,7 @@ namespace gfx {
 		Shader(const std::string& path);
 		Shader(const std::string& vertShader, const std::string& fragShader);
 		~Shader();
-		void upload_uniforms() const;
+		void bind() const;
 		void unbind() const;
 		void set_int(const std::string& name, int value);
 		void set_float(const std::string& name, float value);
@@ -75,19 +75,18 @@ namespace gfx {
 		GLuint id;
 		VertexBuffer(const void* data, size_t size);
 		~VertexBuffer();
-		void upload_uniforms() const;
-		void unbind() const;
-	};
-
-#if 0
-	struct VertexArray {
-		unsigned int id;
-		VertexArray();
-		~VertexArray();
 		void bind() const;
 		void unbind() const;
 	};
-#endif
+
+
+	struct Texture {
+		GLuint id;
+		Texture(const std::string& path);
+		~Texture() {}
+		void bind() const;
+		void unbind() const;
+	};
 
 	struct ShadowMap {
 		ShadowMap(unsigned int shadow_width, unsigned int shadow_height);
@@ -221,7 +220,7 @@ namespace gfx {
 		Geometry(const void* data, size_t size, const VertexLayout& layout);
 		Geometry(const Geometry& geometry);
 		~Geometry();
-		void upload_uniforms();
+		void bind();
 		int count;
 
 	private:
@@ -236,7 +235,7 @@ namespace gfx {
 			return nullptr;
 		}
 
-		virtual void upload_uniforms() {}
+		virtual void bind() {}
 	};
 
 	template<class Derived>
@@ -254,8 +253,9 @@ namespace gfx {
 
 	class Phong : public MaterialX<Phong> {
 	public:
-		glm::vec3 rgb;
+		RGB rgb{};
 		float ka, kd, ks, alpha;
+		std::shared_ptr<Texture> texture = nullptr;
 
 		Phong(const glm::vec3& color_, float ka_, float kd_, float ks_, float alpha_) 
 			: MaterialX<Phong>("shaders/phong"), rgb(color_), ka(ka_), kd(kd_), ks(ks_), alpha(alpha_) 
@@ -265,14 +265,18 @@ namespace gfx {
 			: MaterialX<Phong>("shaders/phong"), rgb(color_), ka(0.1f), kd(1.0f), ks(0.5f), alpha(10.0f) 
 		{}
 
-		void upload_uniforms();
+		Phong(std::shared_ptr<Texture> tex)
+			: MaterialX<Phong>("shaders/phong"), texture(tex), rgb(0.0f, 1.0f, 0.0f), ka(0.1f), kd(1.0f), ks(0.5f), alpha(10.0f) 
+		{}
+
+		void bind();
 	};
 
 	class Basic : public MaterialX<Basic> {
 	public:
 		glm::vec3 rgb;
 		Basic(const glm::vec3& color_) : MaterialX<Basic>("shaders/basic"), rgb(color_) {}
-		void upload_uniforms();
+		void bind();
 	};
 
 	class ShaderMaterial : public MaterialX<ShaderMaterial> {

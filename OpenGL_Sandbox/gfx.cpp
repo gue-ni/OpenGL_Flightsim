@@ -3,6 +3,10 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "lib/tiny_obj_loader.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "lib/stb_image.h"
+
+
 
 std::string load_text_file(const std::string& path)
 {
@@ -75,7 +79,7 @@ namespace gfx {
 		glDeleteProgram(id);
 	}
 
-	void Shader::upload_uniforms() const
+	void Shader::bind() const
 	{
 		glUseProgram(id);
 	}
@@ -195,7 +199,7 @@ namespace gfx {
 		glDeleteBuffers(1, &m_vbo);
 	}
 
-	void Geometry::upload_uniforms()
+	void Geometry::bind()
 	{
         glBindVertexArray(m_vao); 
 	}
@@ -413,14 +417,14 @@ namespace gfx {
 
 			Shader* shader = &context.shadow_map->shader;
 
-			shader->upload_uniforms();
+			shader->bind();
 			shader->set_mat4("model", transform);
 			shader->set_mat4("lightSpaceMatrix", context.shadow_caster->light_space_matrix());
 		}
 		else {
 			Shader* shader = m_material->get_shader();
 
-			shader->upload_uniforms();
+			shader->bind();
 			shader->set_mat4("model", transform);
 			shader->set_mat4("view", context.camera->get_view_matrix());
 			shader->set_mat4("proj", context.camera->get_projection_matrix());
@@ -429,6 +433,7 @@ namespace gfx {
 				shader->set_mat4("lightSpaceMatrix", context.shadow_caster->light_space_matrix());
 			
 			shader->set_int("shadowMap", 0);
+			shader->set_int("texture1", 1);
 			shader->set_vec3("backgroundColor", context.background_color);
 			shader->set_int("numLights", static_cast<int>(context.lights.size()));
 			shader->set_vec3("cameraPos", context.camera->get_world_position()); 
@@ -444,10 +449,10 @@ namespace gfx {
 				shader->set_vec3("lights[" + index + "].position", context.lights[i]->get_world_position());
 			}
 
-			m_material->upload_uniforms();
+			m_material->bind();
 		}
 
-		m_geometry->upload_uniforms();
+		m_geometry->bind();
 		glDrawArrays(GL_TRIANGLES, 0, m_geometry->count);
 
 		draw_children(context);
@@ -542,17 +547,29 @@ namespace gfx {
 		}
 	}
 
-	void Phong::upload_uniforms()
+	void Phong::bind()
 	{
+
+		if (texture != nullptr)
+		{
+			glActiveTexture(GL_TEXTURE1);
+			texture->bind();
+			shader->set_int("useTexture", 1);
+		}
+		else
+		{
+			shader->set_int("useTexture", 0);
+			shader->set_vec3("objectColor", rgb);
+		}
+
 		Shader* shader = get_shader();
 		shader->set_float("ka", ka);
 		shader->set_float("kd", kd);
 		shader->set_float("ks", ks);
 		shader->set_float("alpha", alpha);
-		shader->set_vec3("objectColor", rgb);
 	}
 
-	void Basic::upload_uniforms()
+	void Basic::bind()
 	{
 		Shader* shader = get_shader();
 		shader->set_float("ka", 0.6f);
@@ -574,7 +591,7 @@ namespace gfx {
 		glDeleteBuffers(1, &id);
 	}
 
-	void VertexBuffer::upload_uniforms() const
+	void VertexBuffer::bind() const
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, id);
 	}
@@ -635,6 +652,9 @@ namespace gfx {
 					tinyobj::real_t ny = attributes.normals[3 * idx.normal_index + 1];
 					tinyobj::real_t nz = attributes.normals[3 * idx.normal_index + 2];
 
+					tinyobj::real_t tx = attributes.texcoords[2 * idx.texcoord_index + 0];
+					tinyobj::real_t ty = attributes.texcoords[2 * idx.texcoord_index + 1];
+
 					glm::vec3 position, normal;
 
 					position.x = vx;
@@ -653,6 +673,8 @@ namespace gfx {
 					vertices.push_back(nx);
 					vertices.push_back(ny);
 					vertices.push_back(nz);
+					vertices.push_back(tx);
+					vertices.push_back(ty);
 				}
 				index_offset += fv;
 			}
@@ -692,5 +714,38 @@ namespace gfx {
 			}
 		}
 #endif
+	}
+	Texture::Texture(const std::string& path)
+	{
+		glGenTextures(1, &id);
+		glBindTexture(GL_TEXTURE_2D, id); 
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		int width, height, channels;
+		unsigned char* data = stbi_load(path.c_str(), &width, &height, &channels, 0);
+
+		if (data)
+		{
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+			glGenerateMipmap(GL_TEXTURE_2D);
+		}
+		else
+		{
+			std::cout << "Failed to load texture" << std::endl;
+		}
+		stbi_image_free(data);
+	}
+
+	void Texture::bind() const
+	{
+		glBindTexture(GL_TEXTURE_2D, id);
+	}
+
+	void Texture::unbind() const
+	{
+		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 }
