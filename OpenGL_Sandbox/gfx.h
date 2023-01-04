@@ -262,11 +262,11 @@ namespace gfx {
 		{}
 
 		Phong(const glm::vec3& color_)
-			: MaterialX<Phong>("shaders/phong"), rgb(color_), ka(0.1f), kd(1.0f), ks(0.5f), alpha(10.0f) 
+			: MaterialX<Phong>("shaders/phong"), rgb(color_), ka(0.3f), kd(1.0f), ks(0.5f), alpha(10.0f) 
 		{}
 
 		Phong(std::shared_ptr<Texture> tex)
-			: MaterialX<Phong>("shaders/phong"), texture(tex), rgb(0.0f, 1.0f, 0.0f), ka(0.1f), kd(1.0f), ks(0.5f), alpha(10.0f) 
+			: MaterialX<Phong>("shaders/phong"), texture(tex), rgb(0.0f, 1.0f, 0.0f), ka(0.3f), kd(1.0f), ks(0.5f), alpha(20.0f) 
 		{}
 
 		void bind();
