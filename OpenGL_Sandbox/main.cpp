@@ -102,11 +102,11 @@ int main(void)
 #endif
 
     std::vector<float> triangle_vertices = {
-    // positions          // normals           // texture coords
-   0.5f,  0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   1.0f, 1.0f,   // top right
-   0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   1.0f, 0.0f,   // bottom right
-  -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
-  -0.5f,  0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 1.0f    // top left 
+        // positions          // normals           // texture coords
+        0.5f,  0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   1.0f, 1.0f,   // top right
+        0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   1.0f, 0.0f,   // bottom right
+       -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
+       -0.5f,  0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 1.0f    // top left 
     };
 
     std::vector<float> ico_vertices;
@@ -116,7 +116,7 @@ int main(void)
     gfx::load_obj("assets/icosphere.obj", ico_vertices);
 
 
-    auto container_texture = make_shared<gfx::Texture>("assets/container.jpg");
+    auto container_texture = make_shared<gfx::Texture>("assets/checker.png");
 
     gfx::Renderer renderer(SCREEN_WIDTH, SCREEN_HEIGHT);
 
@@ -205,7 +205,7 @@ int main(void)
         if (key_states[SDL_SCANCODE_D]) controller.move(gfx::Controller::RIGHT);
 
          // rendering
-        //icosphere.set_rotation(icosphere.get_rotation() + glm::vec3(1.0f, 0.0f, 1.0f) * 0.001f);
+        icosphere.set_rotation(icosphere.get_rotation() + glm::vec3(1.0f, 0.0f, 1.0f) * 0.001f);
         controller.update(camera, dt);
         renderer.render(camera, scene);
 

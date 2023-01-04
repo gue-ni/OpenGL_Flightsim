@@ -727,9 +727,11 @@ namespace gfx {
 		int width, height, channels;
 		unsigned char* data = stbi_load(path.c_str(), &width, &height, &channels, 0);
 
+		printf("channels = %d\n", channels);
+
 		if (data)
 		{
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 			glGenerateMipmap(GL_TEXTURE_2D);
 		}
 		else
