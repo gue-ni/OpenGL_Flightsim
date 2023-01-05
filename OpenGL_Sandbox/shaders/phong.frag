@@ -34,6 +34,11 @@ uniform int numLights;
 uniform int receiveShadow;
 uniform Light lights[MAX_LIGHTS];
 
+vec3 getColor()
+{
+	return useTexture == 1 ? vec3(texture(texture1, TexCoords)) : objectColor;
+}
+
 float calculateAttenuation(float constant, float linear, float quadratic, float distance)
 {
 	return 1.0 / (constant + linear * distance + quadratic * (distance * distance));
@@ -58,16 +63,7 @@ vec3 calculateDirLight(Light light)
 {
 	vec3 direction = light.position;
 	
-	vec3 color;
-	if (useTexture == 1)
-	{
-		color = vec3(texture(texture1, TexCoords));
-		//color  = vec3(0, 1, 1);
-	}
-	else
-	{
-		color = objectColor;
-	}
+	vec3 color = getColor();
 
     // ambient
     vec3 ambient = ka * light.color;
@@ -96,6 +92,8 @@ vec3 calculatePointLight(Light light)
 	vec3 result;
 	vec3 position = light.position;
 
+	vec3 color = getColor();
+
     // ambient
     vec3 ambient = ka * light.color;
   	
@@ -116,7 +114,7 @@ vec3 calculatePointLight(Light light)
 	float distance		= length(position - FragPos);
 	float attenuation	= calculateAttenuation(constant, linear, quadratic, distance);  
 	
-    result += (ambient + diffuse + specular) * attenuation * objectColor;
+    result += (ambient + diffuse + specular) * attenuation * color;
 
 #if 0
 	// https://ijdykeman.github.io/graphics/simple_fog_shader

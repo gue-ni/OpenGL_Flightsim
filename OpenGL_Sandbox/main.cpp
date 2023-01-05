@@ -163,29 +163,38 @@ int main(void)
     ground.receive_shadow = true;
     scene.add(&ground);
 
+    gfx::Light pointlight(gfx::Light::POINT, gfx::RGB(1.0f));
+    //pointlight.set_position(glm::vec3(-4, 2, 5));
+    cube.add(&pointlight);
+
+#if 1
     gfx::Light sun(gfx::Light::DIRECTIONAL, gfx::rgb(154, 219, 172));
     sun.set_position(glm::vec3(0.5f, 2.0f, 2.0f));
     sun.cast_shadow = true;
     scene.add(&sun);
+#endif
 
-    gfx::Controller controller(0.025f);
+    gfx::Controller controller(25.0f);
 
     SDL_Event event;
     bool quit = false;
-    uint64_t last = 0, now = 0;
-    float dt;
+    uint64_t last = 0, now = SDL_GetPerformanceCounter();
+    gfx::Seconds dt, timer = 0;
 
     std::cout << glGetString(GL_VERSION) << std::endl;
 
     while (!quit)
     {
-        // delta time
+        // delta time in seconds
         last = now;
         now = SDL_GetPerformanceCounter();
-        dt = static_cast<float>((now - last) * 1000 / static_cast<float>(SDL_GetPerformanceFrequency()));
-#if 0
-        std::cout << "FPS: " << 1000 / dt << std::endl;
-#endif
+        dt = static_cast<gfx::Seconds>((now - last) / static_cast<gfx::Seconds>(SDL_GetPerformanceFrequency()));
+
+        if ((timer += dt) >= 1.0f)
+        {
+            printf("dt = %f, fps = %f\n", dt, 1 / dt);
+            timer = 0.0f;
+        }
 
         // user input
         while (SDL_PollEvent(&event) != 0)
