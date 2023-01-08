@@ -22,11 +22,14 @@ namespace phi {
         glm::vec3 velocity{};
         glm::vec3 angular_velocity{};
 
+        glm::mat3 inertia;
+        glm::mat3 inverse_inertia;
+
         RigidBody3D(const glm::vec3& pos, const glm::vec3& rot, float m) 
             : position(pos), rotation(glm::quat(rot)), mass(m)
         {}
 
-        inline void add_force_at_position(const glm::vec3& cg_to_point, const glm::vec3& force)
+        inline void add_force_at_position(const glm::vec3& force, const glm::vec3& point)
         {
             m_force     += force;
             m_torque    += glm::cross(point, force);
