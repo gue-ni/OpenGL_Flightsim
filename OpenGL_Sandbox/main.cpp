@@ -15,26 +15,27 @@
 using std::shared_ptr;
 using std::make_shared;
 
+constexpr auto SCREEN_WIDTH = 800;
+constexpr auto SCREEN_HEIGHT = 600;
+
 std::ostream& operator<<(std::ostream& os, const glm::vec3& v)
 {
 	return os << v.x << ", " << v.y << ", " << v.z;
 }
 
-constexpr auto SCREEN_WIDTH = 800;
-constexpr auto SCREEN_HEIGHT = 600;
-
-void apply_physics(const phi::RigidBody3D& rigid_body, gfx::Object3D& object3d)
+void apply_to_object3d(const phi::RigidBody& rigid_body, gfx::Object3D& object3d)
 {
     object3d.set_position(rigid_body.position);
+    object3d.set_rotation_quaternion(rigid_body.rotation);
 }
 
-void apply_constraints(phi::RigidBody3D& rigid_body)
+void solve_constraints(phi::RigidBody& rigid_body)
 {
 	if (rigid_body.position.y <= 0)
 	{
 		rigid_body.apply_gravity = false;
 		rigid_body.position.y = 0;
-		rigid_body.velocity = glm::vec3(0.0f);
+		rigid_body.velocity.y = 0;
 	}
 }
 
@@ -167,7 +168,7 @@ int main(void)
     scene.add(&icosphere);
 
     gfx::Mesh cube(cube_geo, container);
-    cube.set_position(glm::vec3(0.0f, 50.0f, -5.0f));
+    cube.set_position(glm::vec3(0.0f, 10.0f, -5.0f));
     cube.set_scale(glm::vec3(1.0f));
     scene.add(&cube);
     
@@ -197,7 +198,7 @@ int main(void)
 
     std::cout << glGetString(GL_VERSION) << std::endl;
 
-    phi::RigidBody3D rigid_body(cube.get_position(), cube.get_rotation(), 20);
+    phi::RigidBody rigid_body(cube.get_position(), cube.get_rotation(), 20.0f, phi::RigidBody::cube_inertia_tensor(glm::vec3(1.0f), 20.0f));
 
     while (!quit)
     {
@@ -244,11 +245,12 @@ int main(void)
         if (key_states[SDL_SCANCODE_D]) controller.move(gfx::Controller::RIGHT);
 
 
+        rigid_body.add_force_at_position(glm::vec3(2.0f, 1.0f, 5.0f), glm::vec3(1, 0, 0));
+        //rigid_body.add_torque(glm::vec3(0.0f, 0.0f, 5.0f));
         rigid_body.update(dt);
 
-        apply_constraints(rigid_body);
-        apply_physics(rigid_body, cube);
-
+        solve_constraints(rigid_body);
+        apply_to_object3d(rigid_body, cube);
 
          // rendering
         icosphere.set_rotation(icosphere.get_rotation() + glm::vec3(1.0f, 0.0f, 1.0f) * 0.001f);

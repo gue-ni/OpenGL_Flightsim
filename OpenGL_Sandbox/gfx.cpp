@@ -256,6 +256,11 @@ namespace gfx {
 
 	glm::vec3 Object3D::get_rotation() const
 	{
+		return glm::eulerAngles(m_rotation);
+	}
+
+	glm::quat Object3D::get_rotation_quaternion() const
+	{
 		return m_rotation;
 	}
 
@@ -276,14 +281,20 @@ namespace gfx {
 
 	void Object3D::set_rotation(const glm::vec3& rot)
 	{
-		m_rotation = rot; m_dirty_dof = true;
+		m_rotation = glm::quat(rot); m_dirty_dof = true;
+	}
+
+	void Object3D::set_rotation_quaternion(const glm::quat& quat)
+	{
+		m_rotation = quat;
 	}
 
 	glm::mat4 Object3D::get_local_transform() const
 	{
 		auto S = glm::scale(glm::mat4(1.0f), m_scale);
 		auto T = glm::translate(glm::mat4(1.0f), m_position);
-		auto R = glm::eulerAngleYXZ(m_rotation.x, m_rotation.y, m_rotation.z);
+		//auto R = glm::eulerAngleYXZ(m_rotation.x, m_rotation.y, m_rotation.z);
+		auto R = glm::toMat4(m_rotation);
 		return T * R * S;
 	}
 

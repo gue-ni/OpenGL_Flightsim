@@ -6,6 +6,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/euler_angles.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 #include <iostream>
 #include <sstream>
@@ -123,7 +124,7 @@ namespace gfx {
 			: parent(nullptr),
 			transform(1.0), 
 			m_position(0.0f),
-			m_rotation(0.0f),
+			m_rotation(glm::vec3(0.0f)),
 			m_scale(1.0f)
 		{}
 
@@ -139,16 +140,20 @@ namespace gfx {
 
 		void set_scale(const glm::vec3& scale); // yaw, roll, pitch
 		void set_rotation(const glm::vec3& rot);
+		void set_rotation_quaternion(const glm::quat& quat);
 		void set_position(const glm::vec3& pos);
 
 		glm::vec3 get_scale() const;
 		glm::vec3 get_rotation() const;
+		glm::quat get_rotation_quaternion() const;
 		glm::vec3 get_position() const;
 
 		virtual Object3D::Type get_type() const;
 
 		glm::vec3 get_world_position() const;
 		void override_transform(const glm::mat4& matrix);
+		void update_world_matrix(bool dirtyParent);
+		glm::mat4 get_local_transform() const;
 
 		void traverse(const std::function<bool(Object3D*)>& func)
 		{
@@ -162,11 +167,15 @@ namespace gfx {
 		}
 
 	protected:
-		friend class Renderer;
-		bool m_dirty_dof = false, m_dirty_transform = false;
-		glm::vec3 m_rotation, m_position, m_scale; 
-		void update_world_matrix(bool dirtyParent);
-		glm::mat4 get_local_transform() const;
+
+		bool m_dirty_dof = false;
+		bool m_dirty_transform = false;
+
+		glm::vec3 m_position;
+		glm::vec3 m_scale;
+		//glm::vec3 m_rotation; 
+		glm::quat m_rotation;
+
 	};
 
 	class Camera : public Object3D  {
