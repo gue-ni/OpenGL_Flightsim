@@ -6,47 +6,63 @@
 #include <glm/gtx/euler_angles.hpp>
 
 namespace phi {
-    struct RigidBody {
 
-        float mass;
+    constexpr float g = 9.81;
 
-        glm::vec3 position;
-        glm::vec3 rotation;
+    class RigidBody3D {
+    public:
 
-        glm::vec3 velocity;
-        glm::vec3 angular_velocity;
+        float mass{};
 
-        glm::vec3 m_force;
-        glm::vec3 m_torque;
+        bool apply_gravity = true;
 
-        void add_force_at_position(glm::vec3 pos, glm::vec3 force)
+        glm::vec3 position{};
+        glm::quat rotation{};
+
+        glm::vec3 velocity{};
+        glm::vec3 angular_velocity{};
+
+        RigidBody3D(const glm::vec3& pos, const glm::vec3& rot, float m) 
+            : position(pos), rotation(glm::quat(rot)), mass(m)
+        {}
+
+        inline void add_force_at_position(const glm::vec3& cg_to_point, const glm::vec3& force)
         {
 
         }
 
-        void add_torque(glm::vec3 t)
+        inline void add_torque(const glm::vec3& t)
         {
             m_torque += t;
         }
 
-        void add_force(glm::vec3 f)
+        inline void add_force(const glm::vec3& f)
         {
             m_force += f;
         }
 
-        void update_euler(float dt)
+        void update(float dt)
         {
+            if (apply_gravity)
+            {
+                m_force.y -= g * mass;
+            }
+
             // position
             glm::vec3 acceleration = m_force / mass;
             velocity += acceleration * dt;
             position += velocity * dt;
 
             // rotation
+            // TODO
 
-
-            m_force = glm::vec3(0.0f);
-            m_torque = glm::vec3(0.0f);
+            // reset forces
+            m_force = glm::vec3(0.0f), m_torque = glm::vec3(0.0f);
         }
+
+    private:
+        glm::vec3 m_force{};
+        glm::vec3 m_torque{};
     };
 };
 

@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "gfx.h"
+#include "phi.h"
 
 using std::shared_ptr;
 using std::make_shared;
@@ -21,6 +22,21 @@ std::ostream& operator<<(std::ostream& os, const glm::vec3& v)
 
 constexpr auto SCREEN_WIDTH = 800;
 constexpr auto SCREEN_HEIGHT = 600;
+
+void apply_physics(const phi::RigidBody3D& rigid_body, gfx::Object3D& object3d)
+{
+    object3d.set_position(rigid_body.position);
+}
+
+void apply_constraints(phi::RigidBody3D& rigid_body)
+{
+	if (rigid_body.position.y <= 0)
+	{
+		rigid_body.apply_gravity = false;
+		rigid_body.position.y = 0;
+		rigid_body.velocity = glm::vec3(0.0f);
+	}
+}
 
 int main(void)
 {
@@ -116,14 +132,12 @@ int main(void)
     gfx::load_obj("assets/cube.obj", cube_vertices);
     gfx::load_obj("assets/icosphere.obj", ico_vertices);
 
-
-
     gfx::Renderer renderer(SCREEN_WIDTH, SCREEN_HEIGHT);
 
     auto blue   = make_shared<gfx::Phong>(gfx::rgb(0, 0, 255));
     auto red    = make_shared<gfx::Phong>(gfx::rgb(255, 0, 0));
     auto green    = make_shared<gfx::Phong>(gfx::rgb(0, 255, 0));
-    auto checker = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/checker.png"));
+    auto test_texture = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/uv-test.png"));
     auto container = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/container.jpg"));
     auto cube_geo   = std::make_shared<gfx::Geometry>(cube_vertices_2, gfx::Geometry::POS_NORM_UV);
     auto ico_geo    = std::make_shared<gfx::Geometry>(ico_vertices, gfx::Geometry::POS_NORM_UV);
@@ -153,11 +167,11 @@ int main(void)
     scene.add(&icosphere);
 
     gfx::Mesh cube(cube_geo, container);
-    cube.set_position(glm::vec3(0.0f, 0.0f, -5.0f));
+    cube.set_position(glm::vec3(0.0f, 50.0f, -5.0f));
     cube.set_scale(glm::vec3(1.0f));
-    icosphere.add(&cube);
+    scene.add(&cube);
     
-    gfx::Mesh ground(cube_geo, checker);
+    gfx::Mesh ground(cube_geo, test_texture);
     ground.set_scale(glm::vec3(20, 0.5, 20));
     ground.set_position(glm::vec3(0, -1, 0));
     ground.receive_shadow = true;
@@ -165,7 +179,7 @@ int main(void)
 
     gfx::Light pointlight(gfx::Light::POINT, gfx::RGB(1.0f));
     //pointlight.set_position(glm::vec3(-4, 2, 5));
-    cube.add(&pointlight);
+    icosphere.add(&pointlight);
 
 #if 1
     gfx::Light sun(gfx::Light::DIRECTIONAL, gfx::rgb(154, 219, 172));
@@ -182,6 +196,8 @@ int main(void)
     gfx::Seconds dt, timer = 0;
 
     std::cout << glGetString(GL_VERSION) << std::endl;
+
+    phi::RigidBody3D rigid_body(cube.get_position(), cube.get_rotation(), 20);
 
     while (!quit)
     {
@@ -226,6 +242,13 @@ int main(void)
         if (key_states[SDL_SCANCODE_A]) controller.move(gfx::Controller::LEFT);
         if (key_states[SDL_SCANCODE_S]) controller.move(gfx::Controller::BACKWARD);
         if (key_states[SDL_SCANCODE_D]) controller.move(gfx::Controller::RIGHT);
+
+
+        rigid_body.update(dt);
+
+        apply_constraints(rigid_body);
+        apply_physics(rigid_body, cube);
+
 
          // rendering
         icosphere.set_rotation(icosphere.get_rotation() + glm::vec3(1.0f, 0.0f, 1.0f) * 0.001f);
