@@ -28,17 +28,18 @@ namespace phi {
 
         inline void add_force_at_position(const glm::vec3& cg_to_point, const glm::vec3& force)
         {
-
+            m_force     += force;
+            m_torque    += glm::cross(point, force);
         }
 
-        inline void add_torque(const glm::vec3& t)
-        {
-            m_torque += t;
-        }
-
-        inline void add_force(const glm::vec3& f)
+        void add_force(const glm::vec3& f)
         {
             m_force += f;
+        }
+        
+        void add_torque(const glm::vec3& t)
+        {
+            m_torque += t;
         }
 
         void update(float dt)
@@ -54,9 +55,9 @@ namespace phi {
             position += velocity * dt;
 
             // rotation
-            // TODO
+            angular_velocity += inverse_inertia + (m_moment - glm::cross(angular_velocity, inertia * angular_velocity)) * dt;
+            rotation += (rotation * angular_velocity) * (0.5 * dt);
 
-            // reset forces
             m_force = glm::vec3(0.0f), m_torque = glm::vec3(0.0f);
         }
 
