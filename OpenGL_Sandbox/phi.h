@@ -21,15 +21,23 @@ namespace phi {
 
         glm::vec3 m_force;
         glm::vec3 m_moment;
+        glm::vec3 m_torque;
 
-        void add_force_at_position(glm::vec3 pos, glm::vec3 force)
+        // point is vector from cg to force application
+        void add_force_at_point(const glm::vec3& force, const glm::vec3& point)
         {
-
+            m_force     += force;
+            m_torque    += glm::cross(point, force);
         }
 
-        void add_force(glm::vec3 f)
+        void add_force(const glm::vec3& f)
         {
             m_force += f;
+        }
+        
+        void add_torque(const glm::vec3& t)
+        {
+            m_torque += t;
         }
 
         void update_euler(float dt)
