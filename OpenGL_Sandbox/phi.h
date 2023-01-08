@@ -66,7 +66,7 @@ namespace phi {
 
         inline glm::vec3 get_point_velocity(const glm::vec3& point)
         {
-            return glm::vec3(0.0f); // TODO
+            return velocity * glm::cross(angular_velocity, point);
         }
 
         void update(float dt)
