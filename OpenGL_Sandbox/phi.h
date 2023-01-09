@@ -10,9 +10,8 @@
 namespace phi {
 
     constexpr float g = 9.81f;
-
-    constexpr glm::vec3 UP(1.0f, 0.0f, 0.0f);
-    constexpr glm::vec3 RIGHT(1.0f, 0.0f, 0.0f);
+    constexpr glm::vec3 UP(0.0f, 1.0f, 0.0f);
+    constexpr glm::vec3 RIGHT(0.0f, 0.0f, 1.0f);
     constexpr glm::vec3 FORWARD(1.0f, 0.0f, 0.0f);
 
     class RigidBody {
@@ -29,6 +28,14 @@ namespace phi {
 
         glm::mat3 inertia;
         glm::mat3 inverse_inertia;
+
+        RigidBody(float m) 
+            : position(glm::vec3(0.0f)), rotation(glm::quat(glm::vec3(0.0f))), mass(m), inertia(cube_inertia_tensor(glm::vec3(1.0f), m)), inverse_inertia(glm::inverse(inertia))
+        {}
+
+        RigidBody(float m, const glm::mat3& inertia_tensor) 
+            : position(glm::vec3(0.0f)), rotation(glm::quat(glm::vec3(0.0f))), mass(m), inertia(inertia_tensor), inverse_inertia(glm::inverse(inertia_tensor))
+        {}
 
         RigidBody(const glm::vec3& pos, const glm::vec3& rot, float m, const glm::mat3& inertia_tensor) 
             : position(pos), rotation(glm::quat(rot)), mass(m), inertia(inertia_tensor), inverse_inertia(glm::inverse(inertia_tensor))
@@ -48,7 +55,7 @@ namespace phi {
             };
         }
 
-        inline void add_force_at_position(const glm::vec3& force, const glm::vec3& point)
+        inline void add_force_at_point(const glm::vec3& force, const glm::vec3& point)
         {
             m_force     += force;
             m_torque    += glm::cross(point, force);
@@ -66,15 +73,13 @@ namespace phi {
 
         inline glm::vec3 get_point_velocity(const glm::vec3& point)
         {
-            return velocity * glm::cross(angular_velocity, point);
+            return velocity + glm::cross(angular_velocity, point);
         }
 
         void update(float dt)
         {
             if (apply_gravity)
-            {
                 m_force.y -= g * mass;
-            }
 
             // position
             glm::vec3 acceleration = m_force / mass;

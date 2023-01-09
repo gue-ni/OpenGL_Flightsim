@@ -3,6 +3,7 @@
 #include "phi.h"
 
 #include <cmath>
+#include <vector>
 
 struct ValueTupel {
 	float alpha;
@@ -10,14 +11,7 @@ struct ValueTupel {
 	float cd;
 };
 
-
-/*
-  NACA 0015
-   alpha    CL        CD    
-  ------ -------- --------- 
-*/
-
-std::vector<ValueTuple> naca_0015 = {
+std::vector<ValueTupel> NACA_0015 = {
  { -11.000,  -0.8022,   0.07748 }, 
  { -10.750,  -0.8442,   0.07035 }, 
  { -10.500,  -0.8851,   0.06475 }, 
@@ -109,7 +103,7 @@ std::vector<ValueTuple> naca_0015 = {
  {  11.000,   0.8024,   0.07755 },
 };
 
-std::vector<ValueTuple> naca_2408 = {
+std::vector<ValueTupel> NACA_2408 = {
   { -9.250, -0.5158,  0.11581 },
   { -9.000, -0.5047,  0.11139 },
   { -8.750, -0.5244,  0.11068 },
@@ -188,8 +182,9 @@ std::vector<ValueTuple> naca_2408 = {
   { 10.250,  0.7659,  0.09338 }
   };
 
-
-
+struct ForceApplier {
+	virtual void apply_forces(phi::RigidBody& rigid_body) = 0;
+};
 
 struct Curve {
 	std::vector<ValueTupel> data;
@@ -198,6 +193,11 @@ struct Curve {
 	{
 		for (int i = 0; i < data.size() - 1; i++)
 			assert(data[i].alpha < data[i+1].alpha);
+	}
+
+	static float lerp(float a, float b, float t)
+	{
+		return a + t * (b - a);
 	}
 	
 	void sample(float alpha, float *cl, float *cd) const
@@ -210,8 +210,8 @@ struct Curve {
 				auto t0 = alpha - data[i].alpha;
 				auto t1 = data[i+1].alpha - data[i].alpha;
 				auto f = t0 / t1;
-				cl* = std::lerp(data[i].cl, data[i+1].cl, f);
-				cd* = std::lerp(data[i].cd, data[i+1].cd, f);
+				*cl = lerp(data[i].cl, data[i+1].cl, f);
+				*cd = lerp(data[i].cd, data[i+1].cd, f);
 				return;
 			}
 		}
@@ -225,63 +225,46 @@ struct Wing {
 	const Curve curve;
 
 	Wing(const glm::vec3& position_offset, float wing_area)
-		: offset(position_offset), area(wing_area), normal(phi::UP)
+		: offset(position_offset), area(wing_area), normal(phi::UP), curve(NACA_2408)
 	{}
 
-	// drag coefficient
-	float get_cd_at_aoa(float aoa) const
-	{
-		return 0.0f;
-	}
-
-	// lift coefficient
-	float get_cl_at_aoa(float aoa) const
-	{
-		return 0.0f;
-	}
-
-	float get_lift(float aoa, float speed)
-	{
-		float cl = get_cl_at_aoa(aoa);
-		return speed * speed * cl * area;
-	}
-
-	float get_drag(float aoa, float speed)
-	{
-		float cd = get_cd_at_aoa(aoa);
-		return speed * speed * cd * area;
-	}
-	
 	void apply_forces(phi::RigidBody& rigid_body)
 	{
 		auto velocity = rigid_body.get_point_velocity(offset);
+		assert(glm::length(velocity) > 0.0f);
+
 		auto lift_direction = glm::normalize(glm::cross(velocity, phi::RIGHT));
 		auto drag_direction = glm::normalize(-velocity);
 
-		auto local_velocity = velocity * glm::inverse(rigid_body.rotation); // TODO: account for rotation, adds more velocity
+		auto local_velocity = velocity * glm::inverse(rigid_body.rotation); 
 		auto local_speed = glm::length(local_velocity);
 
 		auto angle_of_attack = glm::angle(local_velocity, phi::FORWARD);
 
-		float cl, cd;
-		curve.sample(angle_of_attack, &cl, &cd);
+		float lift_coefficient, drag_coefficient;
+		curve.sample(angle_of_attack, &lift_coefficient, &drag_coefficient);
 
 		float speed2 = local_speed * local_speed;
 
-		float lift = speed2 * cl * area; 
-		float drag = speed2 * cd * area; 
+		float lift = speed2 * lift_coefficient * area; 
+		float drag = speed2 * drag_coefficient * area; 
 
-		rigid_body.add_force_at_position(lift_direction * lift, offset);
-		rigid_body.add_force_at_position(drag_direction * drag, offset);
+		rigid_body.add_force_at_point(lift_direction * lift, offset);
+		rigid_body.add_force_at_point(drag_direction * drag, offset);
 	}
 };
 
 struct Engine {
-	float rpm;
-	void apply_forces(phi::RigidBody& rigid_body) {}
+	float thrust = 100.0f;
+
+	void apply_forces(phi::RigidBody& rigid_body)
+	{
+		glm::vec3 thrust_direction = phi::FORWARD * rigid_body.rotation;
+		rigid_body.add_force(thrust_direction * thrust);
+	}
 };
 
-struct Airplane {
+struct Aircraft {
 
 	phi::RigidBody rigid_body;
 
@@ -289,20 +272,26 @@ struct Airplane {
 	Wing rudder;
 	Wing elevator;
 
-	Airplane(const glm::vec3& position, const glm::vec3& velocity, float mass)
+	Engine engine;
+
+	Aircraft(const glm::vec3& position, const glm::vec3& velocity, float mass)
 		: 
-		rigid_body(position, glm::vec3(0.0f), mass, phi::RigidBody::cube_inertia_tensor(glm::vec3(1.0f), mass)),
+		rigid_body(mass, phi::RigidBody::cube_inertia_tensor(glm::vec3(1.0f), mass)),
 		wing(glm::vec3(0.5f, 0.0f, 0.0f), 10.0f),
 		elevator(glm::vec3(-1.0f, 0.0f, 0.0f), 2.5f),
 		rudder(glm::vec3(-1.0f, 0.1f, 0.0f), 2.0f)
 	{
+		rigid_body.position = position;
+		rigid_body.velocity = velocity;
 	}
 
 	void update(float dt)
 	{
 		wing.apply_forces(rigid_body);
-		elevator.apply_forces(rigid_body);
-		rudder.apply_forces(rigid_body);
+		//elevator.apply_forces(rigid_body);
+		//rudder.apply_forces(rigid_body);
+
+		engine.apply_forces(rigid_body);
 		rigid_body.update(dt);
 	}
 };

@@ -11,6 +11,7 @@
 
 #include "gfx.h"
 #include "phi.h"
+#include "flightmodel.h"
 
 using std::shared_ptr;
 using std::make_shared;
@@ -200,6 +201,8 @@ int main(void)
 
     phi::RigidBody rigid_body(cube.get_position(), cube.get_rotation(), 20.0f, phi::RigidBody::cube_inertia_tensor(glm::vec3(1.0f), 20.0f));
 
+    Aircraft aircraft(glm::vec3(0.0f, 100.0f, 0.0f), glm::vec3(200.0f, 0.0f, 0.0f), 8000.0f);
+
     while (!quit)
     {
         // delta time in seconds
@@ -245,9 +248,11 @@ int main(void)
         if (key_states[SDL_SCANCODE_D]) controller.move(gfx::Controller::RIGHT);
 
 
-        rigid_body.add_force_at_position(glm::vec3(2.0f, 1.0f, 5.0f), glm::vec3(1, 0, 0));
+        rigid_body.add_force_at_point(glm::vec3(2.0f, 1.0f, 5.0f), glm::vec3(1, 0, 0));
         //rigid_body.add_torque(glm::vec3(0.0f, 0.0f, 5.0f));
         rigid_body.update(dt);
+
+        aircraft.update(dt);
 
         solve_constraints(rigid_body);
         apply_to_object3d(rigid_body, cube);
