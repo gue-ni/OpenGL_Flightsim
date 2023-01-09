@@ -2,6 +2,35 @@
 
 #include "phi.h"
 
+struct ValueTupel {
+	float x;
+	float y;
+};
+
+struct Curve {
+	std::vector<ValueTupel> data;
+	Curve(const std::vector<ValueTupel>& curve_data) : data(curve_data) 
+	{
+		for (int i = 0; i < data.size() - 1; i++)
+		{
+			assert(data[i].x < data[i+1].x);
+		}
+	}
+	
+	float sample(float x)
+	{
+		for (int i = 0; i < data.size() - 1; i++)
+		{
+			if (data[i] <= x && x <= data[i+1])
+			{
+				auto t0 = x - data[i];
+				auto t1 = data[i+1] - data[i];
+				return lerp(data[i], data[i+1], t0 / t1);
+			}
+		}
+	}
+};
+
 struct Wing {
 	const float area;
 	const glm::vec3 offset;
