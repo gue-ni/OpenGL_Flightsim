@@ -121,12 +121,17 @@ namespace gfx {
 		};
 
 		Object3D()
-			: parent(nullptr),
+			: id(counter++),
+			parent(nullptr),
 			transform(1.0), 
 			m_position(0.0f),
 			m_rotation(glm::vec3(0.0f)),
 			m_scale(1.0f)
-		{}
+		{
+		}
+
+		const int id;
+		static int counter;
 
 		Object3D* parent;
 		std::vector<Object3D*> children;

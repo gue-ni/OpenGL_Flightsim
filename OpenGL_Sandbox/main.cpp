@@ -262,20 +262,32 @@ int main(void)
 
         const uint8_t* key_states = SDL_GetKeyboardState(NULL);
 
-        float elevator_torque = 500.0f, aileron_torque = 500.0f;
+        float elevator_torque = 500.0f, aileron_torque = 500.0f, thrust_force = 1500.0f;
 
-        if (key_states[SDL_SCANCODE_A]) 
-            aircraft.rigid_body.add_torque(glm::vec3(-1.0f, 0.0f, 0.0f) * aileron_torque);
+        if (key_states[SDL_SCANCODE_A])
+        {
+            aircraft.rigid_body.add_relative_torque(glm::vec3(-1.0f, 0.0f, 0.0f) * aileron_torque);
+        }
 
-        if (key_states[SDL_SCANCODE_D]) 
-            aircraft.rigid_body.add_torque(glm::vec3(+1.0f, 0.0f, 0.0f) * aileron_torque);
+        if (key_states[SDL_SCANCODE_D])
+        {
+            aircraft.rigid_body.add_relative_torque(glm::vec3(+1.0f, 0.0f, 0.0f) * aileron_torque);
+        }
 
-        if (key_states[SDL_SCANCODE_W]) 
-            aircraft.rigid_body.add_torque(glm::vec3(0.0f, 0.0f, -1.0f) * elevator_torque);
+        if (key_states[SDL_SCANCODE_W])
+        {
+            aircraft.rigid_body.add_relative_torque(glm::vec3(0.0f, 0.0f, -1.0f) * elevator_torque);
+        }
 
-        if (key_states[SDL_SCANCODE_S]) 
-            aircraft.rigid_body.add_torque(glm::vec3(0.0f, 0.0f, +1.0f) * elevator_torque);
+        if (key_states[SDL_SCANCODE_S])
+        {
+            aircraft.rigid_body.add_relative_torque(glm::vec3(0.0f, 0.0f, +1.0f) * elevator_torque);
+        }
 
+        if (key_states[SDL_SCANCODE_SPACE])
+        {
+            aircraft.rigid_body.add_relative_force(glm::vec3(1.0f, 0.0f, 0.0f) * thrust_force);
+        }
 
         //cout << aircraft.rigid_body.get_torque() << endl;
 

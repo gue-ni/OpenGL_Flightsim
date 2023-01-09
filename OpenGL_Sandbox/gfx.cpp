@@ -243,6 +243,8 @@ namespace gfx {
 
 	template<class Derived>
 	std::shared_ptr<Shader> MaterialX<Derived>::shader = nullptr;
+
+	int Object3D::counter = 0;
 	
 	void Object3D::draw(RenderContext& context)
 	{

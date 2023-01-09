@@ -182,10 +182,6 @@ std::vector<ValueTupel> NACA_2408 = {
   { 10.250,  0.7659,  0.09338 }
   };
 
-struct ForceApplier {
-	virtual void apply_forces(phi::RigidBody& rigid_body) = 0;
-};
-
 struct Curve {
 	std::vector<ValueTupel> data;
 
