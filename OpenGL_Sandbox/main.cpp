@@ -147,9 +147,6 @@ int main(void)
 
     gfx::Object3D scene;
 
-    gfx::Camera camera(glm::radians(45.0f), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 1000.0f);
-    camera.set_position(glm::vec3(0, 1, 7));
-    scene.add(&camera);
 
 
 #if 1
@@ -164,24 +161,23 @@ int main(void)
     scene.add(&skybox);
 #endif
   
-    gfx::Mesh icosphere(ico_geo, blue);
-    icosphere.set_position(glm::vec3(0, 1.0, 0));
-    scene.add(&icosphere);
+    auto position = glm::vec3(0.0f, 2.0f, 12.0f);
+    auto velocity = glm::vec3(0.0f, 0.0f, 0.0f);
 
     gfx::Mesh cube(cube_geo, container);
-    cube.set_position(glm::vec3(0.0f, 10.0f, -5.0f));
-    cube.set_scale(glm::vec3(1.0f));
+    cube.set_position(position);
     scene.add(&cube);
+
+    Aircraft aircraft(position, velocity);
+    
+    //phi::RigidBody rigid_body(20.0f);
+    //rigid_body.position = position;
     
     gfx::Mesh ground(cube_geo, test_texture);
     ground.set_scale(glm::vec3(20, 0.5, 20));
     ground.set_position(glm::vec3(0, -1, 0));
     ground.receive_shadow = true;
     scene.add(&ground);
-
-    gfx::Light pointlight(gfx::Light::POINT, gfx::RGB(1.0f));
-    //pointlight.set_position(glm::vec3(-4, 2, 5));
-    icosphere.add(&pointlight);
 
 #if 1
     gfx::Light sun(gfx::Light::DIRECTIONAL, gfx::rgb(154, 219, 172));
@@ -190,7 +186,11 @@ int main(void)
     scene.add(&sun);
 #endif
 
-    gfx::Controller controller(25.0f);
+    gfx::Camera camera(glm::radians(45.0f), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 1000.0f);
+    camera.set_position(glm::vec3(0, 1, 7));
+    cube.add(&camera);
+
+    gfx::OrbitController controller(10.0f);
 
     SDL_Event event;
     bool quit = false;
@@ -198,11 +198,7 @@ int main(void)
     gfx::Seconds dt, timer = 0;
 
     std::cout << glGetString(GL_VERSION) << std::endl;
-
-    phi::RigidBody rigid_body(cube.get_position(), cube.get_rotation(), 20.0f, phi::RigidBody::cube_inertia_tensor(glm::vec3(1.0f), 20.0f));
-
-    Aircraft aircraft(glm::vec3(0.0f, 100.0f, 0.0f), glm::vec3(200.0f, 0.0f, 0.0f), 8000.0f);
-
+    
     while (!quit)
     {
         // delta time in seconds
@@ -241,24 +237,27 @@ int main(void)
             }
         }
 
+        /*
         const uint8_t* key_states = SDL_GetKeyboardState(NULL);
-        if (key_states[SDL_SCANCODE_W]) controller.move(gfx::Controller::FORWARD);
-        if (key_states[SDL_SCANCODE_A]) controller.move(gfx::Controller::LEFT);
-        if (key_states[SDL_SCANCODE_S]) controller.move(gfx::Controller::BACKWARD);
-        if (key_states[SDL_SCANCODE_D]) controller.move(gfx::Controller::RIGHT);
+        if (key_states[SDL_SCANCODE_W]) controller.move(gfx::FirstPersonController::FORWARD);
+        if (key_states[SDL_SCANCODE_A]) controller.move(gfx::FirstPersonController::LEFT);
+        if (key_states[SDL_SCANCODE_S]) controller.move(gfx::FirstPersonController::BACKWARD);
+        if (key_states[SDL_SCANCODE_D]) controller.move(gfx::FirstPersonController::RIGHT);
+        */
 
-
-        rigid_body.add_force_at_point(glm::vec3(2.0f, 1.0f, 5.0f), glm::vec3(1, 0, 0));
-        rigid_body.update(dt);
+        //rigid_body.add_force_at_point(glm::vec3(2.0f, 1.0f, 5.0f), glm::vec3(1, 0, 0));
+        //rigid_body.update(dt);
+        //solve_constraints(rigid_body);
+        //apply_to_object3d(rigid_body, cube);
 
         aircraft.update(dt);
 
-        solve_constraints(rigid_body);
-        apply_to_object3d(rigid_body, cube);
+        solve_constraints(aircraft.rigid_body);
+        apply_to_object3d(aircraft.rigid_body, cube);
 
-         // rendering
-        icosphere.set_rotation(icosphere.get_rotation() + glm::vec3(1.0f, 0.0f, 1.0f) * dt);
-        controller.update(camera, dt);
+        //controller.update(camera, aircraft.rigid_body.position, dt);
+        controller.update(camera, camera.parent->get_world_position(), dt);
+
         renderer.render(camera, scene);
 
         // swap window

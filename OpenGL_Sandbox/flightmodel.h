@@ -258,12 +258,14 @@ struct Wing {
 };
 
 struct Engine {
-	float thrust = 100.0f;
+	float thrust = 1000.0f;
 
 	void apply_forces(phi::RigidBody& rigid_body)
 	{
 		glm::vec3 thrust_direction = phi::FORWARD * rigid_body.rotation;
 		rigid_body.add_force(thrust_direction * thrust);
+
+		// TODO: implement torque from propeller
 	}
 };
 
@@ -277,9 +279,11 @@ struct Aircraft {
 
 	Engine engine;
 
-	Aircraft(const glm::vec3& position, const glm::vec3& velocity, float mass)
-		: 
-		rigid_body(mass, phi::RigidBody::cube_inertia_tensor(glm::vec3(1.0f), mass)),
+	Aircraft(const glm::vec3& position, const glm::vec3& velocity)
+		: rigid_body(
+			8000.0f // mass
+		),
+
 		wing(glm::vec3(0.5f, 0.0f, 0.0f), 10.0f),
 		elevator(glm::vec3(-1.0f, 0.0f, 0.0f), 2.5f),
 		rudder(glm::vec3(-1.0f, 0.1f, 0.0f), 2.0f)
@@ -290,10 +294,9 @@ struct Aircraft {
 
 	void update(float dt)
 	{
-		wing.apply_forces(rigid_body);
+		//wing.apply_forces(rigid_body);
 		//elevator.apply_forces(rigid_body);
 		//rudder.apply_forces(rigid_body);
-
 		engine.apply_forces(rigid_body);
 		rigid_body.update(dt);
 	}

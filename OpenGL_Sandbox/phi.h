@@ -20,17 +20,19 @@ namespace phi {
 
         bool apply_gravity = true;
 
-        glm::vec3 position{};
-        glm::quat rotation{};
+        glm::vec3 position = glm::vec3(0.0f);
+        glm::quat rotation = glm::quat(glm::vec3(0.0f));
 
-        glm::vec3 velocity{};
-        glm::vec3 angular_velocity{};
+        glm::vec3 velocity          = glm::vec3(0.0f);
+        glm::vec3 angular_velocity  = glm::vec3(0.0f);
 
-        glm::mat3 inertia;
-        glm::mat3 inverse_inertia;
+        glm::mat3 inertia{};
+        glm::mat3 inverse_inertia{};
 
-        RigidBody(float m) 
-            : position(glm::vec3(0.0f)), rotation(glm::quat(glm::vec3(0.0f))), mass(m), inertia(cube_inertia_tensor(glm::vec3(1.0f), m)), inverse_inertia(glm::inverse(inertia))
+        RigidBody(float body_mass) 
+            : mass(body_mass), 
+            inertia(cube_inertia_tensor(glm::vec3(1.0f), body_mass)), 
+            inverse_inertia(glm::inverse(inertia))
         {}
 
         RigidBody(float m, const glm::mat3& inertia_tensor) 

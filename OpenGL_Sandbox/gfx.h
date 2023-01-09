@@ -344,7 +344,7 @@ namespace gfx {
 		std::shared_ptr<Mesh> m_quad;
 	};
 
-	class Controller 
+	class FirstPersonController 
 	{
 	public:
 		enum Direction {
@@ -354,7 +354,7 @@ namespace gfx {
 			LEFT,
 		};
 
-		Controller(float speed) 
+		FirstPersonController(float speed) 
 			: m_speed(speed), 
 			m_yaw(-90.0f), 
 			m_pitch(0.0f), 
@@ -371,6 +371,21 @@ namespace gfx {
 	private:
 		float m_speed, m_yaw, m_pitch;
 		glm::vec3 m_front, m_up, m_velocity, m_direction;
+	};
+
+	class OrbitController {
+	public:
+		OrbitController(float radius)
+			: m_radius(radius)
+		{}
+
+		void update(Object3D& object, const glm::vec3& center, float dt);
+		void move_mouse(float x, float y);
+
+	private:
+		float m_radius;
+		float m_yaw		= 0.0f;
+		float m_pitch	= 0.0f;
 	};
 };
 
