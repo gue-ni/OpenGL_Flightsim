@@ -123,7 +123,7 @@ struct Curve {
 		}
 	}
 	
-	void sample(float alpha, float *cl, float *cd)
+	void sample(float alpha, float *cl, float *cd) const
 	{
 		for (int i = 0; i < data.size() - 1; i++)
 		{
@@ -131,10 +131,10 @@ struct Curve {
 			{
 				auto t0 = alpha - data[i].alpha;
 				auto t1 = data[i+1].alpha - data[i].alpha;
-        auto f = t0 / t1;
+        		auto f = t0 / t1;
 				cl* = std::lerp(data[i].cl, data[i+1].cl, f);
 				cd* = std::lerp(data[i].cd, data[i+1].cd, f);
-        return;
+        		return;
 			}
 		}
 	}
@@ -144,6 +144,7 @@ struct Wing {
 	const float area;
 	const glm::vec3 offset;
 	const glm::vec3 normal;
+	const Curve curve;
 
 	Wing(const glm::vec3& position_offset, float wing_area)
 		: offset(position_offset), area(wing_area), normal(phi::UP)
@@ -184,8 +185,16 @@ struct Wing {
 
 		auto angle_of_attack = glm::angle(local_velocity, phi::FORWARD);
 
-		rigid_body.add_force_at_position(lift_direction * get_lift(angle_of_attack, local_speed), offset);
-		rigid_body.add_force_at_position(drag_direction * get_drag(angle_of_attack, local_speed), offset);
+		float cl, cd;
+		curve.sample(angle_of_attack, &cl, &cd);
+
+		float speed2 = local_speed * local_speed;
+
+		float lift = speed2 * cl * area; 
+		float drag = speed2 * cd * area; 
+
+		rigid_body.add_force_at_position(lift_direction * lift, offset);
+		rigid_body.add_force_at_position(drag_direction * drag, offset);
 	}
 };
 
