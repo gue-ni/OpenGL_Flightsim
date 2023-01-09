@@ -3,12 +3,12 @@
 #include "phi.h"
 
 struct Wing {
-	
-	float area;
-	glm::vec3 offset;
+	const float area;
+	const glm::vec3 offset;
+	const glm::vec3 normal;
 
 	Wing(const glm::vec3& position_offset, float wing_area)
-		: offset(position_offset), area(wing_area)
+		: offset(position_offset), area(wing_area), normal(phi::UP)
 	{}
 
 	// drag coefficient
@@ -25,8 +25,8 @@ struct Wing {
 
 	float get_lift(float aoa, float speed)
 	{
-		float lift_coefficient = get_cl_at_aoa(aoa);
-		return speed * speed * lift_coefficient * area;
+		float cl = get_cl_at_aoa(aoa);
+		return speed * speed * cl * area;
 	}
 
 	float get_drag(float aoa, float speed)
@@ -34,8 +34,26 @@ struct Wing {
 		float cd = get_cd_at_aoa(aoa);
 		return speed * speed * cd * area;
 	}
+	
+	void apply_forces(phi::RigidBody& rigid_body)
+	{
+		auto velocity = rigid_body.get_point_velocity(offset);
+		auto lift_direction = glm::normalize(glm::cross(velocity, phi::RIGHT));
+		auto drag_direction = glm::normalize(-velocity);
 
+		auto local_velocity = velocity * glm::inverse(rigid_body.rotation); // TODO: account for rotation, adds more velocity
+		auto local_speed = glm::length(local_velocity);
 
+		auto angle_of_attack = glm::angle(local_velocity, phi::FORWARD);
+
+		rigid_body.add_force_at_position(lift_direction * get_lift(angle_of_attack, local_speed), offset);
+		rigid_body.add_force_at_position(drag_direction * get_drag(angle_of_attack, local_speed), offset);
+	}
+};
+
+struct Engine {
+	float rpm;
+	void apply_forces(phi::RigidBody& rigid_body) {}
 };
 
 struct Airplane {
@@ -57,28 +75,9 @@ struct Airplane {
 
 	void update(float dt)
 	{
-		auto lift_direction = glm::normalize(glm::cross(rigid_body.velocity, phi::RIGHT));
-		auto drag_direction = glm::normalize(-rigid_body.velocity);
-		auto rudder_lift_direction = glm::normalize(glm::cross(rigid_body.velocity, phi::UP));
-
-		auto local_velocity = rigid_body.velocity * glm::inverse(rigid_body.rotation); // TODO: account for rotation, adds more velocity
-		auto local_speed	= glm::length(local_velocity);
-
-		auto angle_of_attack		= glm::angle(local_velocity, phi::FORWARD);
-		auto rudder_angle_of_attack = glm::angle(local_velocity, phi::FORWARD); // TODO
-
-		rigid_body.add_force_at_position(lift_direction * wing.get_lift(angle_of_attack, local_speed), wing.offset);
-		rigid_body.add_force_at_position(drag_direction * wing.get_drag(angle_of_attack, local_speed), wing.offset);
-
-		rigid_body.add_force_at_position(lift_direction * elevator.get_lift(angle_of_attack, local_speed), elevator.offset);
-		rigid_body.add_force_at_position(drag_direction * elevator.get_drag(angle_of_attack, local_speed), elevator.offset);
-
-		rigid_body.add_force_at_position(rudder_lift_direction * rudder.get_lift(rudder_angle_of_attack, local_speed), rudder.offset);
-		rigid_body.add_force_at_position(drag_direction * rudder.get_drag(rudder_angle_of_attack, local_speed), rudder.offset);
-
-
-		
-		
-
+		wing.apply_forces(rigid_body);
+		elevator.apply_forces(rigid_body);
+		rudder.apply_forces(rigid_body);
+		rigid_body.update(dt);
 	}
 };
