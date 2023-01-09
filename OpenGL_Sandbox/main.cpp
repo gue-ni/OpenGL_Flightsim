@@ -249,7 +249,6 @@ int main(void)
 
 
         rigid_body.add_force_at_point(glm::vec3(2.0f, 1.0f, 5.0f), glm::vec3(1, 0, 0));
-        //rigid_body.add_torque(glm::vec3(0.0f, 0.0f, 5.0f));
         rigid_body.update(dt);
 
         aircraft.update(dt);
@@ -258,7 +257,7 @@ int main(void)
         apply_to_object3d(rigid_body, cube);
 
          // rendering
-        icosphere.set_rotation(icosphere.get_rotation() + glm::vec3(1.0f, 0.0f, 1.0f) * 0.001f);
+        icosphere.set_rotation(icosphere.get_rotation() + glm::vec3(1.0f, 0.0f, 1.0f) * dt);
         controller.update(camera, dt);
         renderer.render(camera, scene);
 

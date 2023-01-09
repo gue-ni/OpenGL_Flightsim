@@ -298,6 +298,17 @@ namespace gfx {
 		return T * R * S;
 	}
 
+	void Object3D::traverse(const std::function<bool(Object3D*)>& func)
+	{
+		if (func(this))
+		{
+			for (const auto& child : children)
+			{
+				child->traverse(func);
+			}
+		}
+	}
+
 	void Object3D::override_transform(const glm::mat4& matrix)
 	{
 		m_dirty_transform = true; m_dirty_dof = true;

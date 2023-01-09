@@ -152,19 +152,9 @@ namespace gfx {
 
 		glm::vec3 get_world_position() const;
 		void override_transform(const glm::mat4& matrix);
-		void update_world_matrix(bool dirtyParent);
+		void update_world_matrix(bool dirty_parent);
 		glm::mat4 get_local_transform() const;
-
-		void traverse(const std::function<bool(Object3D*)>& func)
-		{
-			if (func(this))
-			{
-				for (const auto& child : children)
-				{
-					child->traverse(func);
-				}
-			}
-		}
+		void traverse(const std::function<bool(Object3D*)>& func);
 
 	protected:
 
@@ -173,9 +163,7 @@ namespace gfx {
 
 		glm::vec3 m_position;
 		glm::vec3 m_scale;
-		//glm::vec3 m_rotation; 
 		glm::quat m_rotation;
-
 	};
 
 	class Camera : public Object3D  {

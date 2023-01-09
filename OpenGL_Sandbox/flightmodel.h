@@ -224,6 +224,9 @@ struct Wing {
 	const glm::vec3 normal;
 	const Curve curve;
 
+	float lift_multiplier = 1.0f;
+	float drag_multiplier = 1.0f;
+
 	Wing(const glm::vec3& position_offset, float wing_area)
 		: offset(position_offset), area(wing_area), normal(phi::UP), curve(NACA_2408)
 	{}
@@ -246,11 +249,11 @@ struct Wing {
 
 		float speed2 = local_speed * local_speed;
 
-		float lift = speed2 * lift_coefficient * area; 
-		float drag = speed2 * drag_coefficient * area; 
+		float lift_force = speed2 * lift_coefficient * area * lift_multiplier; 
+		float drag_force = speed2 * drag_coefficient * area * drag_multiplier; 
 
-		rigid_body.add_force_at_point(lift_direction * lift, offset);
-		rigid_body.add_force_at_point(drag_direction * drag, offset);
+		rigid_body.add_force_at_point(lift_direction * lift_force, offset);
+		rigid_body.add_force_at_point(drag_direction * drag_force, offset);
 	}
 };
 
