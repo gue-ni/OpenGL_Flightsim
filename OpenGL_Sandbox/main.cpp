@@ -13,8 +13,11 @@
 #include "phi.h"
 #include "flightmodel.h"
 
+
 using std::shared_ptr;
 using std::make_shared;
+using std::cout;
+using std::endl;
 
 constexpr auto SCREEN_WIDTH = 800;
 constexpr auto SCREEN_HEIGHT = 600;
@@ -147,8 +150,6 @@ int main(void)
 
     gfx::Object3D scene;
 
-
-
 #if 1
     gfx::Skybox skybox({
         "assets/skybox/hd/right.jpg",
@@ -160,35 +161,57 @@ int main(void)
     });
     scene.add(&skybox);
 #endif
-  
-    auto position = glm::vec3(0.0f, 2.0f, 12.0f);
-    auto velocity = glm::vec3(0.0f, 0.0f, 0.0f);
-
-    gfx::Mesh cube(cube_geo, container);
-    cube.set_position(position);
-    scene.add(&cube);
-
-    Aircraft aircraft(position, velocity);
-    
-    //phi::RigidBody rigid_body(20.0f);
-    //rigid_body.position = position;
-    
+#if 1    
     gfx::Mesh ground(cube_geo, test_texture);
     ground.set_scale(glm::vec3(20, 0.5, 20));
     ground.set_position(glm::vec3(0, -1, 0));
     ground.receive_shadow = true;
     scene.add(&ground);
-
+#endif
 #if 1
     gfx::Light sun(gfx::Light::DIRECTIONAL, gfx::rgb(154, 219, 172));
     sun.set_position(glm::vec3(0.5f, 2.0f, 2.0f));
-    sun.cast_shadow = true;
+    sun.cast_shadow = false;
     scene.add(&sun);
 #endif
+  
+    auto position = glm::vec3(0.0f, 0.0f, 12.0f);
+    auto velocity = glm::vec3(0.0f, 0.0f, 0.0f);
+
+    gfx::Object3D transform;
+    transform.set_position(position);
+    scene.add(&transform);
+
+#if 1
+    gfx::Mesh fuselage(cube_geo, container);
+    fuselage.set_scale(glm::vec3(3.0f, 0.5f, 0.5f));
+    transform.add(&fuselage);
+#endif 
+#if 1
+    gfx::Mesh wing(cube_geo, container);
+    wing.set_scale(glm::vec3(1.0f, 0.125f, 5.0f));
+    wing.set_position(glm::vec3(0, 0.0, 0));
+    transform.add(&wing);
+#endif 
+#if 1
+    gfx::Mesh elevator(cube_geo, container);
+    elevator.set_scale(glm::vec3(1.0f, 0.125f, 2.0f));
+    elevator.set_position(glm::vec3(-2.0f, 0.0f, 0.0f));
+    transform.add(&elevator);
+#endif 
+#if 1
+    gfx::Mesh rudder(cube_geo, container);
+    rudder.set_scale(glm::vec3(1.0f, 1.0f, 0.125f));
+    rudder.set_position(glm::vec3(-2.0f, 0.0f, 0.0f));
+    transform.add(&rudder);
+#endif 
+
+    Aircraft aircraft(position, velocity);
+
 
     gfx::Camera camera(glm::radians(45.0f), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 1000.0f);
     camera.set_position(glm::vec3(0, 1, 7));
-    cube.add(&camera);
+    transform.add(&camera);
 
     gfx::OrbitController controller(10.0f);
 
@@ -237,26 +260,32 @@ int main(void)
             }
         }
 
-        /*
         const uint8_t* key_states = SDL_GetKeyboardState(NULL);
-        if (key_states[SDL_SCANCODE_W]) controller.move(gfx::FirstPersonController::FORWARD);
-        if (key_states[SDL_SCANCODE_A]) controller.move(gfx::FirstPersonController::LEFT);
-        if (key_states[SDL_SCANCODE_S]) controller.move(gfx::FirstPersonController::BACKWARD);
-        if (key_states[SDL_SCANCODE_D]) controller.move(gfx::FirstPersonController::RIGHT);
-        */
 
-        //rigid_body.add_force_at_point(glm::vec3(2.0f, 1.0f, 5.0f), glm::vec3(1, 0, 0));
-        //rigid_body.update(dt);
-        //solve_constraints(rigid_body);
-        //apply_to_object3d(rigid_body, cube);
+        float elevator_torque = 500.0f, aileron_torque = 500.0f;
+
+        if (key_states[SDL_SCANCODE_A]) 
+            aircraft.rigid_body.add_torque(glm::vec3(-1.0f, 0.0f, 0.0f) * aileron_torque);
+
+        if (key_states[SDL_SCANCODE_D]) 
+            aircraft.rigid_body.add_torque(glm::vec3(+1.0f, 0.0f, 0.0f) * aileron_torque);
+
+        if (key_states[SDL_SCANCODE_W]) 
+            aircraft.rigid_body.add_torque(glm::vec3(0.0f, 0.0f, -1.0f) * elevator_torque);
+
+        if (key_states[SDL_SCANCODE_S]) 
+            aircraft.rigid_body.add_torque(glm::vec3(0.0f, 0.0f, +1.0f) * elevator_torque);
+
+
+        //cout << aircraft.rigid_body.get_torque() << endl;
 
         aircraft.update(dt);
 
         solve_constraints(aircraft.rigid_body);
-        apply_to_object3d(aircraft.rigid_body, cube);
+        apply_to_object3d(aircraft.rigid_body, transform);
 
         //controller.update(camera, aircraft.rigid_body.position, dt);
-        controller.update(camera, camera.parent->get_world_position(), dt);
+        controller.update(camera, camera.parent->get_position(), dt);
 
         renderer.render(camera, scene);
 

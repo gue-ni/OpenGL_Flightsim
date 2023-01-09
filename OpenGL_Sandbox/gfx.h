@@ -222,6 +222,7 @@ namespace gfx {
 		Geometry(const Geometry& geometry);
 		~Geometry();
 		void bind();
+		void unbind();
 		int triangle_count;
 
 	private:

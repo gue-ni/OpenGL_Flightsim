@@ -297,7 +297,7 @@ struct Aircraft {
 		//wing.apply_forces(rigid_body);
 		//elevator.apply_forces(rigid_body);
 		//rudder.apply_forces(rigid_body);
-		engine.apply_forces(rigid_body);
+		//engine.apply_forces(rigid_body);
 		rigid_body.update(dt);
 	}
 };

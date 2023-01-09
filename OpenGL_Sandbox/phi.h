@@ -20,10 +20,16 @@ namespace phi {
 
         bool apply_gravity = true;
 
-        glm::vec3 position = glm::vec3(0.0f);
+        // position in world space
+        glm::vec3 position = glm::vec3(0.0f); 
+
+        // rotation in world space
         glm::quat rotation = glm::quat(glm::vec3(0.0f));
 
+        // velocity in world space
         glm::vec3 velocity          = glm::vec3(0.0f);
+
+        // angular velocity in object space
         glm::vec3 angular_velocity  = glm::vec3(0.0f);
 
         glm::mat3 inertia{};
@@ -36,11 +42,17 @@ namespace phi {
         {}
 
         RigidBody(float m, const glm::mat3& inertia_tensor) 
-            : position(glm::vec3(0.0f)), rotation(glm::quat(glm::vec3(0.0f))), mass(m), inertia(inertia_tensor), inverse_inertia(glm::inverse(inertia_tensor))
+            : mass(m),
+            inertia(inertia_tensor), 
+            inverse_inertia(glm::inverse(inertia_tensor))
         {}
 
         RigidBody(const glm::vec3& pos, const glm::vec3& rot, float m, const glm::mat3& inertia_tensor) 
-            : position(pos), rotation(glm::quat(rot)), mass(m), inertia(inertia_tensor), inverse_inertia(glm::inverse(inertia_tensor))
+            : mass(m),
+            position(pos), 
+            rotation(glm::quat(rot)), 
+            inertia(inertia_tensor), 
+            inverse_inertia(glm::inverse(inertia_tensor))
         {}
 
         static glm::mat3 cube_inertia_tensor(const glm::vec3& dimensions, float cube_mass)
@@ -63,14 +75,43 @@ namespace phi {
             m_torque    += glm::cross(point, force);
         }
 
+        /*
+        Achtung: add_force/add_torque and add_force_relative/add_torque_relative
+        are actually switched
+        */
+
+        // force vector in local coordinates.
         inline void add_force(const glm::vec3& force) 
         { 
             m_force += force; 
         }
+         
+        // force vector in world coordinates.
+        inline void add_relative_force(const glm::vec3& force) 
+        { 
+            m_force += force * rotation; 
+        }
         
+        // torque vector in world coordinates.
         inline void add_torque(const glm::vec3& torque) 
         { 
             m_torque += torque; 
+        }
+
+        // torque vector in local coordinates.
+        inline void add_relative_torque(const glm::vec3& torque) 
+        { 
+            m_torque += torque * rotation; 
+        }
+
+        inline glm::vec3 get_torque() const
+        {
+            return m_torque;
+        }
+
+        inline glm::vec3 get_force() const
+        {
+            return m_force;
         }
 
         inline glm::vec3 get_point_velocity(const glm::vec3& point)
@@ -97,7 +138,10 @@ namespace phi {
         }
 
     private:
+        // force vector in world space
         glm::vec3 m_force{};
+
+        // torque vector in object space
         glm::vec3 m_torque{};
     };
 };

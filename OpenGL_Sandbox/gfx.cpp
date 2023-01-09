@@ -204,6 +204,11 @@ namespace gfx {
         glBindVertexArray(m_vao); 
 	}
 
+	void Geometry::unbind()
+	{
+        glBindVertexArray(0); 
+	}
+
 	int Geometry::get_stride(const VertexLayout& layout)
 	{
 		switch (layout)
@@ -473,6 +478,7 @@ namespace gfx {
 
 		m_geometry->bind();
 		glDrawArrays(GL_TRIANGLES, 0, m_geometry->triangle_count);
+		m_geometry->unbind();
 
 		draw_children(context);
 	}
