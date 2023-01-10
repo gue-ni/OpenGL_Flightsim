@@ -79,7 +79,7 @@ namespace phi {
         inline void add_force_at_point(const glm::vec3& force, const glm::vec3& point)
         {
             m_force     += force;
-            m_torque    += inverse_transform_direction(glm::cross(point, force)); // TODO: needs to be in local space
+            m_torque    += glm::cross(point, force);
         }
 
         // transform from direction in world space to local space 
