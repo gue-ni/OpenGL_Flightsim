@@ -277,7 +277,7 @@ inline float kilometer_per_hour(float meters_per_second)
 }
 
 struct Engine {
-	float thrust = 1000.0f;
+	float thrust = 10000.0f;
 
 	void apply_forces(phi::RigidBody& rigid_body)
 	{
@@ -302,7 +302,7 @@ struct Aircraft {
 		: rigid_body(1600.0f), // mass in kg
 		wing(		glm::vec3( 0.5f, 0.0f, 0.0f), 10.0f),
 		elevator(	glm::vec3(-1.0f, 0.0f, 0.0f), 2.5f),
-		rudder(		glm::vec3(-1.0f, 0.1f, 0.0f), 2.0f)
+		rudder(		glm::vec3(-1.0f, 0.1f, 0.0f), 2.0f, glm::vec3(phi::RIGHT))
 	{
 		rigid_body.position = position;
 		rigid_body.velocity = velocity;
@@ -310,10 +310,12 @@ struct Aircraft {
 
 	void update(float dt)
 	{
-		//wing.apply_forces(rigid_body);
-		//elevator.apply_forces(rigid_body);
-		//rudder.apply_forces(rigid_body);
-		//engine.apply_forces(rigid_body);
+#if 0
+		wing.apply_forces(rigid_body);
+		elevator.apply_forces(rigid_body);
+		rudder.apply_forces(rigid_body);
+#endif
+		engine.apply_forces(rigid_body);
 		rigid_body.update(dt);
 	}
 };

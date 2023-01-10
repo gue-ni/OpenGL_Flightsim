@@ -288,25 +288,19 @@ int main(void)
             aircraft.rigid_body.add_relative_force(glm::vec3(1.0f, 0.0f, 0.0f) * thrust_force);
         }
 
-
         aircraft.update(dt);
-
 
         if ((log_timer += dt) >= 0.25f)
         {
             log_timer = 0.0f;
 
             cout << "Speed: " << kilometer_per_hour(glm::length(aircraft.rigid_body.velocity)) << " km/h" << endl;
-            cout << "Gravity force: " << phi::g * aircraft.rigid_body.mass << endl;
-            //cout << aircraft.rigid_body.get_torque() << endl;
-            cout << aircraft.rigid_body.get_force() << endl;
+            //cout << "Gravity force: " << phi::g * aircraft.rigid_body.mass << endl;
+            cout << aircraft.rigid_body.position << endl;
         }
 
         solve_constraints(aircraft.rigid_body);
         apply_to_object3d(aircraft.rigid_body, transform);
-
-
-
 
         //controller.update(camera, aircraft.rigid_body.position, dt);
         controller.update(camera, camera.parent->get_position(), dt);
