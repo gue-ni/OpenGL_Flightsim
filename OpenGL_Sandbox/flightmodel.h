@@ -216,7 +216,7 @@ struct Curve {
 
 struct Wing {
 	const float area;
-	const glm::vec3 cg; // center of gravity relative to rigidbody cg
+	const glm::vec3 center_of_gravity; // center of gravity relative to rigidbody cg
 	const glm::vec3 normal;
 	const Curve curve;
 
@@ -225,41 +225,63 @@ struct Wing {
 
 	
 	Wing(const glm::vec3& cg_offset, float wing_area)
-		: cg(cg_offset), area(wing_area), normal(phi::UP), curve(NACA_2408)
+		: center_of_gravity(cg_offset), area(wing_area),  curve(NACA_2408), normal(phi::UP)
+	{}
+
+	Wing(const glm::vec3& cg_offset, float wing_area, const glm::vec3& wing_normal)
+		: center_of_gravity(cg_offset), area(wing_area),  curve(NACA_2408), normal(wing_normal)
 	{}
 
 	void apply_forces(phi::RigidBody& rigid_body)
 	{
-		auto velocity = rigid_body.get_point_velocity(cg);
-		assert(glm::length(velocity) > 0.0f);
-		float speed2 = local_speed * local_speed;
+		auto local_velocity = (glm::inverse(rigid_body.rotation) * rigid_body.velocity) 
+			+ glm::cross(rigid_body.angular_velocity, center_of_gravity);
 
-		auto lift_direction = glm::normalize( glm::cross(   , glm::cross(velocity, phi::RIGHT) ) );
-		auto drag_direction = glm::normalize(-velocity);
-
-		auto local_velocity = velocity * glm::inverse(rigid_body.rotation); 
 		auto local_speed = glm::length(local_velocity);
 
-		float angle_of_attack = 0.0f; // TODO
+		assert(local_speed > 0.0f);
+
+		float speed2 = local_speed * local_speed;
+
+		auto drag_direction = glm::normalize(-local_velocity);
+		auto lift_direction = glm::normalize(
+			glm::cross(glm::cross(drag_direction, normal), drag_direction)
+		);
+
+		float tmp = glm::dot(drag_direction, normal);
+		float angle_of_attack = glm::degrees(asin(tmp));
 
 		float lift_coefficient, drag_coefficient;
 		curve.sample(angle_of_attack, &lift_coefficient, &drag_coefficient);
 
-		float lift_force = speed2 * lift_coefficient * area * lift_multiplier; 
-		float drag_force = speed2 * drag_coefficient * area * drag_multiplier; 
+		glm::vec3 lift_force = lift_direction * speed2 * lift_coefficient * area * lift_multiplier; 
+		glm::vec3 drag_force = drag_direction * speed2 * drag_coefficient * area * drag_multiplier; 
 
-		rigid_body.add_force_at_point(lift_direction * lift_force, cg);
-		rigid_body.add_force_at_point(drag_direction * drag_force, cg);
+		// both in body coordinates
+		auto force = lift_force + drag_force;
+		auto torque = glm::cross(center_of_gravity, force);
+
+		rigid_body.add_relative_force(force);
+		rigid_body.add_relative_torque(torque);
 	}
 };
+
+inline float meter_per_second(float kilometer_per_hour)
+{
+	return kilometer_per_hour / 3.6f;
+}
+
+inline float kilometer_per_hour(float meters_per_second)
+{
+	return meters_per_second * 3.6f;
+}
 
 struct Engine {
 	float thrust = 1000.0f;
 
 	void apply_forces(phi::RigidBody& rigid_body)
 	{
-		//glm::vec3 thrust_direction = phi::FORWARD * rigid_body.rotation;
-		rigid_body.add_relative_force(thrust);
+		rigid_body.add_relative_force(glm::vec3(thrust, 0.0f, 0.0f));
 
 		// TODO: implement torque from propeller
 	}
@@ -277,13 +299,10 @@ struct Aircraft {
 
 	// Cessna 172
 	Aircraft(const glm::vec3& position, const glm::vec3& velocity)
-		: rigid_body(
-			1600.0f // mass
-		),
-
-		wing(glm::vec3(0.5f, 0.0f, 0.0f), 10.0f),
-		elevator(glm::vec3(-1.0f, 0.0f, 0.0f), 2.5f),
-		rudder(glm::vec3(-1.0f, 0.1f, 0.0f), 2.0f)
+		: rigid_body(1600.0f), // mass in kg
+		wing(		glm::vec3( 0.5f, 0.0f, 0.0f), 10.0f),
+		elevator(	glm::vec3(-1.0f, 0.0f, 0.0f), 2.5f),
+		rudder(		glm::vec3(-1.0f, 0.1f, 0.0f), 2.0f)
 	{
 		rigid_body.position = position;
 		rigid_body.velocity = velocity;

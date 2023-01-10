@@ -37,7 +37,6 @@ void solve_constraints(phi::RigidBody& rigid_body)
 {
 	if (rigid_body.position.y <= 0)
 	{
-		rigid_body.apply_gravity = false;
 		rigid_body.position.y = 0;
 		rigid_body.velocity.y = 0;
 	}
@@ -175,7 +174,7 @@ int main(void)
     scene.add(&sun);
 #endif
   
-    auto position = glm::vec3(0.0f, 0.0f, 12.0f);
+    auto position = glm::vec3(0.0f, 10.0f, 12.0f);
     auto velocity = glm::vec3(0.0f, 0.0f, 0.0f);
 
     gfx::Object3D transform;
@@ -202,7 +201,7 @@ int main(void)
 #if 1
     gfx::Mesh rudder(cube_geo, container);
     rudder.set_scale(glm::vec3(1.0f, 1.0f, 0.125f));
-    rudder.set_position(glm::vec3(-2.0f, 0.0f, 0.0f));
+    rudder.set_position(glm::vec3(-2.0f, 0.5f, 0.0f));
     transform.add(&rudder);
 #endif 
 
@@ -218,7 +217,7 @@ int main(void)
     SDL_Event event;
     bool quit = false;
     uint64_t last = 0, now = SDL_GetPerformanceCounter();
-    gfx::Seconds dt, timer = 0;
+    gfx::Seconds dt, timer = 0, log_timer = 0;
 
     std::cout << glGetString(GL_VERSION) << std::endl;
     
@@ -231,7 +230,7 @@ int main(void)
 
         if ((timer += dt) >= 1.0f)
         {
-            printf("dt = %f, fps = %f\n", dt, 1 / dt);
+            //printf("dt = %f, fps = %f\n", dt, 1 / dt);
             timer = 0.0f;
         }
 
@@ -262,7 +261,7 @@ int main(void)
 
         const uint8_t* key_states = SDL_GetKeyboardState(NULL);
 
-        float elevator_torque = 500.0f, aileron_torque = 500.0f, thrust_force = 1500.0f;
+        float elevator_torque = 500.0f, aileron_torque = 500.0f, thrust_force = 25000.0f;
 
         if (key_states[SDL_SCANCODE_A])
         {
@@ -289,12 +288,25 @@ int main(void)
             aircraft.rigid_body.add_relative_force(glm::vec3(1.0f, 0.0f, 0.0f) * thrust_force);
         }
 
-        //cout << aircraft.rigid_body.get_torque() << endl;
 
         aircraft.update(dt);
 
+
+        if ((log_timer += dt) >= 0.25f)
+        {
+            log_timer = 0.0f;
+
+            cout << "Speed: " << kilometer_per_hour(glm::length(aircraft.rigid_body.velocity)) << " km/h" << endl;
+            cout << "Gravity force: " << phi::g * aircraft.rigid_body.mass << endl;
+            //cout << aircraft.rigid_body.get_torque() << endl;
+            cout << aircraft.rigid_body.get_force() << endl;
+        }
+
         solve_constraints(aircraft.rigid_body);
         apply_to_object3d(aircraft.rigid_body, transform);
+
+
+
 
         //controller.update(camera, aircraft.rigid_body.position, dt);
         controller.update(camera, camera.parent->get_position(), dt);

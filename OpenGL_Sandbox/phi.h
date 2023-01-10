@@ -76,6 +76,7 @@ namespace phi {
             };
         }
 
+        // TODO: fix
         inline void add_force_at_point(const glm::vec3& force, const glm::vec3& point)
         {
             m_force     += force;
@@ -88,10 +89,6 @@ namespace phi {
             return direction * glm::inverse(rotation);
         }
 
-        /*
-            Achtung: add_torque and add_torque_relative are actually switched
-        */
-
         // force vector in world coordinates.
         inline void add_force(const glm::vec3& force) 
         { 
@@ -101,7 +98,8 @@ namespace phi {
         // force vector in local coordinates.
         inline void add_relative_force(const glm::vec3& force) 
         { 
-            m_force += inverse_transform_direction(force);
+            //m_force += inverse_transform_direction(force);
+            m_force += rotation * force;
         }
         
         // torque vector in world coordinates.
@@ -128,13 +126,15 @@ namespace phi {
 
         inline glm::vec3 get_point_velocity(const glm::vec3& point)
         {
-            return velocity + glm::cross(angular_velocity, point);
+            return inverse_transform_direction(velocity) + glm::cross(angular_velocity, point);
         }
 
         void update(float dt)
         {
             if (apply_gravity)
+            {
                 m_force.y -= g * mass;
+            }
 
             glm::vec3 acceleration = m_force / mass;
             velocity += acceleration * dt;
