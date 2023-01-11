@@ -6,7 +6,10 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "lib/stb_image.h"
 
-
+std::ostream& operator<<(std::ostream& os, const glm::vec3& v)
+{
+	return os << "{ " <<  v.x << ", " << v.y << ", " << v.z << " }";
+}
 
 std::string load_text_file(const std::string& path)
 {
@@ -816,6 +819,13 @@ namespace gfx {
         -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f, 0.0f, 0.0f,
 
 		};
+		return std::make_shared<Geometry>(vertices, Geometry::POS_NORM_UV);
+	}
+
+	std::shared_ptr<Geometry> make_plane_geometry(int x_elements, int y_elements)
+	{
+		// TODO
+		std::vector<float> vertices;
 		return std::make_shared<Geometry>(vertices, Geometry::POS_NORM_UV);
 	}
 

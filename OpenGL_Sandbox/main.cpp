@@ -22,10 +22,12 @@ using std::endl;
 constexpr auto SCREEN_WIDTH = 800;
 constexpr auto SCREEN_HEIGHT = 600;
 
+/*
 std::ostream& operator<<(std::ostream& os, const glm::vec3& v)
 {
 	return os << v.x << ", " << v.y << ", " << v.z;
 }
+*/
 
 void apply_to_object3d(const phi::RigidBody& rigid_body, gfx::Object3D& object3d)
 {
@@ -174,8 +176,8 @@ int main(void)
     scene.add(&sun);
 #endif
   
-    auto position = glm::vec3(0.0f, 10.0f, 12.0f);
-    auto velocity = glm::vec3(0.0f, 0.0f, 0.0f);
+    auto position = glm::vec3(0.0f, 0.0f, 12.0f);
+    auto velocity = glm::vec3(meter_per_second(50.0f), 0.0f, 0.0f);
 
     gfx::Object3D transform;
     transform.set_position(position);
@@ -187,10 +189,16 @@ int main(void)
     transform.add(&fuselage);
 #endif 
 #if 1
-    gfx::Mesh wing(cube_geo, container);
-    wing.set_scale(glm::vec3(1.0f, 0.125f, 5.0f));
-    wing.set_position(glm::vec3(0, 0.0, 0));
-    transform.add(&wing);
+    gfx::Mesh left_wing(cube_geo, container);
+    left_wing.set_scale(glm::vec3(1.0f, 0.125f, 2.0f));
+    left_wing.set_position(glm::vec3(0, 0.0, -2.75));
+    transform.add(&left_wing);
+
+    gfx::Mesh right_wing(cube_geo, container);
+    right_wing.set_scale(glm::vec3(1.0f, 0.125f, 2.0f));
+    right_wing.set_position(glm::vec3(0, 0.0, 2.75f));
+    transform.add(&right_wing);
+
 #endif 
 #if 1
     gfx::Mesh elevator(cube_geo, container);
@@ -206,7 +214,6 @@ int main(void)
 #endif 
 
     Aircraft aircraft(position, velocity);
-
 
     gfx::Camera camera(glm::radians(45.0f), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 1000.0f);
     camera.set_position(glm::vec3(0, 1, 7));
@@ -261,7 +268,7 @@ int main(void)
 
         const uint8_t* key_states = SDL_GetKeyboardState(NULL);
 
-        float elevator_torque = 500.0f, aileron_torque = 500.0f, thrust_force = 25000.0f;
+        float elevator_torque = 2000.0f, aileron_torque = 2500.0f, thrust_force = 25000.0f;
 
         if (key_states[SDL_SCANCODE_A])
         {
@@ -294,9 +301,9 @@ int main(void)
         {
             log_timer = 0.0f;
 
-            cout << "Speed: " << kilometer_per_hour(glm::length(aircraft.rigid_body.velocity)) << " km/h" << endl;
+            //cout << "Speed: " << kilometer_per_hour(glm::length(aircraft.rigid_body.velocity)) << " km/h" << endl;
             //cout << "Gravity force: " << phi::g * aircraft.rigid_body.mass << endl;
-            cout << aircraft.rigid_body.position << endl;
+            //cout << aircraft.rigid_body.position << endl;
         }
 
         solve_constraints(aircraft.rigid_body);

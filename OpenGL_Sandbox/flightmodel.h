@@ -1,9 +1,12 @@
 #pragma once
 
 #include "phi.h"
+#include "gfx.h"
 
 #include <cmath>
 #include <vector>
+
+constexpr float log_intervall = 1.0f;
 
 struct ValueTupel {
 	float alpha;
@@ -215,6 +218,7 @@ struct Curve {
 };
 
 struct Wing {
+	const std::string name;
 	const float area;
 	const glm::vec3 center_of_gravity; // center of gravity relative to rigidbody cg
 	const glm::vec3 normal;
@@ -223,21 +227,27 @@ struct Wing {
 	float lift_multiplier = 1.0f;
 	float drag_multiplier = 1.0f;
 
+	float log_timer = 1.0f;
 	
-	Wing(const glm::vec3& cg_offset, float wing_area)
-		: center_of_gravity(cg_offset), area(wing_area),  curve(NACA_2408), normal(phi::UP)
+	Wing(const std::string& wing_name, const glm::vec3& cg_offset, float wing_area, const Curve& aerodynamics, const glm::vec3& wing_normal)
+		: name(wing_name), 
+		center_of_gravity(cg_offset), 
+		area(wing_area),  
+		curve(aerodynamics), 
+		normal(wing_normal)
 	{}
 
-	Wing(const glm::vec3& cg_offset, float wing_area, const glm::vec3& wing_normal)
-		: center_of_gravity(cg_offset), area(wing_area),  curve(NACA_2408), normal(wing_normal)
-	{}
 
-	void apply_forces(phi::RigidBody& rigid_body)
+
+	void apply_forces(phi::RigidBody& rigid_body, float dt)
 	{
 		auto local_velocity = (glm::inverse(rigid_body.rotation) * rigid_body.velocity) 
 			+ glm::cross(rigid_body.angular_velocity, center_of_gravity);
 
 		auto local_speed = glm::length(local_velocity);
+
+		if (local_speed <= 0.0f)
+			return;
 
 		assert(local_speed > 0.0f);
 
@@ -263,6 +273,21 @@ struct Wing {
 
 		rigid_body.add_relative_force(force);
 		rigid_body.add_relative_torque(torque);
+
+		if ((log_timer += dt) > log_intervall)
+		{
+			log_timer = 0;
+#if 0
+			std::cout << "######### [ " << name << " ] #######" << std::endl;
+			std::cout << "aoa = " << angle_of_attack << std::endl;
+			std::cout << "lift = " << lift_force << std::endl;
+			std::cout << "drag = " << drag_force  << std::endl;
+			std::cout << "force = " << force  << std::endl;
+			std::cout << "torque = " << torque  << std::endl;
+			std::cout << "####################################" << std::endl;
+#endif
+		}
+
 	}
 };
 
@@ -291,18 +316,23 @@ struct Aircraft {
 
 	phi::RigidBody rigid_body;
 
-	Wing wing;
+	Wing left_wing;
+	Wing right_wing;
 	Wing rudder;
 	Wing elevator;
 
 	Engine engine;
 
+	float log_timer = 1.0f;
+
+
 	// Cessna 172
 	Aircraft(const glm::vec3& position, const glm::vec3& velocity)
 		: rigid_body(1600.0f), // mass in kg
-		wing(		glm::vec3( 0.5f, 0.0f, 0.0f), 10.0f),
-		elevator(	glm::vec3(-1.0f, 0.0f, 0.0f), 2.5f),
-		rudder(		glm::vec3(-1.0f, 0.1f, 0.0f), 2.0f, glm::vec3(phi::RIGHT))
+		left_wing("left_wing",	glm::vec3(-0.1f, 0.75f, -2.75f), 16.17f / 2.0f, Curve(NACA_2408), phi::UP),
+		right_wing("right_wing",glm::vec3(-0.1f, 0.75f, 2.75f), 16.17f / 2.0f, Curve(NACA_2408), phi::UP),
+		elevator("elevator",	glm::vec3(-5.0f, 0.5f, 0.0f),    2.0f, Curve(NACA_0015), phi::UP),
+		rudder("rudder",		glm::vec3(-5.0f, 1.5f, 0.0f),   1.04f, Curve(NACA_0015), phi::RIGHT)
 	{
 		rigid_body.position = position;
 		rigid_body.velocity = velocity;
@@ -310,12 +340,31 @@ struct Aircraft {
 
 	void update(float dt)
 	{
-#if 0
-		wing.apply_forces(rigid_body);
-		elevator.apply_forces(rigid_body);
-		rudder.apply_forces(rigid_body);
+#if 1
+		left_wing.apply_forces(rigid_body, dt);
+		right_wing.apply_forces(rigid_body, dt);
+		elevator.apply_forces(rigid_body, dt);
+		//rudder.apply_forces(rigid_body, dt);
 #endif
 		engine.apply_forces(rigid_body);
+
+		float lift = rigid_body.get_force().y;
+		float gravity = phi::g * rigid_body.mass;
+		rigid_body.add_force(phi::DOWN * gravity); 
+
+		if ((log_timer += dt) > log_intervall)
+		{
+#if 1
+			log_timer = 0;
+			std::cout << "########## airplane ##############" << std::endl;
+			std::cout <<  "height: " << rigid_body.position.y << std::endl;
+			std::cout <<  "speed: " << kilometer_per_hour(glm::length(rigid_body.velocity)) << std::endl;
+			std::cout << "torque: " << rigid_body.get_torque() << std::endl;
+			std::cout << "gravity: " << gravity << ", lift = " << lift << std::endl;
+			std::cout << "##################################" << std::endl;
+#endif
+		}
+
 		rigid_body.update(dt);
 	}
 };

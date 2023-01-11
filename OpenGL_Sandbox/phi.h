@@ -10,9 +10,13 @@
 namespace phi {
 
     constexpr float g = 9.81f;
-    constexpr glm::vec3 UP(0.0f, 1.0f, 0.0f);
-    constexpr glm::vec3 RIGHT(0.0f, 0.0f, 1.0f);
+
+    constexpr glm::vec3 UP(    0.0f, 1.0f, 0.0f);
+    constexpr glm::vec3 DOWN(  0.0f, -1.0f, 0.0f);
+    constexpr glm::vec3 RIGHT( 0.0f, 0.0f, 1.0f);
+    constexpr glm::vec3 LEFT(  0.0f, 0.0f, -1.0f);
     constexpr glm::vec3 FORWARD(1.0f, 0.0f, 0.0f);
+    constexpr glm::vec3 BACKWARD(-1.0f, 0.0f, 0.0f);
 
     class RigidBody {
     private:
@@ -131,10 +135,12 @@ namespace phi {
 
         void update(float dt)
         {
+            /*
             if (apply_gravity)
             {
                 m_force.y -= g * mass;
             }
+            */
 
             glm::vec3 acceleration = m_force / mass;
             velocity += acceleration * dt;

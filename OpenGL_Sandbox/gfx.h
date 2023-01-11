@@ -16,6 +16,9 @@
 #include <functional>
 #include <unordered_map>
 
+
+std::ostream& operator<<(std::ostream& os, const glm::vec3& v);
+
 namespace gfx {
 
 	std::ostream& operator<<(std::ostream& os, const glm::vec3& v);
@@ -53,6 +56,7 @@ namespace gfx {
 	bool load_obj(const std::string path, std::vector<float>& vertices);
 
 	std::shared_ptr<Geometry> make_cube_geometry(void);
+	std::shared_ptr<Geometry> make_plane_geometry(int x_elements, int y_elements);
 
 	struct Shader {
 		GLuint id;
