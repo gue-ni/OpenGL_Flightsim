@@ -163,9 +163,10 @@ int main(void)
     scene.add(&skybox);
 #endif
 #if 1    
-    gfx::Mesh ground(gfx::make_plane_geometry(4,2), test_texture);
+    gfx::Mesh ground(gfx::make_plane_geometry(50,50), test_texture);
     //ground.set_scale(glm::vec3(20, 0.5, 20));
     ground.set_position(glm::vec3(0, -1, 0));
+    ground.set_scale(glm::vec3(10.0f));
     ground.receive_shadow = true;
     scene.add(&ground);
 #endif
@@ -195,13 +196,13 @@ int main(void)
 #endif 
 #if 1
     gfx::Mesh left_wing(cube_geo, container);
-    left_wing.set_scale(glm::vec3(1.0f, 0.125f, 2.0f));
-    left_wing.set_position(glm::vec3(0, 0.0, -2.75));
+    left_wing.set_scale(glm::vec3(1.0f, 0.125f, 4.0f));
+    left_wing.set_position(glm::vec3(0, 0.0, -2.0));
     transform.add(&left_wing);
 
     gfx::Mesh right_wing(cube_geo, container);
-    right_wing.set_scale(glm::vec3(1.0f, 0.125f, 2.0f));
-    right_wing.set_position(glm::vec3(0, 0.0, 2.75f));
+    right_wing.set_scale(glm::vec3(1.0f, 0.125f, 4.0f));
+    right_wing.set_position(glm::vec3(0, 0.0, 2.0f));
     transform.add(&right_wing);
 
 #endif 
@@ -220,7 +221,7 @@ int main(void)
 
     Aircraft aircraft(position, velocity);
 
-    gfx::Camera camera(glm::radians(45.0f), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 1000.0f);
+    gfx::Camera camera(glm::radians(45.0f), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 10000.0f);
     camera.set_position(glm::vec3(0, 1, 7));
     transform.add(&camera);
 
@@ -273,7 +274,7 @@ int main(void)
 
         const uint8_t* key_states = SDL_GetKeyboardState(NULL);
 
-        float elevator_torque = 2000.0f, aileron_torque = 2000.0f, thrust_force = 25000.0f;
+        float elevator_torque = 5000.0f, aileron_torque = 5000.0f, thrust_force = 25000.0f;
 
         if (key_states[SDL_SCANCODE_A])
         {
@@ -295,9 +296,16 @@ int main(void)
             aircraft.rigid_body.add_relative_torque(phi::RIGHT * elevator_torque);
         }
 
-        if (key_states[SDL_SCANCODE_SPACE])
+        if (key_states[SDL_SCANCODE_J])
         {
-            aircraft.rigid_body.add_relative_force(glm::vec3(1.0f, 0.0f, 0.0f) * thrust_force);
+            aircraft.engine.thrust -= 10.0f;
+            aircraft.engine.thrust = max(aircraft.engine.thrust, 0.0f);
+        }
+
+        if (key_states[SDL_SCANCODE_K])
+        {
+            aircraft.engine.thrust += 10.0f;
+
         }
 
         aircraft.update(dt);

@@ -9,411 +9,541 @@
 
 constexpr float log_intervall = 1.5f;
 
-struct ValueTupel {
-	float alpha;
-	float cl;
-	float cd;
+struct ValueTuple
+{
+  float alpha;
+  float cl;
+  float cd;
+};
+
+// NACA 0012 AIRFOILS (n0012-il) Xfoil prediction polar at RE=1,000,000 Ncrit=9
+std::vector<ValueTuple> NACA_0012 = {
+    {-18.500f, -1.2258f, 0.10236f},
+    {-18.250f, -1.2456f, 0.09505f},
+    {-18.000f, -1.2659f, 0.08782f},
+    {-17.750f, -1.2852f, 0.08088f},
+    {-17.500f, -1.3031f, 0.07429f},
+    {-17.250f, -1.3193f, 0.06814f},
+    {-17.000f, -1.3322f, 0.06256f},
+    {-16.750f, -1.3427f, 0.05745f},
+    {-16.500f, -1.3519f, 0.05263f},
+    {-16.250f, -1.3687f, 0.04704f},
+    {-16.000f, -1.3806f, 0.04234f},
+    {-15.750f, -1.3868f, 0.03865f},
+    {-15.500f, -1.3879f, 0.03577f},
+    {-15.250f, -1.3854f, 0.03348f},
+    {-15.000f, -1.3802f, 0.03160f},
+    {-14.750f, -1.3739f, 0.02997f},
+    {-14.500f, -1.3669f, 0.02849f},
+    {-14.250f, -1.3590f, 0.02718f},
+    {-14.000f, -1.3502f, 0.02602f},
+    {-13.750f, -1.3399f, 0.02502f},
+    {-13.500f, -1.3281f, 0.02416f},
+    {-13.250f, -1.3149f, 0.02343f},
+    {-13.000f, -1.3132f, 0.02207f},
+    {-12.750f, -1.3004f, 0.02117f},
+    {-12.500f, -1.2834f, 0.02049f},
+    {-12.250f, -1.2649f, 0.01988f},
+    {-12.000f, -1.2455f, 0.01931f},
+    {-11.750f, -1.2250f, 0.01881f},
+    {-11.500f, -1.2032f, 0.01839f},
+    {-11.250f, -1.1872f, 0.01745f},
+    {-11.000f, -1.1666f, 0.01690f},
+    {-10.750f, -1.1449f, 0.01645f},
+    {-10.500f, -1.1228f, 0.01602f},
+    {-10.250f, -1.1000f, 0.01566f},
+    {-10.000f, -1.0807f, 0.01499f},
+    {-9.750f, -1.0591f, 0.01456f},
+    {-9.500f, -1.0368f, 0.01423f},
+    {-9.250f, -1.0143f, 0.01395f},
+    {-9.000f, -0.9948f, 0.01341f},
+    {-8.750f, -0.9735f, 0.01307f},
+    {-8.500f, -0.9517f, 0.01279f},
+    {-8.250f, -0.9313f, 0.01240f},
+    {-8.000f, -0.9104f, 0.01209f},
+    {-7.750f, -0.8888f, 0.01187f},
+    {-7.500f, -0.8687f, 0.01149f},
+    {-7.250f, -0.8475f, 0.01124f},
+    {-7.000f, -0.8268f, 0.01095f},
+    {-6.750f, -0.7975f, 0.01069f},
+    {-6.500f, -0.7634f, 0.01034f},
+    {-6.250f, -0.7289f, 0.01003f},
+    {-6.000f, -0.6939f, 0.00973f},
+    {-5.750f, -0.6601f, 0.00942f},
+    {-5.500f, -0.6268f, 0.00911f},
+    {-5.000f, -0.5571f, 0.00847f},
+    {-4.750f, -0.5213f, 0.00816f},
+    {-4.500f, -0.4903f, 0.00786f},
+    {-4.250f, -0.4588f, 0.00756f},
+    {-4.000f, -0.4276f, 0.00728f},
+    {-3.750f, -0.4004f, 0.00705f},
+    {-3.500f, -0.3730f, 0.00681f},
+    {-3.250f, -0.3462f, 0.00659f},
+    {-3.000f, -0.3201f, 0.00640f},
+    {-2.750f, -0.2938f, 0.00623f},
+    {-2.500f, -0.2675f, 0.00606f},
+    {-2.250f, -0.2410f, 0.00593f},
+    {-2.000f, -0.2144f, 0.00581f},
+    {-1.750f, -0.1878f, 0.00570f},
+    {-1.500f, -0.1611f, 0.00562f},
+    {-1.250f, -0.1343f, 0.00556f},
+    {-1.000f, -0.1075f, 0.00549f},
+    {-0.750f, -0.0806f, 0.00546f},
+    {-0.500f, -0.0538f, 0.00542f},
+    {-0.250f, -0.0268f, 0.00541f},
+    {0.000f, 0.0000f, 0.00540f},
+    {0.250f, 0.0269f, 0.00541f},
+    {0.500f, 0.0538f, 0.00542f},
+    {0.750f, 0.0806f, 0.00546f},
+    {1.000f, 0.1075f, 0.00549f},
+    {1.250f, 0.1344f, 0.00555f},
+    {1.500f, 0.1611f, 0.00562f},
+    {1.750f, 0.1878f, 0.00570f},
+    {2.000f, 0.2144f, 0.00581f},
+    {2.250f, 0.2410f, 0.00593f},
+    {2.500f, 0.2675f, 0.00606f},
+    {2.750f, 0.2938f, 0.00623f},
+    {3.000f, 0.3201f, 0.00640f},
+    {3.250f, 0.3462f, 0.00659f},
+    {3.500f, 0.3730f, 0.00681f},
+    {3.750f, 0.4004f, 0.00705f},
+    {4.000f, 0.4276f, 0.00728f},
+    {4.250f, 0.4588f, 0.00756f},
+    {4.500f, 0.4903f, 0.00786f},
+    {4.750f, 0.5213f, 0.00816f},
+    {5.000f, 0.5572f, 0.00847f},
+    {5.500f, 0.6268f, 0.00911f},
+    {5.750f, 0.6601f, 0.00942f},
+    {6.000f, 0.6940f, 0.00972f},
+    {6.250f, 0.7290f, 0.01003f},
+    {6.500f, 0.7635f, 0.01034f},
+    {6.750f, 0.7976f, 0.01069f},
+    {7.000f, 0.8267f, 0.01095f},
+    {7.250f, 0.8474f, 0.01124f},
+    {7.500f, 0.8686f, 0.01149f},
+    {7.750f, 0.8887f, 0.01186f},
+    {8.000f, 0.9103f, 0.01208f},
+    {8.250f, 0.9312f, 0.01240f},
+    {8.500f, 0.9516f, 0.01279f},
+    {8.750f, 0.9734f, 0.01307f},
+    {9.000f, 0.9948f, 0.01341f},
+    {9.250f, 1.0143f, 0.01395f},
+    {9.500f, 1.0368f, 0.01423f},
+    {9.750f, 1.0591f, 0.01456f},
+    {10.000f, 1.0808f, 0.01499f},
+    {10.250f, 1.1001f, 0.01566f},
+    {10.500f, 1.1229f, 0.01602f},
+    {10.750f, 1.1450f, 0.01645f},
+    {11.000f, 1.1668f, 0.01690f},
+    {11.250f, 1.1874f, 0.01745f},
+    {11.500f, 1.2033f, 0.01840f},
+    {11.750f, 1.2251f, 0.01881f},
+    {12.000f, 1.2457f, 0.01931f},
+    {12.250f, 1.2651f, 0.01988f},
+    {12.500f, 1.2837f, 0.02049f},
+    {12.750f, 1.3008f, 0.02117f},
+    {13.000f, 1.3137f, 0.02207f},
+    {13.250f, 1.3157f, 0.02342f},
+    {13.500f, 1.3290f, 0.02415f},
+    {13.750f, 1.3406f, 0.02502f},
+    {14.000f, 1.3509f, 0.02602f},
+    {14.250f, 1.3600f, 0.02717f},
+    {14.500f, 1.3679f, 0.02848f},
+    {14.750f, 1.3750f, 0.02995f},
+    {15.000f, 1.3814f, 0.03158f},
+    {15.250f, 1.3864f, 0.03348f},
+    {15.500f, 1.3892f, 0.03575f},
+    {15.750f, 1.3881f, 0.03863f},
+    {16.000f, 1.3818f, 0.04235f},
+    {16.250f, 1.3702f, 0.04702f},
+    {16.500f, 1.3536f, 0.05261f},
+    {16.750f, 1.3451f, 0.05734f},
+    {17.000f, 1.3352f, 0.06237f},
+    {17.250f, 1.3218f, 0.06802f},
+    {17.500f, 1.3059f, 0.07416f},
+    {17.750f, 1.2880f, 0.08075f},
+    {18.000f, 1.2685f, 0.08773f},
+    {18.250f, 1.2485f, 0.09493f},
+    {18.500f, 1.2284f, 0.10229f}};
+
+std::vector<ValueTuple> NACA_2412 = {
+    {-17.500f, -1.1118f, 0.08608f},
+    {-17.250f, -1.1738f, 0.07238f},
+    {-17.000f, -1.2296f, 0.05928f},
+    {-16.750f, -1.2629f, 0.04931f},
+    {-16.500f, -1.2790f, 0.04253f},
+    {-16.250f, -1.2852f, 0.03792f},
+    {-16.000f, -1.2869f, 0.03455f},
+    {-15.750f, -1.2853f, 0.03207f},
+    {-15.500f, -1.2815f, 0.03016f},
+    {-15.250f, -1.2755f, 0.02867f},
+    {-15.000f, -1.2674f, 0.02752f},
+    {-14.750f, -1.2667f, 0.02608f},
+    {-14.500f, -1.2585f, 0.02491f},
+    {-14.250f, -1.2429f, 0.02417f},
+    {-14.000f, -1.2251f, 0.02358f},
+    {-13.750f, -1.2068f, 0.02304f},
+    {-13.500f, -1.1881f, 0.02254f},
+    {-13.250f, -1.1690f, 0.02212f},
+    {-13.000f, -1.1561f, 0.02124f},
+    {-12.750f, -1.1417f, 0.02051f},
+    {-12.500f, -1.1239f, 0.02009f},
+    {-12.250f, -1.1058f, 0.01971f},
+    {-12.000f, -1.0881f, 0.01933f},
+    {-11.750f, -1.0704f, 0.01896f},
+    {-11.500f, -1.0519f, 0.01868f},
+    {-11.250f, -1.0327f, 0.01847f},
+    {-11.000f, -1.0222f, 0.01737f},
+    {-10.750f, -1.0046f, 0.01696f},
+    {-10.500f, -0.9766f, 0.01657f},
+    {-10.250f, -0.9448f, 0.01617f},
+    {-10.000f, -0.9125f, 0.01582f},
+    {-9.750f, -0.8793f, 0.01556f},
+    {-9.500f, -0.8484f, 0.01474f},
+    {-9.250f, -0.8172f, 0.01411f},
+    {-9.000f, -0.7863f, 0.01373f},
+    {-8.750f, -0.7542f, 0.01336f},
+    {-8.500f, -0.7211f, 0.01301f},
+    {-8.250f, -0.6870f, 0.01271f},
+    {-8.000f, -0.6520f, 0.01227f},
+    {-7.750f, -0.6166f, 0.01161f},
+    {-7.500f, -0.5850f, 0.01122f},
+    {-7.250f, -0.5532f, 0.01089f},
+    {-7.000f, -0.5207f, 0.01059f},
+    {-6.750f, -0.4884f, 0.01033f},
+    {-6.500f, -0.4627f, 0.00998f},
+    {-6.250f, -0.4342f, 0.00964f},
+    {-6.000f, -0.4073f, 0.00939f},
+    {-5.750f, -0.3804f, 0.00916f},
+    {-5.500f, -0.3538f, 0.00887f},
+    {-5.250f, -0.3274f, 0.00860f},
+    {-5.000f, -0.3006f, 0.00836f},
+    {-4.750f, -0.2737f, 0.00816f},
+    {-4.500f, -0.2465f, 0.00798f},
+    {-4.000f, -0.1918f, 0.00768f},
+    {-3.750f, -0.1645f, 0.00752f},
+    {-3.500f, -0.1372f, 0.00737f},
+    {-3.250f, -0.1100f, 0.00719f},
+    {-3.000f, -0.0825f, 0.00704f},
+    {-2.750f, -0.0552f, 0.00689f},
+    {-2.500f, -0.0277f, 0.00678f},
+    {-2.250f, -0.0003f, 0.00666f},
+    {-2.000f, 0.0272f, 0.00653f},
+    {-1.750f, 0.0546f, 0.00640f},
+    {-1.500f, 0.0819f, 0.00628f},
+    {-1.250f, 0.1092f, 0.00616f},
+    {-1.000f, 0.1362f, 0.00602f},
+    {-0.750f, 0.1632f, 0.00589f},
+    {-0.500f, 0.1903f, 0.00580f},
+    {-0.250f, 0.2173f, 0.00573f},
+    {0.000f, 0.2442f, 0.00568f},
+    {0.250f, 0.2709f, 0.00563f},
+    {0.500f, 0.2968f, 0.00556f},
+    {0.750f, 0.3217f, 0.00548f},
+    {1.000f, 0.3469f, 0.00547f},
+    {1.250f, 0.3722f, 0.00552f},
+    {1.500f, 0.3979f, 0.00559f},
+    {1.750f, 0.4250f, 0.00569f},
+    {2.000f, 0.4549f, 0.00581f},
+    {2.750f, 0.5582f, 0.00624f},
+    {3.000f, 0.5945f, 0.00639f},
+    {3.250f, 0.6318f, 0.00654f},
+    {3.500f, 0.6686f, 0.00674f},
+    {3.750f, 0.6918f, 0.00692f},
+    {4.000f, 0.7153f, 0.00711f},
+    {4.250f, 0.7389f, 0.00730f},
+    {4.500f, 0.7624f, 0.00752f},
+    {4.750f, 0.7858f, 0.00776f},
+    {5.000f, 0.8089f, 0.00804f},
+    {5.250f, 0.8319f, 0.00836f},
+    {5.500f, 0.8552f, 0.00869f},
+    {5.750f, 0.8784f, 0.00906f},
+    {6.000f, 0.9016f, 0.00945f},
+    {6.250f, 0.9251f, 0.00983f},
+    {6.500f, 0.9483f, 0.01025f},
+    {6.750f, 0.9710f, 0.01073f},
+    {7.000f, 0.9944f, 0.01114f},
+    {7.250f, 1.0179f, 0.01153f},
+    {7.500f, 1.0414f, 0.01194f},
+    {7.750f, 1.0644f, 0.01238f},
+    {8.000f, 1.0885f, 0.01270f},
+    {8.250f, 1.1111f, 0.01317f},
+    {8.500f, 1.1353f, 0.01347f},
+    {8.750f, 1.1585f, 0.01385f},
+    {9.000f, 1.1801f, 0.01435f},
+    {9.250f, 1.2032f, 0.01471f},
+    {9.500f, 1.2262f, 0.01506f},
+    {9.750f, 1.2485f, 0.01545f},
+    {10.000f, 1.2696f, 0.01591f},
+    {10.250f, 1.2881f, 0.01655f},
+    {10.500f, 1.3090f, 0.01697f},
+    {10.750f, 1.3299f, 0.01737f},
+    {11.000f, 1.3500f, 0.01780f},
+    {11.250f, 1.3684f, 0.01825f},
+    {11.500f, 1.3833f, 0.01884f},
+    {11.750f, 1.3931f, 0.01974f},
+    {12.000f, 1.4114f, 0.02015f},
+    {12.250f, 1.4284f, 0.02066f},
+    {12.500f, 1.4446f, 0.02122f},
+    {12.750f, 1.4595f, 0.02187f},
+    {13.000f, 1.4699f, 0.02284f},
+    {13.250f, 1.4815f, 0.02375f},
+    {13.500f, 1.4967f, 0.02445f},
+    {13.750f, 1.5106f, 0.02526f},
+    {14.000f, 1.5228f, 0.02622f},
+    {14.250f, 1.5311f, 0.02751f},
+    {14.500f, 1.5386f, 0.02893f},
+    {14.750f, 1.5499f, 0.03008f},
+    {15.000f, 1.5597f, 0.03141f},
+    {15.250f, 1.5675f, 0.03297f},
+    {15.500f, 1.5712f, 0.03497f},
+    {15.750f, 1.5723f, 0.03733f},
+    {16.000f, 1.5775f, 0.03935f},
+    {16.250f, 1.5806f, 0.04166f},
+    {16.500f, 1.5820f, 0.04423f},
+    {16.750f, 1.5815f, 0.04711f},
+    {17.000f, 1.5784f, 0.05040f},
+    {17.250f, 1.5716f, 0.05428f},
+    {17.500f, 1.5603f, 0.05893f},
+    {17.750f, 1.5483f, 0.06380f},
+    {18.000f, 1.5415f, 0.06805f},
+    {18.250f, 1.5328f, 0.07268f},
+    {18.500f, 1.5214f, 0.07778f},
+    {18.750f, 1.5083f, 0.08321f},
+    {19.000f, 1.4942f, 0.08893f},
+    {19.250f, 1.4781f, 0.09506f},
 };
 
 float max(float a, float b)
 {
-	return a > b ? a : b;
+  return a > b ? a : b;
 }
 
 float min(float a, float b)
 {
-	return a < b ? a : b;
+  return a < b ? a : b;
 }
 
 float clamp(float v, float lo, float hi)
 {
-	return min(max(v, lo), hi);
+  return min(max(v, lo), hi);
 }
 
-std::vector<ValueTupel> NACA_0015 = {
- { -11.000,  -0.8022,   0.07748 }, 
- { -10.750,  -0.8442,   0.07035 }, 
- { -10.500,  -0.8851,   0.06475 }, 
- { -10.250,  -0.9176,   0.05969 }, 
- { -10.000,  -0.9434,   0.05517 }, 
- {  -9.750,  -0.9165,   0.05358 }, 
- {  -9.500,  -0.9248,   0.05030 }, 
- {  -9.250,  -0.9332,   0.04694 }, 
- {  -9.000,  -0.9132,   0.04547 }, 
- {  -8.750,  -0.9076,   0.04310 }, 
- {  -8.500,  -0.8997,   0.04122 }, 
- {  -8.250,  -0.8818,   0.03986 }, 
- {  -8.000,  -0.8680,   0.03838 }, 
- {  -7.750,  -0.8545,   0.03697 }, 
- {  -7.500,  -0.8402,   0.03572 }, 
- {  -7.250,  -0.8248,   0.03461 }, 
- {  -7.000,  -0.8089,   0.03359 }, 
- {  -6.750,  -0.7934,   0.03263 }, 
- {  -6.500,  -0.7795,   0.03164 }, 
- {  -6.250,  -0.7622,   0.03086 }, 
- {  -6.000,  -0.7431,   0.03032 }, 
- {  -5.750,  -0.7273,   0.02963 }, 
- {  -5.500,  -0.7103,   0.02904 }, 
- {  -5.250,  -0.6910,   0.02869 }, 
- {  -5.000,  -0.6765,   0.02808 }, 
- {  -4.750,  -0.6558,   0.02790 }, 
- {  -4.500,  -0.6380,   0.02761 }, 
- {  -4.250,  -0.6209,   0.02729 }, 
- {  -4.000,  -0.6011,   0.02725 }, 
- {  -3.750,  -0.5860,   0.02691 }, 
- {  -3.500,  -0.5652,   0.02701 }, 
- {  -3.250,  -0.5463,   0.02705 }, 
- {  -3.000,  -0.5299,   0.02694 }, 
- {  -2.750,  -0.5069,   0.02726 }, 
- {  -2.500,  -0.4886,   0.02733 }, 
- {  -2.250,  -0.4624,   0.02772 }, 
- {  -2.000,  -0.4322,   0.02817 }, 
- {  -1.750,  -0.3985,   0.02859 }, 
- {  -1.500,  -0.3429,   0.02935 }, 
- {  -1.250,  -0.2907,   0.02981 }, 
- {  -1.000,  -0.2043,   0.03039 }, 
- {  -0.750,  -0.1382,   0.03057 }, 
- {  -0.500,  -0.0601,   0.03056 }, 
- {  -0.250,   0.0230,   0.03035 }, 
- {   0.000,   0.0000,   0.03036 }, 
- {   0.250,  -0.0230,   0.03035 }, 
- {   0.500,   0.0600,   0.03056 }, 
- {   0.750,   0.1382,   0.03056 }, 
- {   1.000,   0.2042,   0.03039 }, 
- {   1.250,   0.2906,   0.02981 }, 
- {   1.500,   0.3428,   0.02934 }, 
- {   1.750,   0.3983,   0.02858 }, 
- {   2.000,   0.4321,   0.02816 }, 
- {   2.250,   0.4623,   0.02771 }, 
- {   2.500,   0.4886,   0.02733 }, 
- {   2.750,   0.5068,   0.02726 }, 
- {   3.000,   0.5298,   0.02694 }, 
- {   3.250,   0.5462,   0.02704 }, 
- {   3.500,   0.5651,   0.02701 }, 
- {   3.750,   0.5859,   0.02691 }, 
- {   4.000,   0.6009,   0.02725 }, 
- {   4.250,   0.6208,   0.02729 }, 
- {   4.500,   0.6379,   0.02760 }, 
- {   4.750,   0.6556,   0.02790 }, 
- {   5.000,   0.6764,   0.02807 }, 
- {   5.250,   0.6909,   0.02869 }, 
- {   5.500,   0.7102,   0.02904 }, 
- {   5.750,   0.7272,   0.02962 }, 
- {   6.000,   0.7430,   0.03031 }, 
- {   6.250,   0.7621,   0.03086 }, 
- {   6.500,   0.7795,   0.03163 }, 
- {   6.750,   0.7934,   0.03263 }, 
- {   7.000,   0.8088,   0.03359 }, 
- {   7.250,   0.8247,   0.03460 }, 
- {   7.500,   0.8401,   0.03572 }, 
- {   7.750,   0.8544,   0.03697 }, 
- {   8.000,   0.8680,   0.03838 }, 
- {   8.250,   0.8818,   0.03986 }, 
- {   8.500,   0.8996,   0.04122 }, 
- {   8.750,   0.9077,   0.04310 }, 
- {   9.000,   0.9132,   0.04547 }, 
- {   9.250,   0.9334,   0.04694 }, 
- {   9.500,   0.9249,   0.05030 }, 
- {   9.750,   0.9167,   0.05358 }, 
- {  10.000,   0.9434,   0.05519 }, 
- {  10.250,   0.9177,   0.05971 }, 
- {  10.500,   0.8853,   0.06478 }, 
- {  10.750,   0.8443,   0.07039 }, 
- {  11.000,   0.8024,   0.07755 },
+struct Curve
+{
+  std::vector<ValueTuple> data;
+
+  Curve(const std::vector<ValueTuple> &curve_data) : data(curve_data)
+  {
+    for (int i = 0; i < data.size() - 1; i++)
+      assert(data[i].alpha < data[i + 1].alpha);
+  }
+
+  static float lerp(float a, float b, float t)
+  {
+    return a + t * (b - a);
+  }
+
+  void sample(float alpha, float *cl, float *cd) const
+  {
+    // assert(data[0].alpha <= alpha && alpha <= data[data.size() - 1].alpha);
+
+    int first = 0;
+    int last = data.size() - 1;
+
+    if (alpha < data[first].alpha)
+    {
+      *cl = data[first].cl;
+      *cd = data[first].cd;
+      return;
+    }
+
+    if (data[last].alpha < alpha)
+    {
+      *cl = data[last].cl;
+      *cd = data[last].cd;
+      return;
+    }
+
+    for (int i = 0; i < data.size() - 1; i++)
+    {
+      if (data[i].alpha <= alpha && alpha <= data[i + 1].alpha)
+      {
+        auto t0 = alpha - data[i].alpha;
+        auto t1 = data[i + 1].alpha - data[i].alpha;
+        auto f = t0 / t1;
+        *cl = lerp(data[i].cl, data[i + 1].cl, f);
+        *cd = lerp(data[i].cd, data[i + 1].cd, f);
+        return;
+      }
+    }
+  }
 };
 
-std::vector<ValueTupel> NACA_2408 = {
-  { -9.250, -0.5158,  0.11581 },
-  { -9.000, -0.5047,  0.11139 },
-  { -8.750, -0.5244,  0.11068 },
-  { -8.500, -0.5127,  0.10634 },
-  { -8.250, -0.5012,  0.10208 },
-  { -8.000, -0.4921,  0.09805 },
-  { -7.750, -0.4902,  0.09472 },
-  { -7.250, -0.4846,  0.08830 },
-  { -7.000, -0.4846,  0.08558 },
-  { -6.750, -0.4857,  0.08261 },
-  { -6.500, -0.4754,  0.07928 },
-  { -6.250, -0.4705,  0.07597 },
-  { -5.500, -0.4465,  0.04776 },
-  { -5.250, -0.4272,  0.04311 },
-  { -5.000, -0.4072,  0.03925 },
-  { -4.750, -0.3850,  0.03567 },
-  { -4.500, -0.3609,  0.03247 },
-  { -4.250, -0.3387,  0.03039 },
-  { -4.000, -0.3137,  0.02816 },
-  { -3.750, -0.2883,  0.02626 },
-  { -3.500, -0.2627,  0.02455 },
-  { -3.250, -0.2371,  0.02316 },
-  { -3.000, -0.2125,  0.02182 },
-  { -2.750, -0.1858,  0.02018 },
-  { -2.500, -0.1645,  0.01790 },
-  { -2.250, -0.1218,  0.01600 },
-  { -2.000, -0.1006,  0.01601 },
-  { -1.750, -0.0793,  0.01607 },
-  { -1.500, -0.0579,  0.01616 },
-  { -1.250, -0.0363,  0.01628 },
-  { -1.000, -0.0147,  0.01644 },
-  { -0.750,  0.0068,  0.01664 },
-  { -0.500,  0.0283,  0.01687 },
-  { -0.250,  0.0497,  0.01714 },
-  {  0.000,  0.0709,  0.01747 },
-  {  0.250,  0.0918,  0.01784 },
-  {  0.500,  0.1125,  0.01826 },
-  {  0.750,  0.1327,  0.01875 },
-  {  1.000,  0.1525,  0.01931 },
-  {  1.250,  0.1719,  0.01995 },
-  {  1.500,  0.1907,  0.02066 },
-  {  1.750,  0.2090,  0.02146 },
-  {  2.000,  0.2269,  0.02235 },
-  {  2.250,  0.2794,  0.02355 },
-  {  2.500,  0.3384,  0.02464 },
-  {  2.750,  0.3896,  0.02553 },
-  {  3.000,  0.4445,  0.02628 },
-  {  3.250,  0.4931,  0.02685 },
-  {  3.500,  0.5394,  0.02726 },
-  {  3.750,  0.5930,  0.02730 },
-  {  4.000,  0.6410,  0.02703 },
-  {  4.250,  0.6805,  0.02667 },
-  {  4.500,  0.7211,  0.02559 },
-  {  4.750,  0.7519,  0.02392 },
-  {  5.000,  0.7757,  0.02239 },
-  {  5.250,  0.7942,  0.02177 },
-  {  5.500,  0.8098,  0.02164 },
-  {  5.750,  0.8138,  0.02235 },
-  {  6.000,  0.8187,  0.02581 },
-  {  6.250,  0.8401,  0.02806 },
-  {  6.500,  0.8678,  0.03023 },
-  {  6.750,  0.8978,  0.03268 },
-  {  7.000,  0.9250,  0.03533 },
-  {  7.250,  0.9498,  0.03812 },
-  {  7.500,  0.9712,  0.04130 },
-  {  7.750,  0.9897,  0.04448 },
-  {  8.000,  1.0078,  0.04832 },
-  {  8.250,  1.0203,  0.05265 },
-  {  8.500,  1.0281,  0.05723 },
-  {  8.750,  1.0307,  0.06193 },
-  {  9.000,  1.0303,  0.06688 },
-  {  9.250,  1.0245,  0.07189 },
-  {  9.500,  0.9834,  0.07910 },
-  {  9.750,  0.9758,  0.08468 },
-  { 10.000,  0.7879,  0.08467 },
-  { 10.250,  0.7659,  0.09338 }
-  };
+struct Wing
+{
+  const std::string name;
+  const float area;
+  const glm::vec3 center_of_gravity; // center of gravity relative to rigidbody cg
+  const glm::vec3 normal;
+  const Curve curve;
 
-struct Curve {
-	std::vector<ValueTupel> data;
+  float lift_multiplier = 1.0f;
+  float drag_multiplier = 1.0f;
 
-	Curve(const std::vector<ValueTupel>& curve_data) : data(curve_data) 
-	{
-		for (int i = 0; i < data.size() - 1; i++)
-			assert(data[i].alpha < data[i+1].alpha);
-	}
+  float lift = 0, drag = 0, angle_of_attack = 0;
 
-	static float lerp(float a, float b, float t)
-	{
-		return a + t * (b - a);
-	}
-	
-	void sample(float alpha, float *cl, float *cd) const
-	{
-		//assert(data[0].alpha <= alpha && alpha <= data[data.size() - 1].alpha);
+  float log_timer = 1.0f;
 
-		int first = 0;
-		int last = data.size() - 1;
+  Wing(const std::string &wing_name, const glm::vec3 &cg_offset, float wing_area, const Curve &aerodynamics, const glm::vec3 &wing_normal)
+      : name(wing_name),
+        center_of_gravity(cg_offset),
+        area(wing_area),
+        curve(aerodynamics),
+        normal(wing_normal)
+  {
+  }
 
-		if (alpha < data[first].alpha)
-		{
-			*cl = data[first].cl;
-			*cd = data[first].cd;
-			return;
-		}
+  void apply_forces(phi::RigidBody &rigid_body, float dt, bool log)
+  {
+    auto local_velocity = glm::inverse(rigid_body.rotation) * rigid_body.velocity 
+        + glm::cross(rigid_body.angular_velocity, center_of_gravity);
 
-		if (data[last].alpha < alpha)
-		{
-			*cl = data[last].cl;
-			*cd = data[last].cd;
-			return;
-		}
+    auto local_speed = glm::length(local_velocity);
 
-		for (int i = 0; i < data.size() - 1; i++)
-		{
-			if (data[i].alpha <= alpha && alpha <= data[i+1].alpha)
-			{
-				auto t0 = alpha - data[i].alpha;
-				auto t1 = data[i+1].alpha - data[i].alpha;
-				auto f = t0 / t1;
-				*cl = lerp(data[i].cl, data[i+1].cl, f);
-				*cd = lerp(data[i].cd, data[i+1].cd, f);
-				return;
-			}
-		}
-	}
-};
+    if (local_speed <= 0.0f)
+      return;
 
-struct Wing {
-	const std::string name;
-	const float area;
-	const glm::vec3 center_of_gravity; // center of gravity relative to rigidbody cg
-	const glm::vec3 normal;
-	const Curve curve;
+    assert(local_speed > 0.0f);
 
-	float lift_multiplier = 1.0f;
-	float drag_multiplier = 1.0f;
+    float speed2 = local_speed * local_speed;
 
-	float lift = 0, drag = 0;
+    auto drag_direction = glm::normalize(-local_velocity);
+    auto lift_direction = glm::normalize(
+        glm::cross(glm::cross(drag_direction, normal), drag_direction));
 
-	float log_timer = 1.0f;
-	
-	Wing(const std::string& wing_name, const glm::vec3& cg_offset, float wing_area, const Curve& aerodynamics, const glm::vec3& wing_normal)
-		: name(wing_name), 
-		center_of_gravity(cg_offset), 
-		area(wing_area),  
-		curve(aerodynamics), 
-		normal(wing_normal)
-	{}
+    float tmp = glm::dot(drag_direction, normal);
+    tmp = clamp(tmp, -1, 1);
+    angle_of_attack = glm::degrees(asin(tmp));
 
-	void apply_forces(phi::RigidBody& rigid_body, float dt, bool log)
-	{
-		auto local_velocity = (glm::inverse(rigid_body.rotation) * rigid_body.velocity) 
-			+ glm::cross(rigid_body.angular_velocity, center_of_gravity);
+    float lift_coefficient, drag_coefficient;
+    curve.sample(angle_of_attack, &lift_coefficient, &drag_coefficient);
 
-		//auto local_velocity = glm::inverse(rigid_body.rotation) * rigid_body.velocity;
+    lift = lift_coefficient * lift_multiplier * speed2 * area;
+    drag = drag_coefficient * drag_multiplier * speed2 * area;
 
-		auto local_speed = glm::length(local_velocity);
+    // both in body coordinates
+    auto force = lift * lift_direction + drag * drag_direction;
+    auto torque = glm::cross(center_of_gravity, force);
 
-		if (local_speed <= 0.0f)
-			return;
+    rigid_body.add_relative_force(force);
+    rigid_body.add_relative_torque(torque);
 
-		assert(local_speed > 0.0f);
-
-		float speed2 = local_speed * local_speed;
-
-		auto drag_direction = glm::normalize(-local_velocity);
-		auto lift_direction = glm::normalize(
-			glm::cross(glm::cross(drag_direction, normal), drag_direction)
-		);
-
-		float tmp = glm::dot(drag_direction, normal);
-		tmp = clamp(tmp, -1, 1);
-		float angle_of_attack = glm::degrees(asin(tmp));
-
-		float lift_coefficient, drag_coefficient;
-		curve.sample(angle_of_attack, &lift_coefficient, &drag_coefficient);
-
-		lift = lift_coefficient * lift_multiplier * speed2 * area; 
-		drag = drag_coefficient * drag_multiplier * speed2 * area; 
-
-		// both in body coordinates
-		auto force = lift * lift_direction + drag * drag_direction;
-		auto torque = glm::cross(center_of_gravity, force);
-
-		rigid_body.add_relative_force(force);
-		rigid_body.add_relative_torque(torque);
-
-		if ((log_timer += dt) > log_intervall && log)
-		{
-			log_timer = 0;
-#if 1
-			std::cout << "######### [ " << name << " ] #######" << std::endl;
-			std::cout << "aoa = " << angle_of_attack  << std::endl;
-			std::cout << "lift = " << lift << std::endl;
-			std::cout << "drag = " << drag  << std::endl;
-			std::cout << "force = " << force  << std::endl;
-			std::cout << "torque = " << torque  << std::endl;
-			std::cout << "lift_dir = " << lift_direction << std::endl;
-			std::cout << "drag_dir = " << drag_direction << std::endl;
-			std::cout << "####################################" << std::endl;
+    if ((log_timer += dt) > log_intervall && log)
+    {
+      log_timer = 0;
+#if 0
+      std::cout << "######### [ " << name << " ] #######" << std::endl;
+      std::cout << "aoa = " << angle_of_attack << std::endl;
+      std::cout << "lift = " << lift << std::endl;
+      std::cout << "drag = " << drag << std::endl;
+      std::cout << "force = " << force << std::endl;
+      std::cout << "torque = " << torque << std::endl;
+      std::cout << "lift_dir = " << lift_direction << std::endl;
+      std::cout << "drag_dir = " << drag_direction << std::endl;
+      std::cout << "####################################" << std::endl;
 #endif
-		}
-
-	}
+    }
+  }
 };
 
 inline float meter_per_second(float kilometer_per_hour)
 {
-	return kilometer_per_hour / 3.6f;
+  return kilometer_per_hour / 3.6f;
 }
 
 inline float kilometer_per_hour(float meters_per_second)
 {
-	return meters_per_second * 3.6f;
+  return meters_per_second * 3.6f;
 }
 
-struct Engine {
-	float thrust = 10000.0f;
+struct Engine
+{
+  float thrust = 5000.0f; // newtons
 
-	void apply_forces(phi::RigidBody& rigid_body)
-	{
-		rigid_body.add_relative_force(glm::vec3(thrust, 0.0f, 0.0f));
+  void apply_forces(phi::RigidBody &rigid_body)
+  {
+    rigid_body.add_relative_force(glm::vec3(thrust, 0.0f, 0.0f));
 
-		// TODO: implement torque from propeller
-	}
+    // TODO: implement torque from propeller
+  }
 };
 
-struct Aircraft {
+struct Aircraft
+{
 
-	phi::RigidBody rigid_body;
+  phi::RigidBody rigid_body;
 
-	Wing left_wing;
-	Wing right_wing;
-	Wing wing;
-	Wing rudder;
-	Wing elevator;
+  Wing left_wing;
+  Wing right_wing;
+  Wing wing;
+  Wing rudder;
+  Wing elevator;
 
-	Engine engine;
+  Engine engine;
 
-	float log_timer = 1.0f;
+  float log_timer = 1.0f;
 
+  // Cessna 172
+  Aircraft(const glm::vec3 &position, const glm::vec3 &velocity)
+      : rigid_body(1600.0f), // mass in kg
+        wing("wing", glm::vec3(-0.0f, 1.0f, 0.0f), 16.17f, Curve(NACA_2412), phi::UP),
+        left_wing("left_wing", glm::vec3(-0.0f, 1.0, -1.0f), 16.17f / 2.0f, Curve(NACA_2412), phi::UP),
+        right_wing("right_wing", glm::vec3(-0.0f, 1.0, 1.0f), 16.17f / 2.0f, Curve(NACA_2412), phi::UP),
+        elevator("elevator", glm::vec3(-2.0f, 0.0f, 0.0f), 2.0f, Curve(NACA_0012), phi::UP),
+        rudder("rudder", glm::vec3(-5.0f, 0.0f, 0.0f), 1.04f, Curve(NACA_0012), phi::RIGHT)
+  {
+    rigid_body.position = position;
+    rigid_body.velocity = velocity;
+  }
 
-	// Cessna 172
-	Aircraft(const glm::vec3& position, const glm::vec3& velocity)
-		: rigid_body(1600.0f), // mass in kg
-		wing("wing",			glm::vec3(-0.0f, 1.0f, 0.0f),   16.17f, Curve(NACA_2408), phi::UP),
-		left_wing("left_wing",	glm::vec3(-0.0f, 1.0, -2.75f), 16.17f / 2.0f, Curve(NACA_2408), phi::UP),
-		right_wing("right_wing",glm::vec3(-0.0f, 1.0, 2.75f),  16.17f / 2.0f, Curve(NACA_2408), phi::UP),
-		elevator("elevator",	glm::vec3(-5.0f, 0.0f, 0.0f),    2.0f, Curve(NACA_0015), phi::UP),
-		rudder("rudder",		glm::vec3(-5.0f, 0.0f, 0.0f),   1.04f, Curve(NACA_0015), phi::RIGHT)
-	{
-		rigid_body.position = position;
-		rigid_body.velocity = velocity;
-	}
-
-	void update(float dt)
-	{
+  void update(float dt)
+  {
 #if 1
-		left_wing.apply_forces(rigid_body, dt, true);
-		right_wing.apply_forces(rigid_body, dt, true);
+    left_wing.apply_forces(rigid_body, dt, false);
+    right_wing.apply_forces(rigid_body, dt, false);
 #else
-		wing.apply_forces(rigid_body, dt, true);
+    wing.apply_forces(rigid_body, dt, false);
 #endif
+
 #if 1
-		elevator.apply_forces(rigid_body, dt, false);
-		rudder.apply_forces(rigid_body, dt, false);
+    elevator.apply_forces(rigid_body, dt, false);
+    rudder.apply_forces(rigid_body, dt, false);
 #endif
 
+    engine.apply_forces(rigid_body);
 
-		engine.apply_forces(rigid_body);
+    float lift = rigid_body.get_force().y;
+    float gravity = phi::g * rigid_body.mass;
+    rigid_body.add_force(phi::DOWN * gravity);
 
-		float lift = rigid_body.get_force().y;
-		float gravity = phi::g * rigid_body.mass;
-		rigid_body.add_force(phi::DOWN * gravity); 
-
-		if ((log_timer += dt) > log_intervall)
-		{
+    if ((log_timer += dt) > log_intervall)
+    {
 #if 1
-			log_timer = 0;
-			std::cout << "########## airplane ##############" << std::endl;
-			std::cout << "height: " << rigid_body.position.y << std::endl;
-			std::cout << "speed: " << kilometer_per_hour(glm::length(rigid_body.velocity)) << std::endl;
-			std::cout << "vertical speed: " << kilometer_per_hour(rigid_body.velocity.y) << std::endl;
-			std::cout << "torque: " << rigid_body.get_torque() << std::endl;
-			std::cout << "force: " << rigid_body.get_force() << std::endl;
-			std::cout << "gravity: " << gravity << ", lift = " << lift << std::endl;
-			std::cout << "##################################" << std::endl;
+      log_timer = 0;
+      std::cout << "########## airplane ##############" << std::endl;
+      std::cout << "height: " << rigid_body.position.y << std::endl;
+      std::cout << "speed: " << kilometer_per_hour(glm::length(rigid_body.velocity)) << std::endl;
+      std::cout << "vertical speed: " << kilometer_per_hour(rigid_body.velocity.y) << std::endl;
+      // std::cout << "torque: " << rigid_body.get_torque() << std::endl;
+      // std::cout << "force: " << rigid_body.get_force() << std::endl;
+      // std::cout << "gravity: " << gravity << ", lift = " << lift << std::endl;
+      printf("rw = %f, lw = %f \n", right_wing.lift, left_wing.lift);
+      std::cout << "thrust = " << engine.thrust << std::endl;
+      std::cout << "##################################" << std::endl;
 #endif
-		}
+    }
 
-		rigid_body.update(dt);
-	}
+    rigid_body.update(dt);
+  }
 };
