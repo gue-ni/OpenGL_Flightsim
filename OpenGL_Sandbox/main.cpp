@@ -133,14 +133,18 @@ int main(void)
 
     std::vector<float> ico_vertices;
     std::vector<float> cube_vertices;
+    std::vector<float> cessna_vertices;
+    std::vector<float> cessna_prop_vertices;
 
     gfx::load_obj("assets/cube.obj", cube_vertices);
     gfx::load_obj("assets/icosphere.obj", ico_vertices);
+    gfx::load_obj("assets/Cessna_172/Cessna_172.obj", cessna_vertices);
+    gfx::load_obj("assets/Cessna_172/Cessna_172_prop.obj", cessna_prop_vertices);
 
     gfx::Renderer renderer(SCREEN_WIDTH, SCREEN_HEIGHT);
 
     auto blue   = make_shared<gfx::Phong>(gfx::rgb(0, 0, 255));
-    auto red    = make_shared<gfx::Phong>(gfx::rgb(255, 0, 0));
+    auto grey    = make_shared<gfx::Phong>(glm::vec3(0.5f));
     auto green    = make_shared<gfx::Phong>(gfx::rgb(0, 255, 0));
     auto test_texture = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/uv-test.png"));
     auto container = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/container.jpg"));
@@ -188,12 +192,12 @@ int main(void)
     transform.set_position(position);
     scene.add(&transform);
 
-#if 1
+#if 0
     gfx::Mesh fuselage(cube_geo, container);
     fuselage.set_scale(glm::vec3(3.0f, 0.5f, 0.5f));
     transform.add(&fuselage);
 #endif 
-#if 1
+#if 0
     gfx::Mesh left_wing(cube_geo, container);
     left_wing.set_scale(glm::vec3(1.0f, 0.125f, 4.0f));
     left_wing.set_position(glm::vec3(0, 0.0, -2.0));
@@ -205,18 +209,24 @@ int main(void)
     transform.add(&right_wing);
 
 #endif 
-#if 1
+#if 0
     gfx::Mesh elevator(cube_geo, container);
     elevator.set_scale(glm::vec3(1.0f, 0.125f, 2.0f));
     elevator.set_position(glm::vec3(-2.0f, 0.0f, 0.0f));
     transform.add(&elevator);
 #endif 
-#if 1
+#if 0
     gfx::Mesh rudder(cube_geo, container);
     rudder.set_scale(glm::vec3(1.0f, 1.0f, 0.125f));
     rudder.set_position(glm::vec3(-2.0f, 0.5f, 0.0f));
     transform.add(&rudder);
 #endif 
+#if 1
+    gfx::Mesh cessna(std::make_shared<gfx::Geometry>(cessna_vertices, gfx::Geometry::POS_NORM_UV), grey);
+    gfx::Mesh prop(std::make_shared<gfx::Geometry>(cessna_prop_vertices, gfx::Geometry::POS_NORM_UV), grey);
+    transform.add(&cessna);
+    transform.add(&prop);
+#endif
 
     Aircraft aircraft(position, velocity);
 
@@ -329,6 +339,8 @@ int main(void)
 
         //controller.update(camera, aircraft.rigid_body.position, dt);
         controller.update(camera, camera.parent->get_position(), dt);
+
+        prop.set_rotation(prop.get_rotation() + glm::vec3(0.01f, 0, 0));
 
         renderer.render(camera, scene);
 
