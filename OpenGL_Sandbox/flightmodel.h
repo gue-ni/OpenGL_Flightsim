@@ -166,6 +166,8 @@ std::vector<ValueTuple> NACA_0012 = {
     {18.250f, 1.2485f, 0.09493f},
     {18.500f, 1.2284f, 0.10229f}};
 
+// NACA 2412 (naca2412-il) Xfoil prediction polar at RE=1,000,000 Ncrit=9
+// http://airfoiltools.com/polar/details?polar=xf-naca2412-il-1000000
 std::vector<ValueTuple> NACA_2412 = {
     {-17.500f, -1.1118f, 0.08608f},
     {-17.250f, -1.1738f, 0.07238f},
@@ -429,28 +431,32 @@ struct Wing
     float lift_coefficient, drag_coefficient;
     curve.sample(angle_of_attack, &lift_coefficient, &drag_coefficient);
 
-    lift = lift_coefficient * lift_multiplier * speed2 * area;
-    drag = drag_coefficient * drag_multiplier * speed2 * area;
+    float tmp2 = speed2 * area;
+    lift = lift_coefficient * lift_multiplier * tmp2;
+    drag = drag_coefficient * drag_multiplier * tmp2;
 
     // both in body coordinates
-    auto force = lift * lift_direction + drag * drag_direction;
+    auto force = (lift * lift_direction) + (drag * drag_direction);
     auto torque = glm::cross(center_of_gravity, force);
 
     rigid_body.add_relative_force(force);
     rigid_body.add_relative_torque(torque);
 
-    if ((log_timer += dt) > log_intervall && log)
+    if (log && ((log_timer += dt) > log_intervall))
     {
       log_timer = 0;
-#if 0
+#if 1
       std::cout << "######### [ " << name << " ] #######" << std::endl;
       std::cout << "aoa = " << angle_of_attack << std::endl;
-      std::cout << "lift = " << lift << std::endl;
-      std::cout << "drag = " << drag << std::endl;
-      std::cout << "force = " << force << std::endl;
-      std::cout << "torque = " << torque << std::endl;
-      std::cout << "lift_dir = " << lift_direction << std::endl;
-      std::cout << "drag_dir = " << drag_direction << std::endl;
+      //std::cout << "lift = " << lift << std::endl;
+      //std::cout << "lift_multiplier = " << lift_multiplier << ",  lift = " << lift_coefficient * lift_multiplier * tmp2 << std::endl;
+      //std::cout << "lift_coefficient = " <<  lift_coefficient  << std::endl;
+      //std::cout << "tmp2 = " <<  tmp2  << std::endl;
+      //std::cout << "drag = " << drag << std::endl;
+      //std::cout << "force = " << force << std::endl;
+      //std::cout << "torque = " << torque << std::endl;
+      //std::cout << "lift_dir = " << lift_direction << std::endl;
+      //std::cout << "drag_dir = " << drag_direction << std::endl;
       std::cout << "####################################" << std::endl;
 #endif
     }
@@ -510,14 +516,14 @@ struct Aircraft
   void update(float dt)
   {
 #if 1
-    left_wing.apply_forces(rigid_body, dt, false);
-    right_wing.apply_forces(rigid_body, dt, false);
+    left_wing.apply_forces(rigid_body, dt, true);
+    right_wing.apply_forces(rigid_body, dt, true);
 #else
     wing.apply_forces(rigid_body, dt, false);
 #endif
 
 #if 1
-    elevator.apply_forces(rigid_body, dt, false);
+    elevator.apply_forces(rigid_body, dt, true);
     rudder.apply_forces(rigid_body, dt, false);
 #endif
 
@@ -529,7 +535,7 @@ struct Aircraft
 
     if ((log_timer += dt) > log_intervall)
     {
-#if 1
+#if 0
       log_timer = 0;
       std::cout << "########## airplane ##############" << std::endl;
       std::cout << "height: " << rigid_body.position.y << std::endl;

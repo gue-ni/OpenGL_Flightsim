@@ -39,8 +39,7 @@ void solve_constraints(phi::RigidBody& rigid_body)
 {
 	if (rigid_body.position.y <= 0)
 	{
-		rigid_body.position.y = 0;
-		rigid_body.velocity.y = 0;
+		rigid_body.position.y = 0, rigid_body.velocity.y = 0;
 	}
 }
 
@@ -271,6 +270,10 @@ int main(void)
             }
             }
         }
+            
+        aircraft.left_wing.lift_multiplier = 1.0f;
+        aircraft.right_wing.lift_multiplier = 1.0f;
+        aircraft.elevator.lift_multiplier = 1.0f;
 
         const uint8_t* key_states = SDL_GetKeyboardState(NULL);
 
@@ -278,22 +281,26 @@ int main(void)
 
         if (key_states[SDL_SCANCODE_A])
         {
-            aircraft.rigid_body.add_relative_torque(phi::BACKWARD * aileron_torque);
+            //aircraft.rigid_body.add_relative_torque(phi::BACKWARD * aileron_torque);
+            aircraft.right_wing.lift_multiplier = 1.5;
         }
 
         if (key_states[SDL_SCANCODE_D])
         {
-            aircraft.rigid_body.add_relative_torque(phi::FORWARD * aileron_torque);
+            //aircraft.rigid_body.add_relative_torque(phi::FORWARD * aileron_torque);
+            aircraft.left_wing.lift_multiplier = 1.5;
         }
 
         if (key_states[SDL_SCANCODE_W])
         {
             aircraft.rigid_body.add_relative_torque(phi::LEFT * elevator_torque);
+            //aircraft.elevator.lift_multiplier = 1.0f;
         }
 
         if (key_states[SDL_SCANCODE_S])
         {
             aircraft.rigid_body.add_relative_torque(phi::RIGHT * elevator_torque);
+            //aircraft.elevator.lift_multiplier = 2.0f;
         }
 
         if (key_states[SDL_SCANCODE_J])
