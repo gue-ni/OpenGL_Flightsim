@@ -268,7 +268,7 @@ int main(void)
 
         const uint8_t* key_states = SDL_GetKeyboardState(NULL);
 
-        float elevator_torque = 2000.0f, aileron_torque = 2500.0f, thrust_force = 25000.0f;
+        float elevator_torque = 3000.0f, aileron_torque = 2500.0f, thrust_force = 25000.0f;
 
         if (key_states[SDL_SCANCODE_A])
         {
@@ -297,14 +297,12 @@ int main(void)
 
         aircraft.update(dt);
 
-        if ((log_timer += dt) >= 0.25f)
-        {
-            log_timer = 0.0f;
-
-            //cout << "Speed: " << kilometer_per_hour(glm::length(aircraft.rigid_body.velocity)) << " km/h" << endl;
-            //cout << "Gravity force: " << phi::g * aircraft.rigid_body.mass << endl;
-            //cout << aircraft.rigid_body.position << endl;
-        }
+#if 0
+        float factor = 0.0001f;
+        std::cout << aircraft.left_wing.lift << ", " << aircraft.right_wing.lift << std::endl;
+        left_wing.set_scale(glm::vec3(1, aircraft.left_wing.lift * factor, 2.0f));
+        right_wing.set_scale(glm::vec3(1, aircraft.right_wing.lift * factor, 2.0f));
+#endif
 
         solve_constraints(aircraft.rigid_body);
         apply_to_object3d(aircraft.rigid_body, transform);

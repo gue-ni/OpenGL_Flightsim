@@ -227,6 +227,8 @@ struct Wing {
 	float lift_multiplier = 1.0f;
 	float drag_multiplier = 1.0f;
 
+	float lift, drag;
+
 	float log_timer = 1.0f;
 	
 	Wing(const std::string& wing_name, const glm::vec3& cg_offset, float wing_area, const Curve& aerodynamics, const glm::vec3& wing_normal)
@@ -264,11 +266,11 @@ struct Wing {
 		float lift_coefficient, drag_coefficient;
 		curve.sample(angle_of_attack, &lift_coefficient, &drag_coefficient);
 
-		glm::vec3 lift_force = lift_direction * speed2 * lift_coefficient * area * lift_multiplier; 
-		glm::vec3 drag_force = drag_direction * speed2 * drag_coefficient * area * drag_multiplier; 
+		lift = speed2 * lift_coefficient * area * lift_multiplier; 
+		drag = speed2 * drag_coefficient * area * drag_multiplier; 
 
 		// both in body coordinates
-		auto force = lift_force + drag_force;
+		auto force = lift * lift_direction + drag * drag_direction;
 		auto torque = glm::cross(center_of_gravity, force);
 
 		rigid_body.add_relative_force(force);
