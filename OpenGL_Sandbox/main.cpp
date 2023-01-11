@@ -163,8 +163,8 @@ int main(void)
     scene.add(&skybox);
 #endif
 #if 1    
-    gfx::Mesh ground(cube_geo, test_texture);
-    ground.set_scale(glm::vec3(20, 0.5, 20));
+    gfx::Mesh ground(gfx::make_plane_geometry(4,2), test_texture);
+    //ground.set_scale(glm::vec3(20, 0.5, 20));
     ground.set_position(glm::vec3(0, -1, 0));
     ground.receive_shadow = true;
     scene.add(&ground);
@@ -172,12 +172,17 @@ int main(void)
 #if 1
     gfx::Light sun(gfx::Light::DIRECTIONAL, gfx::rgb(154, 219, 172));
     sun.set_position(glm::vec3(0.5f, 2.0f, 2.0f));
-    sun.cast_shadow = false;
+    sun.cast_shadow = true;
     scene.add(&sun);
+#endif
+#if 0 
+    gfx::Mesh plane(gfx::make_plane_geometry(2, 2), test_texture);
+    plane.set_position(glm::vec3(0, 2.0f, 0.0f));
+    scene.add(&plane);
 #endif
   
     auto position = glm::vec3(0.0f, 0.0f, 12.0f);
-    auto velocity = glm::vec3(meter_per_second(50.0f), 0.0f, 0.0f);
+    auto velocity = glm::vec3(meter_per_second(150.0f), 0.0f, 0.0f);
 
     gfx::Object3D transform;
     transform.set_position(position);
@@ -268,26 +273,26 @@ int main(void)
 
         const uint8_t* key_states = SDL_GetKeyboardState(NULL);
 
-        float elevator_torque = 3000.0f, aileron_torque = 2500.0f, thrust_force = 25000.0f;
+        float elevator_torque = 2000.0f, aileron_torque = 2000.0f, thrust_force = 25000.0f;
 
         if (key_states[SDL_SCANCODE_A])
         {
-            aircraft.rigid_body.add_relative_torque(glm::vec3(-1.0f, 0.0f, 0.0f) * aileron_torque);
+            aircraft.rigid_body.add_relative_torque(phi::BACKWARD * aileron_torque);
         }
 
         if (key_states[SDL_SCANCODE_D])
         {
-            aircraft.rigid_body.add_relative_torque(glm::vec3(+1.0f, 0.0f, 0.0f) * aileron_torque);
+            aircraft.rigid_body.add_relative_torque(phi::FORWARD * aileron_torque);
         }
 
         if (key_states[SDL_SCANCODE_W])
         {
-            aircraft.rigid_body.add_relative_torque(glm::vec3(0.0f, 0.0f, -1.0f) * elevator_torque);
+            aircraft.rigid_body.add_relative_torque(phi::LEFT * elevator_torque);
         }
 
         if (key_states[SDL_SCANCODE_S])
         {
-            aircraft.rigid_body.add_relative_torque(glm::vec3(0.0f, 0.0f, +1.0f) * elevator_torque);
+            aircraft.rigid_body.add_relative_torque(phi::RIGHT * elevator_torque);
         }
 
         if (key_states[SDL_SCANCODE_SPACE])

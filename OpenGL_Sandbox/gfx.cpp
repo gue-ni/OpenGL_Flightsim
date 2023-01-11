@@ -11,6 +11,11 @@ std::ostream& operator<<(std::ostream& os, const glm::vec3& v)
 	return os << "{ " <<  v.x << ", " << v.y << ", " << v.z << " }";
 }
 
+std::ostream& operator<<(std::ostream& os, const glm::vec2& v)
+{
+	return os << "{ " <<  v.x << ", " << v.y << ", " << " }";
+}
+
 std::string load_text_file(const std::string& path)
 {
 		std::fstream file(path);
@@ -27,6 +32,11 @@ namespace gfx {
 	std::ostream& operator<<(std::ostream& os, const glm::vec3& v)
 	{
 		return os << v.x << ", " << v.y << ", " << v.z;
+	}
+
+	std::ostream& operator<<(std::ostream& os, const glm::vec2& v)
+	{
+		return os << v.x << ", " << v.y;
 	}
 
 	Shader::Shader(const std::string& path) : Shader(load_text_file(path + ".vert"), load_text_file(path + ".frag")) {}
@@ -822,10 +832,61 @@ namespace gfx {
 		return std::make_shared<Geometry>(vertices, Geometry::POS_NORM_UV);
 	}
 
+	void push_back(std::vector<float>& vector, const glm::vec3& v)
+	{
+		vector.push_back(v.x);
+		vector.push_back(v.y);
+		vector.push_back(v.z);
+	}
+
+	void push_back(std::vector<float>& vector, const glm::vec2& v)
+	{
+		vector.push_back(v.x);
+		vector.push_back(v.y);
+	}
+
+	void push_back(std::vector<float>& vector, const glm::vec3& pos, const glm::vec3& normal, const glm::vec2& uv)
+	{
+		push_back(vector, pos);
+		push_back(vector, normal);
+		push_back(vector, uv);
+	}
+
 	std::shared_ptr<Geometry> make_plane_geometry(int x_elements, int y_elements)
 	{
 		// TODO
+		const float width = 10.0f, height = 10.0f;
+
 		std::vector<float> vertices;
+
+		glm::vec3 normal(0.0f, 1.0f, 0.0f);
+
+		for (int y = 0; y < y_elements; y++)
+		{
+			for (int x = 0; x < x_elements; x++)
+			{
+				auto bottom_left	= glm::vec3((x + 0) * width, 0.0f, (y + 0) * height);
+				auto bottom_right	= glm::vec3((x + 1) * width, 0.0f, (y + 0) * height);
+				auto top_left		= glm::vec3((x + 0) * width, 0.0f, (y + 1) * height);
+				auto top_right		= glm::vec3((x + 1) * width, 0.0f, (y + 1) * height);
+
+				auto tex_coord = glm::vec2(
+					static_cast<float>(x) / static_cast<float>(x_elements),
+					static_cast<float>(y) / static_cast<float>(y_elements)
+				);
+
+				// triangle 1
+				push_back(vertices, top_right, normal, glm::vec2(1.0f, 1.0f));
+				push_back(vertices, bottom_right, normal, glm::vec2(1, 0.0f));
+				push_back(vertices, bottom_left, normal, glm::vec2(0.0f, 0.0f));
+
+				// triangle 2
+				push_back(vertices, bottom_left, normal, glm::vec2(0.0f, 0.0f));
+				push_back(vertices, top_left, normal, glm::vec2(0.0f, 1.0f));
+				push_back(vertices, top_right, normal, glm::vec2(1.0f, 1.0f));
+			}
+		}
+
 		return std::make_shared<Geometry>(vertices, Geometry::POS_NORM_UV);
 	}
 

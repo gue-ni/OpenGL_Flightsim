@@ -102,7 +102,6 @@ namespace phi {
         // force vector in local coordinates.
         inline void add_relative_force(const glm::vec3& force) 
         { 
-            //m_force += inverse_transform_direction(force);
             m_force += rotation * force;
         }
         
@@ -153,7 +152,6 @@ namespace phi {
             // reset accumulators
             m_force = glm::vec3(0.0f), m_torque = glm::vec3(0.0f);
         }
-
     };
 };
 
