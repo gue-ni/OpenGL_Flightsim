@@ -234,7 +234,18 @@ int main(void)
     camera.set_position(glm::vec3(0, 1, 7));
     transform.add(&camera);
 
-    gfx::OrbitController controller(10.0f);
+    gfx::Mesh test_cube(cube_geo, test_texture);
+    test_cube.set_position(glm::vec3(20, 0, 0));
+    test_cube.set_scale(glm::vec3(0.25f));
+    transform.add(&test_cube);
+
+    gfx::Mesh test_cube2(cube_geo, blue);
+    test_cube2.set_position(glm::vec3(10, 0, 0));
+    test_cube2.set_scale(glm::vec3(0.5f));
+    transform.add(&test_cube2);
+
+
+    gfx::OrbitController controller(15.0f);
 
     SDL_Event event;
     bool quit = false;
@@ -287,18 +298,18 @@ int main(void)
 
         const uint8_t* key_states = SDL_GetKeyboardState(NULL);
 
-        float elevator_torque = 5000.0f, aileron_torque = 5000.0f, thrust_force = 25000.0f;
+        float elevator_torque = 15000.0f, aileron_torque = 10000.0f;
 
         if (key_states[SDL_SCANCODE_A])
         {
-            //aircraft.rigid_body.add_relative_torque(phi::BACKWARD * aileron_torque);
-            aircraft.right_wing.lift_multiplier = 1.5;
+            aircraft.rigid_body.add_relative_torque(phi::BACKWARD * aileron_torque);
+            //aircraft.right_wing.lift_multiplier = 1.5;
         }
 
         if (key_states[SDL_SCANCODE_D])
         {
-            //aircraft.rigid_body.add_relative_torque(phi::FORWARD * aileron_torque);
-            aircraft.left_wing.lift_multiplier = 1.5;
+            aircraft.rigid_body.add_relative_torque(phi::FORWARD * aileron_torque);
+            //aircraft.left_wing.lift_multiplier = 1.5;
         }
 
         if (key_states[SDL_SCANCODE_W])
@@ -315,13 +326,14 @@ int main(void)
 
         if (key_states[SDL_SCANCODE_J])
         {
-            aircraft.engine.thrust -= 10.0f;
-            aircraft.engine.thrust = max(aircraft.engine.thrust, 0.0f);
+            aircraft.engine.throttle -= 0.1f;
+            aircraft.engine.throttle = clamp(aircraft.engine.throttle, 0.0f, 1.0f);
         }
 
         if (key_states[SDL_SCANCODE_K])
         {
-            aircraft.engine.thrust += 10.0f;
+            aircraft.engine.throttle += 0.1f;
+            aircraft.engine.throttle = clamp(aircraft.engine.throttle, 0.0f, 1.0f);
 
         }
 
@@ -341,6 +353,7 @@ int main(void)
         controller.update(camera, camera.parent->get_position(), dt);
 
         prop.set_rotation(prop.get_rotation() + glm::vec3(0.01f, 0, 0));
+        //test_cube.set_position(aircraft.left_wing. * 10.0f);
 
         renderer.render(camera, scene);
 

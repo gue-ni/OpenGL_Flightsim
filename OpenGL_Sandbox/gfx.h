@@ -219,6 +219,7 @@ namespace gfx {
 		glm::vec3 rgb;
 	};
 
+
 	class Geometry {
 	public:
 		enum VertexLayout {
@@ -240,6 +241,8 @@ namespace gfx {
 		unsigned int m_vao, m_vbo;
 		static int get_stride(const VertexLayout& layout);
 	};
+
+
 
 	class Material  {
 	public:
@@ -313,6 +316,11 @@ namespace gfx {
 	protected:
 		std::shared_ptr<Geometry> m_geometry;
 		std::shared_ptr<Material> m_material;
+	};
+
+	class Line : public Mesh {
+	public:
+
 	};
 
 	class Skybox : public Mesh {

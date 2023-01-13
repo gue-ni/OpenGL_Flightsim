@@ -40,6 +40,8 @@ namespace phi {
         // velocity in world space
         glm::vec3 velocity          = glm::vec3(0.0f);
 
+        glm::vec3 local_velocity          = glm::vec3(0.0f);
+
         // angular velocity in object space
         glm::vec3 angular_velocity  = glm::vec3(0.0f);
 
