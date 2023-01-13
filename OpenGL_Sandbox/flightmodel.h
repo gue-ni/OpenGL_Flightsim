@@ -530,6 +530,8 @@ struct Aircraft
 
   Wing left_wing;
   Wing right_wing;
+  Wing right_aileron;
+  Wing left_aileron;
   Wing rudder;
   Wing elevator;
 
@@ -541,8 +543,13 @@ struct Aircraft
       : rigid_body(16000.0f), // mass in kg
         left_wing("left_wing", glm::vec3(-0.5f, 0.0, -2.73f), 6.96f * 3.5f, Curve(NACA_0012), phi::UP),
         right_wing("right_wing", glm::vec3(-0.5f, 0.0, +2.73f), 6.96f * 3.5f, Curve(NACA_0012), phi::UP),
+
         elevator("elevator", glm::vec3(-6.64f, -0.12f, 0.0f), 6.54f * 2.7f, Curve(NACA_0012), phi::UP),
-        rudder("rudder", glm::vec3(-6.64f, 0.0f, 0.0f), 5.31f * 3.1f, Curve(NACA_0012), phi::RIGHT)
+
+        rudder("rudder", glm::vec3(-6.64f, 0.0f, 0.0f), 5.31f * 3.1f, Curve(NACA_0012), phi::RIGHT),
+
+        left_aileron("left_aileron", glm::vec3(0.0f, 0.0f, -1.0f),  3.8f * 1.26f, Curve(NACA_0012), phi::UP),
+        right_aileron("right_aileron", glm::vec3(0.0f, 0.0f, 1.0f), 3.8f * 1.26f, Curve(NACA_0012), phi::UP)
   {
     rigid_body.position = position;
     rigid_body.velocity = velocity;
@@ -558,6 +565,9 @@ struct Aircraft
     elevator.apply_forces(rigid_body, dt, false);
     rudder.apply_forces(rigid_body, dt, false);
 #endif
+
+    left_aileron.apply_forces(rigid_body, dt, false);
+    right_aileron.apply_forces(rigid_body, dt, false);
 
     engine.apply_forces(rigid_body);
 

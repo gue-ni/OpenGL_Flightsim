@@ -259,6 +259,7 @@ int main(void)
 
 
     float elevator_incidence = 0;
+    float aileron_incidence = 0;
 
 
     
@@ -312,13 +313,15 @@ int main(void)
         if (key_states[SDL_SCANCODE_A])
         {
             //aircraft.rigid_body.add_relative_torque(phi::BACKWARD * aileron_torque);
-            aircraft.right_wing.lift_multiplier = 1.5;
+            //aircraft.right_wing.lift_multiplier = 1.5;
+            aileron_incidence += 0.01;
         }
 
         if (key_states[SDL_SCANCODE_D])
         {
             //aircraft.rigid_body.add_relative_torque(phi::FORWARD * aileron_torque);
-            aircraft.left_wing.lift_multiplier = 1.5;
+            //aircraft.left_wing.lift_multiplier = 1.5;
+            aileron_incidence -= 0.01;
         }
 
         if (key_states[SDL_SCANCODE_W])
@@ -349,6 +352,8 @@ int main(void)
         }
         
         aircraft.elevator.normal = Wing::calculate_wing_normal(elevator_incidence);
+        aircraft.left_aileron.normal = Wing::calculate_wing_normal(aileron_incidence);
+        aircraft.right_aileron.normal = Wing::calculate_wing_normal(-aileron_incidence);
         aircraft.update(dt);
 
 #if 0
