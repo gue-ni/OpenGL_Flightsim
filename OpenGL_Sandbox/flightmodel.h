@@ -475,7 +475,7 @@ inline float kilometer_per_hour(float meters_per_second)
 
 struct Engine
 {
-  float thrust = 5000.0f; // newtons
+  float thrust = 200000.0f; // newtons
 
   void apply_forces(phi::RigidBody &rigid_body)
   {
@@ -492,7 +492,6 @@ struct Aircraft
 
   Wing left_wing;
   Wing right_wing;
-  Wing wing;
   Wing rudder;
   Wing elevator;
 
@@ -500,14 +499,12 @@ struct Aircraft
 
   float log_timer = 1.0f;
 
-  // Cessna 172
   Aircraft(const glm::vec3 &position, const glm::vec3 &velocity)
-      : rigid_body(1600.0f), // mass in kg
-        wing("wing", glm::vec3(-0.0f, 1.0f, 0.0f), 16.17f, Curve(NACA_2412), phi::UP),
-        left_wing("left_wing", glm::vec3(-0.0f, 1.0, -1.0f), 16.17f / 2.0f, Curve(NACA_2412), phi::UP),
-        right_wing("right_wing", glm::vec3(-0.0f, 1.0, 1.0f), 16.17f / 2.0f, Curve(NACA_2412), phi::UP),
-        elevator("elevator", glm::vec3(-2.0f, 0.0f, 0.0f), 2.0f, Curve(NACA_0012), phi::UP),
-        rudder("rudder", glm::vec3(-5.0f, 0.0f, 0.0f), 1.04f, Curve(NACA_0012), phi::RIGHT)
+      : rigid_body(16000.0f), // mass in kg
+        left_wing("left_wing", glm::vec3(-0.5f, 0.0, -2.73f), 6.96f * 3.5f, Curve(NACA_2412), phi::UP),
+        right_wing("right_wing", glm::vec3(-0.5f, 0.0, +2.73f), 6.96f * 3.5f, Curve(NACA_2412), phi::UP),
+        elevator("elevator", glm::vec3(-6.64f, -0.12f, 0.0f), 6.54f * 2.7f, Curve(NACA_0012), phi::UP),
+        rudder("rudder", glm::vec3(-6.64f, 0.0f, 0.0f), 5.31f * 3.1f, Curve(NACA_0012), phi::RIGHT)
   {
     rigid_body.position = position;
     rigid_body.velocity = velocity;
@@ -519,7 +516,6 @@ struct Aircraft
     left_wing.apply_forces(rigid_body, dt, true);
     right_wing.apply_forces(rigid_body, dt, true);
 #else
-    wing.apply_forces(rigid_body, dt, false);
 #endif
 
 #if 1
