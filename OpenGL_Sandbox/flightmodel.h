@@ -544,11 +544,11 @@ struct Aircraft
 
   void update(float dt)
   {
-#if 0
+#if 1
     left_wing.apply_forces(rigid_body, dt, true);
     right_wing.apply_forces(rigid_body, dt, false);
 #endif
-#if 0
+#if 1
     elevator.apply_forces(rigid_body, dt, false);
     rudder.apply_forces(rigid_body, dt, false);
 #endif

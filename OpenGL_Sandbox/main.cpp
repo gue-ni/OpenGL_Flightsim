@@ -302,14 +302,14 @@ int main(void)
 
         if (key_states[SDL_SCANCODE_A])
         {
-            aircraft.rigid_body.add_relative_torque(phi::BACKWARD * aileron_torque);
-            //aircraft.right_wing.lift_multiplier = 1.5;
+            //aircraft.rigid_body.add_relative_torque(phi::BACKWARD * aileron_torque);
+            aircraft.right_wing.lift_multiplier = 1.5;
         }
 
         if (key_states[SDL_SCANCODE_D])
         {
-            aircraft.rigid_body.add_relative_torque(phi::FORWARD * aileron_torque);
-            //aircraft.left_wing.lift_multiplier = 1.5;
+            //aircraft.rigid_body.add_relative_torque(phi::FORWARD * aileron_torque);
+            aircraft.left_wing.lift_multiplier = 1.5;
         }
 
         if (key_states[SDL_SCANCODE_W])
