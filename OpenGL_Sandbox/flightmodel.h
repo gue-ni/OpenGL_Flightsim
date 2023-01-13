@@ -5,6 +5,7 @@
 
 #include <cmath>
 #include <vector>
+#include <tuple>
 #include <algorithm>
 
 constexpr float log_intervall = 1.5f;
@@ -345,8 +346,9 @@ struct Curve
   {
     return a + t * (b - a);
   }
-
-  void sample(float alpha, float *cl, float *cd) const
+  
+  //void sample(float alpha, float *cl, float *cd) const
+  std::tuple<float, float> sample(float alpha) const 
   {
     // assert(data[0].alpha <= alpha && alpha <= data[data.size() - 1].alpha);
 
@@ -355,16 +357,16 @@ struct Curve
 
     if (alpha < data[first].alpha)
     {
-      *cl = data[first].cl;
-      *cd = data[first].cd;
-      return;
+      //*cl = data[first].cl;
+      //*cd = data[first].cd;
+      return { data[first].cl, data[first].cd };
     }
 
     if (data[last].alpha < alpha)
     {
-      *cl = data[last].cl;
-      *cd = data[last].cd;
-      return;
+      //*cl = data[last].cl;
+      //*cd = data[last].cd;
+      return { data[last].cl, data[last].cd };
     }
 
     for (int i = 0; i < data.size() - 1; i++)
@@ -374,9 +376,9 @@ struct Curve
         auto t0 = alpha - data[i].alpha;
         auto t1 = data[i + 1].alpha - data[i].alpha;
         auto f = t0 / t1;
-        *cl = lerp(data[i].cl, data[i + 1].cl, f);
-        *cd = lerp(data[i].cd, data[i + 1].cd, f);
-        return;
+        auto cl = lerp(data[i].cl, data[i + 1].cl, f);
+        auto cd = lerp(data[i].cd, data[i + 1].cd, f);
+        return {cl, cd};
       }
     }
   }
@@ -389,6 +391,8 @@ struct Wing
   const glm::vec3 center_of_gravity; // center of gravity relative to rigidbody cg
   const glm::vec3 normal;
   const Curve curve;
+  
+  float incidence, dihedral;
 
   float lift_multiplier = 1.0f;
   float drag_multiplier = 1.0f;
@@ -396,8 +400,8 @@ struct Wing
   float lift = 0, drag = 0, angle_of_attack = 0;
 
   float log_timer = 1.0f;
-
-  Wing(const std::string &wing_name, const glm::vec3 &cg_offset, float wing_area, const Curve &aerodynamics, const glm::vec3 &wing_normal)
+  
+  Wing(const std::string &wing_name, const glm::vec3 &cg_offset, float wing_area, const Curve &aerodynamics, const glm::vec3& wing_normal)
       : name(wing_name),
         center_of_gravity(cg_offset),
         area(wing_area),
@@ -406,6 +410,22 @@ struct Wing
   {
   }
 
+  Wing(const std::string &wing_name, const glm::vec3 &cg_offset, float wing_area, const Curve &aerodynamics, float wing_dihedral, float wing_incidence)
+      : name(wing_name),
+        center_of_gravity(cg_offset),
+        area(wing_area),
+        curve(aerodynamics),
+        dihedral(wing_dihedral),
+        incidence(wing_incidence),
+        normal(calculate_wing_normal(wing_dihedral, wing_incidence))
+  {
+  }
+
+  static glm::vec3 calculate_wing_normal(float dihedral, float incidence)
+  {
+    return glm::vec3(0,1,0); // TODO
+  }
+  
   void apply_forces(phi::RigidBody &rigid_body, float dt, bool log)
   {
     auto local_velocity = glm::inverse(rigid_body.rotation) * rigid_body.velocity 
@@ -428,9 +448,8 @@ struct Wing
     tmp = clamp(tmp, -1, 1);
     angle_of_attack = glm::degrees(asin(tmp));
 
-    float lift_coefficient, drag_coefficient;
-    curve.sample(angle_of_attack, &lift_coefficient, &drag_coefficient);
-
+    auto [lift_coefficient, drag_coefficient] = curve.sample(angle_of_attack);
+    
     float tmp2 = speed2 * area;
     lift = lift_coefficient * lift_multiplier * tmp2;
     drag = drag_coefficient * drag_multiplier * tmp2;
@@ -476,11 +495,11 @@ inline float kilometer_per_hour(float meters_per_second)
 struct Engine
 {
   float thrust = 5000.0f; // newtons
+  float throttle = 1.0f; // [0, 1]
 
   void apply_forces(phi::RigidBody &rigid_body)
   {
-    rigid_body.add_relative_force(glm::vec3(thrust, 0.0f, 0.0f));
-
+    rigid_body.add_relative_force(glm::vec3(thrust * throttle, 0.0f, 0.0f));
     // TODO: implement torque from propeller
   }
 };
@@ -502,7 +521,7 @@ struct Aircraft
 
   // Cessna 172
   Aircraft(const glm::vec3 &position, const glm::vec3 &velocity)
-      : rigid_body(1600.0f), // mass in kg
+      : rigid_body(1000.0f), // mass in kg
         wing("wing", glm::vec3(-0.0f, 1.0f, 0.0f), 16.17f, Curve(NACA_2412), phi::UP),
         left_wing("left_wing", glm::vec3(-0.0f, 1.0, -1.0f), 16.17f / 2.0f, Curve(NACA_2412), phi::UP),
         right_wing("right_wing", glm::vec3(-0.0f, 1.0, 1.0f), 16.17f / 2.0f, Curve(NACA_2412), phi::UP),
@@ -530,6 +549,7 @@ struct Aircraft
     engine.apply_forces(rigid_body);
 
     float lift = rigid_body.get_force().y;
+    
     float gravity = phi::g * rigid_body.mass;
     rigid_body.add_force(phi::DOWN * gravity);
 
