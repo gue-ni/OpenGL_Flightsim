@@ -92,7 +92,7 @@ namespace phi {
         // transform from direction in world space to local space 
         inline glm::vec3 inverse_transform_direction(const glm::vec3& direction)
         {
-            return direction * glm::inverse(rotation);
+            return glm::inverse(rotation) * direction;
         }
 
         // force vector in world coordinates.

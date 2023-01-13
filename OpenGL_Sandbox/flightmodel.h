@@ -326,6 +326,11 @@ float min(float a, float b)
   return a < b ? a : b;
 }
 
+float sign(float a)
+{
+    return a >= 0.0f ? 1.0f : -1.0f;
+}
+
 float clamp(float v, float lo, float hi)
 {
   return min(max(v, lo), hi);
@@ -376,9 +381,10 @@ struct Curve
         auto f = t0 / t1;
         *cl = lerp(data[i].cl, data[i + 1].cl, f);
         *cd = lerp(data[i].cd, data[i + 1].cd, f);
-        return;
+        break;
       }
     }
+    return;
   }
 };
 
@@ -387,10 +393,10 @@ struct Wing
   const std::string name;
   const float area;
   const glm::vec3 center_of_gravity; // center of gravity relative to rigidbody cg
-  const glm::vec3 normal;
+  glm::vec3 normal;
   const Curve curve;
   
-  float incidence, dihedral;
+  float incidence = 0;
 
   float lift_multiplier = 1.0f;
   float drag_multiplier = 1.0f;
@@ -414,29 +420,27 @@ struct Wing
   }
 
   Wing(const std::string &wing_name, 
-      const glm::vec3 &cg_offset, float wing_area, const Curve &aerodynamics, float wing_dihedral, float wing_incidence)
+      const glm::vec3 &cg_offset, float wing_area, const Curve &aerodynamics, float wing_incidence)
       : name(wing_name),
         center_of_gravity(cg_offset),
         area(wing_area),
         curve(aerodynamics),
-        dihedral(wing_dihedral),
         incidence(wing_incidence),
-        normal(calculate_wing_normal(wing_dihedral, wing_incidence))
+        normal(calculate_wing_normal(wing_incidence))
   {
   }
 
-  static glm::vec3 calculate_wing_normal(float dihedral, float incidence)
+  static glm::vec3 calculate_wing_normal(float incidence_angle_degrees)
   {
-      return glm::vec3(
-          sin(incidence),
-          cos(incidence) * sin(dihedral),
-          cos(incidence) * cos(dihedral)
-      );
+      float theta = glm::radians(incidence_angle_degrees + 90.0f);
+      float x = cos(theta);
+      float y = sin(theta);
+      return glm::normalize(glm::vec3(x, y, 0.0f));
   }
   
   void apply_forces(phi::RigidBody &rigid_body, float dt, bool log)
   {
-    auto local_velocity = (glm::inverse(rigid_body.rotation) * rigid_body.velocity)
+    auto local_velocity = rigid_body.inverse_transform_direction(rigid_body.velocity)
         + glm::cross(rigid_body.angular_velocity, center_of_gravity);
 
     auto local_speed = glm::length(local_velocity);
@@ -456,6 +460,8 @@ struct Wing
     angle_of_attack = glm::degrees(asin(glm::dot(drag_direction, normal)));
 
     curve.sample(angle_of_attack, &lift_coefficient, &drag_coefficient);
+
+    //lift_coefficient *= sign(angle_of_attack);
     
     float tmp2 = speed2 * area;
     lift = lift_coefficient * lift_multiplier * tmp2;
@@ -471,7 +477,7 @@ struct Wing
     if (log && ((log_timer += dt) > log_intervall))
     {
       log_timer = 0;
-#if 1
+#if 0
       std::cout << "######### [ " << name << " ] #######" << std::endl;
       std::cout << "lv = " << local_velocity << std::endl;
       //std::cout << "aoa = " << angle_of_attack << std::endl;
@@ -533,8 +539,8 @@ struct Aircraft
 
   Aircraft(const glm::vec3 &position, const glm::vec3 &velocity)
       : rigid_body(16000.0f), // mass in kg
-        left_wing("left_wing", glm::vec3(-0.5f, 0.0, -2.73f), 6.96f * 3.5f, Curve(NACA_2412), phi::UP),
-        right_wing("right_wing", glm::vec3(-0.5f, 0.0, +2.73f), 6.96f * 3.5f, Curve(NACA_2412), phi::UP),
+        left_wing("left_wing", glm::vec3(-0.5f, 0.0, -2.73f), 6.96f * 3.5f, Curve(NACA_0012), phi::UP),
+        right_wing("right_wing", glm::vec3(-0.5f, 0.0, +2.73f), 6.96f * 3.5f, Curve(NACA_0012), phi::UP),
         elevator("elevator", glm::vec3(-6.64f, -0.12f, 0.0f), 6.54f * 2.7f, Curve(NACA_0012), phi::UP),
         rudder("rudder", glm::vec3(-6.64f, 0.0f, 0.0f), 5.31f * 3.1f, Curve(NACA_0012), phi::RIGHT)
   {
@@ -556,6 +562,12 @@ struct Aircraft
     engine.apply_forces(rigid_body);
 
     float lift = rigid_body.get_force().y;
+
+    float cl, cd;
+    right_wing.curve.sample(-0.5f, &cl, &cd); 
+    //std::cout << cl << ", " << cd << std::endl;
+
+
     
     float gravity = phi::g * rigid_body.mass;
     rigid_body.add_force(phi::DOWN * gravity);

@@ -253,6 +253,14 @@ int main(void)
     gfx::Seconds dt, timer = 0, log_timer = 0;
 
     std::cout << glGetString(GL_VERSION) << std::endl;
+
+    //glm::vec3 normal = Wing::calculate_wing_normal(1.0f);
+    //std::cout << "wing_normal = " << normal << std::endl;
+
+
+    float elevator_incidence = 0;
+
+
     
     while (!quit)
     {
@@ -260,10 +268,11 @@ int main(void)
         last = now;
         now = SDL_GetPerformanceCounter();
         dt = static_cast<gfx::Seconds>((now - last) / static_cast<gfx::Seconds>(SDL_GetPerformanceFrequency()));
+        dt = min(dt, 0.02);
 
         if ((timer += dt) >= 1.0f)
         {
-            //printf("dt = %f, fps = %f\n", dt, 1 / dt);
+            printf("dt = %f, fps = %f\n", dt, 1 / dt);
             timer = 0.0f;
         }
 
@@ -314,13 +323,15 @@ int main(void)
 
         if (key_states[SDL_SCANCODE_W])
         {
-            aircraft.rigid_body.add_relative_torque(phi::LEFT * elevator_torque);
+            elevator_incidence += 0.01;
+            //aircraft.rigid_body.add_relative_torque(phi::LEFT * elevator_torque);
             //aircraft.elevator.lift_multiplier = 1.0f;
         }
 
         if (key_states[SDL_SCANCODE_S])
         {
-            aircraft.rigid_body.add_relative_torque(phi::RIGHT * elevator_torque);
+            elevator_incidence -= 0.01;
+            //aircraft.rigid_body.add_relative_torque(phi::RIGHT * elevator_torque);
             //aircraft.elevator.lift_multiplier = 2.0f;
         }
 
@@ -336,7 +347,8 @@ int main(void)
             aircraft.engine.throttle = clamp(aircraft.engine.throttle, 0.0f, 1.0f);
 
         }
-
+        
+        aircraft.elevator.normal = Wing::calculate_wing_normal(elevator_incidence);
         aircraft.update(dt);
 
 #if 0
