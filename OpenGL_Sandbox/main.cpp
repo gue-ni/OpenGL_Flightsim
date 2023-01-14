@@ -235,15 +235,6 @@ int main(void)
     camera.set_position(glm::vec3(0, 1, 7));
     transform.add(&camera);
 
-    gfx::Mesh test_cube(cube_geo, test_texture);
-    test_cube.set_position(glm::vec3(20, 0, 0));
-    test_cube.set_scale(glm::vec3(0.25f));
-    transform.add(&test_cube);
-
-    gfx::Mesh test_cube2(cube_geo, blue);
-    test_cube2.set_position(glm::vec3(10, 0, 0));
-    test_cube2.set_scale(glm::vec3(0.5f));
-    transform.add(&test_cube2);
 
 
     gfx::OrbitController controller(15.0f);
@@ -309,12 +300,13 @@ int main(void)
 
         aileron_incidence = 0, elevator_incidence = 0;
 
-#define CHEATING 0
+#define APPLY_TORQUE_DIRECTLY 1
 
         if (key_states[SDL_SCANCODE_A])
         {
-#if CHEATING
-            aircraft.rigid_body.add_relative_torque(phi::BACKWARD * aileron_torque);
+#if APPLY_TORQUE_DIRECTLY
+            aircraft.rigid_body.add_relative_torque(phi::X_AXIS * -aileron_torque);
+            //aircraft.left_wing.lift_multiplier = 1.5;
 #else
             aileron_incidence = -max_aileron_deflection;
 #endif
@@ -322,8 +314,9 @@ int main(void)
 
         if (key_states[SDL_SCANCODE_D])
         {
-#if CHEATING
-            aircraft.rigid_body.add_relative_torque(phi::FORWARD * aileron_torque);
+#if APPLY_TORQUE_DIRECTLY
+            aircraft.rigid_body.add_relative_torque(phi::X_AXIS * aileron_torque);
+            //aircraft.right_wing.lift_multiplier = 0.5;
 #else
             aileron_incidence = +max_aileron_deflection;
 #endif
@@ -331,7 +324,7 @@ int main(void)
 
         if (key_states[SDL_SCANCODE_W])
         {
-#if CHEATING
+#if APPLY_TORQUE_DIRECTLY
             aircraft.rigid_body.add_relative_torque(phi::LEFT * elevator_torque);
 #else
             elevator_incidence = +max_elevator_deflection;
@@ -340,7 +333,7 @@ int main(void)
 
         if (key_states[SDL_SCANCODE_S])
         {
-#if CHEATING
+#if APPLY_TORQUE_DIRECTLY
             aircraft.rigid_body.add_relative_torque(phi::RIGHT * elevator_torque);
 #else
             elevator_incidence = -max_elevator_deflection;
@@ -375,7 +368,6 @@ int main(void)
         controller.update(camera, camera.parent->get_position(), dt);
 
         prop.set_rotation(prop.get_rotation() + glm::vec3(0.01f, 0, 0));
-        //test_cube.set_position(aircraft.left_wing. * 10.0f);
 
         renderer.render(camera, scene);
 

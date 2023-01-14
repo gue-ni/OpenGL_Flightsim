@@ -18,6 +18,10 @@ namespace phi {
     constexpr glm::vec3 FORWARD(1.0f, 0.0f, 0.0f);
     constexpr glm::vec3 BACKWARD(-1.0f, 0.0f, 0.0f);
 
+    constexpr glm::vec3 X_AXIS(1.0f, 0.0f, 0.0f);
+    constexpr glm::vec3 Y_AXIS(0.0f, 1.0f, 0.0f);
+    constexpr glm::vec3 Z_AXIS(0.0f, 0.0f, 1.0f);
+
     namespace utils {
 
     };
@@ -89,7 +93,7 @@ namespace phi {
         // body coordinates
         inline void add_force_at_point(const glm::vec3& force, const glm::vec3& point)
         {
-            m_force     += force;
+            m_force     += transform_direction(force);
             m_torque    += glm::cross(point, force);
         }
 

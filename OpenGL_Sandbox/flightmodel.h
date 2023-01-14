@@ -8,7 +8,7 @@
 #include <tuple>
 #include <algorithm>
 
-constexpr float log_intervall = 1.5f;
+constexpr float log_intervall = 1.0f;
 
 struct ValueTuple
 {
@@ -442,40 +442,36 @@ struct Wing
     void apply_forces(phi::RigidBody &rigid_body, float dt, bool log)
     {
         // pretty sure something is wrong here
-        auto velocity = rigid_body.inverse_transform_direction(rigid_body.velocity);
+        const auto velocity = rigid_body.inverse_transform_direction(rigid_body.velocity);
 
-        auto local_velocity = rigid_body.inverse_transform_direction(rigid_body.velocity) + glm::cross(rigid_body.angular_velocity, center_of_gravity);
+        const auto local_velocity = rigid_body.inverse_transform_direction(rigid_body.velocity) 
+            + glm::cross(rigid_body.angular_velocity, center_of_gravity);
 
-        auto local_speed = glm::length(local_velocity);
+        const auto speed = glm::length(local_velocity);
 
-        if (local_speed <= 0.0f)
+        if (speed <= 0.0f)
             return;
 
-        assert(local_speed > 0.0f);
+        assert(speed > 0.0f);
 
-        float speed2 = local_speed * local_speed;
-
-        // use local_velocity or velocity here?
-        // using velocity causes ozzilations
-        auto drag_direction = glm::normalize(-velocity);
+        auto drag_direction = glm::normalize(-local_velocity);
         auto lift_direction = glm::normalize(glm::cross(glm::cross(drag_direction, normal), drag_direction));
-        //auto lift_direction = glm::normalize(glm::cross(phi::RIGHT, local_velocity));
-        // auto lift_direction = glm::normalize(glm::cross(phi::RIGHT, velocity));
 
         angle_of_attack = glm::degrees(asin(glm::dot(drag_direction, normal)));
 
         curve.sample(angle_of_attack, &lift_coefficient, &drag_coefficient);
 
-        float tmp = speed2 * area;
-        lift = lift_coefficient * lift_multiplier * tmp;
-        drag = drag_coefficient * drag_multiplier * tmp;
+        lift = lift_coefficient * lift_multiplier * speed * speed * area;
+        drag = drag_coefficient * drag_multiplier * speed * speed * area;
 
-        // both in body coordinates
-        auto force = (lift * lift_direction) + (drag * drag_direction);
+        // ugly hack, necessary probably because the inertia tensor is wrong
+        auto force = (lift * lift_direction);
         auto torque = glm::cross(center_of_gravity, force);
-
+        float torque_mulitplier = 0.01;
         rigid_body.add_relative_force(force);
-        rigid_body.add_relative_torque(torque);
+        rigid_body.add_relative_torque(torque * torque_mulitplier);
+
+        rigid_body.add_force_at_point(drag * drag_direction, center_of_gravity);
 
         if (log && ((log_timer += dt) > log_intervall))
         {
@@ -483,8 +479,9 @@ struct Wing
 #if 1
             std::cout << "######### [ " << name << " ] #######" << std::endl;
             std::cout << "lv = " << local_velocity << std::endl;
-            std::cout << "av = " << rigid_body.angular_velocity << std::endl;
-            std::cout << "t = " << torque << ", f = " << force << std::endl;
+            //std::cout << "t = " << torque << std::endl;
+            std::cout << "f = " << force << std::endl;
+            std::cout << "lift_direction = " << lift_direction << std::endl;
             // std::cout << "aoa = " << angle_of_attack << std::endl;
             // std::cout << "lift = " << lift << std::endl;
             // std::cout << "lift_multiplier = " << lift_multiplier << ",  lift = " << lift_coefficient * lift_multiplier * tmp2 << std::endl;
@@ -534,8 +531,9 @@ struct Engine
 
 struct Aircraft
 {
-
     phi::RigidBody rigid_body;
+
+    //std::vector<Wing> elements;
 
     Wing left_wing;
     Wing right_wing;
@@ -551,14 +549,11 @@ struct Aircraft
     Aircraft(const glm::vec3 &position, const glm::vec3 &velocity)
         : rigid_body(16000.0f), // mass in kg
           left_wing("left_wing", glm::vec3(-0.5f, 0.0, -2.73f), 6.96f * 3.5f, Curve(NACA_2412), phi::UP),
-          right_wing("right_wing", glm::vec3(-0.5f, 0.0, +2.73f), 6.96f * 3.5f, Curve(NACA_2412), phi::UP),
-
-          elevator("elevator", glm::vec3(-6.64f, -0.12f, 0.0f), 6.54f * 2.7f, Curve(NACA_0012), phi::UP),
-
-          rudder("rudder", glm::vec3(-6.64f, 0.0f, 0.0f), 5.31f * 3.1f, Curve(NACA_0012), phi::RIGHT),
-
           left_aileron("left_aileron", glm::vec3(0.0f, 0.0f, -1.0f), 3.8f * 1.26f, Curve(NACA_0012), phi::UP),
-          right_aileron("right_aileron", glm::vec3(0.0f, 0.0f, 1.0f), 3.8f * 1.26f, Curve(NACA_0012), phi::UP)
+          right_wing("right_wing", glm::vec3(-0.5f, 0.0, +2.73f), 6.96f * 3.5f, Curve(NACA_2412), phi::UP),
+          right_aileron("right_aileron", glm::vec3(0.0f, 0.0f, 1.0f), 3.8f * 1.26f, Curve(NACA_0012), phi::UP),
+          elevator("elevator", glm::vec3(-6.64f, -0.12f, 0.0f), 6.54f * 2.7f, Curve(NACA_0012), phi::UP),
+          rudder("rudder", glm::vec3(-6.64f, 0.0f, 0.0f), 5.31f * 3.1f, Curve(NACA_0012), phi::RIGHT)
     {
         rigid_body.position = position;
         rigid_body.velocity = velocity;
@@ -573,14 +568,12 @@ struct Aircraft
         rudder.apply_forces(rigid_body, dt, false);
         left_aileron.apply_forces(rigid_body, dt, false);
         right_aileron.apply_forces(rigid_body, dt, false);
+        engine.apply_forces(rigid_body);
 #endif
 
-        engine.apply_forces(rigid_body);
 
-        float lift = rigid_body.get_force().y;
-
-        float cl, cd;
-        right_wing.curve.sample(-0.5f, &cl, &cd);
+        //float cl, cd;
+        //right_wing.curve.sample(-0.5f, &cl, &cd);
         // std::cout << cl << ", " << cd << std::endl;
 
 
@@ -591,8 +584,6 @@ struct Aircraft
             std::cout << "########## airplane ##############" << std::endl;
             // std::cout << "height: " << rigid_body.position.y << std::endl;
             // std::cout << "vertical speed: " << kilometer_per_hour(rigid_body.velocity.y) << std::endl;
-            //  std::cout << "torque: " << rigid_body.get_torque() << std::endl;
-            //  std::cout << "force: " << rigid_body.get_force() << std::endl;
             printf("speed: %.2f\n", glm::length(rigid_body.velocity));
             printf("throttle: %.2f\n", engine.throttle);
             printf("wing_area: lw = %.2f, rw = %.2f, el = %.2f\n", left_wing.area, right_wing.area, elevator.area);
@@ -602,6 +593,8 @@ struct Aircraft
             printf("cl:   lw = %.2f, rw = %.2f, el = %.2f\n", left_wing.lift_coefficient, right_wing.lift_coefficient, elevator.lift_coefficient);
             printf("cd:   lw = %.2f, rw = %.2f, el = %.2f\n", left_wing.drag_coefficient, right_wing.drag_coefficient, elevator.drag_coefficient);
             std::cout << "angular_velocity = " << rigid_body.angular_velocity << std::endl;
+            std::cout << "torque = " << rigid_body.get_torque() << std::endl;
+            std::cout << "force = " << rigid_body.get_force() << std::endl;
             std::cout << "##################################" << std::endl;
 #endif
         }
