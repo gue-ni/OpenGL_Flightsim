@@ -12,12 +12,13 @@ constexpr float log_intervall = 1.5f;
 
 struct ValueTuple
 {
-  float alpha;
-  float cl;
-  float cd;
+    float alpha;
+    float cl;
+    float cd;
 };
 
-struct MinMax {
+struct MinMax
+{
     float min, max;
 };
 
@@ -322,12 +323,12 @@ std::vector<ValueTuple> NACA_2412 = {
 
 float max(float a, float b)
 {
-  return a > b ? a : b;
+    return a > b ? a : b;
 }
 
 float min(float a, float b)
 {
-  return a < b ? a : b;
+    return a < b ? a : b;
 }
 
 float sign(float a)
@@ -337,167 +338,175 @@ float sign(float a)
 
 float clamp(float v, float lo, float hi)
 {
-  return min(max(v, lo), hi);
+    return min(max(v, lo), hi);
 }
 
 struct Curve
 {
-  std::vector<ValueTuple> data;
+    std::vector<ValueTuple> data;
 
-  Curve(const std::vector<ValueTuple> &curve_data) : data(curve_data)
-  {
-    for (int i = 0; i < data.size() - 1; i++)
-      assert(data[i].alpha < data[i + 1].alpha);
-  }
-
-  static float lerp(float a, float b, float t)
-  {
-    return a + t * (b - a);
-  }
-  
-  void sample(float alpha, float *cl, float *cd) const
-  {
-    // assert(data[0].alpha <= alpha && alpha <= data[data.size() - 1].alpha);
-
-    int first = 0;
-    int last = data.size() - 1;
-
-    if (alpha < data[first].alpha)
+    Curve(const std::vector<ValueTuple> &curve_data) : data(curve_data)
     {
-      *cl = data[first].cl;
-      *cd = data[first].cd;
-      return;
+        for (int i = 0; i < data.size() - 1; i++)
+            assert(data[i].alpha < data[i + 1].alpha);
     }
 
-    if (data[last].alpha < alpha)
+    static float lerp(float a, float b, float t)
     {
-      *cl = data[last].cl;
-      *cd = data[last].cd;
-      return;
+        return a + t * (b - a);
     }
 
-    for (int i = 0; i < data.size() - 1; i++)
+    void sample(float alpha, float *cl, float *cd) const
     {
-      if (data[i].alpha <= alpha && alpha <= data[i + 1].alpha)
-      {
-        auto t0 = alpha - data[i].alpha;
-        auto t1 = data[i + 1].alpha - data[i].alpha;
-        auto f = t0 / t1;
-        *cl = lerp(data[i].cl, data[i + 1].cl, f);
-        *cd = lerp(data[i].cd, data[i + 1].cd, f);
-        break;
-      }
+        // assert(data[0].alpha <= alpha && alpha <= data[data.size() - 1].alpha);
+
+        int first = 0;
+        int last = data.size() - 1;
+
+        if (alpha < data[first].alpha)
+        {
+            *cl = data[first].cl;
+            *cd = data[first].cd;
+            return;
+        }
+
+        if (data[last].alpha < alpha)
+        {
+            *cl = data[last].cl;
+            *cd = data[last].cd;
+            return;
+        }
+
+        for (int i = 0; i < data.size() - 1; i++)
+        {
+            if (data[i].alpha <= alpha && alpha <= data[i + 1].alpha)
+            {
+                auto t0 = alpha - data[i].alpha;
+                auto t1 = data[i + 1].alpha - data[i].alpha;
+                auto f = t0 / t1;
+                *cl = lerp(data[i].cl, data[i + 1].cl, f);
+                *cd = lerp(data[i].cd, data[i + 1].cd, f);
+                break;
+            }
+        }
+        return;
     }
-    return;
-  }
 };
 
 struct Wing
 {
-  const std::string name;
-  const float area;
-  const glm::vec3 center_of_gravity; // center of gravity relative to rigidbody cg
-  glm::vec3 normal;
-  const Curve curve;
-  
-  MinMax deflection;
+    const std::string name;
+    const float area;
+    const glm::vec3 center_of_gravity; // center of gravity relative to rigidbody cg
+    glm::vec3 normal;
+    const Curve curve;
 
-  float incidence = 0;
+    MinMax deflection;
 
-  float lift_multiplier = 1.0f;
-  float drag_multiplier = 1.0f;
-  float lift_coefficient = 0.0f, drag_coefficient = .0f;
+    float incidence = 0;
 
-  float lift = 0, drag = 0, angle_of_attack = 0;
+    float lift_multiplier = 1.0f;
+    float drag_multiplier = 1.0f;
+    float lift_coefficient = 0.0f, drag_coefficient = .0f;
 
-  float log_timer = 1.0f;
-  
-  Wing(const std::string &wing_name, 
-      const glm::vec3 &cg_offset, 
-      float wing_area, 
-      const Curve &aerodynamics, 
-      const glm::vec3& wing_normal)
-      : name(wing_name),
-        center_of_gravity(cg_offset),
-        area(wing_area),
-        curve(aerodynamics),
-        normal(wing_normal)
-  {
-  }
+    float lift = 0, drag = 0, angle_of_attack = 0;
 
-  Wing(const std::string &wing_name, 
-      const glm::vec3 &cg_offset, float wing_area, const Curve &aerodynamics, float wing_incidence)
-      : name(wing_name),
-        center_of_gravity(cg_offset),
-        area(wing_area),
-        curve(aerodynamics),
-        incidence(wing_incidence),
-        normal(calculate_wing_normal(wing_incidence))
-  {
-  }
+    float log_timer = 1.0f;
 
-  static glm::vec3 calculate_wing_normal(float incidence_angle_degrees)
-  {
-      float theta = glm::radians(incidence_angle_degrees + 90.0f);
-      float x = cos(theta);
-      float y = sin(theta);
-      return glm::normalize(glm::vec3(x, y, 0.0f));
-  }
-  
-  void apply_forces(phi::RigidBody &rigid_body, float dt, bool log)
-  {
-      // pretty sure something is wrong here
-    auto local_velocity = rigid_body.inverse_transform_direction(rigid_body.velocity)
-        + glm::cross(rigid_body.angular_velocity, center_of_gravity);
-
-    auto local_speed = glm::length(local_velocity);
-
-    if (local_speed <= 0.0f)
-      return;
-
-    assert(local_speed > 0.0f);
-
-    float speed2 = local_speed * local_speed;
-
-    auto drag_direction = glm::normalize(-local_velocity);
-    auto lift_direction = glm::normalize(
-        glm::cross(glm::cross(drag_direction, normal), drag_direction));
-
-    angle_of_attack = glm::degrees(asin(glm::dot(drag_direction, normal)));
-
-    curve.sample(angle_of_attack, &lift_coefficient, &drag_coefficient);
-
-    float tmp2 = speed2 * area;
-    lift = lift_coefficient * lift_multiplier * tmp2;
-    drag = drag_coefficient * drag_multiplier * tmp2;
-
-    // both in body coordinates
-    auto force = (lift * lift_direction) + (drag * drag_direction);
-    auto torque = glm::cross(center_of_gravity, force);
-
-    rigid_body.add_relative_force(force);
-    rigid_body.add_relative_torque(torque);
-
-    if (log && ((log_timer += dt) > log_intervall))
+    Wing(const std::string &wing_name,
+         const glm::vec3 &cg_offset,
+         float wing_area,
+         const Curve &aerodynamics,
+         const glm::vec3 &wing_normal)
+        : name(wing_name),
+          center_of_gravity(cg_offset),
+          area(wing_area),
+          curve(aerodynamics),
+          normal(wing_normal)
     {
-      log_timer = 0;
-#if 0
-      std::cout << "######### [ " << name << " ] #######" << std::endl;
-      std::cout << "lv = " << local_velocity << std::endl;
-      //std::cout << "aoa = " << angle_of_attack << std::endl;
-      //std::cout << "lift = " << lift << std::endl;
-      //std::cout << "lift_multiplier = " << lift_multiplier << ",  lift = " << lift_coefficient * lift_multiplier * tmp2 << std::endl;
-      //std::cout << "lift_coefficient = " <<  lift_coefficient  << std::endl;
-      //std::cout << "tmp2 = " <<  tmp2  << std::endl;
-      //std::cout << "drag = " << drag << std::endl;
-      //std::cout << "force = " << force << std::endl;
-      //std::cout << "torque = " << torque << std::endl;
-      //std::cout << "lift_dir = " << lift_direction << std::endl;
-      //std::cout << "drag_dir = " << drag_direction << std::endl;
-      std::cout << "####################################" << std::endl;
-#endif
     }
-  }
+
+    Wing(const std::string &wing_name,
+         const glm::vec3 &cg_offset, float wing_area, const Curve &aerodynamics, float wing_incidence)
+        : name(wing_name),
+          center_of_gravity(cg_offset),
+          area(wing_area),
+          curve(aerodynamics),
+          incidence(wing_incidence),
+          normal(calculate_normal(wing_incidence))
+    {
+    }
+
+    static glm::vec3 calculate_normal(float incidence_angle_degrees)
+    {
+        float theta = glm::radians(incidence_angle_degrees + 90.0f);
+        float x = cos(theta);
+        float y = sin(theta);
+        return glm::normalize(glm::vec3(x, y, 0.0f));
+    }
+
+    void apply_forces(phi::RigidBody &rigid_body, float dt, bool log)
+    {
+        // pretty sure something is wrong here
+        auto velocity = rigid_body.inverse_transform_direction(rigid_body.velocity);
+        auto local_velocity = rigid_body.inverse_transform_direction(rigid_body.velocity) 
+            + glm::cross(rigid_body.angular_velocity, center_of_gravity);
+
+        auto local_speed = glm::length(local_velocity);
+
+        if (local_speed <= 0.0f)
+            return;
+
+        assert(local_speed > 0.0f);
+
+        float speed2 = local_speed * local_speed;
+
+        auto drag_direction = glm::normalize(-velocity);
+        auto lift_direction = glm::normalize(glm::cross(glm::cross(drag_direction, normal), drag_direction));
+        // auto lift_direction = glm::normalize(glm::cross(local_velocity, phi::RIGHT));
+        // auto lift_direction = glm::normalize(glm::cross(phi::RIGHT, velocity));
+
+        angle_of_attack = glm::degrees(asin(glm::dot(drag_direction, normal)));
+
+        curve.sample(angle_of_attack, &lift_coefficient, &drag_coefficient);
+
+        float tmp2 = speed2 * area;
+        lift = lift_coefficient * lift_multiplier * tmp2;
+        drag = drag_coefficient * drag_multiplier * tmp2;
+
+        // both in body coordinates
+        auto force = (lift * lift_direction) + (drag * drag_direction);
+        // auto force  = (drag * drag_direction);
+        auto torque = glm::cross(center_of_gravity, force);
+
+        rigid_body.add_relative_force(force);
+        rigid_body.add_relative_torque(torque);
+
+        if (log && ((log_timer += dt) > log_intervall))
+        {
+            log_timer = 0;
+#if 1
+            std::cout << "######### [ " << name << " ] #######" << std::endl;
+            std::cout << "lv = " << local_velocity << std::endl;
+            std::cout << "av = " << rigid_body.angular_velocity << std::endl;
+            // std::cout << "aoa = " << angle_of_attack << std::endl;
+            // std::cout << "lift = " << lift << std::endl;
+            // std::cout << "lift_multiplier = " << lift_multiplier << ",  lift = " << lift_coefficient * lift_multiplier * tmp2 << std::endl;
+            // std::cout << "lift_coefficient = " <<  lift_coefficient  << std::endl;
+            // std::cout << "tmp2 = " <<  tmp2  << std::endl;
+            // std::cout << "drag = " << drag << std::endl;
+            // std::cout << "force = " << force << std::endl;
+            // std::cout << "torque = " << torque << std::endl;
+            // std::cout << "lift_dir = " << lift_direction << std::endl;
+            // std::cout << "drag_dir = " << drag_direction << std::endl;
+            std::cout << "####################################" << std::endl;
+#endif
+        }
+    }
+};
+
+struct ControlSurface : public Wing
+{
 };
 
 inline float knots(float meter_per_second)
@@ -507,112 +516,110 @@ inline float knots(float meter_per_second)
 
 inline float meter_per_second(float kilometer_per_hour)
 {
-  return kilometer_per_hour / 3.6f;
+    return kilometer_per_hour / 3.6f;
 }
 
 inline float kilometer_per_hour(float meters_per_second)
 {
-  return meters_per_second * 3.6f;
+    return meters_per_second * 3.6f;
 }
 
 struct Engine
 {
-  float thrust = 200000.0f; // newtons
-  float throttle = 1.0f; // [0, 1]
+    float thrust = 200000.0f; // newtons
+    float throttle = 1.0f;    // [0, 1]
 
-  void apply_forces(phi::RigidBody &rigid_body)
-  {
-    rigid_body.add_relative_force(glm::vec3(thrust * throttle, 0.0f, 0.0f));
-    // TODO: implement torque from propeller
-  }
+    void apply_forces(phi::RigidBody &rigid_body)
+    {
+        rigid_body.add_relative_force(glm::vec3(thrust * throttle, 0.0f, 0.0f));
+        // TODO: implement torque from propeller
+    }
 };
 
 struct Aircraft
 {
 
-  phi::RigidBody rigid_body;
+    phi::RigidBody rigid_body;
 
-  Wing left_wing;
-  Wing right_wing;
-  Wing right_aileron;
-  Wing left_aileron;
-  Wing rudder;
-  Wing elevator;
+    Wing left_wing;
+    Wing right_wing;
+    Wing right_aileron;
+    Wing left_aileron;
+    Wing rudder;
+    Wing elevator;
 
-  Engine engine;
+    Engine engine;
 
-  float log_timer = 1.0f;
+    float log_timer = 1.0f;
 
-  Aircraft(const glm::vec3 &position, const glm::vec3 &velocity)
-      : rigid_body(16000.0f), // mass in kg
-        left_wing("left_wing", glm::vec3(-0.5f, 0.0, -2.73f), 6.96f * 3.5f, Curve(NACA_2412), phi::UP),
-        right_wing("right_wing", glm::vec3(-0.5f, 0.0, +2.73f), 6.96f * 3.5f, Curve(NACA_2412), phi::UP),
+    Aircraft(const glm::vec3 &position, const glm::vec3 &velocity)
+        : rigid_body(16000.0f), // mass in kg
+          left_wing("left_wing", glm::vec3(-0.5f, 0.0, -2.73f), 6.96f * 3.5f, Curve(NACA_2412), phi::UP),
+          right_wing("right_wing", glm::vec3(-0.5f, 0.0, +2.73f), 6.96f * 3.5f, Curve(NACA_2412), phi::UP),
 
-        elevator("elevator", glm::vec3(-6.64f, -0.12f, 0.0f), 6.54f * 2.7f, Curve(NACA_0012), phi::UP),
+          elevator("elevator", glm::vec3(-6.64f, -0.12f, 0.0f), 6.54f * 2.7f, Curve(NACA_0012), phi::UP),
 
-        rudder("rudder", glm::vec3(-6.64f, 0.0f, 0.0f), 5.31f * 3.1f, Curve(NACA_0012), phi::RIGHT),
+          rudder("rudder", glm::vec3(-6.64f, 0.0f, 0.0f), 5.31f * 3.1f, Curve(NACA_0012), phi::RIGHT),
 
-        left_aileron("left_aileron", glm::vec3(0.0f, 0.0f, -1.0f),  3.8f * 1.26f, Curve(NACA_0012), phi::UP),
-        right_aileron("right_aileron", glm::vec3(0.0f, 0.0f, 1.0f), 3.8f * 1.26f, Curve(NACA_0012), phi::UP)
-  {
-    rigid_body.position = position;
-    rigid_body.velocity = velocity;
-  }
+          left_aileron("left_aileron", glm::vec3(0.0f, 0.0f, -1.0f), 3.8f * 1.26f, Curve(NACA_0012), phi::UP),
+          right_aileron("right_aileron", glm::vec3(0.0f, 0.0f, 1.0f), 3.8f * 1.26f, Curve(NACA_0012), phi::UP)
+    {
+        rigid_body.position = position;
+        rigid_body.velocity = velocity;
+    }
 
-  void update(float dt)
-  {
-#if 0
-    left_wing.apply_forces(rigid_body, dt, true);
-    right_wing.apply_forces(rigid_body, dt, false);
-    elevator.apply_forces(rigid_body, dt, false);
-    rudder.apply_forces(rigid_body, dt, false);
-    left_aileron.apply_forces(rigid_body, dt, false);
-    right_aileron.apply_forces(rigid_body, dt, false);
-#endif
-
-    engine.apply_forces(rigid_body);
-
-    float lift = rigid_body.get_force().y;
-
-    float cl, cd;
-    right_wing.curve.sample(-0.5f, &cl, &cd); 
-    //std::cout << cl << ", " << cd << std::endl;
-
-
-    
-    float gravity = phi::g * rigid_body.mass;
-    rigid_body.add_force(phi::DOWN * gravity);
-
-    if ((log_timer += dt) > log_intervall)
+    void update(float dt)
     {
 #if 1
-      log_timer = 0;
-      std::cout << "########## airplane ##############" << std::endl;
-      //std::cout << "height: " << rigid_body.position.y << std::endl;
-      //std::cout << "vertical speed: " << kilometer_per_hour(rigid_body.velocity.y) << std::endl;
-      // std::cout << "torque: " << rigid_body.get_torque() << std::endl;
-      // std::cout << "force: " << rigid_body.get_force() << std::endl;
-      printf("speed: %.2f\n", glm::length(rigid_body.velocity));
-      printf("throttle: %.2f\n", engine.throttle);
-      printf("wing_area: lw = %.2f, rw = %.2f, el = %.2f\n", left_wing.area, right_wing.area, elevator.area);
-      printf("lift: lw = %.2f, rw = %.2f, el = %.2f\n", left_wing.lift, right_wing.lift, elevator.lift);
-      printf("drag: lw = %.2f, rw = %.2f, el = %.2f\n", left_wing.drag, right_wing.drag, elevator.drag);
-      printf("aoa:  lw = %.2f, rw = %.2f, el = %.2f\n", left_wing.angle_of_attack, right_wing.angle_of_attack, elevator.angle_of_attack);
-      printf("cl:   lw = %.2f, rw = %.2f, el = %.2f\n", left_wing.lift_coefficient, right_wing.lift_coefficient, elevator.lift_coefficient);
-      printf("cd:   lw = %.2f, rw = %.2f, el = %.2f\n", left_wing.drag_coefficient, right_wing.drag_coefficient, elevator.drag_coefficient);
-      std::cout << "angular_velocity = " << rigid_body.angular_velocity << std::endl;
-      std::cout << "##################################" << std::endl;
+        left_wing.apply_forces(rigid_body, dt, true);
+        right_wing.apply_forces(rigid_body, dt, false);
+        elevator.apply_forces(rigid_body, dt, false);
+        rudder.apply_forces(rigid_body, dt, false);
+        left_aileron.apply_forces(rigid_body, dt, false);
+        right_aileron.apply_forces(rigid_body, dt, false);
 #endif
-    }
 
-    /*
-    float max_speed = 170.0f;
-    if (glm::length(rigid_body.velocity) > max_speed)
-    {
-        rigid_body.velocity = glm::normalize(rigid_body.velocity) * max_speed;
-    }
-    */
+        engine.apply_forces(rigid_body);
 
-    rigid_body.update(dt);
-  }
+        float lift = rigid_body.get_force().y;
+
+        float cl, cd;
+        right_wing.curve.sample(-0.5f, &cl, &cd);
+        // std::cout << cl << ", " << cd << std::endl;
+
+        float gravity = phi::g * rigid_body.mass;
+        rigid_body.add_force(phi::DOWN * gravity);
+
+        if ((log_timer += dt) > log_intervall)
+        {
+#if 1
+            log_timer = 0;
+            std::cout << "########## airplane ##############" << std::endl;
+            // std::cout << "height: " << rigid_body.position.y << std::endl;
+            // std::cout << "vertical speed: " << kilometer_per_hour(rigid_body.velocity.y) << std::endl;
+            //  std::cout << "torque: " << rigid_body.get_torque() << std::endl;
+            //  std::cout << "force: " << rigid_body.get_force() << std::endl;
+            printf("speed: %.2f\n", glm::length(rigid_body.velocity));
+            printf("throttle: %.2f\n", engine.throttle);
+            printf("wing_area: lw = %.2f, rw = %.2f, el = %.2f\n", left_wing.area, right_wing.area, elevator.area);
+            printf("lift: lw = %.2f, rw = %.2f, el = %.2f\n", left_wing.lift, right_wing.lift, elevator.lift);
+            printf("drag: lw = %.2f, rw = %.2f, el = %.2f\n", left_wing.drag, right_wing.drag, elevator.drag);
+            printf("aoa:  lw = %.2f, rw = %.2f, el = %.2f\n", left_wing.angle_of_attack, right_wing.angle_of_attack, elevator.angle_of_attack);
+            printf("cl:   lw = %.2f, rw = %.2f, el = %.2f\n", left_wing.lift_coefficient, right_wing.lift_coefficient, elevator.lift_coefficient);
+            printf("cd:   lw = %.2f, rw = %.2f, el = %.2f\n", left_wing.drag_coefficient, right_wing.drag_coefficient, elevator.drag_coefficient);
+            std::cout << "angular_velocity = " << rigid_body.angular_velocity << std::endl;
+            std::cout << "##################################" << std::endl;
+#endif
+        }
+
+        /*
+        float max_speed = 170.0f;
+        if (glm::length(rigid_body.velocity) > max_speed)
+        {
+            rigid_body.velocity = glm::normalize(rigid_body.velocity) * max_speed;
+        }
+        */
+
+        rigid_body.update(dt);
+    }
 };

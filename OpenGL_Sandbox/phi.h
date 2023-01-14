@@ -89,6 +89,11 @@ namespace phi {
             m_torque    += glm::cross(point, force);
         }
 
+        inline glm::vec3 transform_direction(const glm::vec3& direction)
+        {
+            return rotation * direction;
+        }
+
         // transform from direction in world space to local space 
         inline glm::vec3 inverse_transform_direction(const glm::vec3& direction)
         {

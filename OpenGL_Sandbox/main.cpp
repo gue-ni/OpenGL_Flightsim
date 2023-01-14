@@ -248,20 +248,17 @@ int main(void)
     gfx::OrbitController controller(15.0f);
 
     SDL_Event event;
-    bool quit = false;
+    bool quit = false, paused = false;
     uint64_t last = 0, now = SDL_GetPerformanceCounter();
     gfx::Seconds dt, timer = 0, log_timer = 0;
 
     std::cout << glGetString(GL_VERSION) << std::endl;
 
-    //glm::vec3 normal = Wing::calculate_wing_normal(1.0f);
-    //std::cout << "wing_normal = " << normal << std::endl;
-
-
     float elevator_incidence = 0;
     float aileron_incidence = 0;
-
-
+    const float elevator_torque = 15000.0f, aileron_torque = 10000.0f;
+	const float max_aileron_deflection = 1.0f;
+	const float max_elevator_deflection = 1.0f;
     
     while (!quit)
     {
@@ -273,7 +270,7 @@ int main(void)
 
         if ((timer += dt) >= 1.0f)
         {
-            printf("dt = %f, fps = %f\n", dt, 1 / dt);
+            //printf("dt = %f, fps = %f\n", dt, 1 / dt);
             timer = 0.0f;
         }
 
@@ -293,7 +290,11 @@ int main(void)
                 switch (event.key.keysym.sym) {
                 case SDLK_ESCAPE: {
                     quit = true;
+                    break;
                 }
+                case SDLK_p:
+                    paused = !paused;
+                    break;
                 default:
                     break;
                 }
@@ -302,75 +303,73 @@ int main(void)
             }
         }
             
-        aircraft.left_wing.lift_multiplier = 1.0f;
-        aircraft.right_wing.lift_multiplier = 1.0f;
-        aircraft.elevator.lift_multiplier = 1.0f;
 
         const uint8_t* key_states = SDL_GetKeyboardState(NULL);
 
-        float elevator_torque = 15000.0f, aileron_torque = 10000.0f;
-
-        const float max_aileron_deflection = 10.0f;
-        const float max_elevator_deflection = 5.0f;
         aileron_incidence = 0, elevator_incidence = 0;
 
-
+#define CHEATING 0
 
         if (key_states[SDL_SCANCODE_A])
         {
+#if CHEATING
             aircraft.rigid_body.add_relative_torque(phi::BACKWARD * aileron_torque);
-            //aircraft.right_wing.lift_multiplier = 1.5;
-            //aileron_incidence += 0.01;
+#else
             aileron_incidence = -max_aileron_deflection;
+#endif
         }
 
         if (key_states[SDL_SCANCODE_D])
         {
+#if CHEATING
             aircraft.rigid_body.add_relative_torque(phi::FORWARD * aileron_torque);
-            //aircraft.left_wing.lift_multiplier = 1.5;
+#else
             aileron_incidence = +max_aileron_deflection;
+#endif
         }
 
         if (key_states[SDL_SCANCODE_W])
         {
-            elevator_incidence = max_elevator_deflection;
+#if CHEATING
             aircraft.rigid_body.add_relative_torque(phi::LEFT * elevator_torque);
+#else
+            elevator_incidence = +max_elevator_deflection;
+#endif
         }
 
         if (key_states[SDL_SCANCODE_S])
         {
-            elevator_incidence = -max_elevator_deflection;
+#if CHEATING
             aircraft.rigid_body.add_relative_torque(phi::RIGHT * elevator_torque);
+#else
+            elevator_incidence = -max_elevator_deflection;
+#endif
         }
 
         if (key_states[SDL_SCANCODE_J])
         {
-            aircraft.engine.throttle -= 0.1f;
+            aircraft.engine.throttle -= 0.01f;
             aircraft.engine.throttle = clamp(aircraft.engine.throttle, 0.0f, 1.0f);
         }
 
         if (key_states[SDL_SCANCODE_K])
         {
-            aircraft.engine.throttle += 0.1f;
+            aircraft.engine.throttle += 0.01f;
             aircraft.engine.throttle = clamp(aircraft.engine.throttle, 0.0f, 1.0f);
 
         }
         
-        aircraft.elevator.normal = Wing::calculate_wing_normal(elevator_incidence);
-        aircraft.left_aileron.normal = Wing::calculate_wing_normal(aileron_incidence);
-        aircraft.right_aileron.normal = Wing::calculate_wing_normal(-aileron_incidence);
-        aircraft.update(dt);
+        aircraft.elevator.normal = Wing::calculate_normal(elevator_incidence);
+        aircraft.left_aileron.normal = Wing::calculate_normal(aileron_incidence);
+        aircraft.right_aileron.normal = Wing::calculate_normal(-aileron_incidence);
 
-#if 0
-        float factor = 0.0001f;
-        std::cout << aircraft.left_wing.lift << ", " << aircraft.right_wing.lift << std::endl;
-        left_wing.set_scale(glm::vec3(1, aircraft.left_wing.lift * factor, 2.0f));
-        right_wing.set_scale(glm::vec3(1, aircraft.right_wing.lift * factor, 2.0f));
-#endif
-
-        solve_constraints(aircraft.rigid_body);
-        apply_to_object3d(aircraft.rigid_body, transform);
-
+        if (!paused)
+        {
+			aircraft.update(dt);
+			solve_constraints(aircraft.rigid_body);
+			apply_to_object3d(aircraft.rigid_body, transform);
+        }
+       
         //controller.update(camera, aircraft.rigid_body.position, dt);
         controller.update(camera, camera.parent->get_position(), dt);
 
