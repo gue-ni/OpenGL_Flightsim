@@ -547,7 +547,8 @@ struct Aircraft
     float log_timer = 1.0f;
 
     Aircraft(const glm::vec3 &position, const glm::vec3 &velocity)
-        : rigid_body(16000.0f), // mass in kg
+        : rigid_body(16000.0f, phi::RigidBody::cube_inertia_tensor(glm::vec3(3.1f, 2.1f, 0.1f), 16000.0f)), // mass in kg
+        //: rigid_body(16000.0f), // mass in kg
           left_wing("left_wing", glm::vec3(-0.5f, 0.0, -2.73f), 6.96f * 3.5f, Curve(NACA_2412), phi::UP),
           left_aileron("left_aileron", glm::vec3(0.0f, 0.0f, -1.0f), 3.8f * 1.26f, Curve(NACA_0012), phi::UP),
           right_wing("right_wing", glm::vec3(-0.5f, 0.0, +2.73f), 6.96f * 3.5f, Curve(NACA_2412), phi::UP),
