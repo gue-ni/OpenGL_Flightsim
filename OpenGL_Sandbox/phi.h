@@ -18,6 +18,10 @@ namespace phi {
     constexpr glm::vec3 FORWARD(1.0f, 0.0f, 0.0f);
     constexpr glm::vec3 BACKWARD(-1.0f, 0.0f, 0.0f);
 
+    namespace utils {
+
+    };
+
     class RigidBody {
     private:
         // force vector in world space
@@ -27,7 +31,7 @@ namespace phi {
         glm::vec3 m_torque{};
 
     public:
-        float mass;
+        float mass; // kg
 
         bool apply_gravity = true;
 
@@ -38,12 +42,12 @@ namespace phi {
         glm::quat rotation = glm::quat(glm::vec3(0.0f));
 
         // velocity in world space
-        glm::vec3 velocity          = glm::vec3(0.0f);
+        glm::vec3 velocity = glm::vec3(0.0f);
 
-        glm::vec3 local_velocity          = glm::vec3(0.0f);
+        glm::vec3 local_velocity = glm::vec3(0.0f);
 
         // angular velocity in object space
-        glm::vec3 angular_velocity  = glm::vec3(0.0f);
+        glm::vec3 angular_velocity = glm::vec3(0.0f);
 
         glm::mat3 inertia{};
         glm::mat3 inverse_inertia{};
@@ -82,19 +86,20 @@ namespace phi {
             };
         }
 
-        // TODO: fix
+        // body coordinates
         inline void add_force_at_point(const glm::vec3& force, const glm::vec3& point)
         {
             m_force     += force;
             m_torque    += glm::cross(point, force);
         }
 
+        // transform direction from local space to world space 
         inline glm::vec3 transform_direction(const glm::vec3& direction)
         {
             return rotation * direction;
         }
 
-        // transform from direction in world space to local space 
+        // transform direction from world space to local space 
         inline glm::vec3 inverse_transform_direction(const glm::vec3& direction)
         {
             return glm::inverse(rotation) * direction;
@@ -136,17 +141,15 @@ namespace phi {
 
         inline glm::vec3 get_point_velocity(const glm::vec3& point)
         {
-            return inverse_transform_direction(velocity) + glm::cross(angular_velocity, point);
+            return velocity + glm::cross(angular_velocity, point);
         }
 
         void update(float dt)
         {
-            /*
             if (apply_gravity)
             {
                 m_force.y -= g * mass;
             }
-            */
 
             glm::vec3 acceleration = m_force / mass;
             velocity += acceleration * dt;

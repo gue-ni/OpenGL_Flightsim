@@ -69,6 +69,7 @@ int main(void)
 
     glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_MULTISAMPLE);
 
     // SDL options
     SDL_ShowCursor(SDL_FALSE);

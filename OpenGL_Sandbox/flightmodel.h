@@ -401,23 +401,18 @@ struct Wing
     glm::vec3 normal;
     const Curve curve;
 
-    MinMax deflection;
-
-    float incidence = 0;
-
     float lift_multiplier = 1.0f;
     float drag_multiplier = 1.0f;
-    float lift_coefficient = 0.0f, drag_coefficient = .0f;
-
-    float lift = 0, drag = 0, angle_of_attack = 0;
+    float lift_coefficient = 0.0f;
+    float drag_coefficient = 0.0f;
+    float lift = 0.0f;
+    float drag = 0.0f; 
+    float angle_of_attack = 0.0f;
+    float incidence = 0.0f;
 
     float log_timer = 1.0f;
 
-    Wing(const std::string &wing_name,
-         const glm::vec3 &cg_offset,
-         float wing_area,
-         const Curve &aerodynamics,
-         const glm::vec3 &wing_normal)
+    Wing(const std::string &wing_name, const glm::vec3 &cg_offset, float wing_area, const Curve &aerodynamics, const glm::vec3 &wing_normal)
         : name(wing_name),
           center_of_gravity(cg_offset),
           area(wing_area),
@@ -426,8 +421,7 @@ struct Wing
     {
     }
 
-    Wing(const std::string &wing_name,
-         const glm::vec3 &cg_offset, float wing_area, const Curve &aerodynamics, float wing_incidence)
+    Wing(const std::string &wing_name, const glm::vec3 &cg_offset, float wing_area, const Curve &aerodynamics, float wing_incidence)
         : name(wing_name),
           center_of_gravity(cg_offset),
           area(wing_area),
@@ -449,8 +443,8 @@ struct Wing
     {
         // pretty sure something is wrong here
         auto velocity = rigid_body.inverse_transform_direction(rigid_body.velocity);
-        auto local_velocity = rigid_body.inverse_transform_direction(rigid_body.velocity) 
-            + glm::cross(rigid_body.angular_velocity, center_of_gravity);
+
+        auto local_velocity = rigid_body.inverse_transform_direction(rigid_body.velocity) + glm::cross(rigid_body.angular_velocity, center_of_gravity);
 
         auto local_speed = glm::length(local_velocity);
 
@@ -461,22 +455,23 @@ struct Wing
 
         float speed2 = local_speed * local_speed;
 
+        // use local_velocity or velocity here?
+        // using velocity causes ozzilations
         auto drag_direction = glm::normalize(-velocity);
         auto lift_direction = glm::normalize(glm::cross(glm::cross(drag_direction, normal), drag_direction));
-        // auto lift_direction = glm::normalize(glm::cross(local_velocity, phi::RIGHT));
+        //auto lift_direction = glm::normalize(glm::cross(phi::RIGHT, local_velocity));
         // auto lift_direction = glm::normalize(glm::cross(phi::RIGHT, velocity));
 
         angle_of_attack = glm::degrees(asin(glm::dot(drag_direction, normal)));
 
         curve.sample(angle_of_attack, &lift_coefficient, &drag_coefficient);
 
-        float tmp2 = speed2 * area;
-        lift = lift_coefficient * lift_multiplier * tmp2;
-        drag = drag_coefficient * drag_multiplier * tmp2;
+        float tmp = speed2 * area;
+        lift = lift_coefficient * lift_multiplier * tmp;
+        drag = drag_coefficient * drag_multiplier * tmp;
 
         // both in body coordinates
         auto force = (lift * lift_direction) + (drag * drag_direction);
-        // auto force  = (drag * drag_direction);
         auto torque = glm::cross(center_of_gravity, force);
 
         rigid_body.add_relative_force(force);
@@ -489,6 +484,7 @@ struct Wing
             std::cout << "######### [ " << name << " ] #######" << std::endl;
             std::cout << "lv = " << local_velocity << std::endl;
             std::cout << "av = " << rigid_body.angular_velocity << std::endl;
+            std::cout << "t = " << torque << ", f = " << force << std::endl;
             // std::cout << "aoa = " << angle_of_attack << std::endl;
             // std::cout << "lift = " << lift << std::endl;
             // std::cout << "lift_multiplier = " << lift_multiplier << ",  lift = " << lift_coefficient * lift_multiplier * tmp2 << std::endl;
@@ -572,7 +568,7 @@ struct Aircraft
     {
 #if 1
         left_wing.apply_forces(rigid_body, dt, true);
-        right_wing.apply_forces(rigid_body, dt, false);
+        right_wing.apply_forces(rigid_body, dt, true);
         elevator.apply_forces(rigid_body, dt, false);
         rudder.apply_forces(rigid_body, dt, false);
         left_aileron.apply_forces(rigid_body, dt, false);
@@ -587,8 +583,6 @@ struct Aircraft
         right_wing.curve.sample(-0.5f, &cl, &cd);
         // std::cout << cl << ", " << cd << std::endl;
 
-        float gravity = phi::g * rigid_body.mass;
-        rigid_body.add_force(phi::DOWN * gravity);
 
         if ((log_timer += dt) > log_intervall)
         {
