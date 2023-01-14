@@ -310,32 +310,37 @@ int main(void)
 
         float elevator_torque = 15000.0f, aileron_torque = 10000.0f;
 
+        const float max_aileron_deflection = 10.0f;
+        const float max_elevator_deflection = 5.0f;
+        aileron_incidence = 0, elevator_incidence = 0;
+
+
+
         if (key_states[SDL_SCANCODE_A])
         {
-            //aircraft.rigid_body.add_relative_torque(phi::BACKWARD * aileron_torque);
+            aircraft.rigid_body.add_relative_torque(phi::BACKWARD * aileron_torque);
             //aircraft.right_wing.lift_multiplier = 1.5;
-            aileron_incidence += 0.01;
+            //aileron_incidence += 0.01;
+            aileron_incidence = -max_aileron_deflection;
         }
 
         if (key_states[SDL_SCANCODE_D])
         {
-            //aircraft.rigid_body.add_relative_torque(phi::FORWARD * aileron_torque);
+            aircraft.rigid_body.add_relative_torque(phi::FORWARD * aileron_torque);
             //aircraft.left_wing.lift_multiplier = 1.5;
-            aileron_incidence -= 0.01;
+            aileron_incidence = +max_aileron_deflection;
         }
 
         if (key_states[SDL_SCANCODE_W])
         {
-            elevator_incidence += 0.01;
-            //aircraft.rigid_body.add_relative_torque(phi::LEFT * elevator_torque);
-            //aircraft.elevator.lift_multiplier = 1.0f;
+            elevator_incidence = max_elevator_deflection;
+            aircraft.rigid_body.add_relative_torque(phi::LEFT * elevator_torque);
         }
 
         if (key_states[SDL_SCANCODE_S])
         {
-            elevator_incidence -= 0.01;
-            //aircraft.rigid_body.add_relative_torque(phi::RIGHT * elevator_torque);
-            //aircraft.elevator.lift_multiplier = 2.0f;
+            elevator_incidence = -max_elevator_deflection;
+            aircraft.rigid_body.add_relative_torque(phi::RIGHT * elevator_torque);
         }
 
         if (key_states[SDL_SCANCODE_J])

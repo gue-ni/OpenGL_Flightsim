@@ -17,6 +17,10 @@ struct ValueTuple
   float cd;
 };
 
+struct MinMax {
+    float min, max;
+};
+
 // NACA 0012 AIRFOILS (n0012-il) Xfoil prediction polar at RE=1,000,000 Ncrit=9
 std::vector<ValueTuple> NACA_0012 = {
     {-18.500f, -1.2258f, 0.10236f},
@@ -396,6 +400,8 @@ struct Wing
   glm::vec3 normal;
   const Curve curve;
   
+  MinMax deflection;
+
   float incidence = 0;
 
   float lift_multiplier = 1.0f;
@@ -440,6 +446,7 @@ struct Wing
   
   void apply_forces(phi::RigidBody &rigid_body, float dt, bool log)
   {
+      // pretty sure something is wrong here
     auto local_velocity = rigid_body.inverse_transform_direction(rigid_body.velocity)
         + glm::cross(rigid_body.angular_velocity, center_of_gravity);
 
@@ -456,13 +463,10 @@ struct Wing
     auto lift_direction = glm::normalize(
         glm::cross(glm::cross(drag_direction, normal), drag_direction));
 
-    // not sure if this works
     angle_of_attack = glm::degrees(asin(glm::dot(drag_direction, normal)));
 
     curve.sample(angle_of_attack, &lift_coefficient, &drag_coefficient);
 
-    //lift_coefficient *= sign(angle_of_attack);
-    
     float tmp2 = speed2 * area;
     lift = lift_coefficient * lift_multiplier * tmp2;
     drag = drag_coefficient * drag_multiplier * tmp2;
@@ -541,8 +545,8 @@ struct Aircraft
 
   Aircraft(const glm::vec3 &position, const glm::vec3 &velocity)
       : rigid_body(16000.0f), // mass in kg
-        left_wing("left_wing", glm::vec3(-0.5f, 0.0, -2.73f), 6.96f * 3.5f, Curve(NACA_0012), phi::UP),
-        right_wing("right_wing", glm::vec3(-0.5f, 0.0, +2.73f), 6.96f * 3.5f, Curve(NACA_0012), phi::UP),
+        left_wing("left_wing", glm::vec3(-0.5f, 0.0, -2.73f), 6.96f * 3.5f, Curve(NACA_2412), phi::UP),
+        right_wing("right_wing", glm::vec3(-0.5f, 0.0, +2.73f), 6.96f * 3.5f, Curve(NACA_2412), phi::UP),
 
         elevator("elevator", glm::vec3(-6.64f, -0.12f, 0.0f), 6.54f * 2.7f, Curve(NACA_0012), phi::UP),
 
@@ -557,17 +561,14 @@ struct Aircraft
 
   void update(float dt)
   {
-#if 1
+#if 0
     left_wing.apply_forces(rigid_body, dt, true);
     right_wing.apply_forces(rigid_body, dt, false);
-#endif
-#if 1
     elevator.apply_forces(rigid_body, dt, false);
     rudder.apply_forces(rigid_body, dt, false);
-#endif
-
     left_aileron.apply_forces(rigid_body, dt, false);
     right_aileron.apply_forces(rigid_body, dt, false);
+#endif
 
     engine.apply_forces(rigid_body);
 
