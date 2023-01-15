@@ -54,7 +54,7 @@
     <CopyFileToFolders Include="shaders\phong.frag" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="assets\container.jpg">
+    <Image Include="assets\textures\container.jpg">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

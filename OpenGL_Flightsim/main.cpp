@@ -40,8 +40,9 @@ struct Joystick {
     float roll{ 0.0f };
     float pitch{ 0.0f };
     float yaw{ 0.0f };
-    float throttle{ 0.0f };
+    float throttle{ 1.0f };
     int num_axis{0};
+    int num_hats{0};
     int num_buttons{0};
 
     inline static float scale(int16_t value)
@@ -60,7 +61,7 @@ int main(void)
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 
     SDL_Window* window = SDL_CreateWindow(
-        "OpenGL/SDL Sandbox", 
+        "OpenGL/SDL Flightsim", 
         SDL_WINDOWPOS_CENTERED, 
         SDL_WINDOWPOS_CENTERED, 
         SCREEN_WIDTH, 
@@ -83,10 +84,10 @@ int main(void)
     SDL_CaptureMouse(SDL_TRUE);
     SDL_SetRelativeMouseMode(SDL_TRUE);
 
-    int num_joysticks;
     Joystick joystick;
-
     SDL_Joystick* sdl_joystick = nullptr;
+
+    int num_joysticks;
     if ((num_joysticks = SDL_NumJoysticks()) < 0)
     {
         std::cout << "no joystick found\n";
@@ -99,6 +100,7 @@ int main(void)
         sdl_joystick = SDL_JoystickOpen(0);
         joystick.num_buttons = SDL_JoystickNumButtons(sdl_joystick);
         joystick.num_axis = SDL_JoystickNumAxes(sdl_joystick);
+        joystick.num_hats = SDL_JoystickNumHats(sdl_joystick);
 
         printf("found %d buttons, %d axis\n", joystick.num_buttons, joystick.num_axis);
     }
@@ -159,8 +161,8 @@ int main(void)
     std::vector<float> cessna_vertices;
     std::vector<float> cessna_prop_vertices;
 
-    gfx::load_obj("assets/cube.obj", cube_vertices);
-    gfx::load_obj("assets/icosphere.obj", ico_vertices);
+    gfx::load_obj("assets/models/cube.obj", cube_vertices);
+    gfx::load_obj("assets/models/icosphere.obj", ico_vertices);
     gfx::load_obj("assets/Cessna_172/Cessna_172.obj", cessna_vertices);
     gfx::load_obj("assets/Cessna_172/Cessna_172_prop.obj", cessna_prop_vertices);
 
@@ -169,8 +171,8 @@ int main(void)
     auto blue   = make_shared<gfx::Phong>(gfx::rgb(0, 0, 255));
     auto grey    = make_shared<gfx::Phong>(glm::vec3(0.5f));
     auto green    = make_shared<gfx::Phong>(gfx::rgb(0, 255, 0));
-    auto test_texture = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/uv-test.png"));
-    auto container = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/container.jpg"));
+    auto test_texture = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/textures/uv-test.png"));
+    auto container = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/textures/container.jpg"));
     auto cube_geo   = std::make_shared<gfx::Geometry>(cube_vertices_2, gfx::Geometry::POS_NORM_UV);
     auto ico_geo    = std::make_shared<gfx::Geometry>(ico_vertices, gfx::Geometry::POS_NORM_UV);
     auto triangle    = std::make_shared<gfx::Geometry>(triangle_vertices, gfx::Geometry::POS_NORM_UV);
@@ -246,7 +248,7 @@ int main(void)
         last = now;
         now = SDL_GetPerformanceCounter();
         dt = static_cast<gfx::Seconds>((now - last) / static_cast<gfx::Seconds>(SDL_GetPerformanceFrequency()));
-        dt = phi::utils::min(dt, 0.02);
+        dt = phi::utils::min(dt, 0.02f);
 
         if ((timer += dt) >= 1.0f)
         {

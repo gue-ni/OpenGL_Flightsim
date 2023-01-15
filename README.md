@@ -1,4 +1,4 @@
-﻿# OpenGL Sandbox
+﻿# OpenGL Flightsim
 
 ## Setup OpenGL with GLFW
 
