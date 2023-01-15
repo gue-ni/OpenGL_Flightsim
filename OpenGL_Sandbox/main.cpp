@@ -196,7 +196,7 @@ int main(void)
     scene.add(&skybox);
 #endif
 #if 1    
-    gfx::Mesh ground(gfx::make_plane_geometry(50,50), test_texture);
+    gfx::Mesh ground(gfx::make_plane_geometry(100,100), test_texture);
     ground.set_position(glm::vec3(0, -1, 0));
     ground.set_scale(glm::vec3(10.0f));
     ground.receive_shadow = true;
@@ -209,8 +209,8 @@ int main(void)
     scene.add(&sun);
 #endif
   
-    auto position = glm::vec3(0.0f, 0.0f, 12.0f);
-    auto velocity = glm::vec3(meter_per_second(150.0f), 0.0f, 0.0f);
+    auto position = glm::vec3(100.0f, 0.0f, 100.0f);
+    auto velocity = glm::vec3(phi::utils::meter_per_second(150.0f), 0.0f, 0.0f);
 
     gfx::Object3D transform;
     transform.set_position(position);
@@ -244,6 +244,8 @@ int main(void)
     const float elevator_torque = 15000.0f, aileron_torque = 10000.0f, rudder_torque = 5000.0f;
 	const float max_aileron_deflection = 1.0f;
 	const float max_elevator_deflection = 1.0f;
+
+    phi::RigidBody rb({.mass = 5.0f});
     
     while (!quit)
     {
@@ -377,13 +379,14 @@ int main(void)
         aircraft.rigid_body.add_relative_torque(phi::X_AXIS * aileron_torque * joystick.roll);
         //aircraft.rigid_body.add_relative_torque(phi::Y_AXIS * rudder_torque * joystick.yaw);
         aircraft.rigid_body.add_relative_torque(phi::Z_AXIS * elevator_torque * joystick.pitch);
+
         aircraft.engine.throttle = joystick.throttle;
 
-        printf("throttle = %f\n", joystick.throttle);
+        printf("throttle = %.2f\n", joystick.throttle);
         
-        aircraft.elevator.normal = Wing::calculate_normal(elevator_incidence);
-        aircraft.left_aileron.normal = Wing::calculate_normal(aileron_incidence);
-        aircraft.right_aileron.normal = Wing::calculate_normal(-aileron_incidence);
+        //aircraft.elevator.normal = Wing::calculate_normal(elevator_incidence);
+        //aircraft.left_aileron.normal = Wing::calculate_normal(aileron_incidence);
+        //aircraft.right_aileron.normal = Wing::calculate_normal(-aileron_incidence);
 
         if (!paused)
         {

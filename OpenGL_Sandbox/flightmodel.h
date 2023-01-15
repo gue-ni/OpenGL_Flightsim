@@ -465,25 +465,6 @@ struct Wing
     }
 };
 
-struct ControlSurface : public Wing
-{
-};
-
-inline float knots(float meter_per_second)
-{
-    return 0.0f;
-}
-
-inline float meter_per_second(float kilometer_per_hour)
-{
-    return kilometer_per_hour / 3.6f;
-}
-
-inline float kilometer_per_hour(float meters_per_second)
-{
-    return meters_per_second * 3.6f;
-}
-
 struct Engine
 {
     float thrust = 200000.0f; // newtons
@@ -500,28 +481,30 @@ struct Aircraft
 {
     phi::RigidBody rigid_body;
 
-    //std::vector<Wing> elements;
-
+    std::vector<Wing> elements;
+#if 0
     Wing left_wing;
     Wing right_wing;
     Wing right_aileron;
     Wing left_aileron;
     Wing rudder;
     Wing elevator;
+#endif
 
     Engine engine;
 
     float log_timer = 1.0f;
 
     Aircraft(const glm::vec3 &position, const glm::vec3 &velocity)
-        : rigid_body(16000.0f, phi::RigidBody::cube_inertia_tensor(glm::vec3(3.1f, 2.1f, 0.1f), 16000.0f)), // mass in kg
-        //: rigid_body(16000.0f), // mass in kg
-          left_wing("left_wing", glm::vec3(-0.5f, 0.0, -2.73f), 6.96f * 3.5f, Curve(NACA_2412), phi::UP),
-          left_aileron("left_aileron", glm::vec3(0.0f, 0.0f, -1.0f), 3.8f * 1.26f, Curve(NACA_0012), phi::UP),
-          right_wing("right_wing", glm::vec3(-0.5f, 0.0, +2.73f), 6.96f * 3.5f, Curve(NACA_2412), phi::UP),
-          right_aileron("right_aileron", glm::vec3(0.0f, 0.0f, 1.0f), 3.8f * 1.26f, Curve(NACA_0012), phi::UP),
-          elevator("elevator", glm::vec3(-6.64f, -0.12f, 0.0f), 6.54f * 2.7f, Curve(NACA_0012), phi::UP),
-          rudder("rudder", glm::vec3(-6.64f, 0.0f, 0.0f), 5.31f * 3.1f, Curve(NACA_0012), phi::RIGHT)
+        : rigid_body({ .mass = 16000.0f, .inertia = phi::RigidBody::cube_inertia_tensor(glm::vec3(3.1f, 2.1f, 0.1f), 16000.0f)}), 
+        elements({
+          Wing("left_wing", glm::vec3(-0.5f, 0.0, -2.73f), 6.96f * 3.5f, Curve(NACA_2412), phi::UP),
+          Wing("left_aileron", glm::vec3(0.0f, 0.0f, -1.0f), 3.8f * 1.26f, Curve(NACA_0012), phi::UP),
+          Wing("right_wing", glm::vec3(-0.5f, 0.0, +2.73f), 6.96f * 3.5f, Curve(NACA_2412), phi::UP),
+          Wing("right_aileron", glm::vec3(0.0f, 0.0f, 1.0f), 3.8f * 1.26f, Curve(NACA_0012), phi::UP),
+          Wing("elevator", glm::vec3(-6.64f, -0.12f, 0.0f), 6.54f * 2.7f, Curve(NACA_0012), phi::UP),
+          Wing("rudder", glm::vec3(-6.64f, 0.0f, 0.0f), 5.31f * 3.1f, Curve(NACA_0012), phi::RIGHT)
+        })
     {
         rigid_body.position = position;
         rigid_body.velocity = velocity;
@@ -529,21 +512,21 @@ struct Aircraft
 
     void update(float dt)
     {
-#if 1
+#if 0
         left_wing.apply_forces(rigid_body, dt, true);
         right_wing.apply_forces(rigid_body, dt, true);
         elevator.apply_forces(rigid_body, dt, false);
         rudder.apply_forces(rigid_body, dt, false);
         left_aileron.apply_forces(rigid_body, dt, false);
         right_aileron.apply_forces(rigid_body, dt, false);
-        engine.apply_forces(rigid_body);
 #endif
 
+        for (Wing wing : elements)
+        {
+            wing.apply_forces(rigid_body, dt, false);
+        }
 
-        //float cl, cd;
-        //right_wing.curve.sample(-0.5f, &cl, &cd);
-        // std::cout << cl << ", " << cd << std::endl;
-
+        engine.apply_forces(rigid_body);
 
         if ((log_timer += dt) > log_intervall)
         {

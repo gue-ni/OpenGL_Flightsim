@@ -52,13 +52,30 @@ namespace phi {
 		{
 			return min(max(v, lo), hi);
 		}
+
+		inline float knots(float meter_per_second)
+		{
+			return meter_per_second * 1.94384f;
+		}
+
+		inline float meter_per_second(float kilometer_per_hour)
+		{
+			return kilometer_per_hour / 3.6f;
+		}
+
+		inline float kilometer_per_hour(float meter_per_second)
+		{
+			return meter_per_second * 3.6f;
+		}
     };
 
     struct RigidBodyParams {
         float mass = 10.0f;
         glm::mat3 inertia;
+        bool apply_gravity = true;
         glm::vec3 position = glm::vec3(0.0f);
         glm::vec3 velocity = glm::vec3(0.0f);
+        glm::vec3 angular_velocity = glm::vec3(0.0f);
         glm::quat rotation = glm::quat(glm::vec3(0.0f));
     };
 
@@ -91,6 +108,17 @@ namespace phi {
         // inertia tensor
         glm::mat3 inertia{};
         glm::mat3 inverse_inertia{};
+
+        RigidBody(const RigidBodyParams& params)
+            : mass(params.mass),
+            position(params.position),
+            velocity(params.velocity),
+            inertia(params.inertia),
+            rotation(params.rotation),
+            apply_gravity(params.apply_gravity),
+            angular_velocity(params.angular_velocity),
+            inverse_inertia(glm::inverse(params.inertia))
+        {}
 
         RigidBody(float body_mass) 
             : mass(body_mass), 
