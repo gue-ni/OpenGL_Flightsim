@@ -420,8 +420,6 @@ struct Wing
         if (speed <= 0.0f)
             return;
 
-        assert(speed > 0.0f);
-
         const auto drag_direction = glm::normalize(-local_velocity);
         const auto lift_direction = glm::normalize(glm::cross(glm::cross(drag_direction, normal), drag_direction));
 

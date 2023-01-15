@@ -26,7 +26,6 @@
     <None Include="shaders\basic.frag" />
     <None Include="shaders\basic.vert" />
     <None Include="shaders\phong.vert" />
-    <None Include="shaders\phong.frag" />
     <None Include="shaders\depth.vert" />
     <None Include="shaders\depth.frag" />
     <None Include="shaders\screen.frag" />
@@ -50,5 +49,13 @@
     <ClInclude Include="flightmodel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="shaders\phong.frag" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="assets\container.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

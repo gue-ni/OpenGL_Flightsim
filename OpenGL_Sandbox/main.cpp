@@ -19,15 +19,8 @@ using std::make_shared;
 using std::cout;
 using std::endl;
 
-constexpr auto SCREEN_WIDTH = 800;
-constexpr auto SCREEN_HEIGHT = 600;
-
-/*
-std::ostream& operator<<(std::ostream& os, const glm::vec3& v)
-{
-	return os << v.x << ", " << v.y << ", " << v.z;
-}
-*/
+constexpr int SCREEN_WIDTH = 800;
+constexpr int SCREEN_HEIGHT = 600;
 
 void apply_to_object3d(const phi::RigidBody& rigid_body, gfx::Object3D& object3d)
 {
@@ -382,7 +375,7 @@ int main(void)
 
         aircraft.engine.throttle = joystick.throttle;
 
-        printf("throttle = %.2f\n", joystick.throttle);
+        //printf("throttle = %.2f\n", joystick.throttle);
         
         //aircraft.elevator.normal = Wing::calculate_normal(elevator_incidence);
         //aircraft.left_aileron.normal = Wing::calculate_normal(aileron_incidence);

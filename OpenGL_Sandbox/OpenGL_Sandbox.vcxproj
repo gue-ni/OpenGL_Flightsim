@@ -113,6 +113,10 @@
       <AdditionalLibraryDirectories>C:\Users\jakob\Documents\libraries\glew-2.1.0\lib\Release\x64;C:\Users\jakob\Documents\libraries\SDL2\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>SDL2.lib;SDL2main.lib;glew32.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /y /i /s $(ProjectDir)assets  $(OutDir)assets
+xcopy /y /i /s $(ProjectDir)shaders  $(OutDir)shaders</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -133,6 +137,10 @@
       <AdditionalLibraryDirectories>C:\Users\jakob\Documents\libraries\glew-2.1.0\lib\Release\x64;C:\Users\jakob\Documents\libraries\SDL2\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>SDL2.lib;SDL2main.lib;glew32.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /y /i /s $(ProjectDir)assets  $(OutDir)assets
+xcopy /y /i /s $(ProjectDir)shaders  $(OutDir)shaders</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -143,7 +151,9 @@
     <None Include="shaders\basic.vert" />
     <None Include="shaders\depth.frag" />
     <None Include="shaders\depth.vert" />
-    <None Include="shaders\phong.frag" />
+    <CopyFileToFolders Include="shaders\phong.frag">
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
     <None Include="shaders\phong.vert" />
     <None Include="shaders\screen.frag" />
     <None Include="shaders\screen.vert" />
@@ -156,6 +166,9 @@
     <ClInclude Include="lib\stb_image.h" />
     <ClInclude Include="lib\tiny_obj_loader.h" />
     <ClInclude Include="phi.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="assets\container.jpg" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
