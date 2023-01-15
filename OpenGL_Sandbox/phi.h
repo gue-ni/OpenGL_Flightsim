@@ -11,10 +11,10 @@ namespace phi {
 
     constexpr float g = 9.81f;
 
-    constexpr glm::vec3 UP(    0.0f, 1.0f, 0.0f);
-    constexpr glm::vec3 DOWN(  0.0f, -1.0f, 0.0f);
-    constexpr glm::vec3 RIGHT( 0.0f, 0.0f, 1.0f);
-    constexpr glm::vec3 LEFT(  0.0f, 0.0f, -1.0f);
+    constexpr glm::vec3 UP(0.0f, 1.0f, 0.0f);
+    constexpr glm::vec3 DOWN(0.0f, -1.0f, 0.0f);
+    constexpr glm::vec3 RIGHT(0.0f, 0.0f, 1.0f);
+    constexpr glm::vec3 LEFT(0.0f, 0.0f, -1.0f);
     constexpr glm::vec3 FORWARD(1.0f, 0.0f, 0.0f);
     constexpr glm::vec3 BACKWARD(-1.0f, 0.0f, 0.0f);
 
@@ -23,7 +23,23 @@ namespace phi {
     constexpr glm::vec3 Z_AXIS(0.0f, 0.0f, 1.0f);
 
     namespace utils {
+        inline float scale(float input, float in_min, float in_max, float out_min, float out_max)
+        {
+            return (input - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+        }
 
+	    inline float lerp(float a, float b, float t)
+		{
+			return a + t * (b - a);
+		}
+    };
+
+    struct RigidBodyParams {
+        float mass = 10.0f;
+        glm::mat3 inertia;
+        glm::vec3 position = glm::vec3(0.0f);
+        glm::vec3 velocity = glm::vec3(0.0f);
+        glm::quat rotation = glm::quat(glm::vec3(0.0f));
     };
 
     class RigidBody {
@@ -47,8 +63,6 @@ namespace phi {
 
         // velocity in world space
         glm::vec3 velocity = glm::vec3(0.0f);
-
-        glm::vec3 local_velocity = glm::vec3(0.0f);
 
         // angular velocity in object space
         glm::vec3 angular_velocity = glm::vec3(0.0f);

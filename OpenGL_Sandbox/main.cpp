@@ -43,6 +43,20 @@ void solve_constraints(phi::RigidBody& rigid_body)
 	}
 }
 
+struct Joystick {
+    float roll{ 0.0f };
+    float pitch{ 0.0f };
+    float yaw{ 0.0f };
+    float throttle{ 0.0f };
+    int num_axis{0};
+    int num_buttons{0};
+
+    inline static float scale(int16_t value)
+    {
+        return static_cast<float>(value) / static_cast<float>(32767);
+    }
+};
+
 int main(void)
 {
     SDL_Init(SDL_INIT_EVERYTHING);
@@ -75,6 +89,26 @@ int main(void)
     SDL_ShowCursor(SDL_FALSE);
     SDL_CaptureMouse(SDL_TRUE);
     SDL_SetRelativeMouseMode(SDL_TRUE);
+
+    int num_joysticks;
+    Joystick joystick;
+
+    SDL_Joystick* sdl_joystick = nullptr;
+    if ((num_joysticks = SDL_NumJoysticks()) < 0)
+    {
+        std::cout << "no joystick found\n";
+        exit(-1);
+    }
+    else
+    {
+        std::cout << "found " << num_joysticks << " joysticks\n";
+        SDL_JoystickEventState(SDL_ENABLE);
+        sdl_joystick = SDL_JoystickOpen(0);
+        joystick.num_buttons = SDL_JoystickNumButtons(sdl_joystick);
+        joystick.num_axis = SDL_JoystickNumAxes(sdl_joystick);
+
+        printf("found %d buttons, %d axis\n", joystick.num_buttons, joystick.num_axis);
+    }
 
     std::vector<float> cube_vertices_2 = {
         -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f,
@@ -118,11 +152,6 @@ int main(void)
          0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f, 1.0f, 1.0f,
         -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f,
         -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f, 0.0f, 0.0f,
-
-
-
-
-     
     };
 
     std::vector<float> triangle_vertices = {
@@ -168,7 +197,6 @@ int main(void)
 #endif
 #if 1    
     gfx::Mesh ground(gfx::make_plane_geometry(50,50), test_texture);
-    //ground.set_scale(glm::vec3(20, 0.5, 20));
     ground.set_position(glm::vec3(0, -1, 0));
     ground.set_scale(glm::vec3(10.0f));
     ground.receive_shadow = true;
@@ -180,11 +208,6 @@ int main(void)
     sun.cast_shadow = true;
     scene.add(&sun);
 #endif
-#if 0 
-    gfx::Mesh plane(gfx::make_plane_geometry(2, 2), test_texture);
-    plane.set_position(glm::vec3(0, 2.0f, 0.0f));
-    scene.add(&plane);
-#endif
   
     auto position = glm::vec3(0.0f, 0.0f, 12.0f);
     auto velocity = glm::vec3(meter_per_second(150.0f), 0.0f, 0.0f);
@@ -193,35 +216,6 @@ int main(void)
     transform.set_position(position);
     scene.add(&transform);
 
-#if 0
-    gfx::Mesh fuselage(cube_geo, container);
-    fuselage.set_scale(glm::vec3(3.0f, 0.5f, 0.5f));
-    transform.add(&fuselage);
-#endif 
-#if 0
-    gfx::Mesh left_wing(cube_geo, container);
-    left_wing.set_scale(glm::vec3(1.0f, 0.125f, 4.0f));
-    left_wing.set_position(glm::vec3(0, 0.0, -2.0));
-    transform.add(&left_wing);
-
-    gfx::Mesh right_wing(cube_geo, container);
-    right_wing.set_scale(glm::vec3(1.0f, 0.125f, 4.0f));
-    right_wing.set_position(glm::vec3(0, 0.0, 2.0f));
-    transform.add(&right_wing);
-
-#endif 
-#if 0
-    gfx::Mesh elevator(cube_geo, container);
-    elevator.set_scale(glm::vec3(1.0f, 0.125f, 2.0f));
-    elevator.set_position(glm::vec3(-2.0f, 0.0f, 0.0f));
-    transform.add(&elevator);
-#endif 
-#if 0
-    gfx::Mesh rudder(cube_geo, container);
-    rudder.set_scale(glm::vec3(1.0f, 1.0f, 0.125f));
-    rudder.set_position(glm::vec3(-2.0f, 0.5f, 0.0f));
-    transform.add(&rudder);
-#endif 
 #if 1
     gfx::Mesh cessna(std::make_shared<gfx::Geometry>(cessna_vertices, gfx::Geometry::POS_NORM_UV), grey);
     gfx::Mesh prop(std::make_shared<gfx::Geometry>(cessna_prop_vertices, gfx::Geometry::POS_NORM_UV), grey);
@@ -232,10 +226,9 @@ int main(void)
     Aircraft aircraft(position, velocity);
 
     gfx::Camera camera(glm::radians(45.0f), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 10000.0f);
-    camera.set_position(glm::vec3(0, 1, 7));
+    camera.set_position(glm::vec3(-15, 1, 0));
+    camera.set_rotation(glm::vec3(0, glm::radians(-90.0f), 0.0f));
     transform.add(&camera);
-
-
 
     gfx::OrbitController controller(15.0f);
 
@@ -248,7 +241,7 @@ int main(void)
 
     float elevator_incidence = 0;
     float aileron_incidence = 0;
-    const float elevator_torque = 15000.0f, aileron_torque = 10000.0f;
+    const float elevator_torque = 15000.0f, aileron_torque = 10000.0f, rudder_torque = 5000.0f;
 	const float max_aileron_deflection = 1.0f;
 	const float max_elevator_deflection = 1.0f;
     
@@ -292,9 +285,43 @@ int main(void)
                 }
                 break;
             }
+            case SDL_JOYAXISMOTION: {
+                if ((event.jaxis.value < -3200) || (event.jaxis.value > 3200))
+                {
+                    uint8_t axis = event.jaxis.axis;
+                    int16_t value = event.jaxis.value;
+                    switch (axis)
+                    {
+                    case 0:
+                        joystick.roll = Joystick::scale(value);
+                        //printf("roll: %f\n", joystick.roll);
+                        break;
+                    case 1:
+                        joystick.pitch = Joystick::scale(value);
+                        //printf("pitch: %f\n", joystick.pitch);
+                        break;
+
+                    case 2:
+                        joystick.throttle = (Joystick::scale(value) + 1.0f) / 2.0f;
+                        //printf("throttle: %f\n", joystick.throttle);
+                        break;
+
+                    case 3:
+                        // TODO
+                        break;
+
+                    case 4:
+                        joystick.yaw = Joystick::scale(value);
+                        //printf("yaw: %f\n", joystick.yaw);
+                        break;
+                    default:
+                        break;
+                    }
+                }
+                break;
+            }
             }
         }
-            
 
         const uint8_t* key_states = SDL_GetKeyboardState(NULL);
 
@@ -305,18 +332,15 @@ int main(void)
         if (key_states[SDL_SCANCODE_A])
         {
 #if APPLY_TORQUE_DIRECTLY
-            aircraft.rigid_body.add_relative_torque(phi::X_AXIS * -aileron_torque);
-            //aircraft.left_wing.lift_multiplier = 1.5;
+            joystick.roll = -1.0f;
 #else
             aileron_incidence = -max_aileron_deflection;
 #endif
         }
-
-        if (key_states[SDL_SCANCODE_D])
+        else if (key_states[SDL_SCANCODE_D])
         {
 #if APPLY_TORQUE_DIRECTLY
-            aircraft.rigid_body.add_relative_torque(phi::X_AXIS * aileron_torque);
-            //aircraft.right_wing.lift_multiplier = 0.5;
+            joystick.roll = 1.0f;
 #else
             aileron_incidence = +max_aileron_deflection;
 #endif
@@ -325,33 +349,37 @@ int main(void)
         if (key_states[SDL_SCANCODE_W])
         {
 #if APPLY_TORQUE_DIRECTLY
-            aircraft.rigid_body.add_relative_torque(phi::LEFT * elevator_torque);
+            joystick.pitch = -1.0f;
 #else
             elevator_incidence = +max_elevator_deflection;
 #endif
         }
-
-        if (key_states[SDL_SCANCODE_S])
+        else if (key_states[SDL_SCANCODE_S])
         {
 #if APPLY_TORQUE_DIRECTLY
-            aircraft.rigid_body.add_relative_torque(phi::RIGHT * elevator_torque);
+            joystick.pitch = 1.0f;
 #else
             elevator_incidence = -max_elevator_deflection;
 #endif
         }
-
+        
         if (key_states[SDL_SCANCODE_J])
         {
-            aircraft.engine.throttle -= 0.01f;
-            aircraft.engine.throttle = clamp(aircraft.engine.throttle, 0.0f, 1.0f);
+            joystick.throttle -= 0.01f;
+            joystick.throttle = clamp(joystick.throttle, 0.0f, 1.0f);
         }
-
-        if (key_states[SDL_SCANCODE_K])
+        else if (key_states[SDL_SCANCODE_K])
         {
-            aircraft.engine.throttle += 0.01f;
-            aircraft.engine.throttle = clamp(aircraft.engine.throttle, 0.0f, 1.0f);
-
+            joystick.throttle += 0.01f;
+            joystick.throttle = clamp(joystick.throttle, 0.0f, 1.0f);
         }
+
+        aircraft.rigid_body.add_relative_torque(phi::X_AXIS * aileron_torque * joystick.roll);
+        //aircraft.rigid_body.add_relative_torque(phi::Y_AXIS * rudder_torque * joystick.yaw);
+        aircraft.rigid_body.add_relative_torque(phi::Z_AXIS * elevator_torque * joystick.pitch);
+        aircraft.engine.throttle = joystick.throttle;
+
+        printf("throttle = %f\n", joystick.throttle);
         
         aircraft.elevator.normal = Wing::calculate_normal(elevator_incidence);
         aircraft.left_aileron.normal = Wing::calculate_normal(aileron_incidence);
@@ -365,7 +393,7 @@ int main(void)
         }
        
         //controller.update(camera, aircraft.rigid_body.position, dt);
-        controller.update(camera, camera.parent->get_position(), dt);
+        //controller.update(camera, camera.parent->get_position(), dt);
 
         prop.set_rotation(prop.get_rotation() + glm::vec3(0.01f, 0, 0));
 

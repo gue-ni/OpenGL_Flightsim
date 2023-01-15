@@ -17,11 +17,6 @@ struct ValueTuple
     float cd;
 };
 
-struct MinMax
-{
-    float min, max;
-};
-
 // NACA 0012 AIRFOILS (n0012-il) Xfoil prediction polar at RE=1,000,000 Ncrit=9
 std::vector<ValueTuple> NACA_0012 = {
     {-18.500f, -1.2258f, 0.10236f},
@@ -351,10 +346,7 @@ struct Curve
             assert(data[i].alpha < data[i + 1].alpha);
     }
 
-    static float lerp(float a, float b, float t)
-    {
-        return a + t * (b - a);
-    }
+    
 
     void sample(float alpha, float *cl, float *cd) const
     {
@@ -384,8 +376,8 @@ struct Curve
                 auto t0 = alpha - data[i].alpha;
                 auto t1 = data[i + 1].alpha - data[i].alpha;
                 auto f = t0 / t1;
-                *cl = lerp(data[i].cl, data[i + 1].cl, f);
-                *cd = lerp(data[i].cd, data[i + 1].cd, f);
+                *cl = phi::utils::lerp(data[i].cl, data[i + 1].cl, f);
+                *cd = phi::utils::lerp(data[i].cd, data[i + 1].cd, f);
                 break;
             }
         }
@@ -467,16 +459,15 @@ struct Wing
         // ugly hack, necessary probably because the inertia tensor is wrong
         auto force = (lift * lift_direction);
         auto torque = glm::cross(center_of_gravity, force);
-        float torque_mulitplier = 0.01;
         rigid_body.add_relative_force(force);
-        rigid_body.add_relative_torque(torque * torque_mulitplier);
+        rigid_body.add_relative_torque(torque * 0.01f);
 
         rigid_body.add_force_at_point(drag * drag_direction, center_of_gravity);
 
         if (log && ((log_timer += dt) > log_intervall))
         {
             log_timer = 0;
-#if 1
+#if 0
             std::cout << "######### [ " << name << " ] #######" << std::endl;
             std::cout << "lv = " << local_velocity << std::endl;
             //std::cout << "t = " << torque << std::endl;
@@ -580,7 +571,7 @@ struct Aircraft
 
         if ((log_timer += dt) > log_intervall)
         {
-#if 1
+#if 0
             log_timer = 0;
             std::cout << "########## airplane ##############" << std::endl;
             // std::cout << "height: " << rigid_body.position.y << std::endl;
