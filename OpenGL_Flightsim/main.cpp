@@ -40,7 +40,7 @@ struct Joystick {
     float roll{ 0.0f };
     float pitch{ 0.0f };
     float yaw{ 0.0f };
-    float throttle{ 1.0f };
+    float throttle{ 0.1f };
     int num_axis{0};
     int num_hats{0};
     int num_buttons{0};
@@ -205,7 +205,7 @@ int main(void)
 #endif
   
     auto position = glm::vec3(100.0f, 0.0f, 100.0f);
-    auto velocity = glm::vec3(phi::utils::meter_per_second(150.0f), 0.0f, 0.0f);
+    auto velocity = glm::vec3(phi::utils::meter_per_second(100.0f), 0.0f, 0.0f);
 
     gfx::Object3D transform;
     transform.set_position(position);
@@ -240,8 +240,6 @@ int main(void)
 	const float max_aileron_deflection = 1.0f;
 	const float max_elevator_deflection = 1.0f;
 
-    phi::RigidBody rb({.mass = 5.0f});
-    
     while (!quit)
     {
         // delta time in seconds
@@ -291,25 +289,21 @@ int main(void)
                     {
                     case 0:
                         joystick.roll = Joystick::scale(value);
-                        //printf("roll: %f\n", joystick.roll);
                         break;
                     case 1:
                         joystick.pitch = Joystick::scale(value);
-                        //printf("pitch: %f\n", joystick.pitch);
                         break;
 
                     case 2:
                         joystick.throttle = (Joystick::scale(value) + 1.0f) / 2.0f;
-                        //printf("throttle: %f\n", joystick.throttle);
                         break;
 
                     case 3:
-                        // TODO
+                        // ?
                         break;
 
                     case 4:
                         joystick.yaw = Joystick::scale(value);
-                        //printf("yaw: %f\n", joystick.yaw);
                         break;
                     default:
                         break;
@@ -371,9 +365,11 @@ int main(void)
             joystick.throttle = phi::utils::clamp(joystick.throttle, 0.0f, 1.0f);
         }
 
-        aircraft.rigid_body.add_relative_torque(phi::X_AXIS * aileron_torque * joystick.roll);
+        float f = phi::utils::clamp(glm::length(aircraft.rigid_body.velocity) / 150.0f, 0.0f, 1.0f);
+
+        aircraft.rigid_body.add_relative_torque(phi::X_AXIS * aileron_torque * joystick.roll * f);
         //aircraft.rigid_body.add_relative_torque(phi::Y_AXIS * rudder_torque * joystick.yaw);
-        aircraft.rigid_body.add_relative_torque(phi::Z_AXIS * elevator_torque * joystick.pitch);
+        aircraft.rigid_body.add_relative_torque(phi::Z_AXIS * elevator_torque * joystick.pitch * f);
 
         aircraft.engine.throttle = joystick.throttle;
 
@@ -393,7 +389,7 @@ int main(void)
         //controller.update(camera, aircraft.rigid_body.position, dt);
         //controller.update(camera, camera.parent->get_position(), dt);
 
-        prop.set_rotation(prop.get_rotation() + glm::vec3(0.01f, 0, 0));
+        prop.set_rotation(prop.get_rotation() + glm::vec3(0.05f, 0, 0));
 
         renderer.render(camera, scene);
 

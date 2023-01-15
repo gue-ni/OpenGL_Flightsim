@@ -19,11 +19,13 @@
 
 std::ostream& operator<<(std::ostream& os, const glm::vec3& v);
 std::ostream& operator<<(std::ostream& os, const glm::vec2& v);
+std::ostream& operator<<(std::ostream& os, const glm::mat3& m);
 
 namespace gfx {
-
+#if 0
 	std::ostream& operator<<(std::ostream& os, const glm::vec3& v);
 	std::ostream& operator<<(std::ostream& os, const glm::vec2& v);
+#endif
 
 	constexpr float PI = 3.14159265359f;
 	

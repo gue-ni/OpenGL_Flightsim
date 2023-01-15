@@ -6,7 +6,6 @@
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/vector_angle.hpp>
 
-
 namespace phi {
 
     constexpr float g = 9.81f;
@@ -22,53 +21,6 @@ namespace phi {
     constexpr glm::vec3 Y_AXIS(0.0f, 1.0f, 0.0f);
     constexpr glm::vec3 Z_AXIS(0.0f, 0.0f, 1.0f);
 
-    namespace utils {
-        inline float scale(float input, float in_min, float in_max, float out_min, float out_max)
-        {
-            return (input - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-        }
-
-	    inline float lerp(float a, float b, float t)
-		{
-			return a + t * (b - a);
-		}
-
-		inline float max(float a, float b)
-		{
-			return a > b ? a : b;
-		}
-
-		inline float min(float a, float b)
-		{
-			return a < b ? a : b;
-		}
-
-		inline float sign(float a)
-		{
-			return a >= 0.0f ? 1.0f : -1.0f;
-		}
-
-		inline float clamp(float v, float lo, float hi)
-		{
-			return min(max(v, lo), hi);
-		}
-
-		inline float knots(float meter_per_second)
-		{
-			return meter_per_second * 1.94384f;
-		}
-
-		inline float meter_per_second(float kilometer_per_hour)
-		{
-			return kilometer_per_hour / 3.6f;
-		}
-
-		inline float kilometer_per_hour(float meter_per_second)
-		{
-			return meter_per_second * 3.6f;
-		}
-    };
-
     struct RigidBodyParams {
         float mass = 10.0f;
         glm::mat3 inertia;
@@ -79,6 +31,9 @@ namespace phi {
         glm::quat rotation = glm::quat(glm::vec3(0.0f));
     };
 
+    /*
+        The rigidbody has  
+    */
     class RigidBody {
     private:
         // force vector in world space
@@ -146,6 +101,8 @@ namespace phi {
             float d0 = f * cube_mass * (dimensions.y * dimensions.y + dimensions.z * dimensions.z);
             float d1 = f * cube_mass * (dimensions.x * dimensions.x + dimensions.z * dimensions.z);
             float d2 = f * cube_mass * (dimensions.x * dimensions.x + dimensions.y * dimensions.y);
+
+            printf("d0 = %f, d1 = %f, d2 = %f\n", d0, d1, d2);
 
             return glm::mat3{
                  d0, 0, 0,
@@ -233,6 +190,53 @@ namespace phi {
             // reset accumulators
             m_force = glm::vec3(0.0f), m_torque = glm::vec3(0.0f);
         }
+    };
+
+    namespace utils {
+        inline float scale(float input, float in_min, float in_max, float out_min, float out_max)
+        {
+            return (input - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+        }
+
+	    inline float lerp(float a, float b, float t)
+		{
+			return a + t * (b - a);
+		}
+
+		inline float max(float a, float b)
+		{
+			return a > b ? a : b;
+		}
+
+		inline float min(float a, float b)
+		{
+			return a < b ? a : b;
+		}
+
+		inline float sign(float a)
+		{
+			return a >= 0.0f ? 1.0f : -1.0f;
+		}
+
+		inline float clamp(float v, float lo, float hi)
+		{
+			return min(max(v, lo), hi);
+		}
+
+		inline float knots(float meter_per_second)
+		{
+			return meter_per_second * 1.94384f;
+		}
+
+		inline float meter_per_second(float kilometer_per_hour)
+		{
+			return kilometer_per_hour / 3.6f;
+		}
+
+		inline float kilometer_per_hour(float meter_per_second)
+		{
+			return meter_per_second * 3.6f;
+		}
     };
 };
 

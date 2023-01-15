@@ -16,6 +16,20 @@ std::ostream& operator<<(std::ostream& os, const glm::vec2& v)
 	return os << "{ " <<  v.x << ", " << v.y << ", " << " }";
 }
 
+
+std::ostream& operator<<(std::ostream& os, const glm::mat3& m)
+{
+	for (int i = 0; i < 3; i++)
+	{
+		for (int j = 0; j < 3; j++)
+		{
+			os << m[i][j] << ", ";
+		}
+		os << "\n";
+	}
+	return os;
+}
+
 std::string load_text_file(const std::string& path)
 {
 		std::fstream file(path);
@@ -29,6 +43,7 @@ std::string load_text_file(const std::string& path)
 
 namespace gfx {
 
+#if 0
 	std::ostream& operator<<(std::ostream& os, const glm::vec3& v)
 	{
 		return os << v.x << ", " << v.y << ", " << v.z;
@@ -38,6 +53,7 @@ namespace gfx {
 	{
 		return os << v.x << ", " << v.y;
 	}
+#endif
 
 	Shader::Shader(const std::string& path) : Shader(load_text_file(path + ".vert"), load_text_file(path + ".frag")) {}
 	
