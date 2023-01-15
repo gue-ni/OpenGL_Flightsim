@@ -316,25 +316,7 @@ std::vector<ValueTuple> NACA_2412 = {
     {19.250f, 1.4781f, 0.09506f},
 };
 
-float max(float a, float b)
-{
-    return a > b ? a : b;
-}
 
-float min(float a, float b)
-{
-    return a < b ? a : b;
-}
-
-float sign(float a)
-{
-    return a >= 0.0f ? 1.0f : -1.0f;
-}
-
-float clamp(float v, float lo, float hi)
-{
-    return min(max(v, lo), hi);
-}
 
 struct Curve
 {
@@ -346,8 +328,7 @@ struct Curve
             assert(data[i].alpha < data[i + 1].alpha);
     }
 
-    
-
+    // TODO: improve this so there is no loop necessary
     void sample(float alpha, float *cl, float *cd) const
     {
         // assert(data[0].alpha <= alpha && alpha <= data[data.size() - 1].alpha);
@@ -390,9 +371,9 @@ struct Wing
     const std::string name;
     const float area;
     const glm::vec3 center_of_gravity; // center of gravity relative to rigidbody cg
-    glm::vec3 normal;
     const Curve curve;
 
+    glm::vec3 normal;
     float lift_multiplier = 1.0f;
     float drag_multiplier = 1.0f;
     float lift_coefficient = 0.0f;
@@ -433,12 +414,7 @@ struct Wing
 
     void apply_forces(phi::RigidBody &rigid_body, float dt, bool log)
     {
-        // pretty sure something is wrong here
-        const auto velocity = rigid_body.inverse_transform_direction(rigid_body.velocity);
-
-        const auto local_velocity = rigid_body.inverse_transform_direction(rigid_body.velocity) 
-            + glm::cross(rigid_body.angular_velocity, center_of_gravity);
-
+        const auto local_velocity = rigid_body.get_point_velocity(center_of_gravity);
         const auto speed = glm::length(local_velocity);
 
         if (speed <= 0.0f)
@@ -446,8 +422,8 @@ struct Wing
 
         assert(speed > 0.0f);
 
-        auto drag_direction = glm::normalize(-local_velocity);
-        auto lift_direction = glm::normalize(glm::cross(glm::cross(drag_direction, normal), drag_direction));
+        const auto drag_direction = glm::normalize(-local_velocity);
+        const auto lift_direction = glm::normalize(glm::cross(glm::cross(drag_direction, normal), drag_direction));
 
         angle_of_attack = glm::degrees(asin(glm::dot(drag_direction, normal)));
 

@@ -251,7 +251,7 @@ int main(void)
         last = now;
         now = SDL_GetPerformanceCounter();
         dt = static_cast<gfx::Seconds>((now - last) / static_cast<gfx::Seconds>(SDL_GetPerformanceFrequency()));
-        dt = min(dt, 0.02);
+        dt = phi::utils::min(dt, 0.02);
 
         if ((timer += dt) >= 1.0f)
         {
@@ -366,12 +366,12 @@ int main(void)
         if (key_states[SDL_SCANCODE_J])
         {
             joystick.throttle -= 0.01f;
-            joystick.throttle = clamp(joystick.throttle, 0.0f, 1.0f);
+            joystick.throttle = phi::utils::clamp(joystick.throttle, 0.0f, 1.0f);
         }
         else if (key_states[SDL_SCANCODE_K])
         {
             joystick.throttle += 0.01f;
-            joystick.throttle = clamp(joystick.throttle, 0.0f, 1.0f);
+            joystick.throttle = phi::utils::clamp(joystick.throttle, 0.0f, 1.0f);
         }
 
         aircraft.rigid_body.add_relative_torque(phi::X_AXIS * aileron_torque * joystick.roll);

@@ -32,6 +32,26 @@ namespace phi {
 		{
 			return a + t * (b - a);
 		}
+
+		inline float max(float a, float b)
+		{
+			return a > b ? a : b;
+		}
+
+		inline float min(float a, float b)
+		{
+			return a < b ? a : b;
+		}
+
+		inline float sign(float a)
+		{
+			return a >= 0.0f ? 1.0f : -1.0f;
+		}
+
+		inline float clamp(float v, float lo, float hi)
+		{
+			return min(max(v, lo), hi);
+		}
     };
 
     struct RigidBodyParams {
@@ -51,7 +71,8 @@ namespace phi {
         glm::vec3 m_torque{};
 
     public:
-        float mass; // kg
+        // rigidbody mass in kg
+        float mass; 
 
         bool apply_gravity = true;
 
@@ -67,6 +88,7 @@ namespace phi {
         // angular velocity in object space
         glm::vec3 angular_velocity = glm::vec3(0.0f);
 
+        // inertia tensor
         glm::mat3 inertia{};
         glm::mat3 inverse_inertia{};
 
@@ -104,7 +126,13 @@ namespace phi {
             };
         }
 
-        // body coordinates
+        // get velocity of point in body space
+        inline glm::vec3 get_point_velocity(const glm::vec3& point) const
+        {
+            return inverse_transform_direction(velocity) + glm::cross(angular_velocity, point);
+        }
+
+        // force and point vectors are in body coordinates 
         inline void add_force_at_point(const glm::vec3& force, const glm::vec3& point)
         {
             m_force     += transform_direction(force);
@@ -112,13 +140,13 @@ namespace phi {
         }
 
         // transform direction from local space to world space 
-        inline glm::vec3 transform_direction(const glm::vec3& direction)
+        inline glm::vec3 transform_direction(const glm::vec3& direction) const
         {
             return rotation * direction;
         }
 
         // transform direction from world space to local space 
-        inline glm::vec3 inverse_transform_direction(const glm::vec3& direction)
+        inline glm::vec3 inverse_transform_direction(const glm::vec3& direction) const
         {
             return glm::inverse(rotation) * direction;
         }
@@ -138,7 +166,7 @@ namespace phi {
         // torque vector in world coordinates.
         inline void add_torque(const glm::vec3& torque) 
         { 
-            m_torque += inverse_transform_direction(torque); // TODO: not sure if this really works
+            m_torque += inverse_transform_direction(torque);
         }
 
         // torque vector in local coordinates.
@@ -147,19 +175,16 @@ namespace phi {
             m_torque += torque; 
         }
 
+        // get torque in object space
         inline glm::vec3 get_torque() const
         {
             return m_torque;
         }
 
+        // get torque in world space
         inline glm::vec3 get_force() const
         {
             return m_force;
-        }
-
-        inline glm::vec3 get_point_velocity(const glm::vec3& point)
-        {
-            return velocity + glm::cross(angular_velocity, point);
         }
 
         void update(float dt)
