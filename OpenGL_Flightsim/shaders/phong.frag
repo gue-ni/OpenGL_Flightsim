@@ -142,9 +142,8 @@ vec3 calculatePointLight(Light light)
 
 void main()
 {
-	float depth = texture(shadowMap, TexCoords).x;
-    depth = 1.0 - (1.0 - depth) * 25.0;
-    FragColor = vec4(depth);
+    //float depthValue = texture(shadowMap, TexCoords).r;
+    //FragColor = vec4(vec3(depthValue), 1.0); 
 	//return;
 
 	vec3 result;

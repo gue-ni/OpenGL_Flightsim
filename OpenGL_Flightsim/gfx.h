@@ -87,6 +87,7 @@ namespace gfx {
 	struct Texture {
 		GLuint id;
 		Texture() : id(0) {}
+		Texture(GLuint texture_id) : id(texture_id) {}
 		Texture(const std::string& path);
 		~Texture();
 		virtual void bind(GLuint texture) const;
@@ -103,9 +104,9 @@ namespace gfx {
 
 	struct ShadowMap {
 		ShadowMap(unsigned int shadow_width, unsigned int shadow_height);
-		unsigned int fbo;
-		unsigned int depth_map;
-		unsigned int width, height;
+		GLuint fbo;
+		GLuint depth_map_texture_id;
+		GLuint width, height;
 		Shader shader;
 	};
 
@@ -221,7 +222,6 @@ namespace gfx {
 		glm::vec3 rgb;
 	};
 
-
 	class Geometry {
 	public:
 		enum VertexLayout {
@@ -243,8 +243,6 @@ namespace gfx {
 		unsigned int m_vao, m_vbo;
 		static int get_stride(const VertexLayout& layout);
 	};
-
-
 
 	class Material  {
 	public:
@@ -300,6 +298,14 @@ namespace gfx {
 		ShaderMaterial(const std::string& path) : MaterialX<ShaderMaterial>(path) {}
 	};
 
+	class ScreenMaterial : public MaterialX<ScreenMaterial> {
+	private:
+		std::shared_ptr<Texture> texture = nullptr;
+	public:
+		ScreenMaterial(std::shared_ptr<Texture> t) : MaterialX<ScreenMaterial>("shaders/screen"), texture(t) {}
+		void bind() override;
+	};
+
 	class SkyboxMaterial : public MaterialX<SkyboxMaterial> {
 	public:
 		std::shared_ptr<CubemapTexture> cubemap = nullptr;
@@ -335,7 +341,7 @@ namespace gfx {
 	class Renderer {
 	public:
 		Renderer(unsigned int width, unsigned int height) 
-			: m_shadowMap(new ShadowMap(1024, 1024)),  m_width(width), m_height(height), background(rgb(18, 100, 132))
+			: shadow_map(new ShadowMap(1024, 1024)),  m_width(width), m_height(height), background(rgb(18, 100, 132))
 		{
 			const std::vector<float> quad_vertices = {
 				-1.0f,  1.0f, 0.0f, 0.0f, 1.0f, // top left
@@ -347,23 +353,27 @@ namespace gfx {
 				 1.0f, -1.0f, 0.0f, 1.0f, 0.0f, // bottom right
 			};
 
+			std::cout << "depth map: " << shadow_map->depth_map_texture_id << std::endl;
+
 			auto geometry = std::make_shared<Geometry>(quad_vertices, Geometry::POS_UV);
-			auto material = std::make_shared<ShaderMaterial>("shaders/screen");
-			m_quad = std::make_shared<Mesh>(geometry, material);
+			//auto texture = std::make_shared<gfx::Texture>("assets/textures/container.jpg");
+			auto texture = std::make_shared<gfx::Texture>(shadow_map->depth_map_texture_id);
+			auto material = std::make_shared<gfx::ScreenMaterial>(texture);
+			screen_quad = std::make_shared<Mesh>(geometry, material);
 		}
 
 		~Renderer()
 		{
-			if (m_shadowMap)
-				delete m_shadowMap;
+			if (shadow_map)
+				delete shadow_map;
 		}
 
 		void render(Camera& camera, Object3D& scene);
 		glm::vec3 background;
 	private:
 		unsigned int m_width, m_height;
-		ShadowMap* m_shadowMap = nullptr;
-		std::shared_ptr<Mesh> m_quad;
+		ShadowMap* shadow_map = nullptr;
+		std::shared_ptr<Mesh> screen_quad;
 	};
 
 	class FirstPersonController 

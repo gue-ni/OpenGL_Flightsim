@@ -397,10 +397,11 @@ namespace gfx {
 
 	glm::mat4 Light::light_space_matrix()
 	{
-		float near_plane = 0.1f, far_plane = 25.0f, m = 10.0f;
-		glm::mat4 lightView = glm::lookAt(get_world_position(), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		glm::mat4 lightProjection = glm::ortho(-m, m, -m, m, -10.0f, 20.0f);
-		return lightProjection * lightView;
+		float near_plane = 0.1f, far_plane = 10.0f, m = 10.0f;
+		auto wp = get_world_position();
+		glm::mat4 light_view = glm::lookAt(wp, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		glm::mat4 light_projection = glm::ortho(-m, m, -m, m, near_plane, far_plane);
+		return light_projection * light_view;
 	}
 
 	void Renderer::render(Camera& camera, Object3D& scene)
@@ -409,7 +410,7 @@ namespace gfx {
 
 		RenderContext context;
 		context.camera			= &camera;
-		context.shadow_map		= m_shadowMap;
+		context.shadow_map		= shadow_map;
 		context.shadow_caster	= nullptr;
 		context.background_color = background;
 
@@ -429,37 +430,29 @@ namespace gfx {
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 
-		if (m_shadowMap && context.shadow_caster)
+		if (shadow_map && context.shadow_caster)
 		{
-			glViewport(0, 0, m_shadowMap->width, m_shadowMap->height);
-			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_shadowMap->fbo);
-			glClear(GL_DEPTH_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			glViewport(0, 0, shadow_map->width, shadow_map->height);
+			glBindFramebuffer(GL_FRAMEBUFFER, shadow_map->fbo);
+			glClear(GL_DEPTH_BUFFER_BIT);
 
 			context.is_shadow_pass	= true;
 			scene.draw(context);
 	
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, m_shadowMap->depth_map);
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
 
 		glViewport(0, 0, m_width, m_height);
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		//glActiveTexture(GL_TEXTURE0);
+		//glBindTexture(GL_TEXTURE_2D, shadow_map->depth_map_texture_id);
 
 		context.is_shadow_pass = false;
 #if 1
-
-
-#ifdef WIREFRAME
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-#endif
 		scene.draw(context);
-#ifdef WIREFRAME
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-#endif
-
 #else
-		m_quad.get()->draw(context);
+		screen_quad->draw(context);
 #endif
 	}
 
@@ -486,9 +479,10 @@ namespace gfx {
 			shader->set_mat4("proj", context.camera->get_projection_matrix());
 
 			if (context.shadow_caster)
+			{
 				shader->set_mat4("lightSpaceMatrix", context.shadow_caster->light_space_matrix());
-			
-			shader->set_int("shadowMap", 0);
+			}
+
 			shader->set_vec3("backgroundColor", context.background_color);
 			shader->set_int("numLights", static_cast<int>(context.lights.size()));
 			shader->set_vec3("cameraPos", context.camera->get_world_position()); 
@@ -504,6 +498,10 @@ namespace gfx {
 				shader->set_vec3("lights[" + index + "].position", context.lights[i]->get_world_position());
 			}
 
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, context.shadow_map->depth_map_texture_id);
+			shader->set_int("shadowMap", 0);
+
 			m_material->bind();
 		}
 
@@ -517,21 +515,9 @@ namespace gfx {
 	ShadowMap::ShadowMap(unsigned int shadow_width, unsigned int shadow_height)
 		: width(shadow_width), height(shadow_height), shader("shaders/depth")
 	{
-#if 1
-
-		glGenTextures(1, &depth_map);
-		glBindTexture(GL_TEXTURE_2D, depth_map);
-		glTexImage2D(
-			GL_TEXTURE_2D, 
-			0, 
-			GL_DEPTH_COMPONENT, 
-			shadow_width, 
-			shadow_height, 
-			0, 
-			GL_DEPTH_COMPONENT, 
-			GL_FLOAT, 
-			NULL
-		);
+		glGenTextures(1, &depth_map_texture_id);
+		glBindTexture(GL_TEXTURE_2D, depth_map_texture_id);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadow_width, shadow_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -540,7 +526,7 @@ namespace gfx {
 
 		glGenFramebuffers(1, &fbo);
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_map, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_map_texture_id, 0);
 		glDrawBuffer(GL_NONE);
 		glReadBuffer(GL_NONE);
 		glBindBuffer(GL_FRAMEBUFFER, 0);
@@ -550,7 +536,6 @@ namespace gfx {
 			std::cout << "failure\n";
 			exit(-1);
 		}
-#endif
 	}
 
 	void FirstPersonController::update(Object3D& target, float dt)
@@ -630,7 +615,6 @@ namespace gfx {
 
 	void Phong::bind()
 	{
-
 		if (texture != nullptr)
 		{
 			GLuint texture_unit = 1;
@@ -1050,4 +1034,11 @@ namespace gfx {
 		shader->set_int("skybox", 2);
 	}
 
+	void ScreenMaterial::bind()
+	{
+		Shader* shader = get_shader();
+		texture->bind(0);
+		shader->bind();
+		shader->set_int("shadowMap", 0);
+	}
 }

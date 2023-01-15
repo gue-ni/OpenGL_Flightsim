@@ -179,7 +179,7 @@ int main(void)
 
     gfx::Object3D scene;
 
-#if 1
+#if 0
     gfx::Skybox skybox({
         "assets/skybox/hd/right.jpg",
         "assets/skybox/hd/left.jpg",
@@ -193,25 +193,30 @@ int main(void)
 #if 1    
     gfx::Mesh ground(gfx::make_plane_geometry(100,100), test_texture);
     ground.set_position(glm::vec3(0, -1, 0));
-    ground.set_scale(glm::vec3(10.0f));
+    ground.set_scale(glm::vec3(10,0.1, 10));
     ground.receive_shadow = true;
     scene.add(&ground);
 #endif
 #if 1
+    gfx::Mesh cube(cube_geo, test_texture);
+    cube.set_position(glm::vec3(3, 1, 3));
+    scene.add(&cube);
+#endif
+#if 1
     gfx::Light sun(gfx::Light::DIRECTIONAL, gfx::rgb(154, 219, 172));
-    sun.set_position(glm::vec3(0.5f, 2.0f, 2.0f));
+    sun.set_position(glm::vec3(-2.0f, 4.0f, -1.0f));
     sun.cast_shadow = true;
     scene.add(&sun);
 #endif
   
-    auto position = glm::vec3(100.0f, 0.0f, 100.0f);
-    auto velocity = glm::vec3(phi::utils::meter_per_second(100.0f), 0.0f, 0.0f);
+    auto position = glm::vec3(0.0f, 5.0f, 0.0f);
+    auto velocity = glm::vec3(phi::utils::meter_per_second(0.0f), 0.0f, 0.0f);
 
+#if 1
     gfx::Object3D transform;
     transform.set_position(position);
     scene.add(&transform);
 
-#if 1
     gfx::Mesh cessna(std::make_shared<gfx::Geometry>(cessna_vertices, gfx::Geometry::POS_NORM_UV), grey);
     gfx::Mesh prop(std::make_shared<gfx::Geometry>(cessna_prop_vertices, gfx::Geometry::POS_NORM_UV), grey);
     transform.add(&cessna);
@@ -381,15 +386,13 @@ int main(void)
 
         if (!paused)
         {
-			aircraft.update(dt);
+			//aircraft.update(dt);
 			solve_constraints(aircraft.rigid_body);
-			apply_to_object3d(aircraft.rigid_body, transform);
+			//apply_to_object3d(aircraft.rigid_body, transform);
         }
        
-        //controller.update(camera, aircraft.rigid_body.position, dt);
-        //controller.update(camera, camera.parent->get_position(), dt);
+        controller.update(camera, camera.parent->get_position(), dt);
 
-        prop.set_rotation(prop.get_rotation() + glm::vec3(0.05f, 0, 0));
 
         renderer.render(camera, scene);
 
