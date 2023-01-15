@@ -22,10 +22,6 @@ std::ostream& operator<<(std::ostream& os, const glm::vec2& v);
 std::ostream& operator<<(std::ostream& os, const glm::mat3& m);
 
 namespace gfx {
-#if 0
-	std::ostream& operator<<(std::ostream& os, const glm::vec3& v);
-	std::ostream& operator<<(std::ostream& os, const glm::vec2& v);
-#endif
 
 	constexpr float PI = 3.14159265359f;
 	
@@ -66,6 +62,7 @@ namespace gfx {
 		GLuint id;
 		Shader(const std::string& path);
 		Shader(const std::string& vertShader, const std::string& fragShader);
+		Shader(GLuint shader_id) : id(shader_id) {}
 		~Shader();
 		void bind() const;
 		void unbind() const;
@@ -86,9 +83,7 @@ namespace gfx {
 
 	struct Texture {
 		GLuint id;
-		Texture() : id(0) {
-			glGenTextures(1, &id);
-		}
+		Texture() : id(0) { glGenTextures(1, &id); }
 		Texture(GLuint texture_id) : id(texture_id) {}
 		Texture(const std::string& path);
 		~Texture();

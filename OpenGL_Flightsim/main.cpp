@@ -179,7 +179,7 @@ int main(void)
 
     gfx::Object3D scene;
 
-#if 0
+#if 1
     gfx::Skybox skybox({
         "assets/skybox/hd/right.jpg",
         "assets/skybox/hd/left.jpg",
@@ -205,7 +205,7 @@ int main(void)
 #if 1
     gfx::Light sun(gfx::Light::DIRECTIONAL, gfx::rgb(154, 219, 172));
     sun.set_position(glm::vec3(-2.0f, 4.0f, -1.0f));
-    sun.cast_shadow = true;
+    sun.cast_shadow = false;
     scene.add(&sun);
 #endif
   

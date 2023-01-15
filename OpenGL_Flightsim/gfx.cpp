@@ -418,37 +418,32 @@ namespace gfx {
 			if (obj->get_type() == Object3D::Type::LIGHT)
 			{
 				Light* light = dynamic_cast<Light*>(obj);
+				context.lights.push_back(light);
+
 				if (light->cast_shadow)
 				{
 					context.shadow_caster = light;
 				}
-				context.lights.push_back(light);
 			}
 
 			return true;
 		});
 
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-
 		if (shadow_map && context.shadow_caster)
 		{
+			context.is_shadow_pass = true;
 			glViewport(0, 0, shadow_map->width, shadow_map->height);
 			glBindFramebuffer(GL_FRAMEBUFFER, shadow_map->fbo);
 			glClear(GL_DEPTH_BUFFER_BIT);
-
-			context.is_shadow_pass	= true;
 			scene.draw(context);
-	
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
 
+		context.is_shadow_pass = false;
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glViewport(0, 0, m_width, m_height);
+		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		//glActiveTexture(GL_TEXTURE0);
-		//glBindTexture(GL_TEXTURE_2D, shadow_map->depth_map_texture_id);
-
-		context.is_shadow_pass = false;
 #if 1
 		scene.draw(context);
 #else
@@ -498,9 +493,6 @@ namespace gfx {
 				shader->set_vec3("lights[" + index + "].position", context.lights[i]->get_world_position());
 			}
 
-			//glActiveTexture(GL_TEXTURE0);
-			//glBindTexture(GL_TEXTURE_2D, context.shadow_map->depth_map_texture_id);
-			//glBindTexture(GL_TEXTURE_2D, context.shadow_map->depth_map.id);
 			context.shadow_map->depth_map.bind(0);
 			shader->set_int("shadowMap", 0);
 
