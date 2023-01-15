@@ -498,8 +498,10 @@ namespace gfx {
 				shader->set_vec3("lights[" + index + "].position", context.lights[i]->get_world_position());
 			}
 
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, context.shadow_map->depth_map_texture_id);
+			//glActiveTexture(GL_TEXTURE0);
+			//glBindTexture(GL_TEXTURE_2D, context.shadow_map->depth_map_texture_id);
+			//glBindTexture(GL_TEXTURE_2D, context.shadow_map->depth_map.id);
+			context.shadow_map->depth_map.bind(0);
 			shader->set_int("shadowMap", 0);
 
 			m_material->bind();
@@ -515,8 +517,8 @@ namespace gfx {
 	ShadowMap::ShadowMap(unsigned int shadow_width, unsigned int shadow_height)
 		: width(shadow_width), height(shadow_height), shader("shaders/depth")
 	{
-		glGenTextures(1, &depth_map_texture_id);
-		glBindTexture(GL_TEXTURE_2D, depth_map_texture_id);
+		//glGenTextures(1, &depth_map_texture_id);
+		glBindTexture(GL_TEXTURE_2D, depth_map.id);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadow_width, shadow_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -526,7 +528,7 @@ namespace gfx {
 
 		glGenFramebuffers(1, &fbo);
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_map_texture_id, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_map.id, 0);
 		glDrawBuffer(GL_NONE);
 		glReadBuffer(GL_NONE);
 		glBindBuffer(GL_FRAMEBUFFER, 0);

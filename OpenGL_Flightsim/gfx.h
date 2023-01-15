@@ -86,7 +86,9 @@ namespace gfx {
 
 	struct Texture {
 		GLuint id;
-		Texture() : id(0) {}
+		Texture() : id(0) {
+			glGenTextures(1, &id);
+		}
 		Texture(GLuint texture_id) : id(texture_id) {}
 		Texture(const std::string& path);
 		~Texture();
@@ -105,9 +107,9 @@ namespace gfx {
 	struct ShadowMap {
 		ShadowMap(unsigned int shadow_width, unsigned int shadow_height);
 		GLuint fbo;
-		GLuint depth_map_texture_id;
-		GLuint width, height;
+		Texture depth_map;
 		Shader shader;
+		GLuint width, height;
 	};
 
 	struct RenderContext {
@@ -353,11 +355,11 @@ namespace gfx {
 				 1.0f, -1.0f, 0.0f, 1.0f, 0.0f, // bottom right
 			};
 
-			std::cout << "depth map: " << shadow_map->depth_map_texture_id << std::endl;
+			//std::cout << "depth map: " << shadow_map->depth_map_texture_id << std::endl;
 
 			auto geometry = std::make_shared<Geometry>(quad_vertices, Geometry::POS_UV);
 			//auto texture = std::make_shared<gfx::Texture>("assets/textures/container.jpg");
-			auto texture = std::make_shared<gfx::Texture>(shadow_map->depth_map_texture_id);
+			auto texture = std::make_shared<gfx::Texture>(shadow_map->depth_map.id);
 			auto material = std::make_shared<gfx::ScreenMaterial>(texture);
 			screen_quad = std::make_shared<Mesh>(geometry, material);
 		}
