@@ -478,19 +478,19 @@ namespace gfx {
 				shader->set_mat4("u_LightSpaceMatrix", context.shadow_caster->light_space_matrix());
 			}
 
-			shader->set_vec3("backgroundColor", context.background_color);
+			shader->set_vec3("u_BackgroundColor", context.background_color);
 			shader->set_int("u_NumLights", static_cast<int>(context.lights.size()));
 			shader->set_vec3("u_CameraPosition", context.camera->get_world_position()); 
-			shader->set_int("u_ReceiveShadow", (receive_shadow && context.shadow_caster) ? 1 : 0);
+			shader->set_int("u_ReceiveShadow", (receive_shadow && context.shadow_caster));
 
 			for (int i = 0; i < context.lights.size(); i++)
 			{
 				auto index = std::to_string(i);
 				auto type = context.lights[i]->type;
 
-				shader->set_int( "lights[" + index + "].type", type);
-				shader->set_vec3("lights[" + index + "].color", context.lights[i]->rgb);
-				shader->set_vec3("lights[" + index + "].position", context.lights[i]->get_world_position());
+				shader->set_int( "u_Lights[" + index + "].type", type);
+				shader->set_vec3("u_Lights[" + index + "].color", context.lights[i]->rgb);
+				shader->set_vec3("u_Lights[" + index + "].position", context.lights[i]->get_world_position());
 			}
 
 			context.shadow_map->depth_map.bind(0);
@@ -613,13 +613,13 @@ namespace gfx {
 		{
 			GLuint texture_unit = 1;
 			texture->bind(texture_unit);
-			shader->set_int("texture1", texture_unit);
+			shader->set_int("u_Texture1", texture_unit);
 			shader->set_int("u_UseTexture", 1);
 		}
 		else
 		{
 			shader->set_int("u_UseTexture", 0);
-			shader->set_vec3("objectColor", rgb);
+			shader->set_vec3("u_SolidObjectColor", rgb);
 		}
 
 		Shader* shader = get_shader();
@@ -637,7 +637,7 @@ namespace gfx {
 		shader->set_float("kd", 0.8f);
 		shader->set_float("ks", 0.2f);
 		shader->set_float("alpha", 10.0f);
-		shader->set_vec3("objectColor", rgb);
+		shader->set_vec3("u_SolidObjectColor", rgb);
 	}
 
 	VertexBuffer::VertexBuffer(const void* data, size_t size)

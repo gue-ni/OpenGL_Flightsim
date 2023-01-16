@@ -8,22 +8,20 @@ in vec4 FragPosLightSpace;
   
 uniform vec3 u_CameraPosition; 
 
-uniform vec3 objectColor;
-
 // phong lighting parameters
 uniform float ka;
 uniform float kd;
 uniform float ks;
 uniform float alpha;
 
-uniform vec3 backgroundColor;
-
 uniform bool u_ReceiveShadow;
 uniform sampler2D u_ShadowMap;
 
 uniform bool u_UseTexture;
-uniform sampler2D texture1;
+uniform sampler2D u_Texture1;
 
+uniform vec3 u_SolidObjectColor;
+uniform vec3 u_BackgroundColor;
 
 struct Light {
 	int type; // POINT = 0, DIRECTIONAL = 1
@@ -33,11 +31,11 @@ struct Light {
 
 #define MAX_LIGHTS 4
 uniform int u_NumLights;
-uniform Light lights[MAX_LIGHTS];
+uniform Light u_Lights[MAX_LIGHTS];
 
 vec3 getColor()
 {
-	return u_UseTexture ? vec3(texture(texture1, TexCoords)) : objectColor;
+	return u_UseTexture ? vec3(texture(u_Texture1, TexCoords)) : u_SolidObjectColor;
 }
 
 float calculateAttenuation(float constant, float linear, float quadratic, float distance)
@@ -48,13 +46,9 @@ float calculateAttenuation(float constant, float linear, float quadratic, float 
 float calculateShadow(vec4 fragPosLightSpace)
 {
     vec3 u_ProjectionCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-
     u_ProjectionCoords = u_ProjectionCoords * 0.5 + 0.5;
-
     float closestDepth = texture(u_ShadowMap, u_ProjectionCoords.xy).r; 
-
     float currentDepth = u_ProjectionCoords.z;
-
 	float bias = 0.005;
     float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
     return shadow;
@@ -151,13 +145,13 @@ void main()
 
 	for (int i = 0; i < u_NumLights; i++)
 	{
-		switch (lights[i].type) {
+		switch (u_Lights[i].type) {
 			case 0:
-				result += calculatePointLight(lights[i]);
+				result += calculatePointLight(u_Lights[i]);
 				break;
 			
 			case 1:
-				result += calculateDirLight(lights[i]);
+				result += calculateDirLight(u_Lights[i]);
 				break;
 		}
 	}
@@ -167,7 +161,7 @@ void main()
 
 	float tmp = dot(vec3(0,1,0), u_CameraPosition - FragPos);
 
-	vec4 fogColor = vec4(backgroundColor, 1.0);
+	vec4 fogColor = vec4(u_BackgroundColor, 1.0);
 	float fogMin = 4.1;
 	float fogMax = 100.0;
 	float dist = length(u_CameraPosition - FragPos);
