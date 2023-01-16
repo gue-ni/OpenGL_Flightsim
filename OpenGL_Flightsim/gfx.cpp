@@ -479,9 +479,9 @@ namespace gfx {
 			}
 
 			shader->set_vec3("backgroundColor", context.background_color);
-			shader->set_int("numLights", static_cast<int>(context.lights.size()));
-			shader->set_vec3("cameraPos", context.camera->get_world_position()); 
-			shader->set_int("receiveShadow", (receive_shadow && context.shadow_caster) ? 1 : 0);
+			shader->set_int("u_NumLights", static_cast<int>(context.lights.size()));
+			shader->set_vec3("u_CameraPosition", context.camera->get_world_position()); 
+			shader->set_int("u_ReceiveShadow", (receive_shadow && context.shadow_caster) ? 1 : 0);
 
 			for (int i = 0; i < context.lights.size(); i++)
 			{
@@ -494,7 +494,7 @@ namespace gfx {
 			}
 
 			context.shadow_map->depth_map.bind(0);
-			shader->set_int("shadowMap", 0);
+			shader->set_int("u_ShadowMap", 0);
 
 			m_material->bind();
 		}
@@ -614,11 +614,11 @@ namespace gfx {
 			GLuint texture_unit = 1;
 			texture->bind(texture_unit);
 			shader->set_int("texture1", texture_unit);
-			shader->set_int("useTexture", 1);
+			shader->set_int("u_UseTexture", 1);
 		}
 		else
 		{
-			shader->set_int("useTexture", 0);
+			shader->set_int("u_UseTexture", 0);
 			shader->set_vec3("objectColor", rgb);
 		}
 
@@ -1033,6 +1033,6 @@ namespace gfx {
 		Shader* shader = get_shader();
 		texture->bind(0);
 		shader->bind();
-		shader->set_int("shadowMap", 0);
+		shader->set_int("u_ShadowMap", 0);
 	}
 }

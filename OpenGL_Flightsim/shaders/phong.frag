@@ -6,7 +6,7 @@ in vec3 FragPos;
 in vec2 TexCoords;
 in vec4 FragPosLightSpace;
   
-uniform vec3 camera_Pos; 
+uniform vec3 u_CameraPosition; 
 
 uniform vec3 objectColor;
 
@@ -18,8 +18,10 @@ uniform float alpha;
 
 uniform vec3 backgroundColor;
 
-uniform sampler2D shadowMap;
-uniform int useTexture;
+uniform bool u_ReceiveShadow;
+uniform sampler2D u_ShadowMap;
+
+uniform bool u_UseTexture;
 uniform sampler2D texture1;
 
 
@@ -30,13 +32,12 @@ struct Light {
 };
 
 #define MAX_LIGHTS 4
-uniform int numLights;
-uniform int receiveShadow;
+uniform int u_NumLights;
 uniform Light lights[MAX_LIGHTS];
 
 vec3 getColor()
 {
-	return useTexture == 1 ? vec3(texture(texture1, TexCoords)) : objectColor;
+	return u_UseTexture ? vec3(texture(texture1, TexCoords)) : objectColor;
 }
 
 float calculateAttenuation(float constant, float linear, float quadratic, float distance)
@@ -50,7 +51,7 @@ float calculateShadow(vec4 fragPosLightSpace)
 
     u_ProjectionCoords = u_ProjectionCoords * 0.5 + 0.5;
 
-    float closestDepth = texture(shadowMap, u_ProjectionCoords.xy).r; 
+    float closestDepth = texture(u_ShadowMap, u_ProjectionCoords.xy).r; 
 
     float currentDepth = u_ProjectionCoords.z;
 
@@ -74,12 +75,12 @@ vec3 calculateDirLight(Light light)
     vec3 diffuse = kd * max(dot(norm, lightDir), 0.0) * light.color;
     
     // specular
-    vec3 u_ViewDir = normalize(camera_Pos - FragPos);
+    vec3 u_ViewDir = normalize(u_CameraPosition - FragPos);
     vec3 reflectDir = reflect(-lightDir, norm);  
     vec3 specular = ks * pow(max(dot(u_ViewDir, reflectDir), 0.0), alpha) * light.color;
 
 	float shadow = 0.0;
-	if (receiveShadow == 1)
+	if (u_ReceiveShadow)
 	{
 		shadow = calculateShadow(FragPosLightSpace);       
 	}
@@ -103,7 +104,7 @@ vec3 calculatePointLight(Light light)
     vec3 diffuse = kd * max(dot(norm, lightDir), 0.0) * light.color;
     
     // specular
-    vec3 u_ViewDir = normalize(camera_Pos - FragPos);
+    vec3 u_ViewDir = normalize(u_CameraPosition - FragPos);
     vec3 reflectDir = reflect(-lightDir, norm);  
     vec3 specular = ks * pow(max(dot(u_ViewDir, reflectDir), 0.0), alpha) * light.color;
 
@@ -118,11 +119,11 @@ vec3 calculatePointLight(Light light)
 
 #if 0
 	// https://ijdykeman.github.io/graphics/simple_fog_shader
-	vec3 cameraDir = camera_Pos - FragPos;
+	vec3 cameraDir = u_CameraPosition - FragPos;
 	vec3 cameraDir = -u_ViewDir;
-	float b = length(light.position - camera_Pos);
+	float b = length(light.position - u_CameraPosition);
 
-	float h = length(cross(light.position - camera_Pos, cameraDir)) / length(cameraDir);
+	float h = length(cross(light.position - u_CameraPosition, cameraDir)) / length(cameraDir);
 	float dropoff = 1.0;
 	float fog = (atan(b / h) / (h * dropoff));
 
@@ -142,13 +143,13 @@ vec3 calculatePointLight(Light light)
 
 void main()
 {
-    //float depthValue = texture(shadowMap, TexCoords).r;
+    //float depthValue = texture(u_ShadowMap, TexCoords).r;
     //FragColor = vec4(vec3(depthValue), 1.0); 
 	//return;
 
 	vec3 result;
 
-	for (int i = 0; i < numLights; i++)
+	for (int i = 0; i < u_NumLights; i++)
 	{
 		switch (lights[i].type) {
 			case 0:
@@ -164,12 +165,12 @@ void main()
 #if 0	
 	// fog
 
-	float tmp = dot(vec3(0,1,0), camera_Pos - FragPos);
+	float tmp = dot(vec3(0,1,0), u_CameraPosition - FragPos);
 
 	vec4 fogColor = vec4(backgroundColor, 1.0);
 	float fogMin = 4.1;
 	float fogMax = 100.0;
-	float dist = length(camera_Pos - FragPos);
+	float dist = length(u_CameraPosition - FragPos);
 	float fogFactor = (fogMax - dist) / (fogMax - fogMin);
 
 	fogFactor = clamp(fogFactor, 0.0, 1.0);
