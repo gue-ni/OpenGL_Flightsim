@@ -1025,7 +1025,7 @@ namespace gfx {
 		cubemap->bind(2);
 
 		shader->bind();
-		shader->set_int("skybox", 2);
+		shader->set_int("u_Skybox", 2);
 	}
 
 	void ScreenMaterial::bind()
