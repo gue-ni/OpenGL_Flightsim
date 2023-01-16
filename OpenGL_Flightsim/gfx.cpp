@@ -462,20 +462,20 @@ namespace gfx {
 			Shader* shader = &context.shadow_map->shader;
 
 			shader->bind();
-			shader->set_mat4("model", transform);
-			shader->set_mat4("lightSpaceMatrix", context.shadow_caster->light_space_matrix());
+			shader->set_mat4("u_Model", transform);
+			shader->set_mat4("u_LightSpaceMatrix", context.shadow_caster->light_space_matrix());
 		}
 		else {
 			Shader* shader = m_material->get_shader();
 
 			shader->bind();
-			shader->set_mat4("model", transform);
-			shader->set_mat4("view", context.camera->get_view_matrix());
-			shader->set_mat4("proj", context.camera->get_projection_matrix());
+			shader->set_mat4("u_Model", transform);
+			shader->set_mat4("u_View", context.camera->get_view_matrix());
+			shader->set_mat4("u_Projection", context.camera->get_projection_matrix());
 
 			if (context.shadow_caster)
 			{
-				shader->set_mat4("lightSpaceMatrix", context.shadow_caster->light_space_matrix());
+				shader->set_mat4("u_LightSpaceMatrix", context.shadow_caster->light_space_matrix());
 			}
 
 			shader->set_vec3("backgroundColor", context.background_color);
@@ -1007,9 +1007,9 @@ namespace gfx {
 			m_material->bind();
 			Shader* shader = m_material->get_shader();
 
-			auto view = glm::mat4(glm::mat3(context.camera->get_view_matrix()));
-			shader->set_mat4("view", view);
-			shader->set_mat4("proj", context.camera->get_projection_matrix());
+			auto u_View = glm::mat4(glm::mat3(context.camera->get_view_matrix()));
+			shader->set_mat4("u_View", u_View);
+			shader->set_mat4("u_Projection", context.camera->get_projection_matrix());
 
 			m_geometry->bind();
 			glDrawArrays(GL_TRIANGLES, 0, m_geometry->triangle_count);
