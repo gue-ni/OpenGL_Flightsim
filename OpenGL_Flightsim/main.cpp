@@ -192,9 +192,8 @@ int main(void)
 #endif
 #if 1    
     gfx::Mesh ground(gfx::make_plane_geometry(100,100), test_texture);
-    ground.set_position(glm::vec3(0, -1, 0));
+    ground.set_position(glm::vec3(-100, -1, -100));
     ground.set_scale(glm::vec3(10,0.1, 10));
-    ground.receive_shadow = false;
     scene.add(&ground);
 #endif
 #if 0
@@ -205,7 +204,7 @@ int main(void)
 #if 1
     gfx::Light sun(gfx::Light::DIRECTIONAL, gfx::rgb(154, 219, 172));
     sun.set_position(glm::vec3(-2.0f, 4.0f, -1.0f));
-    sun.cast_shadow = false;
+    sun.cast_shadow = true;
     scene.add(&sun);
 #endif
   
