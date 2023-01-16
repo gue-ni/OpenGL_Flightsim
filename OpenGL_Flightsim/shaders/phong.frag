@@ -45,13 +45,11 @@ float calculateAttenuation(float constant, float linear, float quadratic, float 
 
 float calculateShadow(vec4 fragPosLightSpace)
 {
-    vec3 u_ProjectionCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-    u_ProjectionCoords = u_ProjectionCoords * 0.5 + 0.5;
-    float closestDepth = texture(u_ShadowMap, u_ProjectionCoords.xy).r; 
-    float currentDepth = u_ProjectionCoords.z;
+    vec3 projectionCoords = (fragPosLightSpace.xyz / fragPosLightSpace.w) * 0.5 + 0.5;
+    float closestDepth = texture(u_ShadowMap, projectionCoords.xy).r; 
+    float currentDepth = projectionCoords.z;
 	float bias = 0.005;
-    float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
-    return shadow;
+    return (currentDepth - bias) > closestDepth ? 1.0 : 0.0;
 }
 
 vec3 calculateDirLight(Light light)
