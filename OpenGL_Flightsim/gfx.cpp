@@ -16,7 +16,6 @@ std::ostream& operator<<(std::ostream& os, const glm::vec2& v)
 	return os << "{ " <<  v.x << ", " << v.y << ", " << " }";
 }
 
-
 std::ostream& operator<<(std::ostream& os, const glm::mat3& m)
 {
 	for (int i = 0; i < 3; i++)
@@ -42,18 +41,6 @@ std::string load_text_file(const std::string& path)
 }
 
 namespace gfx {
-
-#if 0
-	std::ostream& operator<<(std::ostream& os, const glm::vec3& v)
-	{
-		return os << v.x << ", " << v.y << ", " << v.z;
-	}
-
-	std::ostream& operator<<(std::ostream& os, const glm::vec2& v)
-	{
-		return os << v.x << ", " << v.y;
-	}
-#endif
 
 	Shader::Shader(const std::string& path) : Shader(load_text_file(path + ".vert"), load_text_file(path + ".frag")) {}
 	
@@ -613,12 +600,12 @@ namespace gfx {
 		{
 			GLuint texture_unit = 1;
 			texture->bind(texture_unit);
+			shader->set_int("u_UseTexture", true);
 			shader->set_int("u_Texture1", texture_unit);
-			shader->set_int("u_UseTexture", 1);
 		}
 		else
 		{
-			shader->set_int("u_UseTexture", 0);
+			shader->set_int("u_UseTexture", false);
 			shader->set_vec3("u_SolidObjectColor", rgb);
 		}
 
@@ -637,6 +624,7 @@ namespace gfx {
 		shader->set_float("kd", 0.8f);
 		shader->set_float("ks", 0.2f);
 		shader->set_float("alpha", 10.0f);
+		shader->set_int("u_UseTexture", false);
 		shader->set_vec3("u_SolidObjectColor", rgb);
 	}
 

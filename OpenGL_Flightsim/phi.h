@@ -8,8 +8,10 @@
 
 namespace phi {
 
+    // physical constants
     constexpr float g = 9.81f;
 
+    // directions in body space
     constexpr glm::vec3 UP(0.0f, 1.0f, 0.0f);
     constexpr glm::vec3 DOWN(0.0f, -1.0f, 0.0f);
     constexpr glm::vec3 RIGHT(0.0f, 0.0f, 1.0f);
@@ -31,38 +33,19 @@ namespace phi {
         glm::quat rotation = glm::quat(glm::vec3(0.0f));
     };
 
-    /*
-        The rigidbody has  
-    */
     class RigidBody {
     private:
-        // force vector in world space
-        glm::vec3 m_force{};
-
-        // torque vector in object space
-        glm::vec3 m_torque{};
+        glm::vec3 m_force{};                                // force vector in world space
+        glm::vec3 m_torque{};                               // torque vector in body space
 
     public:
-        // rigidbody mass in kg
-        float mass; 
-
+        float mass;                                         // rigidbody mass in kg
+        glm::vec3 position = glm::vec3(0.0f);               // position in world space
+        glm::quat rotation = glm::quat(glm::vec3(0.0f));    // rotation in world space
+        glm::vec3 velocity = glm::vec3(0.0f);               // velocity in world space
+        glm::vec3 angular_velocity = glm::vec3(0.0f);       // angular velocity in object space
+        glm::mat3 inertia{}, inverse_inertia{};             // inertia tensor
         bool apply_gravity = true;
-
-        // position in world space
-        glm::vec3 position = glm::vec3(0.0f); 
-
-        // rotation in world space
-        glm::quat rotation = glm::quat(glm::vec3(0.0f));
-
-        // velocity in world space
-        glm::vec3 velocity = glm::vec3(0.0f);
-
-        // angular velocity in object space
-        glm::vec3 angular_velocity = glm::vec3(0.0f);
-
-        // inertia tensor
-        glm::mat3 inertia{};
-        glm::mat3 inverse_inertia{};
 
         RigidBody(const RigidBodyParams& params)
             : mass(params.mass),
@@ -101,9 +84,7 @@ namespace phi {
             float d0 = f * cube_mass * (dimensions.y * dimensions.y + dimensions.z * dimensions.z);
             float d1 = f * cube_mass * (dimensions.x * dimensions.x + dimensions.z * dimensions.z);
             float d2 = f * cube_mass * (dimensions.x * dimensions.x + dimensions.y * dimensions.y);
-
-            printf("d0 = %f, d1 = %f, d2 = %f\n", d0, d1, d2);
-
+            //printf("d0 = %f, d1 = %f, d2 = %f\n", d0, d1, d2);
             return glm::mat3{
                  d0, 0, 0,
                  0, d1, 0,
@@ -117,50 +98,50 @@ namespace phi {
             return inverse_transform_direction(velocity) + glm::cross(angular_velocity, point);
         }
 
-        // force and point vectors are in body coordinates 
+        // force and point vectors are in body space 
         inline void add_force_at_point(const glm::vec3& force, const glm::vec3& point)
         {
             m_force     += transform_direction(force);
             m_torque    += glm::cross(point, force);
         }
 
-        // transform direction from local space to world space 
+        // transform direction from body space to world space 
         inline glm::vec3 transform_direction(const glm::vec3& direction) const
         {
             return rotation * direction;
         }
 
-        // transform direction from world space to local space 
+        // transform direction from world space to body space 
         inline glm::vec3 inverse_transform_direction(const glm::vec3& direction) const
         {
             return glm::inverse(rotation) * direction;
         }
 
-        // force vector in world coordinates.
+        // force vector in world space
         inline void add_force(const glm::vec3& force) 
         { 
             m_force += force; 
         }
          
-        // force vector in local coordinates.
+        // force vector in body space
         inline void add_relative_force(const glm::vec3& force) 
         { 
             m_force += rotation * force;
         }
         
-        // torque vector in world coordinates.
+        // torque vector in world space
         inline void add_torque(const glm::vec3& torque) 
         { 
             m_torque += inverse_transform_direction(torque);
         }
 
-        // torque vector in local coordinates.
+        // torque vector in body space
         inline void add_relative_torque(const glm::vec3& torque) 
         { 
             m_torque += torque; 
         }
 
-        // get torque in object space
+        // get torque in body space
         inline glm::vec3 get_torque() const
         {
             return m_torque;
@@ -174,17 +155,18 @@ namespace phi {
 
         void update(float dt)
         {
-            if (apply_gravity)
-            {
-                m_force.y -= g * mass;
-            }
-
             glm::vec3 acceleration = m_force / mass;
+
+            if (apply_gravity)
+                acceleration.y -= g;
+
             velocity += acceleration * dt;
             position += velocity * dt;
 
-            angular_velocity += (m_torque - glm::cross(angular_velocity, inertia * angular_velocity)) * inverse_inertia * dt;
-            rotation += (rotation * glm::quat(0.0f, angular_velocity.x, angular_velocity.y, angular_velocity.z)) * (0.5f * dt);
+            angular_velocity += inverse_inertia * 
+                (m_torque - glm::cross(angular_velocity, inertia * angular_velocity)) * dt;
+            rotation += (rotation * glm::quat(0.0f, angular_velocity.x, angular_velocity.y, angular_velocity.z)) *
+                (0.5f * dt);
             rotation = glm::normalize(rotation);
 
             // reset accumulators

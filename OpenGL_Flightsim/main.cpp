@@ -40,11 +40,12 @@ struct Joystick {
     float roll{ 0.0f };
     float pitch{ 0.0f };
     float yaw{ 0.0f };
-    float throttle{ 0.1f };
+    float throttle{ 0.0f };
     int num_axis{0};
     int num_hats{0};
     int num_buttons{0};
 
+    // scale from int16 to -1.0, 1.0
     inline static float scale(int16_t value)
     {
         return static_cast<float>(value) / static_cast<float>(32767);
@@ -390,10 +391,9 @@ int main(void)
 			apply_to_object3d(aircraft.rigid_body, transform);
         }
        
-        controller.update(camera, camera.parent->get_position(), dt);
+        //controller.update(camera, camera.parent->get_position(), dt);
         renderer.render(camera, scene);
 
-        // swap window
         SDL_GL_SwapWindow(window);
     }
 
