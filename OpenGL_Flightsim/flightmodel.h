@@ -320,12 +320,25 @@ std::vector<ValueTuple> NACA_2412 = {
 
 struct Aerodynamics
 {
+    float min, max;
     std::vector<ValueTuple> data;
 
     Aerodynamics(const std::vector<ValueTuple> &curve_data) : data(curve_data)
     {
         for (int i = 0; i < data.size() - 1; i++)
             assert(data[i].alpha < data[i + 1].alpha);
+        
+        min = curve_data[0].alpha;
+        max = curve_data[curve_data.size() - 1].alpha;
+    }
+    
+    void sample2(float alpha, float *cl, float *cd) const 
+    {
+        assert(min <= alpha && alpha <= max);
+        int index = phi::utils::scale(alpha, min, max, 0, 1) * data.size();
+        *cl = data[index].cl;
+        *cd = data[index].cd;
+        return;
     }
 
     // TODO: improve this so there is no loop necessary
@@ -435,7 +448,7 @@ struct Wing
 
         angle_of_attack = glm::degrees(std::asin(glm::dot(drag_direction, normal)));
 
-        aerodynamics.sample(angle_of_attack, &lift_coefficient, &drag_coefficient);
+        aerodynamics.sample2(angle_of_attack, &lift_coefficient, &drag_coefficient);
 
         lift = lift_coefficient * lift_multiplier * speed * speed * area;
         drag = drag_coefficient * drag_multiplier * speed * speed * area;
