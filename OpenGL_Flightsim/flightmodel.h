@@ -508,7 +508,7 @@ struct Aircraft
         std::cout << "inertia: " << rigid_body.inertia << std::endl;
     }
 
-    void update(float dt)
+    void update(phi::Seconds dt)
     {
 #if 0
         left_wing.apply_forces(rigid_body, dt, true);

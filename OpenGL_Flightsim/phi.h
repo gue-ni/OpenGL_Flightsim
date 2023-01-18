@@ -8,6 +8,8 @@
 
 namespace phi {
 
+	typedef float Seconds;
+
     // physical constants
     constexpr float g = 9.81f;
 
@@ -153,7 +155,7 @@ namespace phi {
             return m_force;
         }
 
-        void update(float dt)
+        void update(Seconds dt)
         {
             glm::vec3 acceleration = m_force / mass;
 

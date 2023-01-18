@@ -27,7 +27,6 @@ namespace gfx {
 	
 	typedef glm::vec3 RGB;
 	typedef glm::vec4 RGBA;
-	typedef float Seconds;
 
 	class Light;
 	class Camera;

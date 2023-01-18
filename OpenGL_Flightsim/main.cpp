@@ -235,7 +235,7 @@ int main(void)
     SDL_Event event;
     bool quit = false, paused = false;
     uint64_t last = 0, now = SDL_GetPerformanceCounter();
-    gfx::Seconds dt, timer = 0, log_timer = 0;
+    phi::Seconds dt, timer = 0, log_timer = 0;
 
     std::cout << glGetString(GL_VERSION) << std::endl;
 
@@ -250,7 +250,7 @@ int main(void)
         // delta time in seconds
         last = now;
         now = SDL_GetPerformanceCounter();
-        dt = static_cast<gfx::Seconds>((now - last) / static_cast<gfx::Seconds>(SDL_GetPerformanceFrequency()));
+        dt = static_cast<phi::Seconds>((now - last) / static_cast<phi::Seconds>(SDL_GetPerformanceFrequency()));
         dt = phi::utils::min(dt, 0.02f);
 
         if ((timer += dt) >= 1.0f)
@@ -259,7 +259,6 @@ int main(void)
             timer = 0.0f;
         }
 
-        // user input
         while (SDL_PollEvent(&event) != 0)
         {
             switch (event.type) {
@@ -325,6 +324,11 @@ int main(void)
 
 #define APPLY_TORQUE_DIRECTLY 1
 
+        if (num_joysticks == 0)
+        {
+            joystick.pitch = joystick.roll = joystick.yaw = 0;
+        }
+
         if (key_states[SDL_SCANCODE_A])
         {
 #if APPLY_TORQUE_DIRECTLY
@@ -373,9 +377,7 @@ int main(void)
         float f = phi::utils::clamp(glm::length(aircraft.rigid_body.velocity) / 150.0f, 0.0f, 1.0f);
 
         aircraft.rigid_body.add_relative_torque(phi::X_AXIS * aileron_torque * joystick.roll * f);
-        //aircraft.rigid_body.add_relative_torque(phi::Y_AXIS * rudder_torque * joystick.yaw);
         aircraft.rigid_body.add_relative_torque(phi::Z_AXIS * elevator_torque * joystick.pitch * f);
-
         aircraft.engine.throttle = joystick.throttle;
 
         //printf("throttle = %.2f\n", joystick.throttle);
