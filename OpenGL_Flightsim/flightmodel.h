@@ -318,11 +318,11 @@ std::vector<ValueTuple> NACA_2412 = {
 
 
 
-struct Curve
+struct Aerodynamics
 {
     std::vector<ValueTuple> data;
 
-    Curve(const std::vector<ValueTuple> &curve_data) : data(curve_data)
+    Aerodynamics(const std::vector<ValueTuple> &curve_data) : data(curve_data)
     {
         for (int i = 0; i < data.size() - 1; i++)
             assert(data[i].alpha < data[i + 1].alpha);
@@ -370,6 +370,8 @@ struct Engine
 {
     float thrust = 200000.0f; // newtons
     float throttle = 1.0f;    // [0, 1]
+    
+    Engine(float engine_thrust) : thrust(engine_thrust) {}
 
     void apply_forces(phi::RigidBody &rigid_body)
     {
@@ -383,7 +385,7 @@ struct Wing
     const std::string name;
     const float area;
     const glm::vec3 center_of_gravity; // center of gravity relative to rigidbody cg
-    const Curve curve;
+    const Aerodynamics aerodynamics;
 
     glm::vec3 normal;
     float lift_multiplier = 1.0f;
@@ -395,24 +397,22 @@ struct Wing
     float angle_of_attack = 0.0f;
     float incidence = 0.0f;
 
-    Wing(const std::string &wing_name, const glm::vec3 &cg_offset, float wing_area, const Curve &aerodynamics, const glm::vec3 &wing_normal)
+    Wing(const std::string &wing_name, const glm::vec3 &cg_offset, float wing_area, const Aerodynamics &aero, const glm::vec3 &wing_normal)
         : name(wing_name),
           center_of_gravity(cg_offset),
           area(wing_area),
-          curve(aerodynamics),
+          aerodynamics(aero),
           normal(wing_normal)
-    {
-    }
+    {}
 
-    Wing(const std::string &wing_name, const glm::vec3 &cg_offset, float wing_area, const Curve &aerodynamics, float wing_incidence)
+    Wing(const std::string &wing_name, const glm::vec3 &cg_offset, float wing_area, const Aerodynamics &aero, float wing_incidence)
         : name(wing_name),
           center_of_gravity(cg_offset),
           area(wing_area),
-          curve(aerodynamics),
+          aerodynamics(aero),
           incidence(wing_incidence),
           normal(calculate_normal(wing_incidence))
-    {
-    }
+    {}
 
     static glm::vec3 calculate_normal(float incidence_angle_degrees)
     {
@@ -435,7 +435,7 @@ struct Wing
 
         angle_of_attack = glm::degrees(std::asin(glm::dot(drag_direction, normal)));
 
-        curve.sample(angle_of_attack, &lift_coefficient, &drag_coefficient);
+        aerodynamics.sample(angle_of_attack, &lift_coefficient, &drag_coefficient);
 
         lift = lift_coefficient * lift_multiplier * speed * speed * area;
         drag = drag_coefficient * drag_multiplier * speed * speed * area;
@@ -449,7 +449,6 @@ struct Wing
         rigid_body.add_relative_torque(torque * a);
 
         rigid_body.add_force_at_point(drag * drag_direction, center_of_gravity);
-
     }
 };
 
@@ -464,7 +463,6 @@ struct Aircraft
 {
     phi::RigidBody rigid_body;
 
-    std::vector<Wing> elements;
 #if 0
     Wing left_wing;
     Wing right_wing;
@@ -472,6 +470,8 @@ struct Aircraft
     Wing left_aileron;
     Wing rudder;
     Wing elevator;
+#else
+    std::vector<Wing> elements;
 #endif
 
     Engine engine;
@@ -481,13 +481,14 @@ struct Aircraft
     Aircraft(const glm::vec3 &position, const glm::vec3 &velocity)
         : rigid_body({ .mass = 16000.0f, .inertia = phi::RigidBody::cube_inertia_tensor(glm::vec3(3.1f, 2.1f, 0.1f), 16000.0f) }), 
         elements({
-          Wing("left_wing",     glm::vec3(-0.5f, 0.0, -2.73f),      6.96f * 3.5f, Curve(NACA_2412), phi::UP),
-          Wing("left_aileron",  glm::vec3(0.0f, 0.0f, -1.0f),       3.8f * 1.26f, Curve(NACA_0012), phi::UP),
-          Wing("right_wing",    glm::vec3(-0.5f, 0.0, +2.73f),      6.96f * 3.5f, Curve(NACA_2412), phi::UP),
-          Wing("right_aileron", glm::vec3(0.0f, 0.0f, 1.0f),        3.8f * 1.26f, Curve(NACA_0012), phi::UP),
-          Wing("elevator",      glm::vec3(-6.64f, -0.12f, 0.0f),    6.54f * 2.7f, Curve(NACA_0012), phi::UP),
-          Wing("rudder",        glm::vec3(-6.64f, 0.0f, 0.0f),      5.31f * 3.1f, Curve(NACA_0012), phi::RIGHT)
-        })
+          Wing("left_wing",     glm::vec3(-0.5f, 0.0, -2.73f),      6.96f * 3.50f, Aerodynamics(NACA_2412), phi::UP),
+          Wing("left_aileron",  glm::vec3(0.0f, 0.0f, -1.0f),       3.80f * 1.26f, Aerodynamics(NACA_0012), phi::UP),
+          Wing("right_wing",    glm::vec3(-0.5f, 0.0, +2.73f),      6.96f * 3.50f, Aerodynamics(NACA_2412), phi::UP),
+          Wing("right_aileron", glm::vec3(0.0f, 0.0f, 1.0f),        3.80f * 1.26f, Aerodynamics(NACA_0012), phi::UP),
+          Wing("elevator",      glm::vec3(-6.64f, -0.12f, 0.0f),    6.54f * 2.70f, Aerodynamics(NACA_0012), phi::UP),
+          Wing("rudder",        glm::vec3(-6.64f, 0.0f, 0.0f),      5.31f * 3.10f, Aerodynamics(NACA_0012), phi::RIGHT)
+        }),
+        engine(100000.0f)
     {
         rigid_body.position = position;
         rigid_body.velocity = velocity;
@@ -503,12 +504,13 @@ struct Aircraft
         rudder.apply_forces(rigid_body, dt, false);
         left_aileron.apply_forces(rigid_body, dt, false);
         right_aileron.apply_forces(rigid_body, dt, false);
-#endif
-
-        for (Wing wing : elements)
+#else
+        for (Wing& wing : elements)
         {
             wing.apply_forces(rigid_body);
-        }
+        }    
+#endif
+
 
         engine.apply_forces(rigid_body);
 
