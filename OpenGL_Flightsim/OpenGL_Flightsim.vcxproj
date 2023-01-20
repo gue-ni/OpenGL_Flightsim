@@ -162,6 +162,7 @@ xcopy /y /i /s $(ProjectDir)shaders  $(OutDir)shaders</Command>
     <None Include="shaders\skybox.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="clipmap.h" />
     <ClInclude Include="flightmodel.h" />
     <ClInclude Include="gfx.h" />
     <ClInclude Include="lib\stb_image.h" />

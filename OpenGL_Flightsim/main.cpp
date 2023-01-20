@@ -164,8 +164,8 @@ int main(void)
 
     gfx::load_obj("assets/models/cube.obj", cube_vertices);
     gfx::load_obj("assets/models/icosphere.obj", ico_vertices);
-    gfx::load_obj("assets/Cessna_172/Cessna_172.obj", cessna_vertices);
-    gfx::load_obj("assets/Cessna_172/Cessna_172_prop.obj", cessna_prop_vertices);
+    gfx::load_obj("assets/models/cessna/Cessna_172.obj", cessna_vertices);
+    gfx::load_obj("assets/models/cessna/Cessna_172_prop.obj", cessna_prop_vertices);
 
     gfx::Renderer renderer(SCREEN_WIDTH, SCREEN_HEIGHT);
 
@@ -182,12 +182,12 @@ int main(void)
 
 #if 1
     gfx::Skybox skybox({
-        "assets/skybox/hd/right.jpg",
-        "assets/skybox/hd/left.jpg",
-        "assets/skybox/hd/top.jpg",
-        "assets/skybox/hd/bottom.jpg",
-        "assets/skybox/hd/front.jpg",
-        "assets/skybox/hd/back.jpg",
+        "assets/textures/skybox/hd/right.jpg",
+        "assets/textures/skybox/hd/left.jpg",
+        "assets/textures/skybox/hd/top.jpg",
+        "assets/textures/skybox/hd/bottom.jpg",
+        "assets/textures/skybox/hd/front.jpg",
+        "assets/textures/skybox/hd/back.jpg",
     });
     scene.add(&skybox);
 #endif
