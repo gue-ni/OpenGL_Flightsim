@@ -4,5 +4,12 @@ out vec4 FragColor;
 
 void main()
 {
-	FragColor = vec4(1.0, 0.5, 0.2, 1.0);
+	if (gl_FrontFacing)
+	{
+		FragColor = vec4(1.0, 0.0, 0.0, 1.0); // red
+	}
+	else
+	{
+		FragColor = vec4(0.0, 0.0, 1.0, 1.0); // blue
+	}
 }

@@ -2,6 +2,20 @@
 
 #include "gfx.h"
 
+void push_back(std::vector<float>& vertices, const glm::vec3& v)
+{
+	std::cout << "vertex = " << v << std::endl;
+	vertices.push_back(v.x);
+	vertices.push_back(v.y);
+	vertices.push_back(v.z);
+}
+
+void push_back(std::vector<unsigned int>& indices, unsigned int i)
+{
+	printf("index = %d\n", i);
+	indices.push_back(i);
+}
+
 class Clipmap : public gfx::Object3D {
 public:
 
@@ -10,18 +24,21 @@ public:
 		: shader("shaders/clipmap")
 	{
 		// https://www.learnopengles.com/tag/vertex-buffer-object/
+		// https://www.learnopengles.com/tag/degenerate-triangles/
 
-#if 1
+		const float tile_height = 1.0f;
+		const float tile_width = 2.0f;
+
+
+#if 0
 		std::vector<float> vertices = {
-			1.0f, 0.0f, 0.0f, // top left
-			1.0f, 0.0,  2.0f, // top right 
-			0.0f, 0.0f, 0.0f, // bottom left
-			0.0f, 0.0f, 2.0f, // bottom right
+			0.0f, 0.0f, 0.0f, // top left
+			0.0f, 0.0f, tile_width, // top right
+			tile_height, 0.0f, 0.0f, // bottom left
+			tile_height, 0.0,  tile_width, // bottom right 
 		};
 
 		std::vector<unsigned int> indices = {  
-			//0, 1, 3,  
-			//1, 2, 3   
 			1, 0, 2,
 			2, 3, 1
 		};
@@ -29,16 +46,34 @@ public:
 		std::vector<float> vertices;
 		std::vector<unsigned int> indices;
 
-		int width = 3, height = 2;
-		float tile_size = 1.0f;
+		int width = 2, height = 2; // number of tiles
 
-		for (int y = 0; y < height; y++)
+		for (unsigned int i = 0; i <= height; i++)
 		{
-			for (int x = 0; x < width; x++)
+			for (unsigned int j = 0; j <= width; j++)
 			{
+				push_back(vertices, glm::vec3(i * tile_height, 0.0f, j * tile_width));
+			}
+		}
+
+		for (unsigned int i = 0; i < height; i++)
+		{
+			for (unsigned int j = 0; j < width; j++)
+			{
+				push_back(indices, (i + 0) * width + j + 1);
+				push_back(indices, (i + 0) * width + j);
+				push_back(indices, (i + 1) * width + j + 1);
+
+				push_back(indices, (i + 1) * width + j + 1);
+				push_back(indices, (i + 1) * width + j + 2);
+				push_back(indices, (i + 0) * width + j + 1);
 			}
 		}
 #endif
+
+		num_indices = indices.size();
+		std::cout << "indices = " << indices.size() << std::endl;
+		std::cout << "vertices = " << vertices.size() / 3 << std::endl;
 
 		tile_vao.bind();
 		tile_vbo.buffer(&vertices[0], vertices.size() * sizeof(vertices[0]));
@@ -62,17 +97,9 @@ public:
 
 			tile_vao.bind();
 
-			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-
-#if 0
-			glDrawArrays(GL_TRIANGLES, 0, 3);
-#else
-			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-#endif
-
-
-			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			glDrawElements(GL_TRIANGLE_STRIP, num_indices, GL_UNSIGNED_INT, 0);
+			//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 			tile_vao.unbind();
 		}
 	}
@@ -85,5 +112,6 @@ private:
 	gfx::ElementBufferObject tile_ebo;
 	gfx::VertexArrayObject tile_vao;
 
+	unsigned int num_indices;
 	const int levels = 3;
 };
