@@ -25,21 +25,22 @@ public:
 	{
 		// https://www.learnopengles.com/tag/vertex-buffer-object/
 		// https://www.learnopengles.com/tag/degenerate-triangles/
+		// https://www.learnopengles.com/android-lesson-eight-an-introduction-to-index-buffer-objects-ibos/
 
 		const float tile_height = 1.0f;
-		const float tile_width = 2.0f;
+		const float tile_width = 1.5f;
 
 
-#if 0
+#if 1
 		std::vector<float> vertices = {
-			0.0f, 0.0f, 0.0f, // top left
-			0.0f, 0.0f, tile_width, // top right
-			tile_height, 0.0f, 0.0f, // bottom left
+			0.0f, 0.0f, 0.0f,				// top left
+			0.0f, 0.0f, tile_width,			// top right
+			tile_height, 0.0f, 0.0f,		// bottom left
 			tile_height, 0.0,  tile_width, // bottom right 
 		};
 
 		std::vector<unsigned int> indices = {  
-			1, 0, 2,
+			0, 2, 1,
 			2, 3, 1
 		};
 #else
@@ -71,7 +72,7 @@ public:
 		}
 #endif
 
-		num_indices = indices.size();
+		index_count = indices.size();
 		std::cout << "indices = " << indices.size() << std::endl;
 		std::cout << "vertices = " << vertices.size() / 3 << std::endl;
 
@@ -82,6 +83,7 @@ public:
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 		glEnableVertexAttribArray(0);
 
+		//tile_ebo.unbind();
 		tile_vbo.unbind();
 		tile_vao.unbind();
 	}
@@ -97,9 +99,11 @@ public:
 
 			tile_vao.bind();
 
-			//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-			glDrawElements(GL_TRIANGLE_STRIP, num_indices, GL_UNSIGNED_INT, 0);
-			//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			bool wireframe = false;
+
+			if (wireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_INT, 0);
+			if (wireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 			tile_vao.unbind();
 		}
 	}
@@ -112,6 +116,6 @@ private:
 	gfx::ElementBufferObject tile_ebo;
 	gfx::VertexArrayObject tile_vao;
 
-	unsigned int num_indices;
+	unsigned int index_count;
 	const int levels = 3;
 };
