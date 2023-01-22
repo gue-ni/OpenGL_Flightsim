@@ -28,11 +28,11 @@ namespace phi {
     struct RigidBodyParams {
         float mass = 10.0f;
         glm::mat3 inertia;
-        bool apply_gravity = true;
-        glm::vec3 position = glm::vec3(0.0f);
-        glm::vec3 velocity = glm::vec3(0.0f);
-        glm::vec3 angular_velocity = glm::vec3(0.0f);
+        glm::vec3 position{};
+        glm::vec3 velocity{};
+        glm::vec3 angular_velocity{};
         glm::quat rotation = glm::quat(glm::vec3(0.0f));
+        bool apply_gravity = true;
     };
 
     class RigidBody {
@@ -60,11 +60,13 @@ namespace phi {
             inverse_inertia(glm::inverse(params.inertia))
         {}
 
+        /*
         RigidBody(float body_mass) 
             : mass(body_mass), 
             inertia(cube_inertia_tensor(glm::vec3(1.0f), body_mass)), 
             inverse_inertia(glm::inverse(inertia))
         {}
+        */
 
         RigidBody(float m, const glm::mat3& inertia_tensor) 
             : mass(m),
@@ -80,18 +82,9 @@ namespace phi {
             inverse_inertia(glm::inverse(inertia_tensor))
         {}
 
-        static glm::mat3 cube_inertia_tensor(const glm::vec3& dimensions, float cube_mass)
+        inline void set_inertia(const glm::mat3& inertia_tensor)
         {
-            float f = 1.0f / 12.0f;
-            float d0 = f * cube_mass * (dimensions.y * dimensions.y + dimensions.z * dimensions.z);
-            float d1 = f * cube_mass * (dimensions.x * dimensions.x + dimensions.z * dimensions.z);
-            float d2 = f * cube_mass * (dimensions.x * dimensions.x + dimensions.y * dimensions.y);
-            //printf("d0 = %f, d1 = %f, d2 = %f\n", d0, d1, d2);
-            return glm::mat3{
-                 d0, 0, 0,
-                 0, d1, 0,
-                 0, 0, d2
-            };
+            inertia = inertia_tensor, inverse_inertia = glm::inverse(inertia_tensor);
         }
 
         // get velocity of point in body space
@@ -167,8 +160,10 @@ namespace phi {
 
             angular_velocity += inverse_inertia * 
                 (m_torque - glm::cross(angular_velocity, inertia * angular_velocity)) * dt;
+
             rotation += (rotation * glm::quat(0.0f, angular_velocity.x, angular_velocity.y, angular_velocity.z)) *
                 (0.5f * dt);
+
             rotation = glm::normalize(rotation);
 
             // reset accumulators
@@ -177,6 +172,11 @@ namespace phi {
     };
 
     namespace utils {
+        inline float squared(float a)
+        {
+            return a * a;
+        }
+
         inline float scale(float input, float in_min, float in_max, float out_min, float out_max)
         {
             return (input - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
@@ -221,6 +221,40 @@ namespace phi {
 		{
 			return meter_per_second * 3.6f;
 		}
+
+		static glm::vec3 cube_moment_of_inertia(const glm::vec3& size, float mass)
+		{
+			const float C = (1.0f / 12.0f) * mass;
+			glm::vec3 I(0.0f);
+			I.x = C * (utils::squared(size.y) + utils::squared(size.z));
+			I.y = C * (utils::squared(size.x) + utils::squared(size.z));
+			I.z = C * (utils::squared(size.x) + utils::squared(size.y));
+			return I;
+		}
+
+		static glm::vec3 cylinder_moment_of_inertia(float radius, float length, float mass)
+		{
+			const float C = (1.0f / 12.0f) * mass;
+			glm::vec3 I(0.0f);
+			I.x = (1.0f / 2.0f) * mass * utils::squared(radius);
+			I.y = I.z = C * (3 * utils::squared(radius) + utils::squared(length));
+			return I;
+		}
+
+        static glm::mat3 inertia_tensor(const glm::vec3& moment_of_inertia)
+        {
+            return {
+                moment_of_inertia.x, 0.0f, 0.0f,
+                0.0f, moment_of_inertia.y, 0.0f,
+                0.0f, 0.0f, moment_of_inertia.z,
+            };
+        }
+
+		static glm::mat3 cube_inertia_tensor(const glm::vec3& size, float mass)
+		{
+            return inertia_tensor(cube_moment_of_inertia(size, mass));
+				
+        }
     };
 };
 

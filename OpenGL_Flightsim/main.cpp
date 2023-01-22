@@ -82,7 +82,7 @@ int main(void)
 
     // SDL options
     SDL_ShowCursor(SDL_FALSE);
-    SDL_CaptureMouse(SDL_TRUE);
+    //SDL_CaptureMouse(SDL_TRUE);
     SDL_SetRelativeMouseMode(SDL_TRUE);
 
     Joystick joystick;
@@ -205,12 +205,12 @@ int main(void)
 #if 1
     gfx::Light sun(gfx::Light::DIRECTIONAL, gfx::rgb(154, 219, 172));
     sun.set_position(glm::vec3(-2.0f, 4.0f, -1.0f));
-    sun.cast_shadow = true;
+    sun.cast_shadow = false;
     scene.add(&sun);
 #endif
   
-    auto position = glm::vec3(0.0f, 0.0f, 0.0f);
-    auto velocity = glm::vec3(phi::utils::meter_per_second(0.0f), 0.0f, 0.0f);
+    auto position = glm::vec3(0.0f, 10.0f, 0.0f);
+    auto velocity = glm::vec3(100.0f, 0.0f, 0.0f);
 
 #if 1
     gfx::Object3D transform;
@@ -375,13 +375,7 @@ int main(void)
 
         aircraft.controls.set(joystick.roll, joystick.pitch, joystick.yaw);
         aircraft.engine.throttle = joystick.throttle;
-
-        printf("throttle = %.2f\n", joystick.throttle);
         
-        //aircraft.elevator.normal = Wing::calculate_normal(elevator_incidence);
-        //aircraft.left_aileron.normal = Wing::calculate_normal(aileron_incidence);
-        //aircraft.right_aileron.normal = Wing::calculate_normal(-aileron_incidence);
-
         if (!paused)
         {
 			aircraft.update(dt);

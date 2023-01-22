@@ -18,6 +18,7 @@ std::ostream& operator<<(std::ostream& os, const glm::vec2& v)
 
 std::ostream& operator<<(std::ostream& os, const glm::mat3& m)
 {
+	std::cout << "\n{ " << std::endl;
 	for (int i = 0; i < 3; i++)
 	{
 		for (int j = 0; j < 3; j++)
@@ -26,6 +27,7 @@ std::ostream& operator<<(std::ostream& os, const glm::mat3& m)
 		}
 		os << "\n";
 	}
+	std::cout << "{\n" << std::endl;
 	return os;
 }
 

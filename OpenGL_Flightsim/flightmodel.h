@@ -2,6 +2,7 @@
 
 #include "phi.h"
 #include "gfx.h"
+#include "inertia.h"
 
 #include <cmath>
 #include <vector>
@@ -17,7 +18,7 @@ struct ValueTuple
     float cd;
 };
 
-// NACA 0012 AIRFOILS (n0012-il) Xfoil prediction polar at RE=1,000,000 Ncrit=9
+// NACA 0012 (n0012-il) Xfoil prediction polar at RE=1,000,000 Ncrit=9
 std::vector<ValueTuple> NACA_0012 = {
     {-18.500f, -1.2258f, 0.10236f},
     {-18.250f, -1.2456f, 0.09505f},
@@ -318,6 +319,7 @@ std::vector<ValueTuple> NACA_2412 = {
 
 struct Controls {
     float roll{0.0f}, pitch{0.0f}, yaw{0.0f};
+
     void set(float r, float p, float y)
     {
         roll = r, pitch = p, yaw = y;
@@ -407,6 +409,7 @@ struct Wing
     const Aerodynamics aerodynamics;
 
     glm::vec3 normal;
+    glm::vec3 drag_force, lift_force, lift_torque, scaled_lift_torque;
     float lift_multiplier = 1.0f;
     float drag_multiplier = 1.0f;
     float lift_coefficient = 0.0f;
@@ -460,14 +463,17 @@ struct Wing
         drag = drag_coefficient * drag_multiplier * speed * speed * area;
 
         // ugly hack, necessary probably because the inertia tensor is (probably) wrong
-        auto force = (lift * lift_direction);
-        auto torque = glm::cross(center_of_gravity, force);
-        rigid_body.add_relative_force(force);
-        auto a = 0.01f;
-        auto b = 1.0f;
-        rigid_body.add_relative_torque(torque * a);
+        lift_force = lift * lift_direction;
+        rigid_body.add_relative_force(lift_force);
 
-        rigid_body.add_force_at_point(drag * drag_direction, center_of_gravity);
+        lift_torque = glm::cross(center_of_gravity, lift_force);
+        scaled_lift_torque = lift_torque * 0.01f;
+
+        rigid_body.add_relative_torque(scaled_lift_torque);
+        //rigid_body.add_relative_torque(lift_torque);
+
+        drag_force = drag * drag_direction;
+        rigid_body.add_force_at_point(drag_force, center_of_gravity);
     }
 };
 
@@ -477,75 +483,82 @@ glm::mat3 inertia_1 = {
     0, 0, 226.475f
 };
 
+// https://forum.flightgear.org/viewtopic.php?f=25&t=24774
+glm::mat3 inertia_2 = {
+    19999.0f, 0.0f, 7138.9f,
+    0.0f, 43017.4f, 0.0f,
+    7138.9f, 0.0f, 59498.6f,
+};
+
+glm::mat3 cube_inertia = phi::utils::cube_inertia_tensor(glm::vec3(3.1f, 2.1f, 0.1f), 16000.0f);
+glm::mat3 cylinder_inertia = phi::utils::inertia_tensor(phi::utils::cylinder_moment_of_inertia(1, 6, 16000.0f));
+
 struct Aircraft
 {
-    phi::RigidBody rigid_body;
-
-#if 0
-    Wing left_wing;
-    Wing right_wing;
-    Wing right_aileron;
-    Wing left_aileron;
-    Wing rudder;
-    Wing elevator;
-#else
-    std::vector<Wing> elements;
-#endif
-
     Engine engine;
     Controls controls;
-    float aileron_torque = 15000.0f, elevator_torque = 10000.0f, yaw_torque = 1000.0f;
+    std::vector<Wing> elements;
+    phi::RigidBody rigid_body;
+
+#if 1
+    float aileron_torque = 15000.0f, elevator_torque = 10000.0f, rudder_torque = 5000.0f;
+#else
+    float aileron_torque = 15000.0f * 100.0f, elevator_torque = 10000.0f * 100.0f, yaw_torque = 1000.0f;
+#endif
 
     float log_timer = 1.0f;
 
     Aircraft(const glm::vec3 &position, const glm::vec3 &velocity)
-        : rigid_body({ .mass = 16000.0f, .inertia = phi::RigidBody::cube_inertia_tensor(glm::vec3(3.1f, 2.1f, 0.1f), 16000.0f) }), 
+        : rigid_body({ .mass = 16000.0f, .inertia = cube_inertia }),
         elements({
-          Wing("left_wing",     glm::vec3(-0.5f, 0.0, -2.73f),      6.96f * 3.50f, Aerodynamics(NACA_2412), phi::UP),
-          Wing("left_aileron",  glm::vec3(0.0f, 0.0f, -1.0f),       3.80f * 1.26f, Aerodynamics(NACA_0012), phi::UP),
-          Wing("right_wing",    glm::vec3(-0.5f, 0.0, +2.73f),      6.96f * 3.50f, Aerodynamics(NACA_2412), phi::UP),
-          Wing("right_aileron", glm::vec3(0.0f, 0.0f, 1.0f),        3.80f * 1.26f, Aerodynamics(NACA_0012), phi::UP),
-          Wing("elevator",      glm::vec3(-6.64f, -0.12f, 0.0f),    6.54f * 2.70f, Aerodynamics(NACA_0012), phi::UP),
-          Wing("rudder",        glm::vec3(-6.64f, 0.0f, 0.0f),      5.31f * 3.10f, Aerodynamics(NACA_0012), phi::RIGHT)
+          Wing("left_wing",     glm::vec3(-0.5f,   0.0f, -2.73f),      24.36f, Aerodynamics(NACA_2412), phi::UP),
+          Wing("left_aileron",  glm::vec3( 0.0f,   0.0f, -1.0f),        4.79f, Aerodynamics(NACA_0012), phi::UP),
+          Wing("right_aileron", glm::vec3( 0.0f,   0.0f,  1.0f),        4.79f, Aerodynamics(NACA_0012), phi::UP),
+          Wing("right_wing",    glm::vec3(-0.5f,   0.0f,  2.73f),      24.36f, Aerodynamics(NACA_2412), phi::UP),
+          Wing("elevator",      glm::vec3(-6.64f, -0.12f, 0.0f),       17.66f, Aerodynamics(NACA_0012), phi::UP),
+          Wing("rudder",        glm::vec3(-6.64f,  0.0f,  0.0f),       16.46f, Aerodynamics(NACA_0012), phi::RIGHT)
         }),
         engine(100000.0f)
     {
         rigid_body.position = position;
         rigid_body.velocity = velocity;
-        //std::cout << "inertia: " << rigid_body.inertia << std::endl;
+
+        std::cout << "aircraft inertia: " << rigid_body.inertia << std::endl;
+
+        (void)calc_inertia();
     }
 
     void update(phi::Seconds dt)
     {
         const float control_authority = phi::utils::clamp(glm::length(rigid_body.velocity) / 150.0f, 0.0f, 1.0f);
-        rigid_body.add_relative_torque(phi::X_AXIS * aileron_torque * controls.roll * control_authority);
-        //rigid_body.add_relative_torque(phi::Y_AXIS * yaw_torque * controls.yaw * control_authority);
-        rigid_body.add_relative_torque(phi::Z_AXIS * elevator_torque * controls.pitch * control_authority);
-#if 0
-        left_wing.apply_forces(rigid_body, dt, true);
-        right_wing.apply_forces(rigid_body, dt, true);
-        elevator.apply_forces(rigid_body, dt, false);
-        rudder.apply_forces(rigid_body, dt, false);
-        left_aileron.apply_forces(rigid_body, dt, false);
-        right_aileron.apply_forces(rigid_body, dt, false);
-#else
+
+        rigid_body.add_relative_torque(glm::vec3(aileron_torque * controls.roll, 0.0f, elevator_torque * controls.pitch) * control_authority);
+
         for (Wing& wing : elements)
         {
             wing.apply_forces(rigid_body);
         }    
-#endif
 
+        Wing& lw = elements[0];
+        Wing& rw = elements[2];
 
         engine.apply_forces(rigid_body);
 
-        if ((log_timer += dt) > log_intervall)
+        if ((log_timer += dt) > 0.1f)
         {
-#if 0
             log_timer = 0;
+
+#if 0
+            printf("speed: %.2f\n", glm::length(rigid_body.velocity));
+            std::cout << "[torque] lw = " << lw.lift_torque.x << ", rw = " << rw.lift_torque.x << ", sum = " << lw.lift_torque.x + rw.lift_torque.x << std::endl;
+            std::cout << "[scaled] lw = " << lw.scaled_lift_torque.x << ", rw = " << rw.scaled_lift_torque.x << ", sum = " << lw.scaled_lift_torque.x + rw.scaled_lift_torque.x << std::endl;
+            std::cout << "torque = " << rigid_body.get_torque().x << ", angular_velocity = " << rigid_body.angular_velocity.x << std::endl;
+            //std::cout << "[lift] lw = " << lw.lift << ", rw = " << rw.lift << std::endl;
+
+
             std::cout << "########## airplane ##############" << std::endl;
             // std::cout << "height: " << rigid_body.position.y << std::endl;
             // std::cout << "vertical speed: " << kilometer_per_hour(rigid_body.velocity.y) << std::endl;
-            printf("speed: %.2f\n", glm::length(rigid_body.velocity));
             printf("throttle: %.2f\n", engine.throttle);
             printf("wing_area: lw = %.2f, rw = %.2f, el = %.2f\n", left_wing.area, right_wing.area, elevator.area);
             printf("lift: lw = %.2f, rw = %.2f, el = %.2f\n", left_wing.lift, right_wing.lift, elevator.lift);
