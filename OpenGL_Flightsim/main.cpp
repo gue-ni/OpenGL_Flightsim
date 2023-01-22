@@ -374,10 +374,12 @@ int main(void)
             joystick.throttle = phi::utils::clamp(joystick.throttle, 0.0f, 1.0f);
         }
 
-        float f = phi::utils::clamp(glm::length(aircraft.rigid_body.velocity) / 150.0f, 0.0f, 1.0f);
-
-        aircraft.rigid_body.add_relative_torque(phi::X_AXIS * aileron_torque * joystick.roll * f);
-        aircraft.rigid_body.add_relative_torque(phi::Z_AXIS * elevator_torque * joystick.pitch * f);
+        //float f = phi::utils::clamp(glm::length(aircraft.rigid_body.velocity) / 150.0f, 0.0f, 1.0f);
+        //aircraft.rigid_body.add_relative_torque(phi::X_AXIS * aileron_torque * joystick.roll * f);
+        //aircraft.rigid_body.add_relative_torque(phi::Z_AXIS * elevator_torque * joystick.pitch * f);
+        aircraft.controls.pitch = joystick.pitch; 
+        aircraft.controls.roll = joystick.roll;
+        aircraft.controls.yaw = joystick.yaw;
         aircraft.engine.throttle = joystick.throttle;
 
         //printf("throttle = %.2f\n", joystick.throttle);

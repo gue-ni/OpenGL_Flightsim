@@ -316,7 +316,9 @@ std::vector<ValueTuple> NACA_2412 = {
     {19.250f, 1.4781f, 0.09506f},
 };
 
-
+struct Controls {
+    float roll{0.0f}, pitch{0.0f}, yaw{0.0f};
+};
 
 struct Aerodynamics
 {
@@ -381,7 +383,7 @@ struct Aerodynamics
 
 struct Engine
 {
-    float thrust = 200000.0f; // newtons
+    const float thrust = 200000.0f; // newtons
     float throttle = 1.0f;    // [0, 1]
     
     Engine(float engine_thrust) : thrust(engine_thrust) {}
@@ -465,7 +467,6 @@ struct Wing
     }
 };
 
-
 glm::mat3 inertia_1 = {
     119.076f, 0, 0,
     0, 345.551f, 0,
@@ -488,6 +489,8 @@ struct Aircraft
 #endif
 
     Engine engine;
+    Controls controls;
+    float aileron_torque = 15000.0f, elevator_torque = 10000.0f, yaw_torque = 1000.0f;
 
     float log_timer = 1.0f;
 
@@ -510,6 +513,10 @@ struct Aircraft
 
     void update(phi::Seconds dt)
     {
+        const float control_authority = phi::utils::clamp(glm::length(rigid_body.velocity) / 150.0f, 0.0f, 1.0f);
+        rigid_body.add_relative_torque(phi::X_AXIS * aileron_torque * controls.roll * control_authority);
+        //rigid_body.add_relative_torque(phi::Y_AXIS * yaw_torque * controls.yaw * control_authority);
+        rigid_body.add_relative_torque(phi::Z_AXIS * elevator_torque * controls.pitch * control_authority);
 #if 0
         left_wing.apply_forces(rigid_body, dt, true);
         right_wing.apply_forces(rigid_body, dt, true);
