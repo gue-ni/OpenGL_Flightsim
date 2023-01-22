@@ -241,7 +241,6 @@ int main(void)
 
     float elevator_incidence = 0;
     float aileron_incidence = 0;
-    const float elevator_torque = 15000.0f, aileron_torque = 10000.0f, rudder_torque = 5000.0f;
 	const float max_aileron_deflection = 1.0f;
 	const float max_elevator_deflection = 1.0f;
 
@@ -374,15 +373,10 @@ int main(void)
             joystick.throttle = phi::utils::clamp(joystick.throttle, 0.0f, 1.0f);
         }
 
-        //float f = phi::utils::clamp(glm::length(aircraft.rigid_body.velocity) / 150.0f, 0.0f, 1.0f);
-        //aircraft.rigid_body.add_relative_torque(phi::X_AXIS * aileron_torque * joystick.roll * f);
-        //aircraft.rigid_body.add_relative_torque(phi::Z_AXIS * elevator_torque * joystick.pitch * f);
-        aircraft.controls.pitch = joystick.pitch; 
-        aircraft.controls.roll = joystick.roll;
-        aircraft.controls.yaw = joystick.yaw;
+        aircraft.controls.set(joystick.roll, joystick.pitch, joystick.yaw);
         aircraft.engine.throttle = joystick.throttle;
 
-        //printf("throttle = %.2f\n", joystick.throttle);
+        printf("throttle = %.2f\n", joystick.throttle);
         
         //aircraft.elevator.normal = Wing::calculate_normal(elevator_incidence);
         //aircraft.left_aileron.normal = Wing::calculate_normal(aileron_incidence);

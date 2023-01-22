@@ -318,6 +318,10 @@ std::vector<ValueTuple> NACA_2412 = {
 
 struct Controls {
     float roll{0.0f}, pitch{0.0f}, yaw{0.0f};
+    void set(float r, float p, float y)
+    {
+        roll = r, pitch = p, yaw = y;
+    }
 };
 
 struct Aerodynamics
@@ -508,7 +512,7 @@ struct Aircraft
     {
         rigid_body.position = position;
         rigid_body.velocity = velocity;
-        std::cout << "inertia: " << rigid_body.inertia << std::endl;
+        //std::cout << "inertia: " << rigid_body.inertia << std::endl;
     }
 
     void update(phi::Seconds dt)
