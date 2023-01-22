@@ -417,6 +417,7 @@ namespace gfx {
 		void update(Object3D& object, float dt);
 		void move_mouse(float x, float y);
 		void move(const Direction& direction);
+		inline glm::vec3 get_front() const { return m_front; }
 	
 	private:
 		float m_speed, m_yaw, m_pitch;

@@ -79,6 +79,8 @@ int main(void)
     glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);
+    //glEnable(GL_CULL_FACE);
+
 
     // SDL options
     SDL_ShowCursor(SDL_FALSE);
@@ -261,6 +263,7 @@ int main(void)
         if ((timer += dt) >= 1.0f)
         {
             //printf("dt = %f, fps = %f\n", dt, 1 / dt);
+            std::cout << controller.get_front() << std::endl;
             timer = 0.0f;
         }
 
