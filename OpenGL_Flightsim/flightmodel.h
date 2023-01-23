@@ -446,7 +446,8 @@ struct Wing
 
     void apply_forces(phi::RigidBody &rigid_body)
     {
-        const auto local_velocity = rigid_body.get_point_velocity(center_of_gravity);
+        auto local_velocity = rigid_body.get_point_velocity(center_of_gravity);
+
         const auto speed = glm::length(local_velocity);
 
         if (speed <= 0.0f)
@@ -464,13 +465,16 @@ struct Wing
 
         // ugly hack, necessary probably because the inertia tensor is (probably) wrong
         lift_force = lift * lift_direction;
+#if 0
         rigid_body.add_relative_force(lift_force);
-
         lift_torque = glm::cross(center_of_gravity, lift_force);
         scaled_lift_torque = lift_torque * 0.01f;
+        //rigid_body.add_relative_torque(scaled_lift_torque);
+        rigid_body.add_relative_torque(lift_torque);
+#else
 
-        rigid_body.add_relative_torque(scaled_lift_torque);
-        //rigid_body.add_relative_torque(lift_torque);
+        rigid_body.add_force_at_point(lift_force, center_of_gravity);
+#endif
 
         drag_force = drag * drag_direction;
         rigid_body.add_force_at_point(drag_force, center_of_gravity);
@@ -492,6 +496,7 @@ glm::mat3 inertia_2 = {
 
 glm::mat3 cube_inertia = phi::utils::cube_inertia_tensor(glm::vec3(3.1f, 2.1f, 0.1f), 16000.0f);
 glm::mat3 cylinder_inertia = phi::utils::inertia_tensor(phi::utils::cylinder_moment_of_inertia(1, 6, 16000.0f));
+glm::mat3 simple_wing_inertia = phi::utils::inertia_tensor({300000.0f, 30000.0f, 390000.0f}); // best for now
 
 struct Aircraft
 {
@@ -500,7 +505,7 @@ struct Aircraft
     std::vector<Wing> elements;
     phi::RigidBody rigid_body;
 
-#if 1
+#if 0
     float aileron_torque = 15000.0f, elevator_torque = 10000.0f, rudder_torque = 5000.0f;
 #else
     float aileron_torque = 15000.0f * 100.0f, elevator_torque = 10000.0f * 100.0f, yaw_torque = 1000.0f;
@@ -509,7 +514,7 @@ struct Aircraft
     float log_timer = 1.0f;
 
     Aircraft(const glm::vec3 &position, const glm::vec3 &velocity)
-        : rigid_body({ .mass = 16000.0f, .inertia = cube_inertia }),
+        : rigid_body({ .mass = 16000.0f, .inertia = simple_wing_inertia }),
         elements({
           Wing("left_wing",     glm::vec3(-0.5f,   0.0f, -2.73f),      24.36f, Aerodynamics(NACA_2412), phi::UP),
           Wing("left_aileron",  glm::vec3( 0.0f,   0.0f, -1.0f),        4.79f, Aerodynamics(NACA_0012), phi::UP),
