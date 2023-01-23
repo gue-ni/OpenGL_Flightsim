@@ -9,13 +9,9 @@
 #include <tuple>
 #include <algorithm>
 
-constexpr float log_intervall = 1.0f;
-
 struct ValueTuple
 {
-    float alpha;
-    float cl;
-    float cd;
+    float alpha, cl, cd;
 };
 
 // NACA 0012 (n0012-il) Xfoil prediction polar at RE=1,000,000 Ncrit=9
@@ -340,58 +336,28 @@ struct Aerodynamics
         max = curve_data[curve_data.size() - 1].alpha;
     }
     
-    void sample2(float alpha, float *cl, float *cd) const 
+    void sample(float alpha, float *cl, float *cd) const 
     {
         assert(min <= alpha && alpha <= max);
-        int index = phi::utils::scale(alpha, min, max, 0, 1) * data.size();
+        int index = static_cast<int>(phi::utils::scale(alpha, min, max, 0, 1) * data.size());
         assert(0 <= index && index < data.size());
         *cl = data[index].cl;
         *cd = data[index].cd;
         return;
     }
 
-    // TODO: improve this so there is no loop necessary
-    void sample(float alpha, float *cl, float *cd) const
+    std::tuple<float, float> sample(float alpha) const
     {
-        // assert(data[0].alpha <= alpha && alpha <= data[data.size() - 1].alpha);
-
-        int first = 0;
-        int last = data.size() - 1;
-
-        if (alpha < data[first].alpha)
-        {
-            *cl = data[first].cl;
-            *cd = data[first].cd;
-            return;
-        }
-
-        if (data[last].alpha < alpha)
-        {
-            *cl = data[last].cl;
-            *cd = data[last].cd;
-            return;
-        }
-
-        for (int i = 0; i < data.size() - 1; i++)
-        {
-            if (data[i].alpha <= alpha && alpha <= data[i + 1].alpha)
-            {
-                auto t0 = alpha - data[i].alpha;
-                auto t1 = data[i + 1].alpha - data[i].alpha;
-                auto f = t0 / t1;
-                *cl = phi::utils::lerp(data[i].cl, data[i + 1].cl, f);
-                *cd = phi::utils::lerp(data[i].cd, data[i + 1].cd, f);
-                break;
-            }
-        }
-        return;
+        float cl, cd;
+        sample(alpha, &cl, &cd);
+        return { cl, cd };
     }
 };
 
 struct Engine
-{
-    const float thrust = 200000.0f; // newtons
-    float throttle = 1.0f;    // [0, 1]
+{   
+    float throttle = 1.0f;    
+    const float thrust = 200000.0f; 
     
     Engine(float engine_thrust) : thrust(engine_thrust) {}
 
@@ -406,102 +372,66 @@ struct Wing
 {
     const std::string name;
     const float area;
-    const glm::vec3 center_of_gravity; // center of gravity relative to rigidbody cg
+    const glm::vec3 position; // center of gravity relative to rigidbody cg
     const Aerodynamics aerodynamics;
-
     glm::vec3 normal;
-    glm::vec3 drag_force, lift_force, lift_torque, scaled_lift_torque;
     float lift_multiplier = 1.0f;
     float drag_multiplier = 1.0f;
-    float lift_coefficient = 0.0f;
-    float drag_coefficient = 0.0f;
-    float lift = 0.0f;
-    float drag = 0.0f; 
-    float angle_of_attack = 0.0f;
-    float incidence = 0.0f;
-
-    Wing(const std::string &wing_name, const glm::vec3 &cg_offset, float wing_area, const Aerodynamics &aero, const glm::vec3 &wing_normal)
+    
+    Wing(
+        const std::string &wing_name, 
+        const glm::vec3 &offset, 
+        float wing_area, 
+        const Aerodynamics &aero, 
+        const glm::vec3 &wing_normal
+    )
         : name(wing_name),
-          center_of_gravity(cg_offset),
+          position(offset),
           area(wing_area),
           aerodynamics(aero),
           normal(wing_normal)
     {}
 
-    Wing(const std::string &wing_name, const glm::vec3 &cg_offset, float wing_area, const Aerodynamics &aero, float wing_incidence)
-        : name(wing_name),
-          center_of_gravity(cg_offset),
-          area(wing_area),
-          aerodynamics(aero),
-          incidence(wing_incidence),
-          normal(calculate_normal(wing_incidence))
-    {}
-
     static glm::vec3 calculate_normal(float incidence_angle_degrees)
     {
         float theta = glm::radians(incidence_angle_degrees + 90.0f);
-        float x = cos(theta);
-        float y = sin(theta);
+        float x = cos(theta), y = sin(theta);
         return glm::normalize(glm::vec3(x, y, 0.0f));
     }
 
-    void set_incidence(float incidence_angle_degrees)
+    void set_incidence(float incidence)
     {
-        normal = calculate_normal(incidence_angle_degrees);
+        normal = calculate_normal(incidence);
     }
 
     void apply_forces(phi::RigidBody &rigid_body)
     {
-        const auto local_velocity = rigid_body.get_point_velocity(center_of_gravity);
-        const auto speed = glm::length(local_velocity);
+        auto local_velocity = rigid_body.get_point_velocity(position);
+        auto speed = glm::length(local_velocity);
 
-        if (speed <= 0.0f)
+        if (speed <= 0.0f || area <= 0.0f)
             return;
 
-        const auto drag_direction = glm::normalize(-local_velocity);
-        const auto lift_direction = glm::normalize(glm::cross(glm::cross(drag_direction, normal), drag_direction));
+        auto drag_direction = glm::normalize(-local_velocity);
+        auto lift_direction = glm::normalize(glm::cross(glm::cross(drag_direction, normal), drag_direction));
 
-        angle_of_attack = glm::degrees(std::asin(glm::dot(drag_direction, normal)));
+        auto angle_of_attack = glm::degrees(std::asin(glm::dot(drag_direction, normal)));
 
-        aerodynamics.sample2(angle_of_attack, &lift_coefficient, &drag_coefficient);
+        auto [lift_coefficient, drag_coefficient] = aerodynamics.sample(angle_of_attack);
 
-        lift = lift_coefficient * lift_multiplier * speed * speed * area;
-        drag = drag_coefficient * drag_multiplier * speed * speed * area;
+        auto lift = lift_coefficient * lift_multiplier * speed * speed * area;
+        auto drag = drag_coefficient * drag_multiplier * speed * speed * area;
 
-        // ugly hack, necessary probably because the inertia tensor is (probably) wrong
-        lift_force = lift * lift_direction;
-#if 0
-        rigid_body.add_relative_force(lift_force);
-        lift_torque = glm::cross(center_of_gravity, lift_force);
-        scaled_lift_torque = lift_torque * 0.01f;
-        //rigid_body.add_relative_torque(scaled_lift_torque);
-        rigid_body.add_relative_torque(lift_torque);
-#else
+        auto lift_force = lift * lift_direction;
+        auto drag_force = drag * drag_direction;
 
-        rigid_body.add_force_at_point(lift_force, center_of_gravity);
-#endif
-
-        drag_force = drag * drag_direction;
-        rigid_body.add_force_at_point(drag_force, center_of_gravity);
+        rigid_body.add_force_at_point(lift_force, position);
+        rigid_body.add_force_at_point(drag_force, position);
     }
 };
 
-glm::mat3 inertia_1 = {
-    119.076f, 0, 0,
-    0, 345.551f, 0,
-    0, 0, 226.475f
-};
-
-// https://forum.flightgear.org/viewtopic.php?f=25&t=24774
-glm::mat3 inertia_2 = {
-    19999.0f, 0.0f, 7138.9f,
-    0.0f, 43017.4f, 0.0f,
-    7138.9f, 0.0f, 59498.6f,
-};
-
-glm::mat3 cube_inertia = phi::utils::cube_inertia_tensor(glm::vec3(3.1f, 2.1f, 0.1f), 16000.0f);
-glm::mat3 cylinder_inertia = phi::utils::inertia_tensor(phi::utils::cylinder_moment_of_inertia(1, 6, 16000.0f));
-glm::mat3 simple_wing_inertia = phi::utils::inertia_tensor({300000.0f, 30000.0f, 500000.0f}); // best for now
+//glm::mat3 simple_wing_inertia = phi::utils::inertia_tensor({300000.0f, 30000.0f, 500000.0f}); // best for now
+glm::mat3 simple_wing_inertia = phi::utils::inertia_tensor({100000.0f, 30000.0f, 500000.0f}); 
 
 struct Aircraft
 {
@@ -532,15 +462,11 @@ struct Aircraft
     {
         rigid_body.position = position;
         rigid_body.velocity = velocity;
-
-        std::cout << "aircraft inertia: " << rigid_body.inertia << std::endl;
-
-        (void)calc_inertia();
+        // std::cout << "aircraft inertia: " << rigid_body.inertia << std::endl;
     }
 
     void update(phi::Seconds dt)
     {
-        
         Wing& lw = elements[0];
         Wing& la = elements[1];
         Wing& ra = elements[2];
@@ -555,7 +481,7 @@ struct Aircraft
         ra.set_incidence(-aileron_deflection);
         el.set_incidence(-controls.pitch * max_elevator_deflection);
 #else
-        const float control_authority = phi::utils::clamp(glm::length(rigid_body.velocity) / 150.0f, 0.0f, 1.0f);
+        float control_authority = phi::utils::clamp(glm::length(rigid_body.velocity) / 150.0f, 0.0f, 1.0f);
         rigid_body.add_relative_torque(glm::vec3(aileron_torque * controls.roll, 0.0f, elevator_torque * controls.pitch) * control_authority);
 #endif
 
@@ -566,31 +492,15 @@ struct Aircraft
 
         engine.apply_forces(rigid_body);
 
-        if ((log_timer += dt) > 0.1f)
+        if ((log_timer += dt) > 1.0f)
         {
             log_timer = 0;
-#if 0
-            printf("speed: %.2f\n", glm::length(rigid_body.velocity));
-            std::cout << "[torque] lw = " << lw.lift_torque.x << ", rw = " << rw.lift_torque.x << ", sum = " << lw.lift_torque.x + rw.lift_torque.x << std::endl;
-            std::cout << "[scaled] lw = " << lw.scaled_lift_torque.x << ", rw = " << rw.scaled_lift_torque.x << ", sum = " << lw.scaled_lift_torque.x + rw.scaled_lift_torque.x << std::endl;
-            std::cout << "torque = " << rigid_body.get_torque().x << ", angular_velocity = " << rigid_body.angular_velocity.x << std::endl;
-            //std::cout << "[lift] lw = " << lw.lift << ", rw = " << rw.lift << std::endl;
-
-
-            std::cout << "########## airplane ##############" << std::endl;
-            // std::cout << "height: " << rigid_body.position.y << std::endl;
-            // std::cout << "vertical speed: " << kilometer_per_hour(rigid_body.velocity.y) << std::endl;
-            printf("throttle: %.2f\n", engine.throttle);
-            printf("wing_area: lw = %.2f, rw = %.2f, el = %.2f\n", left_wing.area, right_wing.area, elevator.area);
-            printf("lift: lw = %.2f, rw = %.2f, el = %.2f\n", left_wing.lift, right_wing.lift, elevator.lift);
-            printf("drag: lw = %.2f, rw = %.2f, el = %.2f\n", left_wing.drag, right_wing.drag, elevator.drag);
-            printf("aoa:  lw = %.2f, rw = %.2f, el = %.2f\n", left_wing.angle_of_attack, right_wing.angle_of_attack, elevator.angle_of_attack);
-            printf("cl:   lw = %.2f, rw = %.2f, el = %.2f\n", left_wing.lift_coefficient, right_wing.lift_coefficient, elevator.lift_coefficient);
-            printf("cd:   lw = %.2f, rw = %.2f, el = %.2f\n", left_wing.drag_coefficient, right_wing.drag_coefficient, elevator.drag_coefficient);
-            std::cout << "angular_velocity = " << rigid_body.angular_velocity << std::endl;
-            std::cout << "torque = " << rigid_body.get_torque() << std::endl;
-            std::cout << "force = " << rigid_body.get_force() << std::endl;
-            std::cout << "##################################" << std::endl;
+#if 1
+            printf(
+                "speed: %.2f, throttle: %.2f\n", 
+                phi::utils::kilometer_per_hour(glm::length(rigid_body.velocity)),
+                engine.throttle
+            );
 #endif
         }
 

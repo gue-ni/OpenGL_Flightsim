@@ -9,25 +9,24 @@
 struct Element {
     std::string name;
     float mass = 0;
-    float area = 0;
     glm::vec3 local_inertia{}, center_of_gravity{}, design_coordinates{};
 
-    Element(const std::string& n, float m, const glm::vec3& dc, const glm::vec3& inertia, float wing_area) 
-        : design_coordinates(dc), local_inertia(dc), area(wing_area), name(n), mass(m)
+    Element(const std::string& n, float m, const glm::vec3& dc, const glm::vec3& inertia) 
+        : design_coordinates(dc), local_inertia(dc), name(n), mass(m)
     {}
 };
 
 static glm::mat3 calc_inertia(void)
 {
     std::vector<Element> elements = {
-        Element("right out", 6.56f, {14.5f, 12.0f, 2.5f}, {13.92f, 10.5f, 24.0f }, 31.2),
-        Element("right in",  7.31f, {14.5f,  5.5f, 2.5f}, {21.95f, 12.22f, 33.67}, 36.4),
-        Element("left in",   7.31f, {14.5f, -5.5f, 2.5f}, {21.95f, 12.22f, 33.67}, 36.4),
-        Element("left out",  6.56f, {14.5f, -12.0, 2.5f}, {13.92f, 10.5f, 24.0f},  31.2),
-        Element("right elevator", 2.62f, {3.03f, 2.5f, 3.0f}, {0.837, 0.385f, 1.206f}, 10.8),
-        Element("left elevator", 2.62f, {3.03f, -2.5f, 3.0f}, {0.837, 0.385f, 1.206f}, 10.8),
-        Element("rudder", 2.93f, {2.25, 0.0, 5.0}, {1.262, 1.942, 0.718}, 12.0),
-        Element("fuselage", 31.8f, {15.25, 0.0, 0.0f}, {66.30, 861.9, 861.9}, 0.0f),
+        Element("right out", 6.56f, {14.5f, 12.0f, 2.5f}, {13.92f, 10.5f, 24.0f }),
+        Element("right in",  7.31f, {14.5f,  5.5f, 2.5f}, {21.95f, 12.22f, 33.67}),
+        Element("left in",   7.31f, {14.5f, -5.5f, 2.5f}, {21.95f, 12.22f, 33.67}),
+        Element("left out",  6.56f, {14.5f, -12.0, 2.5f}, {13.92f, 10.5f, 24.0f}),
+        Element("right elevator", 2.62f, {3.03f, 2.5f, 3.0f}, {0.837, 0.385f, 1.206f}),
+        Element("left elevator", 2.62f, {3.03f, -2.5f, 3.0f}, {0.837, 0.385f, 1.206f}),
+        Element("rudder", 2.93f, {2.25, 0.0, 5.0}, {1.262, 1.942, 0.718}),
+        Element("fuselage", 31.8f, {15.25, 0.0, 0.0f}, {66.30, 861.9, 861.9}),
     };
 
     for (Element& element : elements)
@@ -72,8 +71,9 @@ static glm::mat3 calc_inertia(void)
         -Ixz, -Iyz,  Izz
     };
 
-    //printf("Ixx = %f, Iyy = %f, Izz = %f\nIxy = %f, Ixz = %f, Iyz = %f\n", Ixx, Iyy, Izz, Ixy, Ixz, Iyz);
-    //printf("mass = %f\n", mass);
+#if 0
+    printf("Ixx = %f, Iyy = %f, Izz = %f\nIxy = %f, Ixz = %f, Iyz = %f\n", Ixx, Iyy, Izz, Ixy, Ixz, Iyz);
+    printf("mass = %f\n", mass);
     std::cout << inertia << std::endl;
     std::cout << "CG " << center_of_gravity << std::endl;
 
@@ -81,7 +81,7 @@ static glm::mat3 calc_inertia(void)
     {
         std::cout << element.name << " " << element.center_of_gravity << std::endl;
     }
-
+#endif
     return inertia;
 
 }
