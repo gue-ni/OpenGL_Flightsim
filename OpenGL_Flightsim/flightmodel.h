@@ -344,6 +344,7 @@ struct Aerodynamics
     {
         assert(min <= alpha && alpha <= max);
         int index = phi::utils::scale(alpha, min, max, 0, 1) * data.size();
+        assert(0 <= index && index < data.size());
         *cl = data[index].cl;
         *cd = data[index].cd;
         return;
@@ -396,7 +397,7 @@ struct Engine
 
     void apply_forces(phi::RigidBody &rigid_body)
     {
-        rigid_body.add_relative_force(glm::vec3(thrust * throttle, 0.0f, 0.0f));
+        rigid_body.add_relative_force({ thrust * throttle, 0.0f, 0.0f });
         // TODO: implement torque from propeller
     }
 };
@@ -444,10 +445,14 @@ struct Wing
         return glm::normalize(glm::vec3(x, y, 0.0f));
     }
 
+    void set_incidence(float incidence_angle_degrees)
+    {
+        normal = calculate_normal(incidence_angle_degrees);
+    }
+
     void apply_forces(phi::RigidBody &rigid_body)
     {
-        auto local_velocity = rigid_body.get_point_velocity(center_of_gravity);
-
+        const auto local_velocity = rigid_body.get_point_velocity(center_of_gravity);
         const auto speed = glm::length(local_velocity);
 
         if (speed <= 0.0f)
@@ -496,7 +501,7 @@ glm::mat3 inertia_2 = {
 
 glm::mat3 cube_inertia = phi::utils::cube_inertia_tensor(glm::vec3(3.1f, 2.1f, 0.1f), 16000.0f);
 glm::mat3 cylinder_inertia = phi::utils::inertia_tensor(phi::utils::cylinder_moment_of_inertia(1, 6, 16000.0f));
-glm::mat3 simple_wing_inertia = phi::utils::inertia_tensor({300000.0f, 30000.0f, 390000.0f}); // best for now
+glm::mat3 simple_wing_inertia = phi::utils::inertia_tensor({300000.0f, 30000.0f, 500000.0f}); // best for now
 
 struct Aircraft
 {
@@ -517,8 +522,8 @@ struct Aircraft
         : rigid_body({ .mass = 16000.0f, .inertia = simple_wing_inertia }),
         elements({
           Wing("left_wing",     glm::vec3(-0.5f,   0.0f, -2.73f),      24.36f, Aerodynamics(NACA_2412), phi::UP),
-          Wing("left_aileron",  glm::vec3( 0.0f,   0.0f, -1.0f),        4.79f, Aerodynamics(NACA_0012), phi::UP),
-          Wing("right_aileron", glm::vec3( 0.0f,   0.0f,  1.0f),        4.79f, Aerodynamics(NACA_0012), phi::UP),
+          Wing("left_aileron",  glm::vec3( 0.0f,   0.0f, -2.0f),        8.79f, Aerodynamics(NACA_0012), phi::UP),
+          Wing("right_aileron", glm::vec3( 0.0f,   0.0f,  2.0f),        8.79f, Aerodynamics(NACA_0012), phi::UP),
           Wing("right_wing",    glm::vec3(-0.5f,   0.0f,  2.73f),      24.36f, Aerodynamics(NACA_2412), phi::UP),
           Wing("elevator",      glm::vec3(-6.64f, -0.12f, 0.0f),       17.66f, Aerodynamics(NACA_0012), phi::UP),
           Wing("rudder",        glm::vec3(-6.64f,  0.0f,  0.0f),       16.46f, Aerodynamics(NACA_0012), phi::RIGHT)
@@ -535,24 +540,35 @@ struct Aircraft
 
     void update(phi::Seconds dt)
     {
-        const float control_authority = phi::utils::clamp(glm::length(rigid_body.velocity) / 150.0f, 0.0f, 1.0f);
+        
+        Wing& lw = elements[0];
+        Wing& la = elements[1];
+        Wing& ra = elements[2];
+        Wing& rw = elements[3];
+        Wing& el = elements[4];
+        Wing& ru = elements[5];
 
+#if 1
+        float max_elevator_deflection = 5.0f, max_aileron_deflection = 15.0f;
+        float aileron_deflection = controls.roll * max_aileron_deflection;
+        la.set_incidence(+aileron_deflection);
+        ra.set_incidence(-aileron_deflection);
+        el.set_incidence(-controls.pitch * max_elevator_deflection);
+#else
+        const float control_authority = phi::utils::clamp(glm::length(rigid_body.velocity) / 150.0f, 0.0f, 1.0f);
         rigid_body.add_relative_torque(glm::vec3(aileron_torque * controls.roll, 0.0f, elevator_torque * controls.pitch) * control_authority);
+#endif
 
         for (Wing& wing : elements)
         {
             wing.apply_forces(rigid_body);
         }    
 
-        Wing& lw = elements[0];
-        Wing& rw = elements[2];
-
         engine.apply_forces(rigid_body);
 
         if ((log_timer += dt) > 0.1f)
         {
             log_timer = 0;
-
 #if 0
             printf("speed: %.2f\n", glm::length(rigid_body.velocity));
             std::cout << "[torque] lw = " << lw.lift_torque.x << ", rw = " << rw.lift_torque.x << ", sum = " << lw.lift_torque.x + rw.lift_torque.x << std::endl;
