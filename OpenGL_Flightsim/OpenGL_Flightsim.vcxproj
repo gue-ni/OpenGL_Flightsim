@@ -165,7 +165,6 @@ xcopy /y /i /s $(ProjectDir)shaders  $(OutDir)shaders</Command>
     <ClInclude Include="clipmap.h" />
     <ClInclude Include="flightmodel.h" />
     <ClInclude Include="gfx.h" />
-    <ClInclude Include="inertia.h" />
     <ClInclude Include="lib\stb_image.h" />
     <ClInclude Include="lib\tiny_obj_loader.h" />
     <ClInclude Include="phi.h" />

@@ -2,7 +2,6 @@
 
 #include "phi.h"
 #include "gfx.h"
-#include "inertia.h"
 
 #include <cmath>
 #include <vector>
