@@ -460,7 +460,7 @@ struct Aircraft
         rigid_body.position = position;
         rigid_body.velocity = velocity;
         elements[6].lift_multiplier = elements[7].lift_multiplier = 0.0f;
-        elements[6].drag_multiplier = elements[7].drag_multiplier = 5.0f;
+        elements[6].drag_multiplier = elements[7].drag_multiplier = 10.0f;
         // std::cout << "aircraft inertia: " << rigid_body.inertia << std::endl;
     }
 
@@ -496,9 +496,10 @@ struct Aircraft
             log_timer = 0;
 #if 1
             printf(
-                "speed: %.2f, throttle: %.2f\n", 
+                "speed: %.2f, throttle: %.2f, altitude: %.2f\n", 
                 phi::utils::kilometer_per_hour(glm::length(rigid_body.velocity)),
-                engine.throttle
+                engine.throttle,
+                rigid_body.position.y
             );
 #endif
         }
