@@ -12,7 +12,8 @@ namespace phi {
 
     // constants
     constexpr float g = 9.81f;
-    constexpr float pi = 3.14f;
+    constexpr float pi = 3.14f; // close enough
+    constexpr float epsilon = 1e-8f;
 
     // directions in body space
     constexpr glm::vec3 UP(0.0f, 1.0f, 0.0f);

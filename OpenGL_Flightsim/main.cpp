@@ -37,13 +37,8 @@ void solve_constraints(phi::RigidBody& rigid_body)
 }
 
 struct Joystick {
-    float roll{ 0.0f };
-    float pitch{ 0.0f };
-    float yaw{ 0.0f };
-    float throttle{ 0.0f };
-    int num_axis{0};
-    int num_hats{0};
-    int num_buttons{0};
+    int num_axis{0}, num_hats{0}, num_buttons{0};
+    float roll{ 0.0f }, pitch{ 0.0f }, yaw{ 0.0f }, throttle{ 0.0f };
 
     // scale from int16 to -1.0, 1.0
     inline static float scale(int16_t value)
@@ -159,24 +154,24 @@ int main(void)
 
     std::vector<float> ico_vertices;
     std::vector<float> cube_vertices;
-    std::vector<float> cessna_vertices;
-    std::vector<float> cessna_prop_vertices;
+    std::vector<float> fuselage_vertices;
+    std::vector<float> prop_vertices;
 
     gfx::load_obj("assets/models/cube.obj", cube_vertices);
     gfx::load_obj("assets/models/icosphere.obj", ico_vertices);
-    gfx::load_obj("assets/models/cessna/Cessna_172.obj", cessna_vertices);
-    gfx::load_obj("assets/models/cessna/Cessna_172_prop.obj", cessna_prop_vertices);
+    gfx::load_obj("assets/models/cessna/Cessna_172.obj", fuselage_vertices);
+    gfx::load_obj("assets/models/cessna/Cessna_172_prop.obj", prop_vertices);
 
     gfx::Renderer renderer(SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    auto blue   = make_shared<gfx::Phong>(gfx::rgb(0, 0, 255));
-    auto grey    = make_shared<gfx::Phong>(glm::vec3(0.5f));
-    auto green    = make_shared<gfx::Phong>(gfx::rgb(0, 255, 0));
+    auto blue = make_shared<gfx::Phong>(gfx::rgb(0, 0, 255));
+    auto grey = make_shared<gfx::Phong>(glm::vec3(0.5f));
+    auto green = make_shared<gfx::Phong>(gfx::rgb(0, 255, 0));
     auto test_texture = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/textures/grass.jpg"));
     auto container = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/textures/container.jpg"));
-    auto cube_geo   = std::make_shared<gfx::Geometry>(cube_vertices_2, gfx::Geometry::POS_NORM_UV);
-    auto ico_geo    = std::make_shared<gfx::Geometry>(ico_vertices, gfx::Geometry::POS_NORM_UV);
-    auto triangle    = std::make_shared<gfx::Geometry>(triangle_vertices, gfx::Geometry::POS_NORM_UV);
+    auto cube_geo = std::make_shared<gfx::Geometry>(cube_vertices_2, gfx::Geometry::POS_NORM_UV);
+    auto ico_geo = std::make_shared<gfx::Geometry>(ico_vertices, gfx::Geometry::POS_NORM_UV);
+    auto triangle = std::make_shared<gfx::Geometry>(triangle_vertices, gfx::Geometry::POS_NORM_UV);
 
     gfx::Object3D scene;
 
@@ -218,9 +213,9 @@ int main(void)
     transform.set_position(position);
     scene.add(&transform);
 
-    gfx::Mesh cessna(std::make_shared<gfx::Geometry>(cessna_vertices, gfx::Geometry::POS_NORM_UV), grey);
-    gfx::Mesh prop(std::make_shared<gfx::Geometry>(cessna_prop_vertices, gfx::Geometry::POS_NORM_UV), grey);
-    transform.add(&cessna);
+    gfx::Mesh fuselage(std::make_shared<gfx::Geometry>(fuselage_vertices, gfx::Geometry::POS_NORM_UV), grey);
+    gfx::Mesh prop(std::make_shared<gfx::Geometry>(prop_vertices, gfx::Geometry::POS_NORM_UV), grey);
+    transform.add(&fuselage);
     transform.add(&prop);
 #endif
 
@@ -239,11 +234,6 @@ int main(void)
     phi::Seconds dt, timer = 0, log_timer = 0;
 
     std::cout << glGetString(GL_VERSION) << std::endl;
-
-    float elevator_incidence = 0;
-    float aileron_incidence = 0;
-	const float max_aileron_deflection = 1.0f;
-	const float max_elevator_deflection = 1.0f;
 
     while (!quit)
     {
@@ -320,10 +310,6 @@ int main(void)
 
         const uint8_t* key_states = SDL_GetKeyboardState(NULL);
 
-        aileron_incidence = 0, elevator_incidence = 0;
-
-#define APPLY_TORQUE_DIRECTLY 1
-
         if (num_joysticks == 0)
         {
             joystick.pitch = joystick.roll = joystick.yaw = 0;
@@ -331,36 +317,20 @@ int main(void)
 
         if (key_states[SDL_SCANCODE_A])
         {
-#if APPLY_TORQUE_DIRECTLY
             joystick.roll = -1.0f;
-#else
-            aileron_incidence = -max_aileron_deflection;
-#endif
         }
         else if (key_states[SDL_SCANCODE_D])
         {
-#if APPLY_TORQUE_DIRECTLY
             joystick.roll = 1.0f;
-#else
-            aileron_incidence = +max_aileron_deflection;
-#endif
         }
 
         if (key_states[SDL_SCANCODE_W])
         {
-#if APPLY_TORQUE_DIRECTLY
             joystick.pitch = -1.0f;
-#else
-            elevator_incidence = +max_elevator_deflection;
-#endif
         }
         else if (key_states[SDL_SCANCODE_S])
         {
-#if APPLY_TORQUE_DIRECTLY
             joystick.pitch = 1.0f;
-#else
-            elevator_incidence = -max_elevator_deflection;
-#endif
         }
         
         if (key_states[SDL_SCANCODE_J])
@@ -385,6 +355,7 @@ int main(void)
         }
        
         //controller.update(camera, camera.parent->get_position(), dt);
+        camera.set_position({ -15.0f, 1.0f + aircraft.rigid_body.angular_velocity.z * 3.0f, 0.0f });
         renderer.render(camera, scene);
 
         SDL_GL_SwapWindow(window);

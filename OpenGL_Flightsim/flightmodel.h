@@ -429,8 +429,8 @@ struct Wing
     }
 };
 
-//glm::mat3 simple_wing_inertia = phi::utils::inertia_tensor({300000.0f, 30000.0f, 500000.0f}); // best for now
-glm::mat3 simple_wing_inertia = phi::utils::inertia_tensor({100000.0f, 30000.0f, 500000.0f}); 
+//glm::mat3 inertia = phi::utils::inertia_tensor({300000.0f, 30000.0f, 500000.0f}); // best for now
+glm::mat3 inertia = phi::utils::inertia_tensor({100000.0f, 30000.0f, 500000.0f}); 
 
 struct Aircraft
 {
@@ -448,7 +448,7 @@ struct Aircraft
     float log_timer = 1.0f;
 
     Aircraft(const glm::vec3 &position, const glm::vec3 &velocity)
-        : rigid_body({ .mass = 16000.0f, .inertia = simple_wing_inertia }),
+        : rigid_body({ .mass = 16000.0f, .inertia = inertia }),
         elements({
           Wing("left_wing",     glm::vec3(-0.5f,   0.0f, -2.73f),      24.36f, Aerodynamics(NACA_2412), phi::UP),
           Wing("left_aileron",  glm::vec3( 0.0f,   0.0f, -2.0f),        8.79f, Aerodynamics(NACA_0012), phi::UP),
