@@ -321,6 +321,12 @@ namespace gfx {
 		std::shared_ptr<Geometry> m_geometry;
 		std::shared_ptr<Material> m_material;
 	};
+	
+	class Billboard : public Object3D {
+	public:
+		void draw(RenderContext& context) override;
+		Object3D& add(Object3D* child) = delete;
+	}; 
 
 	class Line : public Mesh {
 	public:
