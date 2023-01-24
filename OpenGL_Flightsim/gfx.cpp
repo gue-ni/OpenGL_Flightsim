@@ -836,10 +836,10 @@ namespace gfx {
 		push_back(vector, uv);
 	}
 
-	std::shared_ptr<Geometry> make_plane_geometry(int x_elements, int y_elements)
+	std::shared_ptr<Geometry> make_plane_geometry(int x_elements, int y_elements, float size)
 	{
 		// TODO
-		const float width = 10.0f, height = 10.0f;
+		const float width = size, height = size;
 
 		std::vector<float> vertices;
 

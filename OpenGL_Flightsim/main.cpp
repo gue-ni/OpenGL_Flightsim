@@ -172,7 +172,7 @@ int main(void)
     auto blue   = make_shared<gfx::Phong>(gfx::rgb(0, 0, 255));
     auto grey    = make_shared<gfx::Phong>(glm::vec3(0.5f));
     auto green    = make_shared<gfx::Phong>(gfx::rgb(0, 255, 0));
-    auto test_texture = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/textures/uv-test.png"));
+    auto test_texture = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/textures/grass.jpg"));
     auto container = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/textures/container.jpg"));
     auto cube_geo   = std::make_shared<gfx::Geometry>(cube_vertices_2, gfx::Geometry::POS_NORM_UV);
     auto ico_geo    = std::make_shared<gfx::Geometry>(ico_vertices, gfx::Geometry::POS_NORM_UV);
@@ -192,9 +192,10 @@ int main(void)
     scene.add(&skybox);
 #endif
 #if 1    
-    gfx::Mesh ground(gfx::make_plane_geometry(100,100), test_texture);
-    ground.set_position(glm::vec3(-100, -1, -100));
-    ground.set_scale(glm::vec3(10,0.1, 10));
+    float tile_size = 100.0f;
+    gfx::Mesh ground(gfx::make_plane_geometry(100,100,tile_size), test_texture);
+    ground.set_position(glm::vec3(-50 * tile_size, -1, -50 * tile_size));
+    //ground.set_scale(glm::vec3(10,0.1, 10));
     scene.add(&ground);
 #endif
 #if 0
