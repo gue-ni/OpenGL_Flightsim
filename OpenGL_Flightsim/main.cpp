@@ -19,8 +19,8 @@ using std::make_shared;
 using std::cout;
 using std::endl;
 
-constexpr int SCREEN_WIDTH = 800;
-constexpr int SCREEN_HEIGHT = 600;
+constexpr int SCREEN_WIDTH = 1000;
+constexpr int SCREEN_HEIGHT = 800;
 
 void apply_to_object3d(const phi::RigidBody& rigid_body, gfx::Object3D& object3d)
 {

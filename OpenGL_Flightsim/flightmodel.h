@@ -439,11 +439,7 @@ struct Aircraft
     std::vector<Wing> elements;
     phi::RigidBody rigid_body;
 
-#if 0
-    float aileron_torque = 15000.0f, elevator_torque = 10000.0f, rudder_torque = 5000.0f;
-#else
     float aileron_torque = 15000.0f * 100.0f, elevator_torque = 10000.0f * 100.0f, yaw_torque = 1000.0f;
-#endif
 
     float log_timer = 1.0f;
 
@@ -455,12 +451,16 @@ struct Aircraft
           Wing("right_aileron", glm::vec3( 0.0f,   0.0f,  2.0f),        8.79f, Aerodynamics(NACA_0012), phi::UP),
           Wing("right_wing",    glm::vec3(-0.5f,   0.0f,  2.73f),      24.36f, Aerodynamics(NACA_2412), phi::UP),
           Wing("elevator",      glm::vec3(-6.64f, -0.12f, 0.0f),       17.66f, Aerodynamics(NACA_0012), phi::UP),
-          Wing("rudder",        glm::vec3(-6.64f,  0.0f,  0.0f),       16.46f, Aerodynamics(NACA_0012), phi::RIGHT)
+          Wing("rudder",        glm::vec3(-6.64f,  0.0f,  0.0f),       16.46f, Aerodynamics(NACA_0012), phi::RIGHT),
+          Wing("fuselage_v",    glm::vec3( 0.0f,   0.0f,  0.0f),       25.00f, Aerodynamics(NACA_0012), phi::RIGHT),
+          Wing("fuselage_h",    glm::vec3( 0.0f,   0.0f,  0.0f),       25.00f, Aerodynamics(NACA_0012), phi::UP),
         }),
-        engine(100000.0f)
+        engine(20000.0f)
     {
         rigid_body.position = position;
         rigid_body.velocity = velocity;
+        elements[6].lift_multiplier = elements[7].lift_multiplier = 0.0f;
+        elements[6].drag_multiplier = elements[7].drag_multiplier = 5.0f;
         // std::cout << "aircraft inertia: " << rigid_body.inertia << std::endl;
     }
 
