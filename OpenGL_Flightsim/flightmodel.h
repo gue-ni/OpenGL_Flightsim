@@ -328,28 +328,15 @@ struct Aerodynamics
 
     Aerodynamics(const std::vector<ValueTuple> &curve_data) : data(curve_data)
     {
-        for (int i = 0; i < data.size() - 1; i++)
-            assert(data[i].alpha < data[i + 1].alpha);
-        
         min = curve_data[0].alpha;
         max = curve_data[curve_data.size() - 1].alpha;
-    }
-    
-    void sample(float alpha, float *cl, float *cd) const 
-    {
-        assert(min <= alpha && alpha <= max);
-        int index = static_cast<int>(phi::utils::scale(alpha, min, max, 0, 1) * data.size());
-        assert(0 <= index && index < data.size());
-        *cl = data[index].cl;
-        *cd = data[index].cd;
-        return;
     }
 
     std::tuple<float, float> sample(float alpha) const
     {
-        float cl, cd;
-        sample(alpha, &cl, &cd);
-        return { cl, cd };
+        int index = static_cast<int>(phi::utils::scale(alpha, min, max, 0, data.size()));
+        assert(0 <= index && index < data.size());
+        return { data[index].cl, data[index].cd };
     }
 };
 
@@ -455,7 +442,7 @@ struct Aircraft
           Wing("fuselage_v",    glm::vec3( 0.0f,   0.0f,  0.0f),       25.00f, Aerodynamics(NACA_0012), phi::RIGHT),
           Wing("fuselage_h",    glm::vec3( 0.0f,   0.0f,  0.0f),       25.00f, Aerodynamics(NACA_0012), phi::UP),
         }),
-        engine(20000.0f)
+        engine(50000.0f)
     {
         rigid_body.position = position;
         rigid_body.velocity = velocity;
