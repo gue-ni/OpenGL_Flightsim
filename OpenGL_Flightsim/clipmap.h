@@ -2,6 +2,8 @@
 
 #include "gfx.h"
 
+constexpr unsigned int primitive_restart = 0xFFFFU;
+
 void push_back(std::vector<float>& vertices, const glm::vec3& v)
 {
 	//std::cout << "vertex = " << v << std::endl;
@@ -16,38 +18,32 @@ void push_back(std::vector<unsigned int>& indices, unsigned int i)
 	indices.push_back(i);
 }
 
-void create_plane_2(std::vector<glm::vec3>& vertices, std::vector<unsigned int>& indices, int rows = 3, int columns = 2)
+void generate_mesh(std::vector<glm::vec3>& vertices, std::vector<unsigned int>& indices, int rows = 3, int columns = 2, float size = 1.0f)
 {
-	float tile_height = 2.0f, tile_width = 2.0f;
-
 	vertices.clear();
 
 	for (int y = 0; y <= rows; y++)
 	{
 		for (int x = 0; x <= columns; x++)
 		{
-			vertices.push_back(glm::vec3(x * tile_height, 0.0f, y * tile_width));
+			vertices.push_back({x * size, 0.0f, y * size});
 		}
 	}
+
+	indices.clear();
 
 	for (int r = 0; r < rows; r++)
 	{
-
 		for (int c = 0; c < columns + 1; c++)
 		{
 			auto i0 = (r + 0) * (columns + 1) + c;
-			// Vertex in actual row
 			indices.push_back(i0);
 
 			auto i1 = (r + 1) * (columns + 1) + c;
-			// Vertex row below
 			indices.push_back(i1);
 		}
-
-		indices.push_back(0xFFFFU);
+		indices.push_back(primitive_restart); // restart primitive
 	}
-
-
 }
 
 void create_plane(std::vector<glm::vec3>& vertices, std::vector<unsigned int>& indices)
@@ -99,8 +95,6 @@ void create_plane(std::vector<glm::vec3>& vertices, std::vector<unsigned int>& i
 
 class Clipmap : public gfx::Object3D {
 public:
-
-
 	Clipmap() 
 		: shader("shaders/clipmap")
 	{
@@ -114,21 +108,7 @@ public:
 		std::vector<glm::vec3> vertices;
 		std::vector<unsigned int> indices;
 
-#if 0
-		vertices = {
-			0.0f, 0.0f, 0.0f,				// top left
-			0.0f, 0.0f, tile_width,			// top right
-			tile_height, 0.0f, 0.0f,		// bottom left
-			tile_height, 0.0,  tile_width, // bottom right 
-		};
-
-		indices = {
-			0, 2, 1,
-			2, 3, 1
-		};
-#else
-		create_plane_2(vertices, indices, 5, 5);
-#endif
+		generate_mesh(vertices, indices, segments, segments, segment_size);
 
 		index_count = indices.size();
 		std::cout << "indices = " << indices.size() << std::endl;
@@ -143,9 +123,16 @@ public:
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 		glEnableVertexAttribArray(0);
 
-		//tile_ebo.unbind();
 		tile_vbo.unbind();
 		tile_vao.unbind();
+	}
+
+	glm::mat4 transform_matrix(const glm::vec3& position, float scale)
+	{
+		auto S = glm::scale(glm::mat4(1.0f), glm::vec3(scale));
+		auto T = glm::translate(glm::mat4(1.0f), position);
+		return T * S;
+
 	}
 
 	void draw(gfx::RenderContext& context) override
@@ -153,23 +140,47 @@ public:
 		if (!context.is_shadow_pass)
 		{
 			shader.bind();
-			shader.uniform("u_Model",			transform);
 			shader.uniform("u_View",			context.camera->get_view_matrix());
 			shader.uniform("u_Projection",		context.camera->get_projection_matrix());
 
 			tile_vao.bind();
 
 			bool wireframe = true;
-			glFrontFace(GL_CW);
+			//glFrontFace(GL_CW);
 			glEnable(GL_PRIMITIVE_RESTART);
-			glPrimitiveRestartIndex(0xFFFFU);
+			glPrimitiveRestartIndex(primitive_restart);
 
 			if (wireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
+			for (int l = 0; l < levels; l++)
+			{
+				int rows = 4, columns = 4;
+				float border = 0.0f;
+
+				float scale = pow(2.0f, l + 1);
+				float offset = segments * (segment_size * scale) + border;
+				glm::vec3 start(-offset * 2, 0.0f, -offset * 2);
 
 
+				for (int r = 0; r < 4; r++)
+				{
+					for (int c = 0; c < 4; c++)
+					{
+						if (((r == 0 || r == 3) || (c == 0 || c == 3)) || l == 0 )
+						{
+							auto tile_pos = start + glm::vec3(r * offset, 0.0f, c * offset);
+							shader.uniform("u_Model", transform_matrix(tile_pos, scale));
+							shader.uniform("u_Level", scale / levels);
+							glDrawElements(GL_TRIANGLE_STRIP, index_count, GL_UNSIGNED_INT, 0);
 
-			glDrawElements(GL_TRIANGLE_STRIP, index_count, GL_UNSIGNED_INT, 0);
+						}
+										}
+				}
+
+			}
+
+		
+
 
 
 
@@ -178,7 +189,7 @@ public:
 			tile_vao.unbind();
 
 
-			glFrontFace(GL_CCW);
+			//glFrontFace(GL_CCW);
 		}
 	}
 
@@ -192,4 +203,6 @@ private:
 
 	unsigned int index_count;
 	const int levels = 3;
+	const int segments = 5;
+	const float segment_size = 2.0f;
 };

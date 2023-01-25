@@ -233,11 +233,11 @@ int main(void)
     Aircraft aircraft(position, velocity);
 
     gfx::Camera camera(glm::radians(45.0f), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 10000.0f);
-    camera.set_position(glm::vec3(-15, 1, 0));
+    camera.set_position(glm::vec3(0, 1, 0));
     camera.set_rotation(glm::vec3(0, glm::radians(-90.0f), 0.0f));
     scene.add(&camera);
 
-    gfx::FirstPersonController controller(15.0f);
+    gfx::FirstPersonController controller(25.0f);
 
     SDL_Event event;
     bool quit = false, paused = false;
