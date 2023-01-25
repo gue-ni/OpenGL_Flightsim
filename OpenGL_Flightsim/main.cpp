@@ -211,7 +211,7 @@ int main(void)
 #endif
 #if 1
     Clipmap clipmap;
-    clipmap.set_rotation(glm::vec3(0.0f, 0.0f, glm::radians(90.0f)));
+    //clipmap.set_rotation(glm::vec3(0.0f, 0.0f, glm::radians(90.0f)));
     scene.add(&clipmap);
 #endif
   
@@ -263,7 +263,7 @@ int main(void)
         if ((timer += dt) >= 1.0f)
         {
             //printf("dt = %f, fps = %f\n", dt, 1 / dt);
-            std::cout << controller.get_front() << std::endl;
+            //std::cout << controller.get_front() << std::endl;
             timer = 0.0f;
         }
 
