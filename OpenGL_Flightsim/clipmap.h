@@ -202,7 +202,7 @@ private:
 	gfx::VertexArrayObject tile_vao;
 
 	unsigned int index_count;
-	const int levels = 3;
-	const int segments = 5;
+	const int levels = 8;
+	const int segments = 8;
 	const float segment_size = 2.0f;
 };

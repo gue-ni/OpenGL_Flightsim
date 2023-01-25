@@ -237,7 +237,7 @@ int main(void)
     camera.set_rotation(glm::vec3(0, glm::radians(-90.0f), 0.0f));
     scene.add(&camera);
 
-    gfx::FirstPersonController controller(25.0f);
+    gfx::FirstPersonController controller(50.0f);
 
     SDL_Event event;
     bool quit = false, paused = false;
