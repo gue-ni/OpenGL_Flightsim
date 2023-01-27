@@ -335,7 +335,12 @@ struct Aerodynamics
     std::tuple<float, float> sample(float alpha) const
     {
         int index = static_cast<int>(phi::utils::scale(alpha, min, max, 0, data.size()));
-        assert(0 <= index && index < data.size());
+        index = phi::utils::clamp(index, 0, static_cast<int>(data.size() - 1U));
+        if (!(0 <= index && index < data.size()))
+        {
+            printf("alpha = %f, index = %d, size = %d\n", alpha, index, (int)data.size());
+            assert(false);
+        }
         return { data[index].cl, data[index].cd };
     }
 };
@@ -442,7 +447,7 @@ struct Aircraft
           Wing("fuselage_v",    glm::vec3( 0.0f,   0.0f,  0.0f),       25.00f, Aerodynamics(NACA_0012), phi::RIGHT),
           Wing("fuselage_h",    glm::vec3( 0.0f,   0.0f,  0.0f),       25.00f, Aerodynamics(NACA_0012), phi::UP),
         }),
-        engine(100000.0f)
+        engine(50000.0f)
     {
         rigid_body.position = position;
         rigid_body.velocity = velocity;

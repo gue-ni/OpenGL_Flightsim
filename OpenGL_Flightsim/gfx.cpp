@@ -142,13 +142,25 @@ namespace gfx {
 	{
 		const int stride = get_stride(layout);
 
-		//glBindBuffer(GL_ARRAY_BUFFER, 0);
-		//glBindVertexArray(0);
+#if 0
+		unsigned tmp;
+		glGenVertexArrays(1, &tmp);
+		glBindVertexArray(tmp);
+		glBindVertexArray(0);
+#endif
+
+		int tmp_id = -1;
+		glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &tmp_id);
+		printf("vbo: %d\n", tmp_id);
+		glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &tmp_id);
+		printf("ebo: %d\n", tmp_id);
+		glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &tmp_id);
+		printf("vao: %d\n", tmp_id);
 
 		glGenVertexArrays(1, &m_vao);
 		glGenBuffers(1, &m_vbo);
 
-		glBindVertexArray(m_vbo);
+		glBindVertexArray(m_vao);
 
 		glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices[0]) * vertices.size(), &vertices[0], GL_STATIC_DRAW);
@@ -177,7 +189,6 @@ namespace gfx {
 
 	Geometry::Geometry(const Geometry& geometry)
 	{
-		//std::cout << "copy Geometry\n";
 		triangle_count = geometry.triangle_count;
 		m_vao = geometry.m_vao;
 		m_vbo = geometry.m_vbo;
@@ -185,7 +196,6 @@ namespace gfx {
 
 	Geometry::~Geometry()
 	{
-		//std::cout << "destroy Geometry\n";
 		glDeleteVertexArrays(1, &m_vao);
 		glDeleteBuffers(1, &m_vbo);
 	}
@@ -463,6 +473,8 @@ namespace gfx {
 		}
 
 		m_geometry->bind();
+
+
 		glDrawArrays(GL_TRIANGLES, 0, m_geometry->triangle_count);
 		m_geometry->unbind();
 

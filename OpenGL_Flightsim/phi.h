@@ -236,12 +236,14 @@ namespace phi {
 			return a + t * (b - a);
 		}
 
-		constexpr inline float max(float a, float b)
+        template <typename T>
+		constexpr inline T max(T a, T b)
 		{
 			return a > b ? a : b;
 		}
 
-		constexpr inline float min(float a, float b)
+        template <typename T>
+		constexpr inline T min(T a, T b)
 		{
 			return a < b ? a : b;
 		}
@@ -251,7 +253,8 @@ namespace phi {
 			return a >= 0.0f ? 1.0f : -1.0f;
 		}
 
-		constexpr inline float clamp(float v, float lo, float hi)
+        template <typename T>
+		constexpr inline T clamp(T v, T lo, T hi)
 		{
 			return min(max(v, lo), hi);
 		}

@@ -195,17 +195,14 @@ int main(void)
     scene.add(&sun);
 #endif
   
-    auto position = glm::vec3(0.0f, 10.0f, 0.0f);
-    auto velocity = glm::vec3(100.0f, 0.0f, 0.0f);
+    auto position = glm::vec3(0.0f, 1000.0f, 0.0f);
+    auto velocity = glm::vec3(120.0f, 0.0f, 0.0f);
 
-#define TMP 1
-
-#if !TMP
+#if 1
     Clipmap clipmap;
     scene.add(&clipmap);
 #endif
-
-
+    
 #if 1
     gfx::Object3D transform;
     transform.set_position(position);
@@ -215,11 +212,6 @@ int main(void)
     gfx::Mesh prop(std::make_shared<gfx::Geometry>(prop_vertices, gfx::Geometry::POS_NORM_UV), grey);
     transform.add(&fuselage);
     transform.add(&prop);
-#endif
-
-#if TMP
-    Clipmap clipmap;
-    scene.add(&clipmap);
 #endif
 
     Aircraft aircraft(position, velocity);
@@ -236,6 +228,7 @@ int main(void)
     bool quit = false, paused = false;
     uint64_t last = 0, now = SDL_GetPerformanceCounter();
     phi::Seconds dt, timer = 0, log_timer = 0;
+    bool orbit = false;
 
     std::cout << glGetString(GL_VERSION) << std::endl;
 
@@ -274,6 +267,12 @@ int main(void)
                 case SDLK_p:
                     paused = !paused;
                     break;
+
+                case SDLK_o:
+                    orbit = !orbit;
+                    break;
+
+
                 default:
                     break;
                 }
@@ -349,6 +348,8 @@ int main(void)
             joystick.throttle = phi::utils::clamp(joystick.throttle, 0.0f, 1.0f);
         }
 
+        
+
         aircraft.controls.set(joystick.roll, joystick.pitch, joystick.yaw);
         aircraft.engine.throttle = joystick.throttle;
         
@@ -359,8 +360,15 @@ int main(void)
 			apply_to_object3d(aircraft.rigid_body, transform);
         }
        
-        controller.update(camera, aircraft.rigid_body.position, dt);
-        //camera.set_position({ -15.0f, 1.0f + aircraft.rigid_body.angular_velocity.z * 3.0f, 0.0f });
+        if (orbit)
+        {
+            controller.update(camera, aircraft.rigid_body.position, dt);
+        }
+        else
+        {
+            //camera.set_position({ -15.0f, 1.0f + aircraft.rigid_body.angular_velocity.z * 1.0f, 0.0f });
+            camera.set_position({ -15.0f, 1.0f, 0.0f });
+        }
         renderer.render(camera, scene);
 
         SDL_GL_SwapWindow(window);

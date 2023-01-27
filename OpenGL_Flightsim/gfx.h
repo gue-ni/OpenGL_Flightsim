@@ -408,7 +408,7 @@ namespace gfx {
 
 		FirstPersonController(float speed) 
 			: m_speed(speed), 
-			m_yaw(0.0f), 
+			m_yaw(-90.0f), 
 			m_pitch(0.0f), 
 			m_front(0.0f, 0.0f, -1.0f), 
 			m_up(0.0f, 1.0f, 0.0f),
