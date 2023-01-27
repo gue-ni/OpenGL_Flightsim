@@ -148,8 +148,8 @@ public:
 		tile(3, 3, 2.0f),
 		col_fixup(2, 3, 2.0f),
 		row_fixup(3, 2, 2.0f),
-		vertical(8, 1, 2.0f)
-		//l_2()
+		horizontal(8, 1, 2.0f),
+		vertical(1, 7, 2.0f)
 	{
 #if 0
 		std::vector<glm::vec3> vertices;
@@ -184,12 +184,23 @@ public:
 		return T * R * S;
 	}
 
+	glm::vec2 calc_base(int level, glm::vec2 camera_pos)
+	{
+		float scale = pow(2.0f, level);
+		float next_scale = pow(2.0f, level+2);
+		float tile_size = segments * segment_size * scale;
+		glm::vec2 snapped = glm::floor(camera_pos / next_scale) * next_scale;
+		glm::vec2 base = snapped - tile_size * 2.0f;
+		return base;
+	}
+
 	void draw(gfx::RenderContext& context) override
 	{
 		if (!context.is_shadow_pass)
 		{
 
 			auto camera_pos = context.camera->get_world_position();
+			float height = camera_pos.y;
 			glm::vec2 camera_pos_xy = glm::vec2(camera_pos.x, camera_pos.z);
 
 			shader.bind();
@@ -203,24 +214,72 @@ public:
 			glPrimitiveRestartIndex(primitive_restart);
 			if (wireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-			for (int l = 0; l <= levels; l++)
+			int min_level = 0; // should depend on camera height
+
+			for (int l = min_level; l <= levels; l++)
 			{
 				int rows = 5, cols = 5;
 				float border = 0.0f;
 				float scale = pow(2.0f, l);
 				float next_scale = pow(2.0f, l+2);
+				float bigger_scale = pow(2.0f, l + 1 + 2);
+				shader.uniform("u_Level", static_cast<float>(l) / levels);
 				float scaled_segment_size = segment_size * scale;
 				float tile_size = segments * scaled_segment_size;
-
-				glm::vec2 offset = { tile_size + border, tile_size + border };
 				glm::vec2 snapped = glm::floor(camera_pos_xy / next_scale) * next_scale;
-				glm::vec2 start = snapped -  offset * 2.0f;
-				glm::vec3 tmp_offset(0.0f);
+				auto base = calc_base(l, camera_pos_xy);
 
+				//std::cout << "level = " << l << " base = " << base.x << std::endl;
+				if (l > min_level)
+				{
+					auto prev_base = calc_base(l - 1, camera_pos_xy);
+
+					auto diff = glm::abs(base - prev_base);
+
+					if (l == 1)
+					{
+						//printf("%f, %f\n", snapped.x, camera_pos_xy.x);
+						//std::cout << "level = " << l << ", " << next_scale << " " << snapped.x << " " << camera_pos_xy.x << " " << std::endl;
+						//std::cout << snapped.x << " " << stmp.x << " " << std::endl;
+						//std::cout << diff.x << " " << scaled_segment_size << ", " << tile_size << std::endl;
+						std::cout << diff.y << " " << scaled_segment_size << ", " << tile_size << std::endl;
+						//std::cout << base - next_base << " " << std::endl;
+					}
+
+					auto l_offset = glm::vec2(tile_size, tile_size);
+					if (diff.x == tile_size)
+					{
+						l_offset.x += 7 * scaled_segment_size;
+					}
+
+					
+
+					shader.uniform("u_Model", transform_matrix(base + l_offset, scale));
+					horizontal.draw();
+
+					//shader.uniform("u_Model", transform_matrix(base + l_offset, scale));
+					//vertical.draw();
+
+
+
+	
+				
+				
+				}
+			
+
+
+				// todo draw l-fixup
+				// find out relative position inside bigger level
+#if 0
+
+#endif
+
+				glm::vec2 offset(0.0f);
 				for (int r = 0; r < rows; r++)
 				{
 					//float y_offset = 0.0f;
-					tmp_offset.y = 0;
+					offset.y = 0;
 
 					for (int c = 0; c < cols; c++)
 					{
@@ -228,13 +287,10 @@ public:
 						(
 							((r == 0 || r == rows - 1) || 
 							(c == 0 || c == cols - 1)) 
-							//&& (c != 2) && (r != 2)
 						)
 						{
-
-							auto tile_pos = start + glm::vec2(tmp_offset.x, tmp_offset.y);
+							auto tile_pos = base + offset;
 							shader.uniform("u_Model", transform_matrix(tile_pos, scale));
-							shader.uniform("u_Level", static_cast<float>(l) / levels);
 
 							if ((c != 2) && (r != 2))
 							{
@@ -253,11 +309,11 @@ public:
 #if 1
 						if (c == 2)
 						{
-							tmp_offset.y += 2 * scaled_segment_size;
+							offset.y += 2 * scaled_segment_size;
 						}
 						else
 						{
-							tmp_offset.y += tile_size;
+							offset.y += tile_size;
 						}
 #else
 						tmp_offset.x += tile_size;
@@ -267,13 +323,16 @@ public:
 
 					if (r == 2)
 					{
-						tmp_offset.x += 2 * scaled_segment_size;
+						offset.x += 2 * scaled_segment_size;
 					}
 					else
 					{
-						tmp_offset.x += tile_size;
+						offset.x += tile_size;
 					}
 				}
+
+
+
 			}
 
 			if (wireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -293,6 +352,7 @@ private:
 	Block tile; 
 	Block col_fixup; 
 	Block row_fixup; 
+	Block horizontal;
 	Block vertical;
 #endif
 
