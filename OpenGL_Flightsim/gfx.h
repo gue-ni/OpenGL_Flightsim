@@ -65,23 +65,42 @@ namespace gfx {
 		~Shader();
 		void bind() const;
 		void unbind() const;
-		void set_int(const std::string& name, int value);
-		void set_float(const std::string& name, float value);
-		void set_vec3(const std::string& name, const glm::vec3& value);
-		void set_vec4(const std::string& name, const glm::vec4& value);
-		void set_mat4(const std::string& name, const glm::mat4& value);
+		void uniform(const std::string& name, int value);
+		void uniform(const std::string& name, float value);
+		void uniform(const std::string& name, unsigned int value);
+		void uniform(const std::string& name, const glm::vec3& value);
+		void uniform(const std::string& name, const glm::vec4& value);
+		void uniform(const std::string& name, const glm::mat4& value);
 	};
 
 	struct VertexBuffer {
-		GLuint id;
-		VertexBuffer(const void* data, size_t size);
+		GLuint id = 0;
+		void buffer(const void* data, size_t size);
 		~VertexBuffer();
+		void generate();
+		void bind() const;
+		void unbind() const;
+	};
+
+	struct VertexArrayObject {
+		GLuint id = 0;
+		~VertexArrayObject();
+		void generate();
+		void bind() const;
+		void unbind() const;
+	};
+
+	struct ElementBufferObject {
+		GLuint id = 0;
+		~ElementBufferObject();
+		void buffer(const void* data, size_t size);
+		void generate();
 		void bind() const;
 		void unbind() const;
 	};
 
 	struct Texture {
-		GLuint id;
+		GLuint id = 0;
 		Texture() : id(0) { glGenTextures(1, &id); }
 		Texture(GLuint texture_id) : id(texture_id) {}
 		Texture(const std::string& path);
@@ -228,7 +247,6 @@ namespace gfx {
 		};
 
 		Geometry(const std::vector<float>& vertices, const VertexLayout& layout);
-		Geometry(const void* data, size_t size, const VertexLayout& layout);
 		Geometry(const Geometry& geometry);
 		~Geometry();
 		void bind();
@@ -371,7 +389,7 @@ namespace gfx {
 		}
 
 		void render(Camera& camera, Object3D& scene);
-		glm::vec3 background;
+		glm::vec3 background = glm::vec3(1.0f, 0.0f, 1.0f);
 	private:
 		unsigned int m_width, m_height;
 		ShadowMap* shadow_map = nullptr;
@@ -390,17 +408,20 @@ namespace gfx {
 
 		FirstPersonController(float speed) 
 			: m_speed(speed), 
-			m_yaw(-90.0f), 
+			m_yaw(0.0f), 
 			m_pitch(0.0f), 
 			m_front(0.0f, 0.0f, -1.0f), 
 			m_up(0.0f, 1.0f, 0.0f),
 			m_velocity(0.0f),
 			m_direction(0.0f)
-		{}
+		{
+			move_mouse(0.0f, 0.0f);
+		}
 
 		void update(Object3D& object, float dt);
 		void move_mouse(float x, float y);
 		void move(const Direction& direction);
+		inline glm::vec3 get_front() const { return m_front; }
 	
 	private:
 		float m_speed, m_yaw, m_pitch;

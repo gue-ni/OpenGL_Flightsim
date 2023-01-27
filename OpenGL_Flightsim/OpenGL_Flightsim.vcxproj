@@ -150,6 +150,8 @@ xcopy /y /i /s $(ProjectDir)shaders  $(OutDir)shaders</Command>
   <ItemGroup>
     <None Include="shaders\basic.frag" />
     <None Include="shaders\basic.vert" />
+    <None Include="shaders\clipmap.frag" />
+    <None Include="shaders\clipmap.vert" />
     <None Include="shaders\depth.frag" />
     <None Include="shaders\depth.vert" />
     <CopyFileToFolders Include="shaders\phong.frag">

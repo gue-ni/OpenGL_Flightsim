@@ -11,8 +11,8 @@
 
 #include "gfx.h"
 #include "phi.h"
+#include "clipmap.h"
 #include "flightmodel.h"
-
 
 using std::shared_ptr;
 using std::make_shared;
@@ -57,7 +57,7 @@ int main(void)
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 
     SDL_Window* window = SDL_CreateWindow(
-        "OpenGL/SDL Flightsim", 
+        "OpenGL Flightsim", 
         SDL_WINDOWPOS_CENTERED, 
         SDL_WINDOWPOS_CENTERED, 
         SCREEN_WIDTH, 
@@ -74,6 +74,8 @@ int main(void)
     glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);
+    //glEnable(GL_CULL_FACE);
+
 
     // SDL options
     SDL_ShowCursor(SDL_FALSE);
@@ -177,26 +179,14 @@ int main(void)
 
 #if 1
     gfx::Skybox skybox({
-        "assets/textures/skybox/hd/right.jpg",
-        "assets/textures/skybox/hd/left.jpg",
-        "assets/textures/skybox/hd/top.jpg",
-        "assets/textures/skybox/hd/bottom.jpg",
-        "assets/textures/skybox/hd/front.jpg",
-        "assets/textures/skybox/hd/back.jpg",
+        "assets/textures/skybox/right.jpg",
+        "assets/textures/skybox/left.jpg",
+        "assets/textures/skybox/top.jpg",
+        "assets/textures/skybox/bottom.jpg",
+        "assets/textures/skybox/front.jpg",
+        "assets/textures/skybox/back.jpg",
     });
     scene.add(&skybox);
-#endif
-#if 1    
-    float tile_size = 100.0f;
-    gfx::Mesh ground(gfx::make_plane_geometry(100,100,tile_size), test_texture);
-    ground.set_position(glm::vec3(-50 * tile_size, -1, -50 * tile_size));
-    //ground.set_scale(glm::vec3(10,0.1, 10));
-    scene.add(&ground);
-#endif
-#if 0
-    gfx::Mesh cube(cube_geo, test_texture);
-    cube.set_position(glm::vec3(3, 1, 3));
-    scene.add(&cube);
 #endif
 #if 1
     gfx::Light sun(gfx::Light::DIRECTIONAL, gfx::rgb(154, 219, 172));
@@ -207,6 +197,14 @@ int main(void)
   
     auto position = glm::vec3(0.0f, 10.0f, 0.0f);
     auto velocity = glm::vec3(100.0f, 0.0f, 0.0f);
+
+#define TMP 1
+
+#if !TMP
+    Clipmap clipmap;
+    scene.add(&clipmap);
+#endif
+
 
 #if 1
     gfx::Object3D transform;
@@ -219,14 +217,20 @@ int main(void)
     transform.add(&prop);
 #endif
 
+#if TMP
+    Clipmap clipmap;
+    scene.add(&clipmap);
+#endif
+
     Aircraft aircraft(position, velocity);
 
-    gfx::Camera camera(glm::radians(45.0f), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 10000.0f);
-    camera.set_position(glm::vec3(-15, 1, 0));
+    gfx::Camera camera(glm::radians(45.0f), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 50000.0f);
+    camera.set_position(glm::vec3(0, 1, 0));
     camera.set_rotation(glm::vec3(0, glm::radians(-90.0f), 0.0f));
     transform.add(&camera);
 
-    gfx::OrbitController controller(15.0f);
+    //gfx::FirstPersonController controller(50.0f);
+    gfx::OrbitController controller(20.0f);
 
     SDL_Event event;
     bool quit = false, paused = false;
@@ -246,6 +250,7 @@ int main(void)
         if ((timer += dt) >= 1.0f)
         {
             //printf("dt = %f, fps = %f\n", dt, 1 / dt);
+            //std::cout << controller.get_front() << std::endl;
             timer = 0.0f;
         }
 
@@ -354,12 +359,11 @@ int main(void)
 			apply_to_object3d(aircraft.rigid_body, transform);
         }
        
-        //controller.update(camera, camera.parent->get_position(), dt);
-        camera.set_position({ -15.0f, 1.0f + aircraft.rigid_body.angular_velocity.z * 3.0f, 0.0f });
+        controller.update(camera, aircraft.rigid_body.position, dt);
+        //camera.set_position({ -15.0f, 1.0f + aircraft.rigid_body.angular_velocity.z * 3.0f, 0.0f });
         renderer.render(camera, scene);
 
         SDL_GL_SwapWindow(window);
     }
-
     return 0;
 }

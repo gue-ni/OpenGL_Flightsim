@@ -442,7 +442,7 @@ struct Aircraft
           Wing("fuselage_v",    glm::vec3( 0.0f,   0.0f,  0.0f),       25.00f, Aerodynamics(NACA_0012), phi::RIGHT),
           Wing("fuselage_h",    glm::vec3( 0.0f,   0.0f,  0.0f),       25.00f, Aerodynamics(NACA_0012), phi::UP),
         }),
-        engine(50000.0f)
+        engine(100000.0f)
     {
         rigid_body.position = position;
         rigid_body.velocity = velocity;

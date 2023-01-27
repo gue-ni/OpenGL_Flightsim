@@ -107,27 +107,32 @@ namespace gfx {
 		glUseProgram(0);
 	}
 
-	void Shader::set_int(const std::string& name, int value) 
+	void Shader::uniform(const std::string& name, int value) 
 	{
 		glUniform1i(glGetUniformLocation(id, name.c_str()), value);
 	}
 
-	void Shader::set_float(const std::string& name, float value) 
+	void Shader::uniform(const std::string& name, unsigned int value)
+	{
+		glUniform1ui(glGetUniformLocation(id, name.c_str()), value);
+	}
+
+	void Shader::uniform(const std::string& name, float value) 
 	{
 		glUniform1f(glGetUniformLocation(id, name.c_str()), value);
 	}
 
-	void Shader::set_vec3(const std::string& name, const glm::vec3& value)
+	void Shader::uniform(const std::string& name, const glm::vec3& value)
 	{
 		glUniform3fv(glGetUniformLocation(id, name.c_str()), 1, &value[0]);
 	}
 
-	void Shader::set_vec4(const std::string& name, const glm::vec4& value)
+	void Shader::uniform(const std::string& name, const glm::vec4& value)
 	{
 		glUniform4fv(glGetUniformLocation(id, name.c_str()), 1, &value[0]);
 	}
 
-	void Shader::set_mat4(const std::string& name, const glm::mat4& value)
+	void Shader::uniform(const std::string& name, const glm::mat4& value)
 	{
 		glUniformMatrix4fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE, &value[0][0]);
 	}
@@ -136,6 +141,10 @@ namespace gfx {
 		: triangle_count(static_cast<int>(vertices.size()) / (get_stride(layout)))
 	{
 		const int stride = get_stride(layout);
+
+		//glBindBuffer(GL_ARRAY_BUFFER, 0);
+		//glBindVertexArray(0);
+
 		glGenVertexArrays(1, &m_vao);
 		glGenBuffers(1, &m_vbo);
 
@@ -164,42 +173,6 @@ namespace gfx {
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glBindVertexArray(0);
-	}
-
-	Geometry::Geometry(const void* data, size_t size, const VertexLayout& layout)
-	//	: count(static_cast<int>(vertices.size()) / (get_stride(layout)))
-	{
-
-		const int stride = get_stride(layout);
-		glGenVertexArrays(1, &m_vao);
-		glGenBuffers(1, &m_vbo);
-
-		glBindVertexArray(m_vbo);
-
-		glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-		glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
-
-		unsigned int index = 0;
-		glVertexAttribPointer(index, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
-		glEnableVertexAttribArray(index);
-
-		if (layout == POS_NORM || layout == POS_NORM_UV) // add normal
-		{
-			index++;
-			glVertexAttribPointer(index, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(3 * sizeof(float)));
-			glEnableVertexAttribArray(index);
-		}
-
-		if (layout == POS_UV || layout == POS_NORM_UV) // add uv
-		{
-			index++;
-			glVertexAttribPointer(index, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(static_cast<int>(index) * 3 * sizeof(float)));
-			glEnableVertexAttribArray(index);
-		}
-
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindVertexArray(0);
-
 	}
 
 	Geometry::Geometry(const Geometry& geometry)
@@ -430,7 +403,8 @@ namespace gfx {
 		context.is_shadow_pass = false;
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glViewport(0, 0, m_width, m_height);
-		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		glClearColor(background.x, background.y, background.z, 1.0f);
+		//glClearColor(1, 0, 1, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 #if 1
@@ -451,39 +425,39 @@ namespace gfx {
 			Shader* shader = &context.shadow_map->shader;
 
 			shader->bind();
-			shader->set_mat4("u_Model", transform);
-			shader->set_mat4("u_LightSpaceMatrix", context.shadow_caster->light_space_matrix());
+			shader->uniform("u_Model", transform);
+			shader->uniform("u_LightSpaceMatrix", context.shadow_caster->light_space_matrix());
 		}
 		else {
 			Shader* shader = m_material->get_shader();
 
 			shader->bind();
-			shader->set_mat4("u_Model", transform);
-			shader->set_mat4("u_View", context.camera->get_view_matrix());
-			shader->set_mat4("u_Projection", context.camera->get_projection_matrix());
+			shader->uniform("u_Model", transform);
+			shader->uniform("u_View", context.camera->get_view_matrix());
+			shader->uniform("u_Projection", context.camera->get_projection_matrix());
 
 			if (context.shadow_caster)
 			{
-				shader->set_mat4("u_LightSpaceMatrix", context.shadow_caster->light_space_matrix());
+				shader->uniform("u_LightSpaceMatrix", context.shadow_caster->light_space_matrix());
 			}
 
-			shader->set_vec3("u_BackgroundColor", context.background_color);
-			shader->set_int("u_NumLights", static_cast<int>(context.lights.size()));
-			shader->set_vec3("u_CameraPosition", context.camera->get_world_position()); 
-			shader->set_int("u_ReceiveShadow", (receive_shadow && context.shadow_caster));
+			shader->uniform("u_BackgroundColor", context.background_color);
+			shader->uniform("u_NumLights", static_cast<int>(context.lights.size()));
+			shader->uniform("u_CameraPosition", context.camera->get_world_position()); 
+			shader->uniform("u_ReceiveShadow", (receive_shadow && context.shadow_caster));
 
 			for (int i = 0; i < context.lights.size(); i++)
 			{
 				auto index = std::to_string(i);
 				auto type = context.lights[i]->type;
 
-				shader->set_int( "u_Lights[" + index + "].type", type);
-				shader->set_vec3("u_Lights[" + index + "].color", context.lights[i]->rgb);
-				shader->set_vec3("u_Lights[" + index + "].position", context.lights[i]->get_world_position());
+				shader->uniform( "u_Lights[" + index + "].type", type);
+				shader->uniform("u_Lights[" + index + "].color", context.lights[i]->rgb);
+				shader->uniform("u_Lights[" + index + "].position", context.lights[i]->get_world_position());
 			}
 
 			context.shadow_map->depth_map.bind(0);
-			shader->set_int("u_ShadowMap", 0);
+			shader->uniform("u_ShadowMap", 0);
 
 			m_material->bind();
 		}
@@ -538,6 +512,9 @@ namespace gfx {
 
 		m_yaw	+= offset.x;
 		m_pitch -= offset.y;
+
+		if (m_pitch > +89.9f) m_pitch = +89.0f;
+		if (m_pitch < -89.9f) m_pitch = -89.0f;
 
 		glm::vec3 front(0);
 		front.x = cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
@@ -600,57 +577,36 @@ namespace gfx {
 	{
 		if (texture != nullptr)
 		{
-			GLuint texture_unit = 1;
+			int texture_unit = 1;
 			texture->bind(texture_unit);
-			shader->set_int("u_UseTexture", true);
-			shader->set_int("u_Texture1", texture_unit);
+			shader->uniform("u_UseTexture", true);
+			shader->uniform("u_Texture1", texture_unit);
 		}
 		else
 		{
-			shader->set_int("u_UseTexture", false);
-			shader->set_vec3("u_SolidObjectColor", rgb);
+			shader->uniform("u_UseTexture", false);
+			shader->uniform("u_SolidObjectColor", rgb);
 		}
 
 		Shader* shader = get_shader();
 		shader->bind();
-		shader->set_float("ka", ka);
-		shader->set_float("kd", kd);
-		shader->set_float("ks", ks);
-		shader->set_float("alpha", alpha);
+		shader->uniform("ka", ka);
+		shader->uniform("kd", kd);
+		shader->uniform("ks", ks);
+		shader->uniform("alpha", alpha);
 	}
 
 	void Basic::bind()
 	{
 		Shader* shader = get_shader();
-		shader->set_float("ka", 0.6f);
-		shader->set_float("kd", 0.8f);
-		shader->set_float("ks", 0.2f);
-		shader->set_float("alpha", 10.0f);
-		shader->set_int("u_UseTexture", false);
-		shader->set_vec3("u_SolidObjectColor", rgb);
+		shader->uniform("ka", 0.6f);
+		shader->uniform("kd", 0.8f);
+		shader->uniform("ks", 0.2f);
+		shader->uniform("alpha", 10.0f);
+		shader->uniform("u_UseTexture", false);
+		shader->uniform("u_SolidObjectColor", rgb);
 	}
 
-	VertexBuffer::VertexBuffer(const void* data, size_t size)
-	{
-		glGenBuffers(1, &id);
-		glBindBuffer(GL_ARRAY_BUFFER, id);
-		glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
-	}
-
-	VertexBuffer::~VertexBuffer()
-	{
-		glDeleteBuffers(1, &id);
-	}
-
-	void VertexBuffer::bind() const
-	{
-		glBindBuffer(GL_ARRAY_BUFFER, id);
-	}
-
-	void VertexBuffer::unbind() const
-	{
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-	}
 
 	bool load_obj(const std::string path, std::vector<float>& vertices)
 	{
@@ -998,8 +954,8 @@ namespace gfx {
 			Shader* shader = m_material->get_shader();
 
 			auto u_View = glm::mat4(glm::mat3(context.camera->get_view_matrix()));
-			shader->set_mat4("u_View", u_View);
-			shader->set_mat4("u_Projection", context.camera->get_projection_matrix());
+			shader->uniform("u_View", u_View);
+			shader->uniform("u_Projection", context.camera->get_projection_matrix());
 
 			m_geometry->bind();
 			glDrawArrays(GL_TRIANGLES, 0, m_geometry->triangle_count);
@@ -1011,11 +967,10 @@ namespace gfx {
 	void SkyboxMaterial::bind()
 	{
 		Shader* shader = get_shader();
-
-		cubemap->bind(2);
-
+		int unit = 2;
+		cubemap->bind(unit);
 		shader->bind();
-		shader->set_int("u_Skybox", 2);
+		shader->uniform("u_Skybox", unit);
 	}
 
 	void ScreenMaterial::bind()
@@ -1023,6 +978,78 @@ namespace gfx {
 		Shader* shader = get_shader();
 		texture->bind(0);
 		shader->bind();
-		shader->set_int("u_ShadowMap", 0);
+		shader->uniform("u_ShadowMap", 0);
+	}
+
+	void VertexBuffer::generate()
+	{
+		glGenBuffers(1, &id);
+	}
+
+	void VertexBuffer::buffer(const void* data, size_t size)
+	{
+		bind();
+		glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
+	}
+
+	VertexBuffer::~VertexBuffer()
+	{
+		glDeleteBuffers(1, &id);
+	}
+
+	void VertexBuffer::bind() const
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, id);
+	}
+
+	void VertexBuffer::unbind() const
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	}
+
+	VertexArrayObject::~VertexArrayObject()
+	{
+		glDeleteVertexArrays(1, &id);
+	}
+
+	void VertexArrayObject::bind() const
+	{
+		glBindVertexArray(id);
+	}
+
+	void VertexArrayObject::generate() 
+	{
+		glGenVertexArrays(1, &id);
+	}
+
+	void VertexArrayObject::unbind() const
+	{
+		glBindVertexArray(0);
+	}
+
+	void ElementBufferObject::generate()
+	{
+		glGenBuffers(1, &id);
+	}
+
+	ElementBufferObject::~ElementBufferObject()
+	{
+		glDeleteBuffers(1, &id);
+	}
+
+	void ElementBufferObject::buffer(const void* data, size_t size)
+	{
+		bind();
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
+	}
+
+	void ElementBufferObject::bind() const
+	{
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, id);
+	}
+
+	void ElementBufferObject::unbind() const
+	{
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	}
 }
