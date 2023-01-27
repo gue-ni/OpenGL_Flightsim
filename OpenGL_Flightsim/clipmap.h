@@ -141,7 +141,7 @@ struct Block {
 
 class Clipmap : public gfx::Object3D {
 public:
-	Clipmap(int l = 5, int segs = 3, float s = 2.0f) 
+	Clipmap(int l = 16, int segs = 16, float s = 2.0f) 
 		: shader("shaders/clipmap"),
 		levels(l),
 		segments(segs),
@@ -179,6 +179,7 @@ public:
 		{
 			auto camera_pos = context.camera->get_world_position();
 			float height = camera_pos.y;
+			printf("height = %f\n", height);
 			glm::vec2 camera_pos_xy = glm::vec2(camera_pos.x, camera_pos.z);
 
 			shader.bind();
@@ -206,11 +207,15 @@ public:
 				glm::vec2 snapped = glm::floor(camera_pos_xy / next_scale) * next_scale;
 				auto base = calc_base(l, camera_pos_xy);
 
-#if 1
+				if (tile_size * 5 < height * 2.5)
+				{
+					min_level = l + 1;
+					continue;
+				}
 
+#if 1
 				if (l == min_level)
 				{
-					shader.uniform("u_Level", static_cast<float>(l+2) / levels);
 					shader.uniform("u_Model", transform_matrix(base + glm::vec2(tile_size, tile_size), scale));
 					center.draw();
 
