@@ -242,7 +242,7 @@ public:
 						//std::cout << "level = " << l << ", " << next_scale << " " << snapped.x << " " << camera_pos_xy.x << " " << std::endl;
 						//std::cout << snapped.x << " " << stmp.x << " " << std::endl;
 						//std::cout << diff.x << " " << scaled_segment_size << ", " << tile_size << std::endl;
-						std::cout << diff.y << " " << scaled_segment_size << ", " << tile_size << std::endl;
+						//std::cout << diff.y << " " << scaled_segment_size << ", " << tile_size << std::endl;
 						//std::cout << base - next_base << " " << std::endl;
 					}
 
@@ -252,13 +252,16 @@ public:
 						l_offset.x += 7 * scaled_segment_size;
 					}
 
-					
-
 					shader.uniform("u_Model", transform_matrix(base + l_offset, scale));
 					horizontal.draw();
 
-					//shader.uniform("u_Model", transform_matrix(base + l_offset, scale));
-					//vertical.draw();
+					auto v_offset = glm::vec2(tile_size, tile_size);
+					if (diff.y == tile_size)
+					{
+						v_offset.y += 7 * scaled_segment_size;
+					}
+					shader.uniform("u_Model", transform_matrix(base + v_offset, scale));
+					vertical.draw();
 
 
 
