@@ -198,14 +198,14 @@ public:
 			glm::vec2 camera_pos_xy = glm::vec2(camera_pos.x, camera_pos.z);
 
 
-			//int unit = 2;
-			//heightmap.bind(unit);
+			int unit = 2;
+			heightmap.bind(unit);
 
 			shader.bind();
 			shader.uniform("u_CameraPos", context.camera->get_world_position());
 			shader.uniform("u_View", context.camera->get_view_matrix());
 			shader.uniform("u_Projection", context.camera->get_projection_matrix());
-			//shader.uniform("u_Heightmap", unit);
+			shader.uniform("u_Heightmap", unit);
 
 			bool wireframe = true;
 
