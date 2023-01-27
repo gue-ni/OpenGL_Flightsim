@@ -127,10 +127,10 @@ public:
 		tile_vao.unbind();
 	}
 
-	glm::mat4 transform_matrix(const glm::vec3& position, float scale)
+	glm::mat4 transform_matrix(const glm::vec2& position, float scale)
 	{
 		auto S = glm::scale(glm::mat4(1.0f), glm::vec3(scale));
-		auto T = glm::translate(glm::mat4(1.0f), position);
+		auto T = glm::translate(glm::mat4(1.0f), glm::vec3(position.x, 0.0f, position.y));
 		return T * S;
 
 	}
@@ -139,6 +139,10 @@ public:
 	{
 		if (!context.is_shadow_pass)
 		{
+
+			auto camera_pos = context.camera->get_world_position();
+			glm::vec2 camera_pos_xy = glm::vec2(camera_pos.x, camera_pos.z);
+
 			shader.bind();
 			shader.uniform("u_View",			context.camera->get_view_matrix());
 			shader.uniform("u_Projection",		context.camera->get_projection_matrix());
@@ -152,29 +156,73 @@ public:
 
 			if (wireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-			for (int l = 0; l < levels; l++)
+			for (int l = 0; l <= levels; l++)
 			{
-				int rows = 4, columns = 4;
+				int rows = 4, cols = 4;
 				float border = 0.0f;
 
-				float scale = pow(2.0f, l + 1);
-				float offset = segments * (segment_size * scale) + border;
-				glm::vec3 start(-offset * 2, 0.0f, -offset * 2);
+				float scale = pow(2.0f, l);
+				float tile_size = segments * (segment_size * scale);
+				glm::vec2 offset = { tile_size + border, tile_size + border };
+				//glm::vec2 snapped_pos = { tmp.x, tmp.z };
 
 
-				for (int r = 0; r < 4; r++)
+				//glm::vec2 start(-offset.x * 2, -offset.y * 2);
+
+
+				glm::vec2 tmp = glm::floor(camera_pos_xy / scale) * scale;
+				glm::vec2 start = tmp -   offset * 2.0f;
+				//glm::vec2 start = - offset * 2.0f;
+
+
+
+				//auto start = offset * -2.0f;
+				//start = snapped_pos - start;
+
+
+
+
+
+
+				for (int r = 0; r < rows; r++)
 				{
-					for (int c = 0; c < 4; c++)
-					{
-						if (((r == 0 || r == 3) || (c == 0 || c == 3)) || l == 0 )
-						{
-							auto tile_pos = start + glm::vec3(r * offset, 0.0f, c * offset);
-							shader.uniform("u_Model", transform_matrix(tile_pos, scale));
-							shader.uniform("u_Level", scale / levels);
-							glDrawElements(GL_TRIANGLE_STRIP, index_count, GL_UNSIGNED_INT, 0);
+					float y_offset = 0.0f;
 
+					for (int c = 0; c < cols; c++)
+					{
+						//if (((r == 0 || r == 3) || (c == 0 || c == 3)) || l == 0 )
+						if 
+						(
+							((r == 0 || r == rows - 1) || 
+							(c == 0 || c == cols - 1)) 
+							//&& c != 2
+						)
+						{
+
+							
+							
+							//auto tile_pos = start + glm::vec2(r * offset.x, c * offset.y);
+							auto tile_pos = start + glm::vec2(r * offset.x, y_offset);
+
+							shader.uniform("u_Model", transform_matrix(tile_pos, scale));
+							shader.uniform("u_Level", static_cast<float>(l) / levels);
+							glDrawElements(GL_TRIANGLE_STRIP, index_count, GL_UNSIGNED_INT, 0);
 						}
-										}
+
+#if 0
+						if (c == 2)
+						{
+							y_offset += 2 * segment_size * scale;
+						}
+						else
+						{
+							y_offset += tile_size;
+						}
+#else
+						y_offset += tile_size;
+#endif
+
+					}
 				}
 
 			}
@@ -202,7 +250,7 @@ private:
 	gfx::VertexArrayObject tile_vao;
 
 	unsigned int index_count;
-	const int levels = 8;
-	const int segments = 8;
+	const int levels = 3;
+	const int segments = 3;
 	const float segment_size = 2.0f;
 };

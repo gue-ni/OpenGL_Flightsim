@@ -330,13 +330,17 @@ int main(void)
 
         aileron_incidence = 0, elevator_incidence = 0;
 
-
 #if 1
 
+        const float speed = 0.05f;
         if (key_states[SDL_SCANCODE_W]) controller.move(gfx::FirstPersonController::FORWARD);
         if (key_states[SDL_SCANCODE_A]) controller.move(gfx::FirstPersonController::LEFT);
         if (key_states[SDL_SCANCODE_S]) controller.move(gfx::FirstPersonController::BACKWARD);
         if (key_states[SDL_SCANCODE_D]) controller.move(gfx::FirstPersonController::RIGHT);
+        if (key_states[SDL_SCANCODE_LEFT]) camera.set_position(camera.get_position() + phi::LEFT * speed);
+        if (key_states[SDL_SCANCODE_RIGHT]) camera.set_position(camera.get_position() + phi::RIGHT * speed);
+        if (key_states[SDL_SCANCODE_UP]) camera.set_position(camera.get_position() + phi::FORWARD * speed);
+        if (key_states[SDL_SCANCODE_DOWN]) camera.set_position(camera.get_position() + phi::BACKWARD * speed);
 #endif
 
 #define APPLY_TORQUE_DIRECTLY 1
