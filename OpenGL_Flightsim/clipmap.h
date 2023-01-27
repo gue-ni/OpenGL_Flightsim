@@ -143,6 +143,7 @@ class Clipmap : public gfx::Object3D {
 public:
 	Clipmap(int l = 16, int segs = 16, float s = 2.0f) 
 		: shader("shaders/clipmap"),
+		heightmap("assets/textures/terrain-s.png"),
 		levels(l),
 		segments(segs),
 		segment_size(s),
@@ -179,12 +180,18 @@ public:
 		{
 			auto camera_pos = context.camera->get_world_position();
 			float height = camera_pos.y;
-			printf("height = %f\n", height);
+			//printf("height = %f\n", height);
 			glm::vec2 camera_pos_xy = glm::vec2(camera_pos.x, camera_pos.z);
 
+
+			int unit = 2;
+			heightmap.bind(unit);
+
 			shader.bind();
+			shader.uniform("u_CameraPos", context.camera->get_world_position());
 			shader.uniform("u_View", context.camera->get_view_matrix());
 			shader.uniform("u_Projection", context.camera->get_projection_matrix());
+			shader.uniform("u_Heightmap", unit);
 
 			bool wireframe = true;
 
@@ -201,11 +208,14 @@ public:
 				float scale = pow(2.0f, l);
 				float next_scale = pow(2.0f, l+2);
 				float bigger_scale = pow(2.0f, l + 1 + 2);
-				shader.uniform("u_Level", static_cast<float>(l) / levels);
 				float scaled_segment_size = segment_size * scale;
 				float tile_size = segments * scaled_segment_size;
 				glm::vec2 snapped = glm::floor(camera_pos_xy / next_scale) * next_scale;
 				auto base = calc_base(l, camera_pos_xy);
+
+				shader.uniform("u_Level", static_cast<float>(l) / levels);
+				shader.uniform("u_Scale", scale);
+
 
 				if (tile_size * 5 < height * 2.5)
 				{
@@ -299,7 +309,7 @@ public:
 
 private:
 	gfx::Shader shader;
-	//gfx::Texture heightmap;
+	gfx::Texture heightmap;
 
 #if 0
 	gfx::VertexBuffer tile_vbo;
