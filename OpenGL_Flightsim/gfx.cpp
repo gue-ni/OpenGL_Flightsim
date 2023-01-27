@@ -543,6 +543,9 @@ namespace gfx {
 		m_yaw	+= offset.x;
 		m_pitch -= offset.y;
 
+		if (m_pitch > +89.9f) m_pitch = +89.0f;
+		if (m_pitch < -89.9f) m_pitch = -89.0f;
+
 		glm::vec3 front(0);
 		front.x = cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
 		front.y = sin(glm::radians(m_pitch));

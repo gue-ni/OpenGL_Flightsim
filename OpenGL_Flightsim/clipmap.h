@@ -158,70 +158,73 @@ public:
 
 			for (int l = 0; l <= levels; l++)
 			{
-				int rows = 4, cols = 4;
+				int rows = 5, cols = 5;
 				float border = 0.0f;
 
 				float scale = pow(2.0f, l);
+				float next_scale = pow(2.0f, l+2);
 				float tile_size = segments * (segment_size * scale);
 				glm::vec2 offset = { tile_size + border, tile_size + border };
-				//glm::vec2 snapped_pos = { tmp.x, tmp.z };
 
 
-				//glm::vec2 start(-offset.x * 2, -offset.y * 2);
+				glm::vec2 snapped = glm::floor(camera_pos_xy / next_scale) * next_scale;
+				glm::vec2 start = snapped -  offset * 2.0f;
 
 
-				glm::vec2 tmp = glm::floor(camera_pos_xy / scale) * scale;
-				glm::vec2 start = tmp -   offset * 2.0f;
-				//glm::vec2 start = - offset * 2.0f;
-
-
-
-				//auto start = offset * -2.0f;
-				//start = snapped_pos - start;
-
-
-
+				glm::vec3 tmp_offset(0.0f);
 
 
 
 				for (int r = 0; r < rows; r++)
 				{
-					float y_offset = 0.0f;
+					//float y_offset = 0.0f;
+					tmp_offset.y = 0;
 
 					for (int c = 0; c < cols; c++)
 					{
-						//if (((r == 0 || r == 3) || (c == 0 || c == 3)) || l == 0 )
 						if 
 						(
 							((r == 0 || r == rows - 1) || 
 							(c == 0 || c == cols - 1)) 
-							//&& c != 2
+							&& (c != 2) && (r != 2)
 						)
 						{
 
 							
 							
 							//auto tile_pos = start + glm::vec2(r * offset.x, c * offset.y);
-							auto tile_pos = start + glm::vec2(r * offset.x, y_offset);
+							auto tile_pos = start + glm::vec2(tmp_offset.x, tmp_offset.y);
 
 							shader.uniform("u_Model", transform_matrix(tile_pos, scale));
 							shader.uniform("u_Level", static_cast<float>(l) / levels);
 							glDrawElements(GL_TRIANGLE_STRIP, index_count, GL_UNSIGNED_INT, 0);
 						}
 
-#if 0
+#if 1
 						if (c == 2)
 						{
-							y_offset += 2 * segment_size * scale;
+							tmp_offset.y += 2 * segment_size * scale;
 						}
 						else
 						{
-							y_offset += tile_size;
+							tmp_offset.y += tile_size;
 						}
+
+
 #else
-						y_offset += tile_size;
+						tmp_offset.x += tile_size;
+						tmp_offset.y += tile_size;
 #endif
 
+					}
+
+					if (r == 2)
+					{
+						tmp_offset.x += 2 * segment_size * scale;
+					}
+					else
+					{
+						tmp_offset.x += tile_size;
 					}
 				}
 

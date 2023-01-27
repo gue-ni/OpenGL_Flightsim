@@ -332,7 +332,7 @@ int main(void)
 
 #if 1
 
-        const float speed = 0.05f;
+        const float speed = 0.01f;
         if (key_states[SDL_SCANCODE_W]) controller.move(gfx::FirstPersonController::FORWARD);
         if (key_states[SDL_SCANCODE_A]) controller.move(gfx::FirstPersonController::LEFT);
         if (key_states[SDL_SCANCODE_S]) controller.move(gfx::FirstPersonController::BACKWARD);
