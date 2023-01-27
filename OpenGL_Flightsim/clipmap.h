@@ -123,8 +123,6 @@ struct Block {
 
 		vbo.unbind();
 		vao.unbind();
-
-
 	}
 
 	void bind()
@@ -147,8 +145,11 @@ public:
 		: shader("shaders/clipmap"),
 		segments(3),
 		segment_size(2.0f),
-		block(3, 3, 2.0f),
-		fix_up(2, 3, 2.0f)
+		tile(3, 3, 2.0f),
+		col_fixup(2, 3, 2.0f),
+		row_fixup(3, 2, 2.0f),
+		vertical(8, 1, 2.0f)
+		//l_2()
 	{
 #if 0
 		std::vector<glm::vec3> vertices;
@@ -206,17 +207,14 @@ public:
 			{
 				int rows = 5, cols = 5;
 				float border = 0.0f;
-
 				float scale = pow(2.0f, l);
 				float next_scale = pow(2.0f, l+2);
 				float scaled_segment_size = segment_size * scale;
 				float tile_size = segments * scaled_segment_size;
+
 				glm::vec2 offset = { tile_size + border, tile_size + border };
-
-
 				glm::vec2 snapped = glm::floor(camera_pos_xy / next_scale) * next_scale;
 				glm::vec2 start = snapped -  offset * 2.0f;
-
 				glm::vec3 tmp_offset(0.0f);
 
 				for (int r = 0; r < rows; r++)
@@ -240,18 +238,15 @@ public:
 
 							if ((c != 2) && (r != 2))
 							{
-								block.draw();
+								tile.draw();
 							}
 							else if(c == 2)
 							{
-								fix_up.draw();
+								col_fixup.draw();
 							}
-							else
+							else if(r == 2)
 							{
-								//auto pos = tile_pos;
-								auto pos = tile_pos + glm::vec2(2 * scaled_segment_size, 0);
-								shader.uniform("u_Model", transform_matrix(pos, scale, -gfx::PI / 2));
-								fix_up.draw();
+								row_fixup.draw();
 							}
 						}
 
@@ -295,8 +290,10 @@ private:
 	gfx::ElementBufferObject tile_ebo;
 	gfx::VertexArrayObject tile_vao;
 #else
-	Block block; 
-	Block fix_up; 
+	Block tile; 
+	Block col_fixup; 
+	Block row_fixup; 
+	Block vertical;
 #endif
 
 	unsigned int index_count = 0;
