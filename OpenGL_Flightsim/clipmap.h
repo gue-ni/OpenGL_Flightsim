@@ -141,39 +141,18 @@ struct Block {
 
 class Clipmap : public gfx::Object3D {
 public:
-	Clipmap() 
+	Clipmap(int l = 5, int segs = 3, float s = 2.0f) 
 		: shader("shaders/clipmap"),
-		segments(3),
-		segment_size(2.0f),
-		tile(3, 3, 2.0f),
-		col_fixup(2, 3, 2.0f),
-		row_fixup(3, 2, 2.0f),
-		horizontal(8, 1, 2.0f),
-		vertical(1, 7, 2.0f)
-	{
-#if 0
-		std::vector<glm::vec3> vertices;
-		std::vector<unsigned int> indices;
-
-		generate_mesh(vertices, indices, segments, segments, segment_size);
-
-		index_count = indices.size();
-		std::cout << "indices = " << indices.size() << std::endl;
-		std::cout << "vertices = " << vertices.size() / 3 << std::endl;
-
-		assert(indices.size() > 0 && vertices.size() > 0);
-
-		tile_vao.bind();
-		tile_vbo.buffer(&vertices[0], vertices.size() * sizeof(vertices[0]));
-		tile_ebo.buffer(&indices[0], indices.size() * sizeof(indices[0]));
-
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-		glEnableVertexAttribArray(0);
-
-		tile_vbo.unbind();
-		tile_vao.unbind();
-#endif
-	}
+		levels(l),
+		segments(segs),
+		segment_size(s),
+		tile(segs, segs, s),
+		col_fixup(2, segs, s),
+		row_fixup(segs, 2, s),
+		horizontal(2 * segs + 2, 1, s),
+		vertical(1, 2 * segs + 2, s),
+		center(2 * segs + 2, 2 * segs + 2, s)
+	{}
 
 	glm::mat4 transform_matrix(const glm::vec2& position, float scale, float angle = 0)
 	{
@@ -198,7 +177,6 @@ public:
 	{
 		if (!context.is_shadow_pass)
 		{
-
 			auto camera_pos = context.camera->get_world_position();
 			float height = camera_pos.y;
 			glm::vec2 camera_pos_xy = glm::vec2(camera_pos.x, camera_pos.z);
@@ -209,12 +187,11 @@ public:
 
 			bool wireframe = true;
 
-			//glFrontFace(GL_CW);
 			glEnable(GL_PRIMITIVE_RESTART);
 			glPrimitiveRestartIndex(primitive_restart);
 			if (wireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-			int min_level = 0; // should depend on camera height
+			int min_level = 1; // should depend on camera height
 
 			for (int l = min_level; l <= levels; l++)
 			{
@@ -229,61 +206,42 @@ public:
 				glm::vec2 snapped = glm::floor(camera_pos_xy / next_scale) * next_scale;
 				auto base = calc_base(l, camera_pos_xy);
 
-				//std::cout << "level = " << l << " base = " << base.x << std::endl;
-				if (l > min_level)
+#if 1
+
+				if (l == min_level)
+				{
+					shader.uniform("u_Level", static_cast<float>(l+2) / levels);
+					shader.uniform("u_Model", transform_matrix(base + glm::vec2(tile_size, tile_size), scale));
+					center.draw();
+
+				}
+				else
 				{
 					auto prev_base = calc_base(l - 1, camera_pos_xy);
-
 					auto diff = glm::abs(base - prev_base);
-
-					if (l == 1)
-					{
-						//printf("%f, %f\n", snapped.x, camera_pos_xy.x);
-						//std::cout << "level = " << l << ", " << next_scale << " " << snapped.x << " " << camera_pos_xy.x << " " << std::endl;
-						//std::cout << snapped.x << " " << stmp.x << " " << std::endl;
-						//std::cout << diff.x << " " << scaled_segment_size << ", " << tile_size << std::endl;
-						//std::cout << diff.y << " " << scaled_segment_size << ", " << tile_size << std::endl;
-						//std::cout << base - next_base << " " << std::endl;
-					}
 
 					auto l_offset = glm::vec2(tile_size, tile_size);
 					if (diff.x == tile_size)
 					{
-						l_offset.x += 7 * scaled_segment_size;
+						l_offset.x += (2 * segments + 1) * scaled_segment_size;
 					}
-
 					shader.uniform("u_Model", transform_matrix(base + l_offset, scale));
 					horizontal.draw();
 
 					auto v_offset = glm::vec2(tile_size, tile_size);
 					if (diff.y == tile_size)
 					{
-						v_offset.y += 7 * scaled_segment_size;
+						v_offset.y += (2 * segments + 1) * scaled_segment_size;
 					}
 					shader.uniform("u_Model", transform_matrix(base + v_offset, scale));
 					vertical.draw();
-
-
-
-	
-				
-				
 				}
-			
-
-
-				// todo draw l-fixup
-				// find out relative position inside bigger level
-#if 0
-
 #endif
 
 				glm::vec2 offset(0.0f);
 				for (int r = 0; r < rows; r++)
 				{
-					//float y_offset = 0.0f;
 					offset.y = 0;
-
 					for (int c = 0; c < cols; c++)
 					{
 						if 
@@ -309,7 +267,6 @@ public:
 							}
 						}
 
-#if 1
 						if (c == 2)
 						{
 							offset.y += 2 * scaled_segment_size;
@@ -318,10 +275,6 @@ public:
 						{
 							offset.y += tile_size;
 						}
-#else
-						tmp_offset.x += tile_size;
-						tmp_offset.y += tile_size;
-#endif
 					}
 
 					if (r == 2)
@@ -333,13 +286,9 @@ public:
 						offset.x += tile_size;
 					}
 				}
-
-
-
 			}
 
 			if (wireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-			//glFrontFace(GL_CCW);
 		}
 	}
 
@@ -353,6 +302,7 @@ private:
 	gfx::VertexArrayObject tile_vao;
 #else
 	Block tile; 
+	Block center; 
 	Block col_fixup; 
 	Block row_fixup; 
 	Block horizontal;
@@ -360,7 +310,7 @@ private:
 #endif
 
 	unsigned int index_count = 0;
-	const int levels = 3;
-	const int segments = 3;
-	const float segment_size = 2.0f;
+	const int levels;
+	const int segments;
+	const float segment_size;
 };
