@@ -142,7 +142,7 @@ public:
 			shader.uniform("u_Projection", context.camera->get_projection_matrix());
 			shader.uniform("u_Heightmap", unit);
 
-			bool wireframe = true;
+			bool wireframe = false;
 
 			glEnable(GL_PRIMITIVE_RESTART);
 			glPrimitiveRestartIndex(primitive_restart);
@@ -164,6 +164,7 @@ public:
 
 				shader.uniform("u_Level", static_cast<float>(l) / levels);
 				shader.uniform("u_Scale", scale);
+				shader.uniform("u_SegementSize", scaled_segment_size);
 
 				if (tile_size * 5 < height * 2.5)
 				{

@@ -604,7 +604,6 @@ namespace gfx {
 		shader->uniform("u_SolidObjectColor", rgb);
 	}
 
-
 	bool load_obj(const std::string path, std::vector<float>& vertices)
 	{
 		std::istringstream source(load_text_file(path));

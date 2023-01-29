@@ -365,8 +365,8 @@ int main(void)
         }
         else
         {
-            camera.set_position({ -15.0f, 1.0f + aircraft.rigid_body.angular_velocity.z * 1.0f, 0.0f });
-            //camera.set_position({ -15.0f, 1.0f, 0.0f });
+            //camera.set_position({ -15.0f, 1.0f + aircraft.rigid_body.angular_velocity.z * 1.0f, 0.0f });
+            camera.set_position({ -15.0f, 1.0f, 0.0f });
         }
         renderer.render(camera, scene);
 

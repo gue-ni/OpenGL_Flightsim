@@ -7,34 +7,49 @@ uniform mat4 u_Projection;
 
 uniform vec3 u_CameraPos;
 uniform sampler2D u_Heightmap;
+uniform float u_Scale;
+uniform float u_SegmentSize;
+uniform float u_Level;
 
 out vec3 Color;
+out vec3 Normal;
+
+float getHeight(float x, float z)
+{
+    ivec2 size = textureSize(u_Heightmap, 0);
+
+    int factor = 25;
+    ivec2 coord = (size / 2) + ivec2(x, z) / factor;
+
+    float sample = texelFetch(u_Heightmap, coord, 0).r;
+
+    float scale = 10000;
+    float shift = -2000;
+    return scale * sample + shift;
+}
 
 void main()
 {
     vec3 FragPos = vec3(u_Model * vec4(a_Pos, 1.0));
 
 
-
-    ivec2 size = textureSize(u_Heightmap, 0);
-
-    int factor = 25;
-    ivec2 coord = (size / 2) + ivec2(FragPos.x, FragPos.z) / factor;
-
-    //ivec2 coord = ivec2(FragPos.x, FragPos.z) / factor;
-
-    
-    coord = abs(coord);
-
-    Color = texelFetch(u_Heightmap, coord, 0).rgb;
+    FragPos.y = getHeight(FragPos.x, FragPos.z);
 
 
+    vec3 a = vec3(FragPos.x + u_SegmentSize, getHeight(FragPos.x + u_SegmentSize, FragPos.z), FragPos.z);
 
-    float scale = 10000;
-    float shift = -5000;
-    float y = scale * Color.r + shift;
-    FragPos.y = y;
+    vec3 b = vec3(
+        FragPos.x,
+        getHeight(FragPos.x, FragPos.z + u_SegmentSize),
+        FragPos.z + u_SegmentSize
+    );
 
+    vec3 v0 = a - FragPos;
+	vec3 v1 = b - FragPos;
+	Normal = normalize(cross(v0, v1));
+    Normal = vec3(0, 1, 0);
+
+	Color = vec3(1.0, u_Level, 0.0);
 
     gl_Position = u_Projection * u_View * vec4(FragPos, 1.0);
 }
