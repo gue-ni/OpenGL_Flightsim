@@ -142,21 +142,6 @@ namespace gfx {
 	{
 		const int stride = get_stride(layout);
 
-#if 0
-		unsigned tmp;
-		glGenVertexArrays(1, &tmp);
-		glBindVertexArray(tmp);
-		glBindVertexArray(0);
-#endif
-
-		int tmp_id = -1;
-		glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &tmp_id);
-		printf("vbo: %d\n", tmp_id);
-		glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &tmp_id);
-		printf("ebo: %d\n", tmp_id);
-		glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &tmp_id);
-		printf("vao: %d\n", tmp_id);
-
 		glGenVertexArrays(1, &m_vao);
 		glGenBuffers(1, &m_vbo);
 
@@ -898,7 +883,7 @@ namespace gfx {
 			format = GL_RGBA;
 			break;
 		default:
-			std::cout << "Failed to load texture, invalid format" << std::endl;
+			std::cout << "Failed to load texture, invalid format, channels = " << channels << std::endl;
 			assert(false);
 			break;
 		}

@@ -363,7 +363,7 @@ struct Wing
 {
     const std::string name;
     const float area;
-    const glm::vec3 position; // center of gravity relative to rigidbody cg
+    const glm::vec3 position; 
     const Aerodynamics aerodynamics;
     glm::vec3 normal;
     float lift_multiplier = 1.0f;

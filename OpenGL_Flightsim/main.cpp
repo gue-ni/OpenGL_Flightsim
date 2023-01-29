@@ -74,8 +74,7 @@ int main(void)
     glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);
-    //glEnable(GL_CULL_FACE);
-
+    glEnable(GL_CULL_FACE);
 
     // SDL options
     SDL_ShowCursor(SDL_FALSE);
@@ -366,8 +365,8 @@ int main(void)
         }
         else
         {
-            //camera.set_position({ -15.0f, 1.0f + aircraft.rigid_body.angular_velocity.z * 1.0f, 0.0f });
-            camera.set_position({ -15.0f, 1.0f, 0.0f });
+            camera.set_position({ -15.0f, 1.0f + aircraft.rigid_body.angular_velocity.z * 1.0f, 0.0f });
+            //camera.set_position({ -15.0f, 1.0f, 0.0f });
         }
         renderer.render(camera, scene);
 
