@@ -31,23 +31,15 @@ float getHeight(float x, float z)
 void main()
 {
     vec3 FragPos = vec3(u_Model * vec4(a_Pos, 1.0));
-
-
     FragPos.y = getHeight(FragPos.x, FragPos.z);
 
-
-    vec3 a = vec3(FragPos.x + u_SegmentSize, getHeight(FragPos.x + u_SegmentSize, FragPos.z), FragPos.z);
-
-    vec3 b = vec3(
-        FragPos.x,
-        getHeight(FragPos.x, FragPos.z + u_SegmentSize),
-        FragPos.z + u_SegmentSize
-    );
+    float f = 1.0;
+    vec3 a = vec3(FragPos.x + u_SegmentSize * f, getHeight(FragPos.x + u_SegmentSize * f, FragPos.z), FragPos.z);
+    vec3 b = vec3(FragPos.x, getHeight(FragPos.x, FragPos.z + u_SegmentSize * f), FragPos.z + u_SegmentSize * f);
 
     vec3 v0 = a - FragPos;
 	vec3 v1 = b - FragPos;
-	Normal = normalize(cross(v0, v1));
-    Normal = vec3(0, 1, 0);
+	Normal = normalize(cross(v1, v0));
 
 	Color = vec3(1.0, u_Level, 0.0);
 

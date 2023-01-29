@@ -142,7 +142,7 @@ public:
 			shader.uniform("u_Projection", context.camera->get_projection_matrix());
 			shader.uniform("u_Heightmap", unit);
 
-			bool wireframe = false;
+			bool wireframe = true;
 
 			glEnable(GL_PRIMITIVE_RESTART);
 			glPrimitiveRestartIndex(primitive_restart);
@@ -156,7 +156,6 @@ public:
 				float border = 0.0f;
 				float scale = pow(2.0f, l);
 				float next_scale = pow(2.0f, l+2);
-				float bigger_scale = pow(2.0f, l + 1 + 2);
 				float scaled_segment_size = segment_size * scale;
 				float tile_size = segments * scaled_segment_size;
 				glm::vec2 snapped = glm::floor(camera_pos_xy / next_scale) * next_scale;
@@ -164,7 +163,7 @@ public:
 
 				shader.uniform("u_Level", static_cast<float>(l) / levels);
 				shader.uniform("u_Scale", scale);
-				shader.uniform("u_SegementSize", scaled_segment_size);
+				shader.uniform("u_SegmentSize", scaled_segment_size);
 
 				if (tile_size * 5 < height * 2.5)
 				{

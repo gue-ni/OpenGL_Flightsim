@@ -33,7 +33,7 @@ void main()
 		vec3 tmp = vec3(-2.0, 4.0, -1.0);
 		FragColor = vec4(calculateDirLight(tmp), 1.0);
 
-		//FragColor = vec4(Normal, 1.0);
+		FragColor = vec4(Normal, 1.0);
 	}
 	else
 	{
