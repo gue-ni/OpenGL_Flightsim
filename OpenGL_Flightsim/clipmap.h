@@ -87,9 +87,10 @@ struct Block {
 
 class Clipmap : public gfx::Object3D {
 public:
-	Clipmap(int l = 16, int segs = 16, float s = 2.0f) 
+	Clipmap(int l = 16, int segs = 32, float s = 2.0f) 
 		: shader("shaders/clipmap"),
 		heightmap("assets/textures/heightmap_4.png"),
+		normalmap("assets/textures/norm.png"),
 		levels(l),
 		segments(segs),
 		segment_size(s)
@@ -133,16 +134,17 @@ public:
 			glm::vec2 camera_pos_xy = glm::vec2(camera_pos.x, camera_pos.z);
 
 
-			int unit = 2;
-			heightmap.bind(unit);
+			heightmap.bind(2);
+			normalmap.bind(3);
 
 			shader.bind();
 			shader.uniform("u_CameraPos", context.camera->get_world_position());
 			shader.uniform("u_View", context.camera->get_view_matrix());
 			shader.uniform("u_Projection", context.camera->get_projection_matrix());
-			shader.uniform("u_Heightmap", unit);
+			shader.uniform("u_Heightmap", 2);
+			shader.uniform("u_Normalmap", 3);
 
-			bool wireframe = true;
+			bool wireframe = false;
 
 			glEnable(GL_PRIMITIVE_RESTART);
 			glPrimitiveRestartIndex(primitive_restart);
@@ -161,15 +163,17 @@ public:
 				glm::vec2 snapped = glm::floor(camera_pos_xy / next_scale) * next_scale;
 				auto base = calc_base(l, camera_pos_xy);
 
-				shader.uniform("u_Level", static_cast<float>(l) / levels);
 				shader.uniform("u_Scale", scale);
 				shader.uniform("u_SegmentSize", scaled_segment_size);
+				shader.uniform("u_Level", static_cast<float>(l) / levels);
 
+#if 1
 				if (tile_size * 5 < height * 2.5)
 				{
 					min_level = l + 1;
 					continue;
 				}
+#endif
 
 #if 1
 				if (l == min_level)
@@ -259,6 +263,7 @@ public:
 private:
 	gfx::Shader shader;
 	gfx::Texture heightmap;
+	gfx::Texture normalmap;
 
 #if 1
 	Block tile; 

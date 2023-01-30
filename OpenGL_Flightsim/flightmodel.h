@@ -347,7 +347,7 @@ struct Aerodynamics
 
 struct Engine
 {   
-    float throttle = 1.0f;    
+    float throttle = 0.5f;    
     const float thrust = 200000.0f; 
     
     Engine(float engine_thrust) : thrust(engine_thrust) {}
@@ -421,8 +421,7 @@ struct Wing
     }
 };
 
-//glm::mat3 inertia = phi::utils::inertia_tensor({300000.0f, 30000.0f, 500000.0f}); // best for now
-glm::mat3 inertia = phi::utils::inertia_tensor({100000.0f, 30000.0f, 200000.0f}); 
+glm::mat3 inertia = phi::utils::inertia_tensor({300000.0f, 50000.0f, 500000.0f}); 
 
 struct Aircraft
 {

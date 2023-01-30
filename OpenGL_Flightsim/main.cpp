@@ -74,7 +74,7 @@ int main(void)
     glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);
-    glEnable(GL_CULL_FACE);
+    //glEnable(GL_CULL_FACE);
 
     // SDL options
     SDL_ShowCursor(SDL_FALSE);
@@ -358,6 +358,8 @@ int main(void)
 			solve_constraints(aircraft.rigid_body);
 			apply_to_object3d(aircraft.rigid_body, transform);
         }
+
+        prop.set_rotation(prop.get_rotation() + glm::vec3(0.1f, 0.0f, 0.0f));
        
         if (orbit)
         {

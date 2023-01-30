@@ -5,41 +5,47 @@ uniform mat4 u_View;
 uniform mat4 u_Model;
 uniform mat4 u_Projection;
 
-uniform vec3 u_CameraPos;
 uniform sampler2D u_Heightmap;
+uniform sampler2D u_Normalmap;
+
+uniform vec3 u_CameraPos;
 uniform float u_Scale;
 uniform float u_SegmentSize;
 uniform float u_Level;
 
 out vec3 Color;
 out vec3 Normal;
+out vec3 FragPos;
+
+
+int factor = 25;
 
 float getHeight(float x, float z)
 {
     ivec2 size = textureSize(u_Heightmap, 0);
 
-    int factor = 25;
     ivec2 coord = (size / 2) + ivec2(x, z) / factor;
 
     float sample = texelFetch(u_Heightmap, coord, 0).r;
 
-    float scale = 10000;
+    float scale = 7000;
     float shift = -2000;
     return scale * sample + shift;
 }
 
+vec3 getNormal(float x, float z)
+{
+    ivec2 size = textureSize(u_Normalmap, 0);
+    ivec2 coord = (size / 2) + ivec2(x, z) / factor;
+    return normalize(texelFetch(u_Normalmap, coord, 0).rgb);
+}
+
 void main()
 {
-    vec3 FragPos = vec3(u_Model * vec4(a_Pos, 1.0));
+    FragPos = vec3(u_Model * vec4(a_Pos, 1.0));
     FragPos.y = getHeight(FragPos.x, FragPos.z);
 
-    float f = 1.0;
-    vec3 a = vec3(FragPos.x + u_SegmentSize * f, getHeight(FragPos.x + u_SegmentSize * f, FragPos.z), FragPos.z);
-    vec3 b = vec3(FragPos.x, getHeight(FragPos.x, FragPos.z + u_SegmentSize * f), FragPos.z + u_SegmentSize * f);
-
-    vec3 v0 = a - FragPos;
-	vec3 v1 = b - FragPos;
-	Normal = normalize(cross(v1, v0));
+    Normal = getNormal(FragPos.x, FragPos.z);
 
 	Color = vec3(1.0, u_Level, 0.0);
 
