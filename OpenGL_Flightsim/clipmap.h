@@ -87,10 +87,14 @@ struct Block {
 
 class Clipmap : public gfx::Object3D {
 public:
+
+	bool wireframe = true;
+
 	Clipmap(int l = 16, int segs = 32, float s = 2.0f) 
 		: shader("shaders/clipmap"),
 		heightmap("assets/textures/heightmap_4.png"),
 		normalmap("assets/textures/norm.png"),
+		terrain("assets/textures/terrain_texture.png"),
 		levels(l),
 		segments(segs),
 		segment_size(s)
@@ -136,6 +140,7 @@ public:
 
 			heightmap.bind(2);
 			normalmap.bind(3);
+			terrain.bind(4);
 
 			shader.bind();
 			shader.uniform("u_CameraPos", context.camera->get_world_position());
@@ -143,8 +148,8 @@ public:
 			shader.uniform("u_Projection", context.camera->get_projection_matrix());
 			shader.uniform("u_Heightmap", 2);
 			shader.uniform("u_Normalmap", 3);
+			shader.uniform("u_Texture", 4);
 
-			bool wireframe = false;
 
 			glEnable(GL_PRIMITIVE_RESTART);
 			glPrimitiveRestartIndex(primitive_restart);
@@ -264,6 +269,7 @@ private:
 	gfx::Shader shader;
 	gfx::Texture heightmap;
 	gfx::Texture normalmap;
+	gfx::Texture terrain;
 
 #if 1
 	Block tile; 

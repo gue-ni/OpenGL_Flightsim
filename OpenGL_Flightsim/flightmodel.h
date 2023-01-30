@@ -464,7 +464,7 @@ struct Aircraft
         Wing& el = elements[4];
         Wing& ru = elements[5];
 
-#if 1
+#if 0
         float max_elevator_deflection = 5.0f, max_aileron_deflection = 15.0f;
         float aileron_deflection = controls.roll * max_aileron_deflection;
         la.set_incidence(+aileron_deflection);

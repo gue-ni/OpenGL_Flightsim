@@ -17,14 +17,13 @@ out vec3 Color;
 out vec3 Normal;
 out vec3 FragPos;
 
-
-int factor = 25;
+int Factor = 1;
 
 float getHeight(float x, float z)
 {
     ivec2 size = textureSize(u_Heightmap, 0);
 
-    ivec2 coord = (size / 2) + ivec2(x, z) / factor;
+    ivec2 coord = (size / 2) + ivec2(x, z) / Factor;
 
     float sample = texelFetch(u_Heightmap, coord, 0).r;
 
@@ -36,12 +35,13 @@ float getHeight(float x, float z)
 vec3 getNormal(float x, float z)
 {
     ivec2 size = textureSize(u_Normalmap, 0);
-    ivec2 coord = (size / 2) + ivec2(x, z) / factor;
+    ivec2 coord = (size / 2) + ivec2(x, z) / Factor;
     return normalize(texelFetch(u_Normalmap, coord, 0).rgb);
 }
 
 void main()
 {
+    Factor = 25;
     FragPos = vec3(u_Model * vec4(a_Pos, 1.0));
     FragPos.y = getHeight(FragPos.x, FragPos.z);
 

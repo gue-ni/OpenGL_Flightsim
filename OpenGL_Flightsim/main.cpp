@@ -271,6 +271,9 @@ int main(void)
                     orbit = !orbit;
                     break;
 
+                case SDLK_i:
+                    clipmap.wireframe = !clipmap.wireframe;
+                    break;
 
                 default:
                     break;
@@ -347,15 +350,13 @@ int main(void)
             joystick.throttle = phi::utils::clamp(joystick.throttle, 0.0f, 1.0f);
         }
 
-        
-
         aircraft.controls.set(joystick.roll, joystick.pitch, joystick.yaw);
         aircraft.engine.throttle = joystick.throttle;
         
         if (!paused)
         {
 			aircraft.update(dt);
-			solve_constraints(aircraft.rigid_body);
+			// solve_constraints(aircraft.rigid_body);
 			apply_to_object3d(aircraft.rigid_body, transform);
         }
 
@@ -367,8 +368,8 @@ int main(void)
         }
         else
         {
-            //camera.set_position({ -15.0f, 1.0f + aircraft.rigid_body.angular_velocity.z * 1.0f, 0.0f });
-            camera.set_position({ -15.0f, 1.0f, 0.0f });
+            camera.set_position({ -15.0f, 1.0f + aircraft.rigid_body.angular_velocity.z * 1.0f, 0.0f });
+            //camera.set_position({ -15.0f, 1.0f, 0.0f });
         }
         renderer.render(camera, scene);
 
