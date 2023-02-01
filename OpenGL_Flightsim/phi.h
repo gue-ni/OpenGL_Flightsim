@@ -214,8 +214,7 @@ namespace phi {
             angular_velocity += inverse_inertia * 
                 (m_torque - glm::cross(angular_velocity, inertia * angular_velocity)) * dt;
 
-            //rotation += (rotation * glm::quat(0.0f, angular_velocity.x, angular_velocity.y, angular_velocity.z)) * (0.5f * dt);
-            rotation += (rotation * glm::quat(angular_velocity)) * (0.5f * dt);
+            rotation += (rotation * glm::quat(0.0f, angular_velocity.x, angular_velocity.y, angular_velocity.z)) * (0.5f * dt);
 
             rotation = glm::normalize(rotation);
 

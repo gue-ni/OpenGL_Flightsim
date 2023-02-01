@@ -57,7 +57,7 @@ int main(void)
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 
     SDL_Window* window = SDL_CreateWindow(
-        "OpenGL Flightsim", 
+        "Flightsim", 
         SDL_WINDOWPOS_CENTERED, 
         SDL_WINDOWPOS_CENTERED, 
         SCREEN_WIDTH, 
