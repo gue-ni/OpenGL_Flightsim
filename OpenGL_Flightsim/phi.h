@@ -73,14 +73,6 @@ namespace phi {
             inverse_inertia(glm::inverse(params.inertia))
         {}
 
-        /*
-        RigidBody(float body_mass) 
-            : mass(body_mass), 
-            inertia(cube_inertia_tensor(glm::vec3(1.0f), body_mass)), 
-            inverse_inertia(glm::inverse(inertia))
-        {}
-        */
-
         RigidBody(float m, const glm::mat3& inertia_tensor) 
             : mass(m),
             inertia(inertia_tensor), 
@@ -213,9 +205,7 @@ namespace phi {
 
             angular_velocity += inverse_inertia * 
                 (m_torque - glm::cross(angular_velocity, inertia * angular_velocity)) * dt;
-
-            rotation += (rotation * glm::quat(0.0f, angular_velocity.x, angular_velocity.y, angular_velocity.z)) * (0.5f * dt);
-
+            rotation += (rotation * glm::quat(0.0f, angular_velocity)) * (0.5f * dt);
             rotation = glm::normalize(rotation);
 
             // reset accumulators

@@ -93,7 +93,7 @@ public:
 	Clipmap(int l = 16, int segs = 32, float s = 2.0f) 
 		: shader("shaders/clipmap"),
 		heightmap("assets/textures/heightmap_4.png"),
-		normalmap("assets/textures/norm.png"),
+		normalmap("assets/textures/normalmap_4.png"),
 		terrain("assets/textures/terrain_texture.png"),
 		levels(l),
 		segments(segs),

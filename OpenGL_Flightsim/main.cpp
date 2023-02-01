@@ -160,7 +160,7 @@ int main(void)
 
     gfx::load_obj("assets/models/cube.obj", cube_vertices);
     gfx::load_obj("assets/models/icosphere.obj", ico_vertices);
-    gfx::load_obj("assets/models/cessna/Cessna_172.obj", fuselage_vertices);
+    gfx::load_obj("assets/models/cessna/fuselage.obj", fuselage_vertices);
     gfx::load_obj("assets/models/cessna/Cessna_172_prop.obj", prop_vertices);
 
     gfx::Renderer renderer(SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -168,7 +168,8 @@ int main(void)
     auto blue = make_shared<gfx::Phong>(gfx::rgb(0, 0, 255));
     auto grey = make_shared<gfx::Phong>(glm::vec3(0.5f));
     auto green = make_shared<gfx::Phong>(gfx::rgb(0, 255, 0));
-    auto test_texture = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/textures/grass.jpg"));
+    auto colors = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/textures/colors.png"));
+    auto grass = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/textures/grass.jpg"));
     auto container = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/textures/container.jpg"));
     auto cube_geo = std::make_shared<gfx::Geometry>(cube_vertices_2, gfx::Geometry::POS_NORM_UV);
     auto ico_geo = std::make_shared<gfx::Geometry>(ico_vertices, gfx::Geometry::POS_NORM_UV);
@@ -207,7 +208,7 @@ int main(void)
     transform.set_position(position);
     scene.add(&transform);
 
-    gfx::Mesh fuselage(std::make_shared<gfx::Geometry>(fuselage_vertices, gfx::Geometry::POS_NORM_UV), grey);
+    gfx::Mesh fuselage(std::make_shared<gfx::Geometry>(fuselage_vertices, gfx::Geometry::POS_NORM_UV), colors);
     gfx::Mesh prop(std::make_shared<gfx::Geometry>(prop_vertices, gfx::Geometry::POS_NORM_UV), grey);
     transform.add(&fuselage);
     transform.add(&prop);

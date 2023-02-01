@@ -36,6 +36,7 @@ uniform Light u_Lights[MAX_LIGHTS];
 vec3 getColor()
 {
 	return u_UseTexture ? vec3(texture(u_Texture1, TexCoords)) : u_SolidObjectColor;
+
 }
 
 float calculateAttenuation(float constant, float linear, float quadratic, float distance)

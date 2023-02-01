@@ -361,10 +361,11 @@ struct Engine
 
 struct Wing
 {
-    const std::string name;
     const float area;
+    const std::string name;
     const glm::vec3 position; 
     const Aerodynamics aerodynamics;
+
     glm::vec3 normal;
     float lift_multiplier = 1.0f;
     float drag_multiplier = 1.0f;
@@ -422,6 +423,7 @@ struct Wing
 };
 
 glm::mat3 inertia = phi::utils::inertia_tensor({300000.0f, 50000.0f, 500000.0f}); 
+//glm::mat3 inertia = phi::utils::inertia_tensor({200000.0f, 50000.0f, 500000.0f}); 
 
 struct Aircraft
 {
@@ -430,7 +432,7 @@ struct Aircraft
     std::vector<Wing> elements;
     phi::RigidBody rigid_body;
 
-    float aileron_torque = 15000.0f * 100.0f, elevator_torque = 10000.0f * 100.0f, yaw_torque = 1000.0f;
+    const float aileron_torque = 15000.0f * 100.0f, elevator_torque = 10000.0f * 100.0f, yaw_torque = 1000.0f;
 
     float log_timer = 1.0f;
 
@@ -464,7 +466,7 @@ struct Aircraft
         Wing& el = elements[4];
         Wing& ru = elements[5];
 
-#if 0
+#if 1
         float max_elevator_deflection = 5.0f, max_aileron_deflection = 15.0f;
         float aileron_deflection = controls.roll * max_aileron_deflection;
         la.set_incidence(+aileron_deflection);

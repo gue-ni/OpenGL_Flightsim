@@ -342,8 +342,11 @@ namespace gfx {
 	
 	class Billboard : public Object3D {
 	public:
+		Billboard(const Texture& sprite);
 		void draw(RenderContext& context) override;
 		Object3D& add(Object3D* child) = delete;
+	private:
+		Shader shader;
 	}; 
 
 	class Line : public Mesh {

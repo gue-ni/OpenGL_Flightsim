@@ -17,7 +17,7 @@ out vec3 Color;
 out vec3 Normal;
 out vec3 FragPos;
 
-int Factor = 1;
+out int Factor;
 
 float getHeight(float x, float z)
 {

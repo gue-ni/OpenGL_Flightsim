@@ -16,7 +16,7 @@ uniform mat4 u_LightSpaceMatrix;
 void main()
 {
     FragPos = vec3(u_Model * vec4(a_Pos, 1.0));
-    TexCoords = vec2(a_TexCoord.x, a_TexCoord.y);
+    TexCoords = a_TexCoord;
     Normal = mat3(transpose(inverse(u_Model))) * a_Normal;  
     FragPosLightSpace = u_LightSpaceMatrix * vec4(FragPos, 1.0);
     gl_Position = u_Projection * u_View * vec4(FragPos, 1.0);
