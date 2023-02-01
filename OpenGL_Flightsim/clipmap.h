@@ -88,7 +88,7 @@ struct Block {
 class Clipmap : public gfx::Object3D {
 public:
 
-	bool wireframe = true;
+	bool wireframe = false;
 
 	Clipmap(int l = 16, int segs = 32, float s = 2.0f) 
 		: shader("shaders/clipmap"),

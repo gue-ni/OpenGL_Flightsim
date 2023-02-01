@@ -3,7 +3,7 @@ x64/
 x86/
 Debug/
 Release/
-reference/
+references/stuff/
 
 *.user
 *.suo
