@@ -3,7 +3,7 @@ x64/
 x86/
 Debug/
 Release/
-references/stuff/
+OpenGL_Flightsim/reference/stuff/
 
 *.user
 *.suo
