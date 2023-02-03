@@ -44,10 +44,13 @@ void main()
     Factor = 25;
     FragPos = vec3(u_Model * vec4(a_Pos, 1.0));
     FragPos.y = getHeight(FragPos.x, FragPos.z);
+    gl_Position = u_Projection * u_View * vec4(FragPos, 1.0);
+
+	//apply nostalgic vertex jitter
+    //float positionResolution = 128;
+    //float distanceFromCam = clamp(gl_Position.w, -0.1, 1000);
+	//gl_Position.xy = round(gl_Position.xy * (positionResolution / distanceFromCam)) / (positionResolution / distanceFromCam);
 
     Normal = getNormal(FragPos.x, FragPos.z);
-
 	Color = vec3(1.0, u_Level, 0.0);
-
-    gl_Position = u_Projection * u_View * vec4(FragPos, 1.0);
 }

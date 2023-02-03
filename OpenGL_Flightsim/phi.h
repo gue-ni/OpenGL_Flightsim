@@ -151,6 +151,10 @@ namespace phi {
             return rotation * direction;
         }
 
+        inline glm::vec3 get_body_velocity() const {
+            return inverse_transform_direction(velocity);
+        }
+
         // transform direction from world space to body space 
         inline glm::vec3 inverse_transform_direction(const glm::vec3& direction) const
         {

@@ -844,6 +844,8 @@ namespace gfx {
 		if (data)
 		{
 			auto format = get_format(channels);
+
+			//std::cout  << path << ": format = " << format << ", channels = " << channels << std::endl;
 			glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
 			glGenerateMipmap(GL_TEXTURE_2D);
 		}
@@ -887,6 +889,7 @@ namespace gfx {
 			assert(false);
 			break;
 		}
+
 		return format;
 	}
 
@@ -1050,5 +1053,79 @@ namespace gfx {
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	}
 
+
+
+	Billboard::Billboard(std::shared_ptr<Texture> sprite)
+		: texture(sprite), shader("shaders/billboard")
+	{
+		float vertices[] = {
+			 0.5f,  0.5f, 0.0f,     0.0f, 0.0f, 
+			 0.5f, -0.5f, 0.0f,     0.0f, 1.0f,
+			-0.5f, -0.5f, 0.0f,     1.0f, 1.0f,
+			-0.5f,  0.5f, 0.0f,     1.0f, 0.0f, 
+		};
+
+		unsigned int indices[] = {  
+			0, 1, 3,  // first Triangle
+			1, 2, 3   // second Triangle
+		};
+
+		vao.generate();
+		vbo.generate();
+		ebo.generate();
+
+		vao.bind();
+		
+		vbo.buffer(vertices, sizeof(vertices));
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(0);
+
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+		glEnableVertexAttribArray(1);
+
+		ebo.buffer(indices, sizeof(indices));
+		vao.unbind();
+	}
+
+	void Billboard::draw(RenderContext& context)
+	{
+		if (context.is_shadow_pass)
+			return;
+
+		auto camera = context.camera;
+
+		auto view = camera->get_view_matrix();
+		glm::vec3 up = { view[0][1], view[1][1], view[2][1] };
+		glm::vec3 right = { view[0][0], view[1][0], view[2][0] };
+
+		shader.bind();
+		shader.uniform("u_View", view);
+		shader.uniform("u_Projection", camera->get_projection_matrix());
+		shader.uniform("u_Texture", 5);
+		shader.uniform("u_UseTexture", true);
+		shader.uniform("u_Position", get_world_position());
+		shader.uniform("u_Scale", get_scale());
+		shader.uniform("u_Right", right);
+		shader.uniform("u_Up", up);
+		texture->bind(5);
+
+		vao.bind();
+
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+		glDisable(GL_DEPTH_TEST);
+		glDepthMask(GL_FALSE);
+
+
+
+		// TODO draw
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		vao.unbind();
+
+		glEnable(GL_DEPTH_TEST);
+		glDepthMask(GL_TRUE);
+
+
+	}
 
 }

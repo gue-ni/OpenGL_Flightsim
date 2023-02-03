@@ -74,6 +74,8 @@ int main(void)
     glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
     //glEnable(GL_CULL_FACE);
 
     // SDL options
@@ -202,7 +204,8 @@ int main(void)
     Clipmap clipmap;
     scene.add(&clipmap);
 #endif
-    
+
+   
 #if 1
     gfx::Object3D transform;
     transform.set_position(position);
@@ -211,8 +214,29 @@ int main(void)
     gfx::Mesh fuselage(std::make_shared<gfx::Geometry>(fuselage_vertices, gfx::Geometry::POS_NORM_UV), colors);
     gfx::Mesh prop(std::make_shared<gfx::Geometry>(prop_vertices, gfx::Geometry::POS_NORM_UV), grey);
     transform.add(&fuselage);
-    transform.add(&prop);
+    //transform.add(&prop);
 #endif
+
+
+#if 0
+    gfx::Mesh cube(cube_geo, container);
+    transform.add(&cube);
+#endif
+ 
+
+
+#if 1
+    float projection_distance = 25.0f;
+    gfx::Billboard cross(make_shared<gfx::Texture>("assets/textures/sprites/cross.png"));
+    cross.set_position(phi::FORWARD * projection_distance);
+    cross.set_scale(glm::vec3(0.25f));
+    transform.add(&cross);
+
+    gfx::Billboard flightpath_marker(make_shared<gfx::Texture>("assets/textures/sprites/fpm.png"));
+    flightpath_marker.set_scale(glm::vec3(0.25f));
+    transform.add(&flightpath_marker);
+#endif
+
 
     Aircraft aircraft(position, velocity);
 
@@ -362,6 +386,8 @@ int main(void)
         }
 
         prop.set_rotation(prop.get_rotation() + glm::vec3(0.1f, 0.0f, 0.0f));
+
+        flightpath_marker.set_position(glm::normalize(aircraft.rigid_body.get_body_velocity()) * (projection_distance + 1));
        
         if (orbit)
         {
@@ -369,7 +395,7 @@ int main(void)
         }
         else
         {
-            camera.set_position({ -15.0f, 1.0f + aircraft.rigid_body.angular_velocity.z * 1.0f, 0.0f });
+            camera.set_position({ -15.0f, 3.0f + aircraft.rigid_body.angular_velocity.z * 1.0f, 0.0f });
             //camera.set_position({ -15.0f, 1.0f, 0.0f });
         }
         renderer.render(camera, scene);
