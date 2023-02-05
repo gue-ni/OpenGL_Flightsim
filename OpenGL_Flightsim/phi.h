@@ -8,7 +8,7 @@
 
 namespace phi {
 
-	typedef float Seconds;
+    typedef float Seconds;
 
     // constants
     constexpr float g = 9.81f;
@@ -27,10 +27,10 @@ namespace phi {
     constexpr glm::vec3 Y_AXIS(0.0f, 1.0f, 0.0f);
     constexpr glm::vec3 Z_AXIS(0.0f, 0.0f, 1.0f);
 
-	constexpr inline float sq(float a)
-	{
-		return a * a;
-	}
+    constexpr inline float sq(float a)
+    {
+        return a * a;
+    }
 
     struct MassElement {
         float mass;
@@ -91,38 +91,38 @@ namespace phi {
         static glm::mat3 calculate_inertia(const std::vector<MassElement>& elements)
         {
             float Ixx = 0, Iyy = 0, Izz = 0;
-			float Ixy = 0, Ixz = 0, Iyz = 0;
+            float Ixy = 0, Ixz = 0, Iyz = 0;
 
-			float mass = 0;
-			for (const auto& element : elements)
-			{
-				mass += element.mass;
-			}
+            float mass = 0;
+            for (const auto& element : elements)
+            {
+                mass += element.mass;
+            }
 
-			glm::vec3 moment(0.0f);
-			for (const auto& element : elements)
-			{
-				moment += element.mass * element.position;
-			}
+            glm::vec3 moment(0.0f);
+            for (const auto& element : elements)
+            {
+                moment += element.mass * element.position;
+            }
 
-			const glm::vec3 center_of_gravity = moment / mass;
+            const glm::vec3 center_of_gravity = moment / mass;
 
-			for (const auto& element : elements)
-			{
-				auto offset = element.position - center_of_gravity;
-				Ixx += element.inertia.x + element.mass * (sq(offset.y) + sq(offset.z));
-				Iyy += element.inertia.y + element.mass * (sq(offset.z) + sq(offset.x));
-				Izz += element.inertia.z + element.mass * (sq(offset.x) + sq(offset.y));
-				Ixy += element.mass * (offset.x * offset.y);
-				Ixz += element.mass * (offset.x * offset.z);
-				Iyz += element.mass * (offset.y * offset.z);
-			}
+            for (const auto& element : elements)
+            {
+                auto offset = element.position - center_of_gravity;
+                Ixx += element.inertia.x + element.mass * (sq(offset.y) + sq(offset.z));
+                Iyy += element.inertia.y + element.mass * (sq(offset.z) + sq(offset.x));
+                Izz += element.inertia.z + element.mass * (sq(offset.x) + sq(offset.y));
+                Ixy += element.mass * (offset.x * offset.y);
+                Ixz += element.mass * (offset.x * offset.z);
+                Iyz += element.mass * (offset.y * offset.z);
+            }
 
-			glm::mat3 inertia_tensor = {
-				 Ixx, -Ixy, -Ixz,
-				-Ixy,  Iyy, -Iyz,
-				-Ixz, -Iyz,  Izz
-			};
+            glm::mat3 inertia_tensor = {
+                 Ixx, -Ixy, -Ixz,
+                -Ixy,  Iyy, -Iyz,
+                -Ixz, -Iyz,  Izz
+            };
             
             return inertia_tensor;
         }
@@ -223,68 +223,68 @@ namespace phi {
         {
             return (input - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
         }
-
-	    constexpr inline float lerp(float a, float b, float t)
-		{
-			return a + t * (b - a);
-		}
-
-        template <typename T>
-		constexpr inline T max(T a, T b)
-		{
-			return a > b ? a : b;
-		}
+    
+        constexpr inline float lerp(float a, float b, float t)
+        {
+            return a + t * (b - a);
+        }
 
         template <typename T>
-		constexpr inline T min(T a, T b)
-		{
-			return a < b ? a : b;
-		}
-
-		constexpr inline float sign(float a)
-		{
-			return a >= 0.0f ? 1.0f : -1.0f;
-		}
+        constexpr inline T max(T a, T b)
+        {
+            return a > b ? a : b;
+        }
 
         template <typename T>
-		constexpr inline T clamp(T v, T lo, T hi)
-		{
-			return min(max(v, lo), hi);
-		}
+        constexpr inline T min(T a, T b)
+        {
+            return a < b ? a : b;
+        }
 
-		constexpr inline float knots(float meter_per_second)
-		{
-			return meter_per_second * 1.94384f;
-		}
+        constexpr inline float sign(float a)
+        {
+            return a >= 0.0f ? 1.0f : -1.0f;
+        }
 
-		constexpr inline float meter_per_second(float kilometer_per_hour)
-		{
-			return kilometer_per_hour / 3.6f;
-		}
+        template <typename T>
+        constexpr inline T clamp(T v, T lo, T hi)
+        {
+            return min(max(v, lo), hi);
+        }
 
-		constexpr inline float kilometer_per_hour(float meter_per_second)
-		{
-			return meter_per_second * 3.6f;
-		}
+        constexpr inline float knots(float meter_per_second)
+        {
+            return meter_per_second * 1.94384f;
+        }
 
-		constexpr glm::vec3 cube_moment_of_inertia(const glm::vec3& size, float mass)
-		{
-			const float C = (1.0f / 12.0f) * mass;
-			glm::vec3 I(0.0f);
-			I.x = C * (sq(size.y) + sq(size.z));
-			I.y = C * (sq(size.x) + sq(size.z));
-			I.z = C * (sq(size.x) + sq(size.y));
-			return I;
-		}
+        constexpr inline float meter_per_second(float kilometer_per_hour)
+        {
+            return kilometer_per_hour / 3.6f;
+        }
 
-		constexpr glm::vec3 cylinder_moment_of_inertia(float radius, float length, float mass)
-		{
-			const float C = (1.0f / 12.0f) * mass;
-			glm::vec3 I(0.0f);
-			I.x = (1.0f / 2.0f) * mass * sq(radius);
-			I.y = I.z = C * (3 * sq(radius) + sq(length));
-			return I;
-		}
+        constexpr inline float kilometer_per_hour(float meter_per_second)
+        {
+            return meter_per_second * 3.6f;
+        }
+
+        constexpr glm::vec3 cube_moment_of_inertia(const glm::vec3& size, float mass)
+        {
+            const float C = (1.0f / 12.0f) * mass;
+            glm::vec3 I(0.0f);
+            I.x = C * (sq(size.y) + sq(size.z));
+            I.y = C * (sq(size.x) + sq(size.z));
+            I.z = C * (sq(size.x) + sq(size.y));
+            return I;
+        }
+
+        constexpr glm::vec3 cylinder_moment_of_inertia(float radius, float length, float mass)
+        {
+            const float C = (1.0f / 12.0f) * mass;
+            glm::vec3 I(0.0f);
+            I.x = (1.0f / 2.0f) * mass * sq(radius);
+            I.y = I.z = C * (3 * sq(radius) + sq(length));
+            return I;
+        }
 
         constexpr glm::mat3 inertia_tensor(const glm::vec3& moment_of_inertia)
         {
@@ -295,8 +295,8 @@ namespace phi {
             };
         }
 
-		constexpr glm::mat3 cube_inertia_tensor(const glm::vec3& size, float mass)
-		{
+        constexpr glm::mat3 cube_inertia_tensor(const glm::vec3& size, float mass)
+        {
             return inertia_tensor(cube_moment_of_inertia(size, mass));		
         }
     };

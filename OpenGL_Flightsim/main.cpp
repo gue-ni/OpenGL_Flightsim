@@ -30,10 +30,10 @@ void apply_to_object3d(const phi::RigidBody& rigid_body, gfx::Object3D& object3d
 
 void solve_constraints(phi::RigidBody& rigid_body)
 {
-	if (rigid_body.position.y <= 0)
-	{
-		rigid_body.position.y = 0, rigid_body.velocity.y = 0;
-	}
+    if (rigid_body.position.y <= 0)
+    {
+        rigid_body.position.y = 0, rigid_body.velocity.y = 0;
+    }
 }
 
 struct Joystick {
@@ -375,9 +375,9 @@ int main(void)
         
         if (!paused)
         {
-			aircraft.update(dt);
-			// solve_constraints(aircraft.rigid_body);
-			apply_to_object3d(aircraft.rigid_body, transform);
+            aircraft.update(dt);
+            // solve_constraints(aircraft.rigid_body);
+            apply_to_object3d(aircraft.rigid_body, transform);
         }
 
         prop.set_rotation(prop.get_rotation() + glm::vec3(0.1f, 0.0f, 0.0f));
