@@ -10,6 +10,7 @@ uniform sampler2D u_Texture;
 in vec3 Color;
 in vec3 Normal;
 in vec3 FragPos;
+in vec2 TexCoord;
 flat in int Factor;
 
 float scale(float input_val, float in_min, float in_max, float out_min, float out_max)
@@ -55,7 +56,7 @@ void main()
 	{
 		FragColor = vec4(Color, 1.0); 
 
-		vec3 lightDir = vec3(-2.0, 4.0, -1.0);
+		vec3 lightDir = vec3(-2.0, 5.0, -1.0);
 
 		//vec3 normal = getNormal(FragPos.x, FragPos.z);
 		vec3 normal = Normal;
@@ -64,9 +65,10 @@ void main()
 
 		vec3 col = getTexture(FragPos.x, FragPos.z);
 
-		FragColor = vec4(calculateDirLight(lightDir, normal, green), 1.0);
+		FragColor = vec4(calculateDirLight(lightDir, normal, texture(u_Texture, TexCoord).rgb), 1.0);
 
-		FragColor = vec4(normal, 1.0);
+		//FragColor = vec4(normal, 1.0);
+		//FragColor = texture(u_Texture, TexCoord);
 	}
 	else
 	{

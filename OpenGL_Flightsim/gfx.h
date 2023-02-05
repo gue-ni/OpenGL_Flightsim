@@ -103,7 +103,11 @@ namespace gfx {
         GLuint id = 0;
         Texture() : id(0) { glGenTextures(1, &id); }
         Texture(GLuint texture_id) : id(texture_id) {}
+        //Texture(const std::string& path);
+
         Texture(const std::string& path);
+
+
         ~Texture();
         virtual void bind(GLuint texture) const;
         virtual void unbind() const;

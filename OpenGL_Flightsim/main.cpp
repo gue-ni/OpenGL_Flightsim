@@ -181,12 +181,12 @@ int main(void)
 
 #if 1
     gfx::Skybox skybox({
-        "assets/textures/skybox/right.jpg",
-        "assets/textures/skybox/left.jpg",
-        "assets/textures/skybox/top.jpg",
-        "assets/textures/skybox/bottom.jpg",
-        "assets/textures/skybox/front.jpg",
-        "assets/textures/skybox/back.jpg",
+        "assets/textures/skybox2/right.jpg",
+        "assets/textures/skybox2/left.jpg",
+        "assets/textures/skybox2/top.jpg",
+        "assets/textures/skybox2/bottom.jpg",
+        "assets/textures/skybox2/front.jpg",
+        "assets/textures/skybox2/back.jpg",
     });
     scene.add(&skybox);
 #endif
@@ -197,7 +197,7 @@ int main(void)
     scene.add(&sun);
 #endif
   
-    auto position = glm::vec3(0.0f, 1000.0f, 0.0f);
+    auto position = glm::vec3(0.0f, 5000.0f, 0.0f);
     auto velocity = glm::vec3(120.0f, 0.0f, 0.0f);
 
 #if 1
@@ -213,7 +213,7 @@ int main(void)
     gfx::Mesh fuselage(std::make_shared<gfx::Geometry>(fuselage_vertices, gfx::Geometry::POS_NORM_UV), colors);
     gfx::Mesh prop(std::make_shared<gfx::Geometry>(prop_vertices, gfx::Geometry::POS_NORM_UV), grey);
     transform.add(&fuselage);
-    //transform.add(&prop);
+    transform.add(&prop);
 #endif
 
 #if 0
@@ -235,7 +235,7 @@ int main(void)
 
     Aircraft aircraft(position, velocity);
 
-    gfx::Camera camera(glm::radians(45.0f), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 50000.0f);
+    gfx::Camera camera(glm::radians(45.0f), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 100000.0f);
     camera.set_position(glm::vec3(0, 1, 0));
     camera.set_rotation(glm::vec3(0, glm::radians(-90.0f), 0.0f));
     transform.add(&camera);
