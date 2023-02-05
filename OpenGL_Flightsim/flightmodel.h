@@ -482,7 +482,6 @@ struct Aircraft
         el.set_incidence(-controls.pitch * max_elevator_deflection);
 #else
         float control_authority = phi::utils::clamp(glm::length(rigid_body.velocity) / 150.0f, 0.0f, 1.0f);
-        //rigid_body.add_relative_torque(glm::vec3(aileron_torque * controls.roll, 0.0f, elevator_torque * controls.pitch) * control_authority);
         rigid_body.add_relative_torque((controls.get_vector() * control_torque) * control_authority);
 #endif
 
