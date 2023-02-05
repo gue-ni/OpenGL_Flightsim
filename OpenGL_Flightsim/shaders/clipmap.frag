@@ -12,6 +12,12 @@ in vec3 Normal;
 in vec3 FragPos;
 flat in int Factor;
 
+float scale(float input_val, float in_min, float in_max, float out_min, float out_max)
+{
+    return (input_val - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+
 vec3 getNormal(float x, float z)
 {
     ivec2 size = textureSize(u_Normalmap, 0);
@@ -58,7 +64,7 @@ void main()
 
 		vec3 col = getTexture(FragPos.x, FragPos.z);
 
-		//FragColor = vec4(calculateDirLight(lightDir, normal, green), 1.0);
+		FragColor = vec4(calculateDirLight(lightDir, normal, green), 1.0);
 
 		FragColor = vec4(normal, 1.0);
 	}
