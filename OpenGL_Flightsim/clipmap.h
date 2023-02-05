@@ -127,7 +127,7 @@ public:
 		return base;
 	}
 
-	void draw(gfx::RenderContext& context) override
+	void draw_self(gfx::RenderContext& context) override
 	{
 #if 1
 		if (!context.is_shadow_pass)

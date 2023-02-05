@@ -32,6 +32,23 @@ float getHeight(float x, float z)
     return scale * sample + shift;
 }
 
+float getHeight2(float x, float z)
+{
+    float f = 10000.0;
+    vec2 coord = vec2(x,z) / f;
+
+    if (abs(coord.x) > 1.0 || abs(coord.y) > 1.0)
+    {
+        return 0.0;
+    }
+
+    float sample = texture(u_Heightmap, coord).r;
+    float scale = 7000;
+    float shift = -2000;
+    return scale * sample + shift;
+
+}
+
 vec3 getNormal(float x, float z)
 {
     ivec2 size = textureSize(u_Normalmap, 0);

@@ -161,11 +161,13 @@ namespace gfx {
 		std::vector<Object3D*> children;
 		glm::mat4 transform;
 		bool receive_shadow = true;
+		bool visible = true;
 
 		Object3D& add(Object3D* child);
 		
-		virtual void draw(RenderContext& context);
+		void draw(RenderContext& context);
 		void draw_children(RenderContext& context);
+		virtual void draw_self(RenderContext& context);
 
 		void set_scale(const glm::vec3& scale); // yaw, roll, pitch
 		void set_rotation(const glm::vec3& rot);
@@ -333,7 +335,7 @@ namespace gfx {
 	public:
 		Mesh(std::shared_ptr<Geometry> geometry, std::shared_ptr<Material> material)
 			: m_geometry(geometry), m_material(material) {}
-		void draw(RenderContext& context) override;
+		void draw_self(RenderContext& context) override;
 
 	protected:
 		std::shared_ptr<Geometry> m_geometry;
@@ -343,7 +345,7 @@ namespace gfx {
 	class Billboard : public Object3D {
 	public:
 		Billboard(std::shared_ptr<Texture> sprite);
-		void draw(RenderContext& context) override;
+		void draw_self(RenderContext& context) override;
 		Object3D& add(Object3D* child) = delete;
 	private:
 		Shader shader;
@@ -361,7 +363,7 @@ namespace gfx {
 	class Skybox : public Mesh {
 	public:
 		Skybox(const std::vector<std::string>& faces);
-		void draw(RenderContext& context) override;
+		void draw_self(RenderContext& context) override;
 		Object3D& add(Object3D* child) = delete;
 	};
 

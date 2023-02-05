@@ -234,7 +234,15 @@ namespace gfx {
 	
 	void Object3D::draw(RenderContext& context)
 	{
+		if (visible)
+		{
+			draw_self(context);
+		}
 		draw_children(context);
+	}
+
+	void Object3D::draw_self(RenderContext& context)
+	{
 	}
 
 	void Object3D::draw_children(RenderContext& context)
@@ -409,7 +417,7 @@ namespace gfx {
 #endif
 	}
 
-	void Mesh::draw(RenderContext& context)
+	void Mesh::draw_self(RenderContext& context)
 	{
 		glm::mat4 lightSpaceMatrix(1.0f);
 
@@ -944,7 +952,7 @@ namespace gfx {
 	{
 	}
 
-	void Skybox::draw(RenderContext& context)
+	void Skybox::draw_self(RenderContext& context)
 	{
 		if (!context.is_shadow_pass)
 		{
@@ -1087,7 +1095,7 @@ namespace gfx {
 		vao.unbind();
 	}
 
-	void Billboard::draw(RenderContext& context)
+	void Billboard::draw_self(RenderContext& context)
 	{
 		if (context.is_shadow_pass)
 			return;

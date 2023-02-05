@@ -47,7 +47,7 @@ void main()
 {
 	if (gl_FrontFacing)
 	{
-		//FragColor = vec4(Color, 1.0); 
+		FragColor = vec4(Color, 1.0); 
 
 		vec3 lightDir = vec3(-2.0, 4.0, -1.0);
 
