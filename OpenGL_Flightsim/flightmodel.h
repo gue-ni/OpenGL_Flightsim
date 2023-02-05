@@ -319,6 +319,10 @@ struct Controls {
     {
         roll = r, pitch = p, yaw = y;
     }
+
+    glm::vec3 get_vector() const {
+        return { roll, yaw, pitch };
+    }
 };
 
 struct Aerodynamics
@@ -345,6 +349,9 @@ struct Aerodynamics
     }
 };
 
+Aerodynamics naca0012(NACA_0012);
+Aerodynamics naca2412(NACA_2412);
+
 struct Engine
 {   
     float throttle = 0.5f;    
@@ -364,7 +371,7 @@ struct Wing
     const float area;
     const std::string name;
     const glm::vec3 position; 
-    const Aerodynamics aerodynamics;
+    const Aerodynamics *aerodynamics;
 
     glm::vec3 normal;
     float lift_multiplier = 1.0f;
@@ -374,7 +381,7 @@ struct Wing
         const std::string &wing_name, 
         const glm::vec3 &offset, 
         float wing_area, 
-        const Aerodynamics &aero, 
+        const Aerodynamics *aero, 
         const glm::vec3 &wing_normal
     )
         : name(wing_name),
@@ -409,7 +416,7 @@ struct Wing
 
         auto angle_of_attack = glm::degrees(std::asin(glm::dot(drag_direction, normal)));
 
-        auto [lift_coefficient, drag_coefficient] = aerodynamics.sample(angle_of_attack);
+        auto [lift_coefficient, drag_coefficient] = aerodynamics->sample(angle_of_attack);
 
         auto lift = lift_coefficient * lift_multiplier * speed * speed * area;
         auto drag = drag_coefficient * drag_multiplier * speed * speed * area;
@@ -433,20 +440,21 @@ struct Aircraft
     phi::RigidBody rigid_body;
 
     const float aileron_torque = 15000.0f * 100.0f, elevator_torque = 10000.0f * 100.0f, yaw_torque = 1000.0f;
+    const glm::vec3 control_torque = { aileron_torque, yaw_torque, elevator_torque };
 
     float log_timer = 1.0f;
 
     Aircraft(const glm::vec3 &position, const glm::vec3 &velocity)
         : rigid_body({ .mass = 16000.0f, .inertia = inertia }),
         elements({
-          Wing("left_wing",     glm::vec3(-0.5f,   0.0f, -2.73f),      24.36f, Aerodynamics(NACA_2412), phi::UP),
-          Wing("left_aileron",  glm::vec3( 0.0f,   0.0f, -2.0f),        8.79f, Aerodynamics(NACA_0012), phi::UP),
-          Wing("right_aileron", glm::vec3( 0.0f,   0.0f,  2.0f),        8.79f, Aerodynamics(NACA_0012), phi::UP),
-          Wing("right_wing",    glm::vec3(-0.5f,   0.0f,  2.73f),      24.36f, Aerodynamics(NACA_2412), phi::UP),
-          Wing("elevator",      glm::vec3(-6.64f, -0.12f, 0.0f),       17.66f, Aerodynamics(NACA_0012), phi::UP),
-          Wing("rudder",        glm::vec3(-6.64f,  0.0f,  0.0f),       16.46f, Aerodynamics(NACA_0012), phi::RIGHT),
-          Wing("fuselage_v",    glm::vec3( 0.0f,   0.0f,  0.0f),       25.00f, Aerodynamics(NACA_0012), phi::RIGHT),
-          Wing("fuselage_h",    glm::vec3( 0.0f,   0.0f,  0.0f),       25.00f, Aerodynamics(NACA_0012), phi::UP),
+          Wing("left_wing",     glm::vec3(-0.5f,   0.0f, -2.73f),      24.36f, &naca2412, phi::UP),
+          Wing("left_aileron",  glm::vec3( 0.0f,   0.0f, -2.0f),        8.79f, &naca0012, phi::UP),
+          Wing("right_aileron", glm::vec3( 0.0f,   0.0f,  2.0f),        8.79f, &naca0012, phi::UP),
+          Wing("right_wing",    glm::vec3(-0.5f,   0.0f,  2.73f),      24.36f, &naca2412, phi::UP),
+          Wing("elevator",      glm::vec3(-6.64f, -0.12f, 0.0f),       17.66f, &naca0012, phi::UP),
+          Wing("rudder",        glm::vec3(-6.64f,  0.0f,  0.0f),       16.46f, &naca0012, phi::RIGHT),
+          Wing("fuselage_v",    glm::vec3( 0.0f,   0.0f,  0.0f),       25.00f, &naca0012, phi::RIGHT),
+          Wing("fuselage_h",    glm::vec3( 0.0f,   0.0f,  0.0f),       25.00f, &naca0012, phi::UP),
         }),
         engine(100000.0f)
     {
@@ -466,7 +474,7 @@ struct Aircraft
         Wing& el = elements[4];
         Wing& ru = elements[5];
 
-#if 1
+#if 0
         float max_elevator_deflection = 5.0f, max_aileron_deflection = 15.0f;
         float aileron_deflection = controls.roll * max_aileron_deflection;
         la.set_incidence(+aileron_deflection);
@@ -474,7 +482,8 @@ struct Aircraft
         el.set_incidence(-controls.pitch * max_elevator_deflection);
 #else
         float control_authority = phi::utils::clamp(glm::length(rigid_body.velocity) / 150.0f, 0.0f, 1.0f);
-        rigid_body.add_relative_torque(glm::vec3(aileron_torque * controls.roll, 0.0f, elevator_torque * controls.pitch) * control_authority);
+        //rigid_body.add_relative_torque(glm::vec3(aileron_torque * controls.roll, 0.0f, elevator_torque * controls.pitch) * control_authority);
+        rigid_body.add_relative_torque((controls.get_vector() * control_torque) * control_authority);
 #endif
 
         for (Wing& wing : elements)

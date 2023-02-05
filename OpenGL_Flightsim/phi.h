@@ -27,7 +27,8 @@ namespace phi {
     constexpr glm::vec3 Y_AXIS(0.0f, 1.0f, 0.0f);
     constexpr glm::vec3 Z_AXIS(0.0f, 0.0f, 1.0f);
 
-    constexpr inline float sq(float a)
+    template<typename T>
+    constexpr inline T sq(T a)
     {
         return a * a;
     }
@@ -59,7 +60,7 @@ namespace phi {
         glm::vec3 velocity{};                               // velocity in world space
         glm::vec3 angular_velocity{};                       // angular velocity in object space, x represents rotation around x axis
         glm::mat3 inertia{}, inverse_inertia{};             // inertia tensor
-        glm::quat rotation = glm::quat(glm::vec3(0.0f));    // rotation in world space 
+        glm::quat rotation{};                               // rotation in world space 
         bool apply_gravity = true;
 
         RigidBody(const RigidBodyParams& params)
@@ -118,13 +119,11 @@ namespace phi {
                 Iyz += element.mass * (offset.y * offset.z);
             }
 
-            glm::mat3 inertia_tensor = {
+            return {
                  Ixx, -Ixy, -Ixz,
                 -Ixy,  Iyy, -Iyz,
                 -Ixz, -Iyz,  Izz
             };
-            
-            return inertia_tensor;
         }
 
         inline void set_inertia(const glm::mat3& inertia_tensor)
