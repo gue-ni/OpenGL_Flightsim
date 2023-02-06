@@ -429,7 +429,7 @@ struct Wing
     }
 };
 
-glm::mat3 inertia = phi::utils::inertia_tensor({300000.0f, 50000.0f, 500000.0f}); 
+glm::mat3 inertia = phi::inertia::tensor({300000.0f, 50000.0f, 500000.0f}); 
 //glm::mat3 inertia = phi::utils::inertia_tensor({200000.0f, 50000.0f, 500000.0f}); 
 
 struct Aircraft
@@ -439,7 +439,7 @@ struct Aircraft
     std::vector<Wing> elements;
     phi::RigidBody rigid_body;
 
-    const float aileron_torque = 15000.0f * 100.0f, elevator_torque = 10000.0f * 100.0f, yaw_torque = 1000.0f;
+    const float aileron_torque = 1500000.0f, elevator_torque = 1000000.0f, yaw_torque = 1000.0f;
     const glm::vec3 control_torque = { aileron_torque, yaw_torque, elevator_torque };
 
     float log_timer = 1.0f;
