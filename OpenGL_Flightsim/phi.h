@@ -11,8 +11,9 @@ namespace phi {
     typedef float Seconds;
 
     // constants
-    constexpr float g = 9.81f;
-    constexpr float pi = 3.14f; // close enough
+    constexpr float g = 9.81f;          // gravity of earth, m/s^2
+    constexpr float rho = 1.225f;       // air density, kg/m^3
+    constexpr float pi = 3.14f;         // close enough
     constexpr float epsilon = 1e-8f;
 
     // directions in body space
@@ -33,11 +34,7 @@ namespace phi {
         return a * a;
     }
 
-    struct MassElement {
-        float mass;
-        glm::vec3 position;
-        glm::vec3 inertia;
-    };
+
 
     struct RigidBodyParams {
         float mass = 10.0f;
@@ -88,48 +85,6 @@ namespace phi {
             inverse_inertia(glm::inverse(inertia_tensor))
         {}
 
-        // calculate inertia tensor from list of masses
-        static glm::mat3 calculate_inertia(const std::vector<MassElement>& elements)
-        {
-            float Ixx = 0, Iyy = 0, Izz = 0;
-            float Ixy = 0, Ixz = 0, Iyz = 0;
-
-            float mass = 0;
-            for (const auto& element : elements)
-            {
-                mass += element.mass;
-            }
-
-            glm::vec3 moment(0.0f);
-            for (const auto& element : elements)
-            {
-                moment += element.mass * element.position;
-            }
-
-            const glm::vec3 center_of_gravity = moment / mass;
-
-            for (const auto& element : elements)
-            {
-                auto offset = element.position - center_of_gravity;
-                Ixx += element.inertia.x + element.mass * (sq(offset.y) + sq(offset.z));
-                Iyy += element.inertia.y + element.mass * (sq(offset.z) + sq(offset.x));
-                Izz += element.inertia.z + element.mass * (sq(offset.x) + sq(offset.y));
-                Ixy += element.mass * (offset.x * offset.y);
-                Ixz += element.mass * (offset.x * offset.z);
-                Iyz += element.mass * (offset.y * offset.z);
-            }
-
-            return {
-                 Ixx, -Ixy, -Ixz,
-                -Ixy,  Iyy, -Iyz,
-                -Ixz, -Iyz,  Izz
-            };
-        }
-
-        inline void set_inertia(const glm::mat3& inertia_tensor)
-        {
-            inertia = inertia_tensor, inverse_inertia = glm::inverse(inertia_tensor);
-        }
 
         // get velocity of point in body space
         inline glm::vec3 get_point_velocity(const glm::vec3& point) const
@@ -160,6 +115,11 @@ namespace phi {
             return glm::inverse(rotation) * direction;
         }
 
+        inline void set_inertia(const glm::mat3& inertia_tensor)
+        {
+            inertia = inertia_tensor, inverse_inertia = glm::inverse(inertia_tensor);
+        }
+        
         // force vector in world space
         inline void add_force(const glm::vec3& force) 
         { 
@@ -215,6 +175,77 @@ namespace phi {
             m_force = glm::vec3(0.0f), m_torque = glm::vec3(0.0f);
         }
     };
+    
+    namespace inertia {
+        struct Element {
+            float mass;
+            glm::vec3 position;
+            glm::vec3 inertia;
+        };
+        
+        constexpr glm::vec3 cube(const glm::vec3& size, float mass)
+        {
+            const float C = (1.0f / 12.0f) * mass;
+            glm::vec3 I(0.0f);
+            I.x = C * (sq(size.y) + sq(size.z));
+            I.y = C * (sq(size.x) + sq(size.z));
+            I.z = C * (sq(size.x) + sq(size.y));
+            return I;
+        }
+            
+        constexpr glm::vec3 cylinder(float radius, float length, float mass)
+        {
+            const float C = (1.0f / 12.0f) * mass;
+            glm::vec3 I(0.0f);
+            I.x = (0.5f) * mass * sq(radius);
+            I.y = I.z = C * (3 * sq(radius) + sq(length));
+            return I;
+        }
+              
+        constexpr glm::mat3 tensor(const glm::vec3& moment_of_inertia)
+        {
+            return {
+                moment_of_inertia.x, 0.0f, 0.0f,
+                0.0f, moment_of_inertia.y, 0.0f,
+                0.0f, 0.0f, moment_of_inertia.z,
+            };
+        }  
+        
+        // calculate inertia tensor from list of connected masses
+        constexpr glm::mat3 tensor(const std::vector<Element>& elements)
+        {
+            float Ixx = 0, Iyy = 0, Izz = 0;
+            float Ixy = 0, Ixz = 0, Iyz = 0;
+
+            float mass = 0;
+            glm::vec3 moment(0.0f);
+
+            for (const auto& element : elements)
+            {
+                mass    += element.mass;
+                moment  += element.mass * element.position;
+            }
+
+            const glm::vec3 center_of_gravity = moment / mass;
+
+            for (const auto& element : elements)
+            {
+                auto offset = element.position - center_of_gravity;
+                Ixx += element.inertia.x + element.mass * (sq(offset.y) + sq(offset.z));
+                Iyy += element.inertia.y + element.mass * (sq(offset.z) + sq(offset.x));
+                Izz += element.inertia.z + element.mass * (sq(offset.x) + sq(offset.y));
+                Ixy += element.mass * (offset.x * offset.y);
+                Ixz += element.mass * (offset.x * offset.z);
+                Iyz += element.mass * (offset.y * offset.z);
+            }
+
+            return {
+                 Ixx, -Ixy, -Ixz,
+                -Ixy,  Iyy, -Iyz,
+                -Ixz, -Iyz,  Izz
+            };
+        }
+    };
 
     namespace utils {
 
@@ -250,7 +281,9 @@ namespace phi {
         {
             return min(max(v, lo), hi);
         }
-
+    };
+    
+    namespace units {
         constexpr inline float knots(float meter_per_second)
         {
             return meter_per_second * 1.94384f;
@@ -264,39 +297,6 @@ namespace phi {
         constexpr inline float kilometer_per_hour(float meter_per_second)
         {
             return meter_per_second * 3.6f;
-        }
-
-        constexpr glm::vec3 cube_moment_of_inertia(const glm::vec3& size, float mass)
-        {
-            const float C = (1.0f / 12.0f) * mass;
-            glm::vec3 I(0.0f);
-            I.x = C * (sq(size.y) + sq(size.z));
-            I.y = C * (sq(size.x) + sq(size.z));
-            I.z = C * (sq(size.x) + sq(size.y));
-            return I;
-        }
-
-        constexpr glm::vec3 cylinder_moment_of_inertia(float radius, float length, float mass)
-        {
-            const float C = (1.0f / 12.0f) * mass;
-            glm::vec3 I(0.0f);
-            I.x = (1.0f / 2.0f) * mass * sq(radius);
-            I.y = I.z = C * (3 * sq(radius) + sq(length));
-            return I;
-        }
-
-        constexpr glm::mat3 inertia_tensor(const glm::vec3& moment_of_inertia)
-        {
-            return {
-                moment_of_inertia.x, 0.0f, 0.0f,
-                0.0f, moment_of_inertia.y, 0.0f,
-                0.0f, 0.0f, moment_of_inertia.z,
-            };
-        }
-
-        constexpr glm::mat3 cube_inertia_tensor(const glm::vec3& size, float mass)
-        {
-            return inertia_tensor(cube_moment_of_inertia(size, mass));		
         }
     };
 };
