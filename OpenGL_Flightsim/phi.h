@@ -1,3 +1,7 @@
+/*
+    
+*/
+
 #pragma once
 
 #include <glm/vec3.hpp>
@@ -33,8 +37,6 @@ namespace phi {
     {
         return a * a;
     }
-
-
 
     struct RigidBodyParams {
         float mass = 10.0f;
@@ -201,7 +203,8 @@ namespace phi {
             I.y = I.z = C * (3 * sq(radius) + sq(length));
             return I;
         }
-              
+        
+        // inertia tensor
         constexpr glm::mat3 tensor(const glm::vec3& moment_of_inertia)
         {
             return {
