@@ -312,19 +312,6 @@ std::vector<ValueTuple> NACA_2412 = {
     {19.250f, 1.4781f, 0.09506f},
 };
 
-struct Controls {
-    float roll{0.0f}, pitch{0.0f}, yaw{0.0f};
-
-    void set(float r, float p, float y)
-    {
-        roll = r, pitch = p, yaw = y;
-    }
-
-    glm::vec3 get_vector() const {
-        return { roll, yaw, pitch };
-    }
-};
-
 struct Aerodynamics
 {
     float min, max;
@@ -418,22 +405,23 @@ struct Wing
 
         auto [lift_coefficient, drag_coefficient] = aerodynamics->sample(angle_of_attack);
 
-        auto lift = lift_direction * lift_coefficient * lift_multiplier * speed * speed * area;
-        auto drag = drag_direction * drag_coefficient * drag_multiplier * speed * speed * area;
+        float tmp = phi::sq(speed) * phi::rho * area * 0.5f;
+        auto lift = lift_direction * lift_coefficient * lift_multiplier * tmp;
+        auto drag = drag_direction * drag_coefficient * drag_multiplier * tmp;
 
         rigid_body.add_force_at_point(lift + drag, position);
     }
 };
 
-glm::mat3 inertia = phi::inertia::tensor({300000.0f, 50000.0f, 500000.0f}); 
-//glm::mat3 inertia = phi::utils::inertia_tensor({200000.0f, 50000.0f, 500000.0f}); 
+glm::mat3 inertia = phi::inertia::tensor({100000.0f, 50000.0f, 500000.0f}); 
+//glm::mat3 inertia = phi::inertia::tensor({200000.0f, 50000.0f, 500000.0f}); 
 
 struct Aircraft
 {
     Engine engine;
-    Controls controls;
     std::vector<Wing> elements;
     phi::RigidBody rigid_body;
+    glm::vec3 joystick{}; // roll, yaw, pitch
 
     const float aileron_torque = 1500000.0f, elevator_torque = 1000000.0f, yaw_torque = 1000.0f;
     const glm::vec3 control_torque = { aileron_torque, yaw_torque, elevator_torque };
@@ -471,14 +459,17 @@ struct Aircraft
         Wing& ru = elements[5];
 
 #if 1
+        float roll = joystick.x;
+        float yaw = joystick.y;
+        float pitch = joystick.z;
         float max_elevator_deflection = 5.0f, max_aileron_deflection = 15.0f;
-        float aileron_deflection = controls.roll * max_aileron_deflection;
+        float aileron_deflection = roll * max_aileron_deflection;
         la.set_incidence(+aileron_deflection);
         ra.set_incidence(-aileron_deflection);
-        el.set_incidence(-controls.pitch * max_elevator_deflection);
+        el.set_incidence(-pitch * max_elevator_deflection);
 #else
         float control_authority = phi::utils::clamp(glm::length(rigid_body.velocity) / 150.0f, 0.0f, 1.0f);
-        rigid_body.add_relative_torque((controls.get_vector() * control_torque) * control_authority);
+        rigid_body.add_relative_torque((joystick * control_torque) * control_authority);
 #endif
 
         for (Wing& wing : elements)
@@ -488,13 +479,13 @@ struct Aircraft
 
         engine.apply_forces(rigid_body);
 
-        if ((log_timer += dt) > 1.0f)
+        if ((log_timer += dt) > 0.5f)
         {
             log_timer = 0;
 #if 1
             printf(
-                "speed: %.2f, throttle: %.2f, altitude: %.2f\n", 
-                phi::utils::kilometer_per_hour(glm::length(rigid_body.velocity)),
+                "%.2f km/h, thrtl: %.2f, alt: %.2f m\n", 
+                phi::units::kilometer_per_hour(glm::length(rigid_body.velocity)),
                 engine.throttle,
                 rigid_body.position.y
             );

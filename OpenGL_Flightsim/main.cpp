@@ -179,7 +179,7 @@ int main(void)
 
     gfx::Object3D scene;
 
-#if 1
+#if 0
     gfx::Skybox skybox({
         "assets/textures/skybox2/right.jpg",
         "assets/textures/skybox2/left.jpg",
@@ -197,8 +197,8 @@ int main(void)
     scene.add(&sun);
 #endif
   
-    auto position = glm::vec3(0.0f, 5000.0f, 0.0f);
-    auto velocity = glm::vec3(120.0f, 0.0f, 0.0f);
+    auto position = glm::vec3(0.0f, 2000.0f, 0.0f);
+    auto velocity = glm::vec3(phi::units::meter_per_second(300.0f), 0.0f, 0.0f);
 
 #if 1
     Clipmap clipmap;
@@ -235,7 +235,7 @@ int main(void)
 
     Aircraft aircraft(position, velocity);
 
-    gfx::Camera camera(glm::radians(45.0f), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 100000.0f);
+    gfx::Camera camera(glm::radians(45.0f), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 1.0f, 50000.0f);
     camera.set_position(glm::vec3(0, 1, 0));
     camera.set_rotation(glm::vec3(0, glm::radians(-90.0f), 0.0f));
     transform.add(&camera);
@@ -370,7 +370,8 @@ int main(void)
             joystick.throttle = phi::utils::clamp(joystick.throttle, 0.0f, 1.0f);
         }
 
-        aircraft.controls.set(joystick.roll, joystick.pitch, joystick.yaw);
+        //aircraft.controls.set(joystick.roll, joystick.yaw, joystick.pitch);
+        aircraft.joystick = glm::vec3(joystick.roll, joystick.yaw, joystick.pitch);
         aircraft.engine.throttle = joystick.throttle;
         
         if (!paused)

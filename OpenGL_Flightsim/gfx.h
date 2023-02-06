@@ -54,7 +54,7 @@ namespace gfx {
 
     bool load_obj(const std::string path, std::vector<float>& vertices);
 
-    std::shared_ptr<Geometry> make_cube_geometry(void);
+    std::shared_ptr<Geometry> make_cube_geometry(float size);
     std::shared_ptr<Geometry> make_plane_geometry(int x_elements, int y_elements, float size);
 
     struct Shader {
