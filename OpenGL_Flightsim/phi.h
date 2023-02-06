@@ -13,6 +13,8 @@
 namespace phi {
 
     typedef float Seconds;
+    typedef float Radians;
+    typedef float Degrees;
 
     // constants
     constexpr float g = 9.81f;          // gravity of earth, m/s^2
