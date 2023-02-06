@@ -418,14 +418,10 @@ struct Wing
 
         auto [lift_coefficient, drag_coefficient] = aerodynamics->sample(angle_of_attack);
 
-        auto lift = lift_coefficient * lift_multiplier * speed * speed * area;
-        auto drag = drag_coefficient * drag_multiplier * speed * speed * area;
+        auto lift = lift_direction * lift_coefficient * lift_multiplier * speed * speed * area;
+        auto drag = drag_direction * drag_coefficient * drag_multiplier * speed * speed * area;
 
-        auto lift_force = lift * lift_direction;
-        auto drag_force = drag * drag_direction;
-
-        rigid_body.add_force_at_point(lift_force, position);
-        rigid_body.add_force_at_point(drag_force, position);
+        rigid_body.add_force_at_point(lift + drag, position);
     }
 };
 
