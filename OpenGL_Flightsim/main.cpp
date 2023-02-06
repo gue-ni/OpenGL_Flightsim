@@ -198,7 +198,7 @@ int main(void)
 #endif
   
     auto position = glm::vec3(0.0f, 2000.0f, 0.0f);
-    auto velocity = glm::vec3(phi::units::meter_per_second(300.0f), 0.0f, 0.0f);
+    auto velocity = glm::vec3(phi::units::meter_per_second(600.0f), 0.0f, 0.0f);
 
 #if 1
     Clipmap clipmap;
@@ -228,16 +228,44 @@ int main(void)
     cross.set_scale(glm::vec3(0.25f));
     transform.add(&cross);
 
+    // flight path marker
     gfx::Billboard fpm(make_shared<gfx::Texture>("assets/textures/sprites/fpm.png"));
     fpm.set_scale(glm::vec3(0.25f));
     transform.add(&fpm);
 #endif
 
-    Aircraft aircraft(position, velocity);
+    std::vector<phi::inertia::Element> elements = {
+        phi::inertia::cube_element({}, {0.75f, 0.63f, 0.84f}, 126.1), // engine
+        phi::inertia::cube_element({}, {1.49f, 0.2f, 5.5f}, 100.0f), // left wing 
+        phi::inertia::cube_element({}, {1.49f, 0.2f, 5.5f}, 100.0f), // right wing 
+        phi::inertia::cube_element({}, {8.28f, 1.6f, 1.2f}, 216.0f), // fuselage
+        phi::inertia::cube_element({}, {1.5f, 1.8f, 0.15f}, 20.0f), // rudder
+        phi::inertia::cube_element({}, {1.0f, 0.2f, 3.4f}, 20.0f), // elevator
+    };
+
+    auto inertia_tensor = phi::inertia::tensor(elements);
+
+    for (auto& e : elements)
+        std::cout << e.computed_offset << std::endl;
+
+    std::cout << inertia_tensor << std::endl;
+
+    std::vector<Wing> wings = {
+      Wing({-0.5f,   0.0f, -2.73f},      24.36f, &naca2412, phi::UP),       // left wing
+      Wing({ 0.0f,   0.0f, -2.0f},        8.79f, &naca0012, phi::UP),       // left aileron
+      Wing({ 0.0f,   0.0f,  2.0f},        8.79f, &naca0012, phi::UP),       // right aileron
+      Wing({-0.5f,   0.0f,  2.73f},      24.36f, &naca2412, phi::UP),       // right wing
+      Wing({-6.64f, -0.12f, 0.0f},       17.66f, &naca0012, phi::UP),       // elevator
+      Wing({-6.64f,  0.0f,  0.0f},       16.46f, &naca0012, phi::RIGHT),    // rudder
+    };
+
+    Aircraft aircraft(16000.0f, 20000.0f, inertia, wings);
+    aircraft.rigid_body.position = position;
+    aircraft.rigid_body.velocity = velocity;
 
     gfx::Camera camera(glm::radians(45.0f), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 1.0f, 50000.0f);
-    camera.set_position(glm::vec3(0, 1, 0));
-    camera.set_rotation(glm::vec3(0, glm::radians(-90.0f), 0.0f));
+    camera.set_position({0, 1, 0});
+    camera.set_rotation({0, glm::radians(-90.0f), 0.0f});
     transform.add(&camera);
 
     //gfx::FirstPersonController controller(50.0f);

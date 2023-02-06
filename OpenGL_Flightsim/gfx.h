@@ -4,6 +4,7 @@
 
 #include <glm/vec3.hpp>
 #include <glm/mat4x4.hpp>
+#include <glm/gtx/io.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/quaternion.hpp>
@@ -15,11 +16,6 @@
 #include <vector>
 #include <functional>
 #include <unordered_map>
-
-
-std::ostream& operator<<(std::ostream& os, const glm::vec3& v);
-std::ostream& operator<<(std::ostream& os, const glm::vec2& v);
-std::ostream& operator<<(std::ostream& os, const glm::mat3& m);
 
 namespace gfx {
 

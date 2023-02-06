@@ -6,31 +6,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "lib/stb_image.h"
 
-std::ostream& operator<<(std::ostream& os, const glm::vec3& v)
-{
-    return os << "{ " <<  v.x << ", " << v.y << ", " << v.z << " }";
-}
-
-std::ostream& operator<<(std::ostream& os, const glm::vec2& v)
-{
-    return os << "{ " <<  v.x << ", " << v.y << ", " << " }";
-}
-
-std::ostream& operator<<(std::ostream& os, const glm::mat3& m)
-{
-    std::cout << "\n{ " << std::endl;
-    for (int i = 0; i < 3; i++)
-    {
-        for (int j = 0; j < 3; j++)
-        {
-            os << m[i][j] << ", ";
-        }
-        os << "\n";
-    }
-    std::cout << "{\n" << std::endl;
-    return os;
-}
-
 std::string load_text_file(const std::string& path)
 {
         std::fstream file(path);
