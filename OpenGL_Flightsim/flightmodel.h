@@ -61,19 +61,32 @@ struct Wing
     float lift_multiplier = 1.0f;
     float drag_multiplier = 1.0f;
     
-    Wing(const glm::vec3 &offset, float wing_area, const Aerodynamics *aero, const glm::vec3 &wing_normal)
+    Wing(const glm::vec3 &offset, float wing_area, const Aerodynamics *aero, const glm::vec3 &wing_normal = phi::UP)
          : position(offset),
           area(wing_area),
           aerodynamics(aero),
           normal(wing_normal)
     {}
 
+    Wing(const glm::vec3& offset, float wingspan, float chord, const Aerodynamics* aero, const glm::vec3& wing_normal = phi::UP)
+        : position(offset),
+        area(chord * wingspan),
+        aerodynamics(aero),
+        normal(wing_normal)
+    {}
+    
     static glm::vec3 calculate_normal(float incidence_angle_degrees)
     {
         float theta = glm::radians(incidence_angle_degrees + 90.0f);
         float x = cos(theta), y = sin(theta);
         return glm::normalize(glm::vec3(x, y, 0.0f));
     }
+    
+    glm::vec3 deflect(float angle, const glm::vec3& axis)
+    {
+        glm::mat4 rot(1.0f);
+        rot = glm::rotate(rot, angle, axis);
+        return rot * normal
 
     void set_incidence(float incidence)
     {
