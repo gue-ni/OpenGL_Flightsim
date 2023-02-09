@@ -178,7 +178,7 @@ namespace phi {
         glm::vec3 position{};
         glm::vec3 velocity{};
         glm::vec3 angular_velocity{};
-        glm::quat rotation = glm::quat(glm::vec3(0.0f));
+        glm::quat orientation = glm::quat(glm::vec3(0.0f));
         bool apply_gravity = true;
     };
 
@@ -193,7 +193,7 @@ namespace phi {
         glm::vec3 velocity{};                               // velocity in world space
         glm::vec3 angular_velocity{};                       // angular velocity in object space, x represents rotation around x axis
         glm::mat3 inertia{}, inverse_inertia{};             // inertia tensor
-        glm::quat rotation{};                               // rotation in world space 
+        glm::quat orientation{};                               // rotation in world space 
         bool apply_gravity = true;
 
 #if 1
@@ -210,7 +210,7 @@ namespace phi {
             position(params.position),
             velocity(params.velocity),
             inertia(params.inertia),
-            rotation(params.rotation),
+            orientation(params.orientation),
             apply_gravity(params.apply_gravity),
             angular_velocity(params.angular_velocity),
             inverse_inertia(glm::inverse(params.inertia))
@@ -225,7 +225,7 @@ namespace phi {
         RigidBody(const glm::vec3& pos, const glm::vec3& rot, float m, const glm::mat3& inertia_tensor) 
             : mass(m),
             position(pos), 
-            rotation(glm::quat(rot)), 
+            orientation(glm::quat(rot)), 
             inertia(inertia_tensor), 
             inverse_inertia(glm::inverse(inertia_tensor))
         {}
@@ -247,7 +247,7 @@ namespace phi {
         // transform direction from body space to world space 
         inline glm::vec3 transform_direction(const glm::vec3& direction) const
         {
-            return rotation * direction;
+            return orientation * direction;
         }
 
         inline glm::vec3 get_body_velocity() const {
@@ -257,7 +257,7 @@ namespace phi {
         // transform direction from world space to body space 
         inline glm::vec3 inverse_transform_direction(const glm::vec3& direction) const
         {
-            return glm::inverse(rotation) * direction;
+            return glm::inverse(orientation) * direction;
         }
 
         inline void set_inertia(const glm::mat3& inertia_tensor)
@@ -274,7 +274,7 @@ namespace phi {
         // force vector in body space
         inline void add_relative_force(const glm::vec3& force) 
         { 
-            m_force += rotation * force;
+            m_force += orientation * force;
         }
         
         // torque vector in world space
@@ -313,8 +313,8 @@ namespace phi {
 
             angular_velocity += inverse_inertia * 
                 (m_torque - glm::cross(angular_velocity, inertia * angular_velocity)) * dt;
-            rotation += (rotation * glm::quat(0.0f, angular_velocity)) * (0.5f * dt);
-            rotation = glm::normalize(rotation);
+            orientation += (orientation * glm::quat(0.0f, angular_velocity)) * (0.5f * dt);
+            orientation = glm::normalize(orientation);
 
             // reset accumulators
             m_force = glm::vec3(0.0f), m_torque = glm::vec3(0.0f);

@@ -25,7 +25,7 @@ constexpr int SCREEN_HEIGHT = 800;
 void apply_to_object3d(const phi::RigidBody& rigid_body, gfx::Object3D& object3d)
 {
     object3d.set_position(rigid_body.position);
-    object3d.set_rotation_quaternion(rigid_body.rotation);
+    object3d.set_rotation_quaternion(rigid_body.orientation);
 }
 
 void solve_constraints(phi::RigidBody& rigid_body)
@@ -234,6 +234,9 @@ int main(void)
     transform.add(&fpm);
 #endif
 
+    const float mass = 16000.0f;
+    const float thrust = 20000.0f;
+
     std::vector<phi::inertia::Element> elements = {
         phi::inertia::cube_element({}, {0.75f, 0.63f, 0.84f}, 126.1), // engine
         phi::inertia::cube_element({}, {1.49f, 0.2f, 5.5f}, 100.0f), // left wing 
@@ -244,6 +247,7 @@ int main(void)
     };
 
     auto inertia_tensor = phi::inertia::tensor(elements);
+    //auto inertia_tensor = phi::inertia::tensor(phi::inertia::cube(glm::vec3(6.0f, 5.0f, 8.0f), mass));
 
     for (auto& e : elements)
         std::cout << e.computed_offset << std::endl;
@@ -251,15 +255,15 @@ int main(void)
     std::cout << inertia_tensor << std::endl;
 
     std::vector<Wing> wings = {
-      Wing({-0.5f,   0.0f, -2.73f},      24.36f, &naca2412, phi::UP),       // left wing
-      Wing({ 0.0f,   0.0f, -2.0f},        8.79f, &naca0012, phi::UP),       // left aileron
-      Wing({ 0.0f,   0.0f,  2.0f},        8.79f, &naca0012, phi::UP),       // right aileron
-      Wing({-0.5f,   0.0f,  2.73f},      24.36f, &naca2412, phi::UP),       // right wing
-      Wing({-6.64f, -0.12f, 0.0f},       17.66f, &naca0012, phi::UP),       // elevator
-      Wing({-6.64f,  0.0f,  0.0f},       16.46f, &naca0012, phi::RIGHT),    // rudder
+      Wing({-0.5f,   0.0f, -2.73f}, 6.96f, 3.50f, &NACA_2412),       // left wing
+      Wing({ 0.0f,   0.0f, -2.0f},  3.80f, 1.26f, &NACA_0012),       // left aileron
+      Wing({ 0.0f,   0.0f,  2.0f},  3.80f, 1.26f, &NACA_0012),       // right aileron
+      Wing({-0.5f,   0.0f,  2.73f}, 6.96f, 3.50f, &NACA_2412),       // right wing
+      Wing({-6.64f, -0.12f, 0.0f},  6.54f, 2.70f, &NACA_0012),       // elevator
+      Wing({-6.64f,  0.0f,  0.0f},  5.31f, 3.10f, &NACA_0012, phi::RIGHT),    // rudder
     };
 
-    Aircraft aircraft(16000.0f, 20000.0f, inertia, wings);
+    Aircraft aircraft(mass, thrust, inertia, wings);
     aircraft.rigid_body.position = position;
     aircraft.rigid_body.velocity = velocity;
 
@@ -268,14 +272,12 @@ int main(void)
     camera.set_rotation({0, glm::radians(-90.0f), 0.0f});
     transform.add(&camera);
 
-    //gfx::FirstPersonController controller(50.0f);
     gfx::OrbitController controller(20.0f);
 
     SDL_Event event;
-    bool quit = false, paused = false;
+    bool quit = false, paused = false, orbit = false;
     uint64_t last = 0, now = SDL_GetPerformanceCounter();
     phi::Seconds dt, timer = 0, log_timer = 0;
-    bool orbit = false;
 
     std::cout << glGetString(GL_VERSION) << std::endl;
 

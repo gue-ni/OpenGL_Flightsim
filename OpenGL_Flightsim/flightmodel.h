@@ -9,7 +9,6 @@
 #include <tuple>
 #include <algorithm>
 
-
 struct Airfoil
 {
     float min, max;
@@ -34,13 +33,15 @@ struct Airfoil
     }
 };
 
-Airfoil naca0012(NACA_0012);
-Airfoil naca2412(NACA_2412);
+Airfoil NACA_0012(NACA_0012_data);
+Airfoil NACA_2412(NACA_2412_data);
 
 struct Engine
 {   
     float throttle = 0.5f;    
     float thrust = 10000.0f; 
+    float horsepower = 1000.0f;
+    float rpm = 2400.0f;
 
     Engine(float engine_thrust) : thrust(engine_thrust) {}
     
@@ -55,20 +56,20 @@ struct Wing
 {
     const float area{};
     const glm::vec3 position{};
-    const Airfoil  *airfoil;
+    const Airfoil *airfoil;
 
     glm::vec3 normal;
     float lift_multiplier = 1.0f;
     float drag_multiplier = 1.0f;
     
-    Wing(const glm::vec3 &position, float area, const Aerodynamics *aero, const glm::vec3 &normal = phi::UP)
+    Wing(const glm::vec3 &position, float area, const Airfoil *aero, const glm::vec3 &normal = phi::UP)
          : position(position),
           area(area),
           airfoil(aero),
           normal(normal)
     {}
 
-    Wing(const glm::vec3& position, float wingspan, float chord, const Aerodynamics* aero, const glm::vec3& normal = phi::UP)
+    Wing(const glm::vec3& position, float wingspan, float chord, const Airfoil* aero, const glm::vec3& normal = phi::UP)
         : position(position),
         area(chord * wingspan),
         airfoil(aero),
@@ -86,7 +87,8 @@ struct Wing
     {
         glm::mat4 rot(1.0f);
         rot = glm::rotate(rot, angle, axis);
-        return rot * normal
+        return glm::vec3(rot * glm::vec4(normal, 1.0f));
+    }
 
     void set_incidence(float incidence)
     {
@@ -128,40 +130,9 @@ struct Aircraft
     float log_timer = 1.0f;
     const glm::vec3 control_torque = { 1500000.0f, 1000.0f, 1000000.0f };
 
-#if 0
-    Aircraft()
-        : elements({
-          Wing({-0.5f,   0.0f, -2.73f},      24.36f, &naca2412, phi::UP),       // left wing
-          Wing({ 0.0f,   0.0f, -2.0f},        8.79f, &naca0012, phi::UP),       // left aileron
-          Wing({ 0.0f,   0.0f,  2.0f},        8.79f, &naca0012, phi::UP),       // right aileron
-          Wing({-0.5f,   0.0f,  2.73f},      24.36f, &naca2412, phi::UP),       // right wing
-          Wing({-6.64f, -0.12f, 0.0f},       17.66f, &naca0012, phi::UP),       // elevator
-          Wing({-6.64f,  0.0f,  0.0f},       16.46f, &naca0012, phi::RIGHT),    // rudder
-        }),
-        rigid_body({ .mass = 16000.0f, .inertia = inertia })
-    {}
-#endif
-
     Aircraft(float mass, float thrust, glm::mat3 inertia, std::vector<Wing> wings)
         : elements(wings), rigid_body({ .mass = mass, .inertia = inertia }), engine(thrust)
     {}
-
-    static void init_flightmodel(Aircraft& aircraft)
-    {
-#if 0
-        aircraft.rigid_body.mass = 16000.0f;
-        aircraft.rigid_body.set_inertia(inertia);
-        aircraft.elements = {
-          Wing({-0.5f,   0.0f, -2.73f},      24.36f, &naca2412, phi::UP), // left wing
-          Wing({ 0.0f,   0.0f, -2.0f},        8.79f, &naca0012, phi::UP), // left aileron
-          Wing({ 0.0f,   0.0f,  2.0f},        8.79f, &naca0012, phi::UP), // right aieleron
-          Wing({-0.5f,   0.0f,  2.73f},      24.36f, &naca2412, phi::UP), // right wing
-          Wing({-6.64f, -0.12f, 0.0f},       17.66f, &naca0012, phi::UP), // elevator
-          Wing({-6.64f,  0.0f,  0.0f},       16.46f, &naca0012, phi::RIGHT), // rudder
-        };
-        aircraft.engine.thrust = 20000.0f;
-#endif
-    }
 
     void update(phi::Seconds dt)
     {
@@ -198,7 +169,7 @@ struct Aircraft
             log_timer = 0;
 #if 1
             printf(
-                "%.2f km/h, thrtl: %.2f, alt: %.2f m\n", 
+                "%.2f km/h, thr: %.2f, alt: %.2f m\n", 
                 phi::units::kilometer_per_hour(glm::length(rigid_body.velocity)),
                 engine.throttle,
                 rigid_body.position.y
