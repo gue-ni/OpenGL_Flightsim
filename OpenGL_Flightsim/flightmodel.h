@@ -10,12 +10,12 @@
 #include <algorithm>
 
 
-struct Aerodynamics
+struct Airfoil
 {
     float min, max;
     std::vector<ValueTuple> data;
 
-    Aerodynamics(const std::vector<ValueTuple> &curve_data) : data(curve_data)
+    Airfoil(const std::vector<ValueTuple> &curve_data) : data(curve_data)
     {
         min = curve_data[0].alpha;
         max = curve_data[curve_data.size() - 1].alpha;
@@ -34,8 +34,8 @@ struct Aerodynamics
     }
 };
 
-Aerodynamics naca0012(NACA_0012);
-Aerodynamics naca2412(NACA_2412);
+Airfoil naca0012(NACA_0012);
+Airfoil naca2412(NACA_2412);
 
 struct Engine
 {   
@@ -55,24 +55,24 @@ struct Wing
 {
     const float area{};
     const glm::vec3 position{};
-    const Aerodynamics *aerodynamics;
+    const Airfoil  *airfoil;
 
     glm::vec3 normal;
     float lift_multiplier = 1.0f;
     float drag_multiplier = 1.0f;
     
-    Wing(const glm::vec3 &offset, float wing_area, const Aerodynamics *aero, const glm::vec3 &wing_normal = phi::UP)
-         : position(offset),
-          area(wing_area),
-          aerodynamics(aero),
-          normal(wing_normal)
+    Wing(const glm::vec3 &position, float area, const Aerodynamics *aero, const glm::vec3 &normal = phi::UP)
+         : position(position),
+          area(area),
+          airfoil(aero),
+          normal(normal)
     {}
 
-    Wing(const glm::vec3& offset, float wingspan, float chord, const Aerodynamics* aero, const glm::vec3& wing_normal = phi::UP)
-        : position(offset),
+    Wing(const glm::vec3& position, float wingspan, float chord, const Aerodynamics* aero, const glm::vec3& normal = phi::UP)
+        : position(position),
         area(chord * wingspan),
-        aerodynamics(aero),
-        normal(wing_normal)
+        airfoil(aero),
+        normal(normal)
     {}
     
     static glm::vec3 calculate_normal(float incidence_angle_degrees)
@@ -106,7 +106,7 @@ struct Wing
 
         auto angle_of_attack = glm::degrees(std::asin(glm::dot(drag_direction, normal)));
 
-        auto [lift_coefficient, drag_coefficient] = aerodynamics->sample(angle_of_attack);
+        auto [lift_coefficient, drag_coefficient] = airfoil->sample(angle_of_attack);
 
         float tmp = phi::sq(speed) * phi::rho * area * 0.5f;
         auto lift = lift_direction * lift_coefficient * lift_multiplier * tmp;
