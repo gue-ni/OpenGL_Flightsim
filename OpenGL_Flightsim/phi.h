@@ -216,8 +216,8 @@ namespace phi {
             inverse_inertia(glm::inverse(params.inertia))
         {}
 
-        RigidBody(float m, const glm::mat3& inertia_tensor) 
-            : mass(m),
+        RigidBody(float mass, const glm::mat3& inertia_tensor) 
+            : mass(mass),
             inertia(inertia_tensor), 
             inverse_inertia(glm::inverse(inertia_tensor))
         {}
