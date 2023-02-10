@@ -190,10 +190,10 @@ namespace phi {
     public:
         float mass;                                         // rigidbody mass in kg
         glm::vec3 position{};                               // position in world space
+        glm::quat orientation{};                            // orientation in world space 
         glm::vec3 velocity{};                               // velocity in world space
         glm::vec3 angular_velocity{};                       // angular velocity in object space, x represents rotation around x axis
         glm::mat3 inertia{}, inverse_inertia{};             // inertia tensor
-        glm::quat orientation{};                               // rotation in world space 
         bool apply_gravity = true;
 
 #if 1
