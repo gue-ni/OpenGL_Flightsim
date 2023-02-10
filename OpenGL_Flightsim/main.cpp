@@ -246,6 +246,7 @@ int main(void)
         phi::inertia::cube_element({}, {1.0f, 0.2f, 3.4f}, 20.0f), // elevator
     };
 
+    auto inertia = phi::inertia::tensor({100000.0f, 50000.0f, 500000.0f}); 
     auto inertia_tensor = phi::inertia::tensor(elements);
     //auto inertia_tensor = phi::inertia::tensor(phi::inertia::cube(glm::vec3(6.0f, 5.0f, 8.0f), mass));
 
@@ -387,6 +388,15 @@ int main(void)
         else if (key_states[SDL_SCANCODE_S])
         {
             joystick.pitch = 1.0f;
+        }
+
+        if (key_states[SDL_SCANCODE_Q])
+        {
+            joystick.yaw = 1.0f;
+        }
+        else if (key_states[SDL_SCANCODE_E])
+        {
+            joystick.yaw = -1.0f;
         }
         
         if (key_states[SDL_SCANCODE_J])

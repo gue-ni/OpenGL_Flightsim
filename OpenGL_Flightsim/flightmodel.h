@@ -61,6 +61,7 @@ struct Wing
     glm::vec3 normal;
     float lift_multiplier = 1.0f;
     float drag_multiplier = 1.0f;
+    phi::Degrees deflection = 0.0f;
     
     Wing(const glm::vec3 &position, float area, const Airfoil *aero, const glm::vec3 &normal = phi::UP)
          : position(position),
@@ -76,25 +77,6 @@ struct Wing
         normal(normal)
     {}
     
-    static glm::vec3 calculate_normal(float incidence_angle_degrees)
-    {
-        float theta = glm::radians(incidence_angle_degrees + 90.0f);
-        float x = cos(theta), y = sin(theta);
-        return glm::normalize(glm::vec3(x, y, 0.0f));
-    }
-    
-    glm::vec3 deflect(float angle, const glm::vec3& axis)
-    {
-        glm::mat4 rot(1.0f);
-        rot = glm::rotate(rot, angle, axis);
-        return glm::vec3(rot * glm::vec4(normal, 1.0f));
-    }
-
-    void set_incidence(float incidence)
-    {
-        normal = calculate_normal(incidence);
-    }
-
     void apply_forces(phi::RigidBody &rigid_body)
     {
         auto local_velocity = rigid_body.get_point_velocity(position);
@@ -103,10 +85,21 @@ struct Wing
         if (speed <= 0.0f || area <= 0.0f)
             return;
 
-        auto drag_direction = glm::normalize(-local_velocity);
-        auto lift_direction = glm::normalize(glm::cross(glm::cross(drag_direction, normal), drag_direction));
+        auto wing_normal = normal;
 
-        auto angle_of_attack = glm::degrees(std::asin(glm::dot(drag_direction, normal)));
+        if (abs(deflection) > phi::epsilon)
+        {
+            auto axis = glm::normalize(glm::cross(phi::FORWARD, normal));
+            glm::mat4 rot(1.0f);
+            rot = glm::rotate(rot, glm::radians(deflection), axis);
+            wing_normal = glm::vec3(rot * glm::vec4(normal, 1.0f));
+        }
+
+        auto drag_direction = glm::normalize(-local_velocity);
+        auto lift_direction 
+            = glm::normalize(glm::cross(glm::cross(drag_direction, wing_normal), drag_direction));
+
+        auto angle_of_attack = glm::degrees(std::asin(glm::dot(drag_direction, wing_normal)));
 
         auto [lift_coefficient, drag_coefficient] = airfoil->sample(angle_of_attack);
 
@@ -118,8 +111,6 @@ struct Wing
     }
 };
 
-glm::mat3 inertia = phi::inertia::tensor({100000.0f, 50000.0f, 500000.0f}); 
-
 struct Aircraft
 {
     Engine engine;
@@ -128,7 +119,6 @@ struct Aircraft
     glm::vec3 joystick{}; // roll, yaw, pitch
 
     float log_timer = 1.0f;
-    const glm::vec3 control_torque = { 1500000.0f, 1000.0f, 1000000.0f };
 
     Aircraft(float mass, float thrust, glm::mat3 inertia, std::vector<Wing> wings)
         : elements(wings), rigid_body({ .mass = mass, .inertia = inertia }), engine(thrust)
@@ -136,23 +126,23 @@ struct Aircraft
 
     void update(phi::Seconds dt)
     {
-        Wing& lw = elements[0];
+#if 1
         Wing& la = elements[1];
         Wing& ra = elements[2];
-        Wing& rw = elements[3];
         Wing& el = elements[4];
         Wing& ru = elements[5];
 
-#if 1
         float roll = joystick.x;
         float yaw = joystick.y;
         float pitch = joystick.z;
-        float max_elevator_deflection = 5.0f, max_aileron_deflection = 15.0f;
+        float max_elevator_deflection = 5.0f, max_aileron_deflection = 15.0f, max_rudder_deflection = 5.0f;
         float aileron_deflection = roll * max_aileron_deflection;
-        la.set_incidence(+aileron_deflection);
-        ra.set_incidence(-aileron_deflection);
-        el.set_incidence(-pitch * max_elevator_deflection);
+        la.deflection = +aileron_deflection;
+        ra.deflection = -aileron_deflection;
+        el.deflection = -(pitch * max_elevator_deflection);
+        ru.deflection = yaw * max_rudder_deflection;
 #else
+        const glm::vec3 control_torque = { 1500000.0f, 1000.0f, 1000000.0f };
         float control_authority = phi::utils::clamp(glm::length(rigid_body.velocity) / 150.0f, 0.0f, 1.0f);
         rigid_body.add_relative_torque((joystick * control_torque) * control_authority);
 #endif
