@@ -23,7 +23,7 @@ struct Airfoil
     std::tuple<float, float> sample(float alpha) const
     {
         int index = static_cast<int>(phi::utils::scale(alpha, min, max, 0, data.size() - 1));
-        index = phi::utils::clamp(index, 0, static_cast<int>(data.size() - 1U));
+        index = glm::clamp(index, 0, static_cast<int>(data.size() - 1U));
         if (!(0 <= index && index < data.size()))
         {
             printf("alpha = %f, index = %d, size = %d\n", alpha, index, (int)data.size());
@@ -43,7 +43,7 @@ float air_density(float altitude, float sea_level_pressure, float temperature)
 
 struct Engine
 {   
-    float throttle = 0.5f;    
+    float throttle = 0.1f;    
     float thrust = 10000.0f; 
     float horsepower = 1000.0f;
     float rpm = 2400.0f;
@@ -192,8 +192,30 @@ struct Aircraft
     }
 };
 
-void autopilot(Aircraft& aircraft, glm::vec3& target) {
+void fly_towards(Aircraft& aircraft, const glm::vec3& target) 
+{
     auto& rb = aircraft.rigid_body;
-    auto dir = rb.inverse_transform(target - rb.position);
+    auto& joystick = aircraft.joystick;
+    auto target_dir 
+        = rb.inverse_transform_direction(glm::normalize(target - rb.position));
 
+    // pitch 
+    float pitch_command = target_dir.y * 1.0f;
+
+    // roll
+    float roll_angle = glm::degrees(std::atan(target_dir.z / target_dir.y));
+    float roll_command = (roll_angle / 360.0f) * 2.0f;
+
+    std::cout << "angle = " << roll_angle <<  ", " << roll_command << std::endl;
+
+    //joystick.x = roll_command;
+    //joystick.z = pitch_command;
+    //joystick = glm::clamp(joystick, glm::vec3(-1.0f), glm::vec3(1.0f));
 } 
+
+glm::vec3 intercept_point(const phi::RigidBody& aircraft, const phi::RigidBody& target)
+{
+    return {};
+}
+
+

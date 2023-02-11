@@ -20,9 +20,9 @@ void main()
     gl_Position = u_Projection * u_View * vec4(FragPos, 1.0);
 
 	//apply nostalgic vertex jitter
-    float distanceFromCam = clamp(gl_Position.w, -0.1, 1000);
-    float positionResolution = 128;
-	gl_Position.xy = round(gl_Position.xy * (positionResolution / distanceFromCam)) / (positionResolution / distanceFromCam);
+    //float distanceFromCam = clamp(gl_Position.w, -0.1, 1000);
+    //float positionResolution = 128;
+	//gl_Position.xy = round(gl_Position.xy * (positionResolution / distanceFromCam)) / (positionResolution / distanceFromCam);
 
 
     TexCoords = a_TexCoord;

@@ -22,20 +22,6 @@ using std::endl;
 constexpr int SCREEN_WIDTH = 1000;
 constexpr int SCREEN_HEIGHT = 800;
 
-void apply_to_object3d(const phi::RigidBody& rigid_body, gfx::Object3D& object3d)
-{
-    object3d.set_position(rigid_body.position);
-    object3d.set_rotation_quaternion(rigid_body.orientation);
-}
-
-void solve_constraints(phi::RigidBody& rigid_body)
-{
-    if (rigid_body.position.y <= 0)
-    {
-        rigid_body.position.y = 0, rigid_body.velocity.y = 0;
-    }
-}
-
 struct Joystick {
     int num_axis{0}, num_hats{0}, num_buttons{0};
     float roll{ 0.0f }, pitch{ 0.0f }, yaw{ 0.0f }, throttle{ 0.0f };
@@ -46,6 +32,10 @@ struct Joystick {
         return static_cast<float>(value) / static_cast<float>(32767);
     }
 };
+
+void get_keyboard_state(Joystick& joystick);
+void solve_constraints(phi::RigidBody& rigid_body);
+void apply_to_object3d(const phi::RigidBody& rigid_body, gfx::Object3D& object);
 
 int main(void)
 {
@@ -104,6 +94,7 @@ int main(void)
         printf("found %d buttons, %d axis\n", joystick.num_buttons, joystick.num_axis);
     }
 
+#if 1
     std::vector<float> cube_vertices_2 = {
         -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f,
          0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 1.0f, 0.0f,
@@ -154,6 +145,7 @@ int main(void)
         0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   1.0f, 0.0f,   // bottom right
        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
     };
+#endif
 
     std::vector<float> ico_vertices;
     std::vector<float> cube_vertices;
@@ -196,9 +188,6 @@ int main(void)
     sun.cast_shadow = false;
     scene.add(&sun);
 #endif
-  
-    auto position = glm::vec3(0.0f, 2000.0f, 0.0f);
-    auto velocity = glm::vec3(phi::units::meter_per_second(600.0f), 0.0f, 0.0f);
 
 #if 1
     Clipmap clipmap;
@@ -206,14 +195,23 @@ int main(void)
 #endif
    
 #if 1
-    gfx::Object3D transform;
-    transform.set_position(position);
-    scene.add(&transform);
+    gfx::Object3D aircraft_transform;
+    scene.add(&aircraft_transform);
+    auto fg = std::make_shared<gfx::Geometry>(fuselage_vertices, gfx::Geometry::POS_NORM_UV);
+    auto pg = std::make_shared<gfx::Geometry>(prop_vertices, gfx::Geometry::POS_NORM_UV);
+    gfx::Mesh fuselage(fg, colors);
+    gfx::Mesh prop(pg, grey);
+    aircraft_transform.add(&fuselage);
+    aircraft_transform.add(&prop);
+#endif
 
-    gfx::Mesh fuselage(std::make_shared<gfx::Geometry>(fuselage_vertices, gfx::Geometry::POS_NORM_UV), colors);
-    gfx::Mesh prop(std::make_shared<gfx::Geometry>(prop_vertices, gfx::Geometry::POS_NORM_UV), grey);
-    transform.add(&fuselage);
-    transform.add(&prop);
+#if 1
+    gfx::Object3D npc_aircraft_transform;
+    scene.add(&npc_aircraft_transform);
+    gfx::Mesh fuselage2(fg, colors);
+    gfx::Mesh prop2(pg, grey);
+    npc_aircraft_transform.add(&fuselage2);
+    npc_aircraft_transform.add(&prop2);
 #endif
 
 #if 0
@@ -226,12 +224,12 @@ int main(void)
     gfx::Billboard cross(make_shared<gfx::Texture>("assets/textures/sprites/cross.png"));
     cross.set_position(phi::FORWARD * projection_distance);
     cross.set_scale(glm::vec3(0.25f));
-    transform.add(&cross);
+    aircraft_transform.add(&cross);
 
     // flight path marker
     gfx::Billboard fpm(make_shared<gfx::Texture>("assets/textures/sprites/fpm.png"));
     fpm.set_scale(glm::vec3(0.25f));
-    transform.add(&fpm);
+    aircraft_transform.add(&fpm);
 #endif
 
     const float mass = 10000.0f;
@@ -249,7 +247,6 @@ int main(void)
     auto inertia = phi::inertia::tensor({100000.0f, 400000.0f, 500000.0f}); 
     auto inertia_tensor = phi::inertia::tensor(elements, true);
 
-
     std::cout << inertia << std::endl;
     std::cout << inertia_tensor << std::endl;
 
@@ -262,14 +259,18 @@ int main(void)
       Wing({-6.6f,  0.0f,  0.0f},  5.31f, 3.10f, &NACA_0012, phi::RIGHT),  // rudder
     };
 
-    Aircraft aircraft(mass, thrust, inertia_tensor, wings);
-    aircraft.rigid_body.position = position;
-    aircraft.rigid_body.velocity = velocity;
+    Aircraft player_aircraft(mass, thrust, inertia_tensor, wings);
+    player_aircraft.rigid_body.position = glm::vec3(0.0f, 2000.0f, 0.0f);
+    player_aircraft.rigid_body.velocity = glm::vec3(phi::units::meter_per_second(600.0f), 0.0f, 0.0f);
+
+    Aircraft npc_aircraft(mass, thrust, inertia_tensor, wings);
+    npc_aircraft.rigid_body.position = glm::vec3(100.0f, 2050.0f, 10.0f);
+    npc_aircraft.rigid_body.velocity = glm::vec3(phi::units::meter_per_second(600.0f), 0.0f, 0.0f);
 
     gfx::Camera camera(glm::radians(45.0f), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 1.0f, 50000.0f);
     camera.set_position({0, 1, 0});
     camera.set_rotation({0, glm::radians(-90.0f), 0.0f});
-    transform.add(&camera);
+    aircraft_transform.add(&camera);
 
     gfx::OrbitController controller(20.0f);
 
@@ -286,12 +287,10 @@ int main(void)
         last = now;
         now = SDL_GetPerformanceCounter();
         dt = static_cast<phi::Seconds>((now - last) / static_cast<phi::Seconds>(SDL_GetPerformanceFrequency()));
-        dt = phi::utils::min(dt, 0.02f);
+        dt = std::min(dt, 0.02f);
 
         if ((timer += dt) >= 1.0f)
         {
-            //printf("dt = %f, fps = %f\n", dt, 1 / dt);
-            //std::cout << controller.get_front() << std::endl;
             timer = 0.0f;
         }
 
@@ -363,75 +362,38 @@ int main(void)
             }
         }
 
-        const uint8_t* key_states = SDL_GetKeyboardState(NULL);
-
         if (num_joysticks == 0)
         {
             joystick.pitch = joystick.roll = joystick.yaw = 0;
         }
 
-        if (key_states[SDL_SCANCODE_A])
-        {
-            joystick.roll = -1.0f;
-        }
-        else if (key_states[SDL_SCANCODE_D])
-        {
-            joystick.roll = 1.0f;
-        }
+        get_keyboard_state(joystick);
 
-        if (key_states[SDL_SCANCODE_W])
-        {
-            joystick.pitch = -1.0f;
-        }
-        else if (key_states[SDL_SCANCODE_S])
-        {
-            joystick.pitch = 1.0f;
-        }
-
-        if (key_states[SDL_SCANCODE_Q])
-        {
-            joystick.yaw = 1.0f;
-        }
-        else if (key_states[SDL_SCANCODE_E])
-        {
-            joystick.yaw = -1.0f;
-        }
-        
-        if (key_states[SDL_SCANCODE_J])
-        {
-            joystick.throttle -= 0.01f;
-            joystick.throttle = phi::utils::clamp(joystick.throttle, 0.0f, 1.0f);
-        }
-        else if (key_states[SDL_SCANCODE_K])
-        {
-            joystick.throttle += 0.01f;
-            joystick.throttle = phi::utils::clamp(joystick.throttle, 0.0f, 1.0f);
-        }
-
-        //aircraft.controls.set(joystick.roll, joystick.yaw, joystick.pitch);
-        aircraft.joystick = glm::vec3(joystick.roll, joystick.yaw, joystick.pitch);
-        aircraft.engine.throttle = joystick.throttle;
+        player_aircraft.joystick = glm::vec3((joystick.roll), joystick.yaw, joystick.pitch);
+        player_aircraft.engine.throttle = joystick.throttle;
         
         if (!paused)
         {
-            aircraft.update(dt);
+            fly_towards(player_aircraft, npc_aircraft.rigid_body.position);
+            player_aircraft.update(dt);
+            npc_aircraft.update(dt);
             // solve_constraints(aircraft.rigid_body);
-            apply_to_object3d(aircraft.rigid_body, transform);
+            apply_to_object3d(player_aircraft.rigid_body, aircraft_transform);
+            apply_to_object3d(npc_aircraft.rigid_body, npc_aircraft_transform);
         }
 
         prop.set_rotation(prop.get_rotation() + glm::vec3(0.1f, 0.0f, 0.0f));
-
-        fpm.set_position(glm::normalize(aircraft.rigid_body.get_body_velocity()) * (projection_distance + 1));
+        fpm.set_position(glm::normalize(player_aircraft.rigid_body.get_body_velocity()) * (projection_distance + 1));
        
         if (orbit)
         {
-            controller.update(camera, aircraft.rigid_body.position, dt);
+            controller.update(camera, player_aircraft.rigid_body.position, dt);
             cross.visible = fpm.visible = false;
         }
         else
         {
-            //camera.set_position({ -15.0f, 3.0f, 0.0f });
-            camera.set_position({ -15.0f, 3.0f + aircraft.rigid_body.angular_velocity.z * 1.0f, 0.0f });
+            //camera.set_position({ -15.0f, 0.0f, 0.0f });
+            camera.set_position({ -15.0f, 3.0f + player_aircraft.rigid_body.angular_velocity.z * 1.0f, 0.0f });
             cross.visible = fpm.visible = true;
         }
         renderer.render(camera, scene);
@@ -440,3 +402,59 @@ int main(void)
     }
     return 0;
 }
+
+void get_keyboard_state(Joystick& joystick)
+{
+    const uint8_t* key_states = SDL_GetKeyboardState(NULL);
+
+    if (key_states[SDL_SCANCODE_A])
+    {
+        joystick.roll = -1.0f;
+    }
+    else if (key_states[SDL_SCANCODE_D])
+    {
+        joystick.roll = 1.0f;
+    }
+
+    if (key_states[SDL_SCANCODE_W])
+    {
+        joystick.pitch = -1.0f;
+    }
+    else if (key_states[SDL_SCANCODE_S])
+    {
+        joystick.pitch = 1.0f;
+    }
+
+    if (key_states[SDL_SCANCODE_Q])
+    {
+        joystick.yaw = 1.0f;
+    }
+    else if (key_states[SDL_SCANCODE_E])
+    {
+        joystick.yaw = -1.0f;
+    }
+    
+    if (key_states[SDL_SCANCODE_J])
+    {
+        joystick.throttle = glm::clamp(joystick.throttle - 0.01f, 0.0f, 1.0f);
+    }
+    else if (key_states[SDL_SCANCODE_K])
+    {
+        joystick.throttle = glm::clamp(joystick.throttle + 0.01f, 0.0f, 1.0f);
+    }
+}
+
+void apply_to_object3d(const phi::RigidBody& rigid_body, gfx::Object3D& object3d)
+{
+    object3d.set_position(rigid_body.position);
+    object3d.set_rotation_quaternion(rigid_body.orientation);
+}
+
+void solve_constraints(phi::RigidBody& rigid_body)
+{
+    if (rigid_body.position.y <= 0)
+    {
+        rigid_body.position.y = 0, rigid_body.velocity.y = 0;
+    }
+}
+

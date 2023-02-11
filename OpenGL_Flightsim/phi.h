@@ -137,29 +137,6 @@ namespace phi {
         {
             return a + t * (b - a);
         }
-
-        template <typename T>
-        constexpr inline T max(T a, T b)
-        {
-            return a > b ? a : b;
-        }
-
-        template <typename T>
-        constexpr inline T min(T a, T b)
-        {
-            return a < b ? a : b;
-        }
-
-        constexpr inline float sign(float a)
-        {
-            return a >= 0.0f ? 1.0f : -1.0f;
-        }
-
-        template <typename T>
-        constexpr inline T clamp(T v, T lo, T hi)
-        {
-            return min(max(v, lo), hi);
-        }
     };
     
     namespace units {

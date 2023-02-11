@@ -10,6 +10,7 @@
 
 namespace collisions {
 
+    // axis aligned bounding box
     struct AABB {
         glm::vec3 center, size;
 
