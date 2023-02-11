@@ -178,3 +178,9 @@ struct Aircraft
         rigid_body.update(dt);
     }
 };
+
+void autopilot(Aircraft& aircraft, glm::vec3& target) {
+    auto& rb = aircraft.rigid_body;
+    auto dir = rb.inverse_transform(target - rb.position);
+
+} 
