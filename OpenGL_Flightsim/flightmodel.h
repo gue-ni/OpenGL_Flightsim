@@ -82,31 +82,38 @@ struct Wing
         auto local_velocity = rigid_body.get_point_velocity(position);
         auto speed = glm::length(local_velocity);
 
-        if (speed <= 0.0f || area <= 0.0f)
+        if (speed <= 0.0f)
             return;
 
         auto wing_normal = normal;
 
         if (abs(deflection) > phi::epsilon)
         {
-            auto axis = glm::normalize(glm::cross(phi::FORWARD, normal));
+            // set rotation of wing
             glm::mat4 rot(1.0f);
+            auto axis = glm::normalize(glm::cross(phi::FORWARD, normal));
             rot = glm::rotate(rot, glm::radians(deflection), axis);
             wing_normal = glm::vec3(rot * glm::vec4(normal, 1.0f));
         }
 
+        // drag acts in the opposite direction of velocity
         auto drag_direction = glm::normalize(-local_velocity);
+
+        // lift is always perpendicular to drag
         auto lift_direction 
             = glm::normalize(glm::cross(glm::cross(drag_direction, wing_normal), drag_direction));
 
+        // angle between wing and air flow
         auto angle_of_attack = glm::degrees(std::asin(glm::dot(drag_direction, wing_normal)));
 
+        // sample our aerodynamic data
         auto [lift_coefficient, drag_coefficient] = airfoil->sample(angle_of_attack);
 
         float tmp = phi::sq(speed) * phi::rho * area * 0.5f;
         auto lift = lift_direction * lift_coefficient * lift_multiplier * tmp;
         auto drag = drag_direction * drag_coefficient * drag_multiplier * tmp;
 
+        // apply forces
         rigid_body.add_force_at_point(lift + drag, position);
     }
 };
@@ -137,6 +144,7 @@ struct Aircraft
         float pitch = joystick.z;
         float max_elevator_deflection = 5.0f, max_aileron_deflection = 15.0f, max_rudder_deflection = 5.0f;
         float aileron_deflection = roll * max_aileron_deflection;
+
         la.deflection = +aileron_deflection;
         ra.deflection = -aileron_deflection;
         el.deflection = -(pitch * max_elevator_deflection);

@@ -42,9 +42,9 @@ namespace phi {
     namespace inertia {
         struct Element {
             float mass;
-            glm::vec3 position;
-            glm::vec3 inertia;
-            glm::vec3 computed_offset;
+            glm::vec3 position; // position in design coordinates
+            glm::vec3 inertia;  
+            glm::vec3 offset;   // offset from center of gravity
         };
 
         constexpr glm::vec3 cube(const glm::vec3& size, float mass)
@@ -78,13 +78,12 @@ namespace phi {
 
         constexpr Element cube_element(const glm::vec3& position, const glm::vec3& size, float mass)
         {
-            auto inertia = cube(size, mass);
-            return { .mass = mass, .position = position, .inertia = inertia, .computed_offset = {} };
+            return { .mass = mass, .position = position, .inertia = cube(size, mass), .offset = position };
         }
 
         
         // calculate inertia tensor from list of connected masses
-        constexpr glm::mat3 tensor(const std::vector<Element>& elements)
+        constexpr glm::mat3 tensor(std::vector<Element>& elements, bool precomputed_offset = false)
         {
             float Ixx = 0, Iyy = 0, Izz = 0;
             float Ixy = 0, Ixz = 0, Iyz = 0;
@@ -94,15 +93,23 @@ namespace phi {
 
             for (const auto& element : elements)
             {
-                mass    += element.mass;
-                moment  += element.mass * element.position;
+                mass   += element.mass;
+                moment += element.mass * element.position;
             }
 
             const glm::vec3 center_of_gravity = moment / mass;
 
-            for (const auto& element : elements)
+            for (auto& element : elements)
             {
-                auto offset = element.position - center_of_gravity;
+                glm::vec3 offset;
+
+                if (!precomputed_offset)
+                {
+                    element.offset = element.position - center_of_gravity;
+                }
+                    
+                offset = element.offset;
+
                 Ixx += element.inertia.x + element.mass * (sq(offset.y) + sq(offset.z));
                 Iyy += element.inertia.y + element.mass * (sq(offset.z) + sq(offset.x));
                 Izz += element.inertia.z + element.mass * (sq(offset.x) + sq(offset.y));

@@ -234,36 +234,35 @@ int main(void)
     transform.add(&fpm);
 #endif
 
-    const float mass = 16000.0f;
+    const float mass = 10000.0f;
     const float thrust = 20000.0f;
 
     std::vector<phi::inertia::Element> elements = {
-        phi::inertia::cube_element({}, {0.75f, 0.63f, 0.84f}, mass * 0.2f), // engine
-        phi::inertia::cube_element({}, {8.28f, 1.5f, 1.5f}, mass * 0.2f), // fuselage
-        phi::inertia::cube_element({}, {1.49f, 0.2f, 5.5f}, mass * 0.2f), // left wing 
-        phi::inertia::cube_element({}, {1.49f, 0.2f, 5.5f}, mass * 0.2f), // right wing 
-        phi::inertia::cube_element({}, {1.5f, 1.8f, 0.15f}, mass * 0.1f), // rudder
-        phi::inertia::cube_element({}, {1.0f, 0.2f, 3.4f}, mass * 0.1f), // elevator
+      phi::inertia::cube_element({-0.5f,  0.0f, -2.7f}, {6.96f, 0.10f, 3.50f}, mass * 0.25f),               // left wing
+      phi::inertia::cube_element({ 0.0f,  0.0f, -2.0f}, {3.80f, 0.10f, 1.26f}, mass * 0.05f),               // left aileron
+      phi::inertia::cube_element({ 0.0f,  0.0f,  2.0f}, {3.80f, 0.10f, 1.26f}, mass * 0.05f),               // right aileron
+      phi::inertia::cube_element({-0.5f,  0.0f,  2.7f}, {6.96f, 0.10f, 3.50f}, mass * 0.25f),               // right wing
+      phi::inertia::cube_element({-6.6f, -0.1f,  0.0f}, {6.54f, 0.10f, 2.70f}, mass * 0.2f),                // elevator
+      phi::inertia::cube_element({-6.6f,  0.0f,  0.0f}, {5.31f, 3.10f, 0.10f}, mass * 0.2f),                // rudder
     };
 
     auto inertia = phi::inertia::tensor({100000.0f, 400000.0f, 500000.0f}); 
-    auto inertia_tensor = phi::inertia::tensor(elements);
+    auto inertia_tensor = phi::inertia::tensor(elements, true);
 
-    for (auto& e : elements)
-        std::cout << e.computed_offset << std::endl;
 
+    std::cout << inertia << std::endl;
     std::cout << inertia_tensor << std::endl;
 
     std::vector<Wing> wings = {
-      Wing({-0.5f,   0.0f, -2.73f}, 6.96f, 3.50f, &NACA_2412),              // left wing
+      Wing({-0.5f,   0.0f, -2.7f}, 6.96f, 3.50f, &NACA_2412),              // left wing
       Wing({ 0.0f,   0.0f, -2.0f},  3.80f, 1.26f, &NACA_0012),              // left aileron
       Wing({ 0.0f,   0.0f,  2.0f},  3.80f, 1.26f, &NACA_0012),              // right aileron
-      Wing({-0.5f,   0.0f,  2.73f}, 6.96f, 3.50f, &NACA_2412),              // right wing
-      Wing({-6.64f, -0.12f, 0.0f},  6.54f, 2.70f, &NACA_0012),              // elevator
-      Wing({-6.64f,  0.0f,  0.0f},  5.31f, 3.10f, &NACA_0012, phi::RIGHT),  // rudder
+      Wing({-0.5f,   0.0f,  2.7f}, 6.96f, 3.50f, &NACA_2412),              // right wing
+      Wing({-6.6f, -0.1f, 0.0f},  6.54f, 2.70f, &NACA_0012),              // elevator
+      Wing({-6.6f,  0.0f,  0.0f},  5.31f, 3.10f, &NACA_0012, phi::RIGHT),  // rudder
     };
 
-    Aircraft aircraft(mass, thrust, inertia, wings);
+    Aircraft aircraft(mass, thrust, inertia_tensor, wings);
     aircraft.rigid_body.position = position;
     aircraft.rigid_body.velocity = velocity;
 
