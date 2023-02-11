@@ -68,8 +68,8 @@ struct Wing
     const float area{};
     const glm::vec3 position{};
     const Airfoil *airfoil;
+    const glm::vec3 normal;
 
-    glm::vec3 normal;
     float lift_multiplier = 1.0f;
     float drag_multiplier = 1.0f;
     phi::Degrees deflection = 0.0f;
@@ -196,8 +196,7 @@ void fly_towards(Aircraft& aircraft, const glm::vec3& target)
 {
     auto& rb = aircraft.rigid_body;
     auto& joystick = aircraft.joystick;
-    auto target_dir 
-        = rb.inverse_transform_direction(glm::normalize(target - rb.position));
+    auto target_dir = rb.inverse_transform_direction(glm::normalize(target - rb.position));
 
     // pitch 
     float pitch_command = target_dir.y * 1.0f;
@@ -206,11 +205,12 @@ void fly_towards(Aircraft& aircraft, const glm::vec3& target)
     float roll_angle = glm::degrees(std::atan(target_dir.z / target_dir.y));
     float roll_command = (roll_angle / 360.0f) * 2.0f;
 
-    std::cout << "angle = " << roll_angle <<  ", " << roll_command << std::endl;
+    std::cout << target_dir << " angle = " << roll_angle <<  ", " << roll_command << std::endl;
+    //std::cout << "angle = " << roll_angle <<  ", " << roll_command << std::endl;
 
-    //joystick.x = roll_command;
-    //joystick.z = pitch_command;
-    //joystick = glm::clamp(joystick, glm::vec3(-1.0f), glm::vec3(1.0f));
+    joystick.x = roll_command;
+    joystick.z = pitch_command;
+    joystick = glm::clamp(joystick, glm::vec3(-1.0f), glm::vec3(1.0f));
 } 
 
 glm::vec3 intercept_point(const phi::RigidBody& aircraft, const phi::RigidBody& target)
