@@ -22,7 +22,7 @@ struct Airfoil
 
     std::tuple<float, float> sample(float alpha) const
     {
-        int index = static_cast<int>(phi::utils::scale(alpha, min, max, 0, data.size()));
+        int index = static_cast<int>(phi::utils::scale(alpha, min, max, 0, data.size() - 1));
         index = phi::utils::clamp(index, 0, static_cast<int>(data.size() - 1U));
         if (!(0 <= index && index < data.size()))
         {
@@ -36,18 +36,29 @@ struct Airfoil
 Airfoil NACA_0012(NACA_0012_data);
 Airfoil NACA_2412(NACA_2412_data);
 
+float air_density(float altitude, float sea_level_pressure, float temperature)
+{
+    return 0.0f;
+}
+
 struct Engine
 {   
     float throttle = 0.5f;    
     float thrust = 10000.0f; 
     float horsepower = 1000.0f;
     float rpm = 2400.0f;
+    float propellor_diameter = 1.8f;
 
-    Engine(float engine_thrust) : thrust(engine_thrust) {}
+    Engine(float thrust) : thrust(thrust) {}
     
     void apply_forces(phi::RigidBody &rigid_body)
     {
-        rigid_body.add_relative_force({ thrust * throttle, 0.0f, 0.0f });
+#if 1
+        float force = thrust * throttle;
+#else
+#endif
+        rigid_body.add_relative_force({ force, 0.0f, 0.0f });
+
         // TODO: implement torque from propeller
     }
 };
@@ -79,13 +90,13 @@ struct Wing
     
     void apply_forces(phi::RigidBody &rigid_body)
     {
-        auto local_velocity = rigid_body.get_point_velocity(position);
-        auto speed = glm::length(local_velocity);
+        glm::vec3 local_velocity = rigid_body.get_point_velocity(position);
+        float speed = glm::length(local_velocity);
 
         if (speed <= 0.0f)
             return;
 
-        auto wing_normal = normal;
+        glm::vec3 wing_normal = normal;
 
         if (abs(deflection) > phi::epsilon)
         {
@@ -97,21 +108,23 @@ struct Wing
         }
 
         // drag acts in the opposite direction of velocity
-        auto drag_direction = glm::normalize(-local_velocity);
+        glm::vec3 drag_direction = glm::normalize(-local_velocity);
 
         // lift is always perpendicular to drag
-        auto lift_direction 
+        glm::vec3 lift_direction 
             = glm::normalize(glm::cross(glm::cross(drag_direction, wing_normal), drag_direction));
 
         // angle between wing and air flow
-        auto angle_of_attack = glm::degrees(std::asin(glm::dot(drag_direction, wing_normal)));
+        float angle_of_attack = glm::degrees(std::asin(glm::dot(drag_direction, wing_normal)));
 
         // sample our aerodynamic data
         auto [lift_coefficient, drag_coefficient] = airfoil->sample(angle_of_attack);
 
-        float tmp = phi::sq(speed) * phi::rho * area * 0.5f;
-        auto lift = lift_direction * lift_coefficient * lift_multiplier * tmp;
-        auto drag = drag_direction * drag_coefficient * drag_multiplier * tmp;
+        float air_density = phi::rho;
+
+        float tmp = 0.5f * phi::sq(speed) * air_density * area;
+        glm::vec3 lift = lift_direction * lift_coefficient * lift_multiplier * tmp;
+        glm::vec3 drag = drag_direction * drag_coefficient * drag_multiplier * tmp;
 
         // apply forces
         rigid_body.add_force_at_point(lift + drag, position);

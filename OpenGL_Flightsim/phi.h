@@ -17,9 +17,9 @@ namespace phi {
     typedef float Degrees;
 
     // constants
-    constexpr float g = 9.81f;          // gravity of earth, m/s^2
-    constexpr float rho = 1.225f;       // air density, kg/m^3
-    constexpr float epsilon = 1e-8f;
+    constexpr float g           = 9.81f;    // gravity of earth, m/s^2
+    constexpr float rho         = 1.225f;   // air density, kg/m^3
+    constexpr float epsilon     = 1e-8f;
 
     // directions in body space
     constexpr glm::vec3 UP(0.0f, 1.0f, 0.0f);
@@ -177,6 +177,11 @@ namespace phi {
         {
             return meter_per_second * 3.6f;
         }
+
+        constexpr inline float kelvin(float celsius)
+        {
+            return celsius - 273.15f;
+        }
     };
 
     struct RigidBodyParams {
@@ -203,14 +208,12 @@ namespace phi {
         glm::mat3 inertia{}, inverse_inertia{};             // inertia tensor
         bool apply_gravity = true;
 
-#if 1
         RigidBody() : 
             RigidBody({ 
                     .mass = 1.0f, 
                     .inertia = inertia::tensor(inertia::cube(glm::vec3(1.0f), 1.0f)) 
                 }) 
         {}
-#endif
 
         RigidBody(const RigidBodyParams& params)
             : mass(params.mass),
@@ -222,21 +225,6 @@ namespace phi {
             angular_velocity(params.angular_velocity),
             inverse_inertia(glm::inverse(params.inertia))
         {}
-
-        RigidBody(float mass, const glm::mat3& inertia_tensor) 
-            : mass(mass),
-            inertia(inertia_tensor), 
-            inverse_inertia(glm::inverse(inertia_tensor))
-        {}
-
-        RigidBody(const glm::vec3& pos, const glm::vec3& rot, float m, const glm::mat3& inertia_tensor) 
-            : mass(m),
-            position(pos), 
-            orientation(glm::quat(rot)), 
-            inertia(inertia_tensor), 
-            inverse_inertia(glm::inverse(inertia_tensor))
-        {}
-
 
         // get velocity of point in body space
         inline glm::vec3 get_point_velocity(const glm::vec3& point) const
