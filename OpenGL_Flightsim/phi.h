@@ -62,7 +62,7 @@ namespace phi {
             const float C = (1.0f / 12.0f) * mass;
             glm::vec3 I(0.0f);
             I.x = (0.5f) * mass * sq(radius);
-            I.y = I.z = C * (3 * sq(radius) + sq(length));
+            I.y = I.z = C * (3.0f * sq(radius) + sq(length));
             return I;
         }
         
