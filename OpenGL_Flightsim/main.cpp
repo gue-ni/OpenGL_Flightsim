@@ -1,7 +1,7 @@
-#define SDL_MAIN_HANDLED
-#include <SDL.h>
+﻿#define SDL_MAIN_HANDLED
+#include <SDL2/SDL.h>
 #include <GL/glew.h>
-#include <SDL_opengl.h>
+#include <sdl2/SDL_opengl.h>
 
 #include <iostream>
 #include <cstdio>

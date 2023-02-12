@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "phi.h"
 #include "gfx.h"
@@ -194,6 +194,6 @@ struct Aircraft
 
 void autopilot(Aircraft& aircraft, glm::vec3& target) {
     auto& rb = aircraft.rigid_body;
-    auto dir = rb.inverse_transform(target - rb.position);
+    auto dir = rb.inverse_transform_direction(target - rb.position);
 
 } 
