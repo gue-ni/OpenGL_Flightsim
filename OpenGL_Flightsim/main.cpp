@@ -19,8 +19,8 @@ using std::make_shared;
 using std::cout;
 using std::endl;
 
-constexpr int SCREEN_WIDTH = 1000;
-constexpr int SCREEN_HEIGHT = 800;
+constexpr int SCREEN_WIDTH  = 640;
+constexpr int SCREEN_HEIGHT = 480;
 
 struct Joystick {
     int num_axis{0}, num_hats{0}, num_buttons{0};
@@ -33,7 +33,7 @@ struct Joystick {
     }
 };
 
-void get_keyboard_state(Joystick& joystick);
+void get_keyboard_state(Joystick& joystick, phi::Seconds dt);
 void solve_constraints(phi::RigidBody& rigid_body);
 void apply_to_object3d(const phi::RigidBody& rigid_body, gfx::Object3D& object);
 
@@ -221,14 +221,15 @@ int main(void)
 
 #if 1
     float projection_distance = 500.0f;
+    float size = 0.3f;
     gfx::Billboard cross(make_shared<gfx::Texture>("assets/textures/sprites/cross.png"));
     cross.set_position(phi::FORWARD * projection_distance);
-    cross.set_scale(glm::vec3(0.25f));
+    cross.set_scale(glm::vec3(size));
     aircraft_transform.add(&cross);
 
     // flight path marker
     gfx::Billboard fpm(make_shared<gfx::Texture>("assets/textures/sprites/fpm.png"));
-    fpm.set_scale(glm::vec3(0.25f));
+    fpm.set_scale(glm::vec3(size));
     aircraft_transform.add(&fpm);
 #endif
 
@@ -362,12 +363,7 @@ int main(void)
             }
         }
 
-        if (num_joysticks == 0)
-        {
-            joystick.pitch = joystick.roll = joystick.yaw = 0;
-        }
-
-        get_keyboard_state(joystick);
+        get_keyboard_state(joystick, dt);
 
         player_aircraft.joystick = glm::vec3((joystick.roll), joystick.yaw, joystick.pitch);
         player_aircraft.engine.throttle = joystick.throttle;
@@ -382,7 +378,7 @@ int main(void)
             apply_to_object3d(npc_aircraft.rigid_body, npc_aircraft_transform);
         }
 
-        prop.set_rotation(prop.get_rotation() + glm::vec3(0.1f, 0.0f, 0.0f));
+        prop.rotate_by({0.1f, 0.0f, 0.0f});
         fpm.set_position(glm::normalize(player_aircraft.rigid_body.get_body_velocity()) * (projection_distance + 1));
        
         if (orbit)
@@ -403,35 +399,60 @@ int main(void)
     return 0;
 }
 
-void get_keyboard_state(Joystick& joystick)
+inline float move(float value, float factor, float dt)
 {
+    return glm::clamp(value - factor * dt, -1.0f, 1.0f);
+}
+
+inline float center(float value, float factor, float dt)
+{
+    return (value >= 0) 
+        ? glm::clamp(value - factor * dt,  0.0f, 1.0f) 
+        : glm::clamp(value + factor * dt, -1.0f, 0.0f);
+}
+
+void get_keyboard_state(Joystick& joystick, phi::Seconds dt)
+{
+    const glm::vec3 factor = {3.0f, 3.0f, 3.0f}; // roll, yaw, pitch
     const uint8_t* key_states = SDL_GetKeyboardState(NULL);
 
     if (key_states[SDL_SCANCODE_A])
     {
-        joystick.roll = -1.0f;
+        joystick.roll = move(joystick.roll, +factor.x, dt);
     }
     else if (key_states[SDL_SCANCODE_D])
     {
-        joystick.roll = 1.0f;
+        joystick.roll = move(joystick.roll, -factor.x, dt);
+    }
+    else
+    {
+        joystick.roll = center(joystick.roll, factor.x, dt);
     }
 
     if (key_states[SDL_SCANCODE_W])
     {
-        joystick.pitch = -1.0f;
+        joystick.pitch = move(joystick.pitch, +factor.z, dt);
     }
     else if (key_states[SDL_SCANCODE_S])
     {
-        joystick.pitch = 1.0f;
+        joystick.pitch = move(joystick.pitch, -factor.z, dt);
+    }
+    else
+    {
+        joystick.pitch = center(joystick.pitch, factor.z, dt);
     }
 
     if (key_states[SDL_SCANCODE_Q])
     {
-        joystick.yaw = 1.0f;
+        joystick.yaw = move(joystick.yaw, -factor.x, dt);
     }
     else if (key_states[SDL_SCANCODE_E])
     {
-        joystick.yaw = -1.0f;
+        joystick.yaw = move(joystick.yaw, +factor.x, dt);
+    }
+    else
+    {
+        joystick.yaw = center(joystick.yaw, factor.z, dt);
     }
     
     if (key_states[SDL_SCANCODE_J])

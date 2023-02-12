@@ -260,6 +260,11 @@ namespace gfx {
         m_rotation = glm::quat(rot); m_dirty_dof = true;
     }
 
+    void Object3D::rotate_by(const glm::vec3& rot)
+    {
+        set_rotation(get_rotation() + rot);
+    }
+
     void Object3D::set_rotation_quaternion(const glm::quat& quat)
     {
         m_rotation = quat;

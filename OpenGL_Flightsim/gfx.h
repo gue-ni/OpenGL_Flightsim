@@ -169,8 +169,9 @@ namespace gfx {
         void draw_children(RenderContext& context);
         virtual void draw_self(RenderContext& context);
 
-        void set_scale(const glm::vec3& scale); // yaw, roll, pitch
+        void set_scale(const glm::vec3& scale); 
         void set_rotation(const glm::vec3& rot);
+        void rotate_by(const glm::vec3& rot);
         void set_rotation_quaternion(const glm::quat& quat);
         void set_position(const glm::vec3& pos);
 
