@@ -196,29 +196,19 @@ void fly_towards(Aircraft& aircraft, const glm::vec3& target)
     auto& rb = aircraft.rigid_body;
     auto& joystick = aircraft.joystick;
     auto position = rb.position;
-    auto target_dir = glm::normalize(rb.inverse_transform_direction(target - rb.position));
+    auto target_direction = glm::normalize(rb.inverse_transform_direction(target - rb.position));
 
-    // pitch 
-    float pitch_angle = glm::degrees(std::asin(target_dir.y / 1.0f));
-    float pitch_command = target_dir.y * 1.0f;
+#if 1
+    const auto factor = glm::vec3(2.0f, 2.0f, 2.0f);
 
     // roll
-    float roll_angle = 0.0f, roll_command = 0.0f;
-    
-#if 0 
-    if (pitch_angle >= 0.0f)
-#endif
-    {
-        roll_angle = glm::degrees(std::atan(target_dir.z / target_dir.y));
-        roll_command = (roll_angle / 180.0f) * 2.0f;
-    }
-   
-    //printf("r = %.2f, y = %.2f, p = %.2f\n", roll_angle, 0.0f, pitch_angle);
+    joystick.x = target_direction.z; 
+    // yaw
+    joystick.y = target_direction.z; 
+    // pitch
+    joystick.z = target_direction.y;
 
-#if 0
-    joystick.x = roll_command;
-    joystick.z = pitch_command;
-    joystick = glm::clamp(joystick, glm::vec3(-1.0f), glm::vec3(1.0f));
+    joystick = glm::clamp(joystick * factor, glm::vec3(-1.0f), glm::vec3(1.0f));
 #endif
 } 
 
@@ -229,8 +219,7 @@ glm::vec3 intercept_point(
     auto velocity_delta = target_velocity - velocity;
     auto position_delta = target_position - position;
     auto time_to_intercept = glm::length(position_delta) / glm::length(velocity_delta);
-    auto intercept_point = position + target_velocity * time_to_intercept;
-    return intercept_point;
+    return target_position + target_velocity * time_to_intercept;
 }
 
 

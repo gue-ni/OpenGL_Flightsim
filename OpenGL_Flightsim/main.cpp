@@ -370,9 +370,18 @@ int main(void)
         
         if (!paused)
         {
+#if 1
+            auto ip = intercept_point(
+                player_aircraft.rigid_body.position, player_aircraft.rigid_body.velocity, 
+                npc_aircraft.rigid_body.position, npc_aircraft.rigid_body.velocity
+            );
+            fly_towards(player_aircraft, ip);
+#else
             fly_towards(player_aircraft, npc_aircraft.rigid_body.position);
+#endif
             player_aircraft.update(dt);
             npc_aircraft.update(dt);
+
             // solve_constraints(aircraft.rigid_body);
             apply_to_object3d(player_aircraft.rigid_body, aircraft_transform);
             apply_to_object3d(npc_aircraft.rigid_body, npc_aircraft_transform);

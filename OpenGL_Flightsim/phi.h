@@ -273,6 +273,18 @@ namespace phi {
             return m_force;
         }
 
+        inline glm::vec3 forward() const {
+            return transform_direction(phi::FORWARD);
+        }
+
+        inline glm::vec3 up() const {
+            return transform_direction(phi::UP);
+        }
+
+        inline glm::vec3 right() const {
+            return transform_direction(phi::RIGHT);
+        }
+
         void update(Seconds dt)
         {
             glm::vec3 acceleration = m_force / mass;
