@@ -1,7 +1,3 @@
-/*
-    
-*/
-
 #pragma once
 
 #include <glm/vec3.hpp>
@@ -184,6 +180,7 @@ namespace phi {
         glm::vec3 angular_velocity{};                       // angular velocity in object space, x represents rotation around x axis
         glm::mat3 inertia{}, inverse_inertia{};             // inertia tensor
         bool apply_gravity = true;
+        bool active = true;
 
         RigidBody() : 
             RigidBody({ 
@@ -222,6 +219,7 @@ namespace phi {
             return orientation * direction;
         }
 
+        // get velocity in body space
         inline glm::vec3 get_body_velocity() const {
             return inverse_transform_direction(velocity);
         }
@@ -232,9 +230,10 @@ namespace phi {
             return glm::inverse(orientation) * direction;
         }
 
-        inline void set_inertia(const glm::mat3& inertia_tensor)
+        // set inertia tensor
+        inline void set_inertia(const glm::mat3& tensor)
         {
-            inertia = inertia_tensor, inverse_inertia = glm::inverse(inertia_tensor);
+            inertia = tensor, inverse_inertia = glm::inverse(tensor);
         }
         
         // force vector in world space
@@ -273,20 +272,25 @@ namespace phi {
             return m_force;
         }
 
+        // get forward direction in world space
         inline glm::vec3 forward() const {
             return transform_direction(phi::FORWARD);
         }
 
+        // get up direction in world space
         inline glm::vec3 up() const {
             return transform_direction(phi::UP);
         }
 
+        // get rigth direction in world space
         inline glm::vec3 right() const {
             return transform_direction(phi::RIGHT);
         }
 
         void update(Seconds dt)
         {
+            if (!active) return;
+
             glm::vec3 acceleration = m_force / mass;
 
             if (apply_gravity)

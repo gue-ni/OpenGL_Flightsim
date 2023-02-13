@@ -25,6 +25,7 @@ namespace collisions {
         }
     };
 
+    // bounding sphere
     struct Sphere {
         glm::vec3 center;
         float radius;
@@ -43,10 +44,10 @@ namespace collisions {
 
     constexpr bool collision(const Sphere& a, const Sphere& b)
     {
-        return (a.radius + b.radius) >= glm::length(a.center - a.center);
+        return glm::length(a.center - a.center) < (a.radius + b.radius);
     }
 
-    constexpr AABB update_with_orientation(const AABB& a, glm::quat orientation)
+    constexpr AABB update_with_orientation(const AABB& aabb, glm::quat orientation)
     {
         return {};
     }

@@ -29,7 +29,7 @@ struct Airfoil
             printf("alpha = %f, index = %d, size = %d\n", alpha, index, (int)data.size());
             assert(false);
         }
-        return { data[index].cl, data[index].cd };
+        return { data[index].cl, data[index].Kd };
     }
 };
 
@@ -191,35 +191,75 @@ struct Aircraft
     }
 };
 
-void fly_towards(Aircraft& aircraft, const glm::vec3& target) 
-{
-    auto& rb = aircraft.rigid_body;
-    auto& joystick = aircraft.joystick;
-    auto position = rb.position;
-    auto target_direction = glm::normalize(rb.inverse_transform_direction(target - rb.position));
+namespace ai {
 
-#if 1
-    const auto factor = glm::vec3(2.0f, 2.0f, 2.0f);
+    template<typename T>
+    struct PID {
+        T p{}, i{}, d{};
+        const T Kp, Ki, Kd;
 
-    // roll
-    joystick.x = target_direction.z; 
-    // yaw
-    joystick.y = target_direction.z; 
-    // pitch
-    joystick.z = target_direction.y;
+        PID(T kp, T ki, T kd)
+            : Kp(kp), Ki(ki), Kd(kd)
+        {}
 
-    joystick = glm::clamp(joystick * factor, glm::vec3(-1.0f), glm::vec3(1.0f));
-#endif
-} 
+        T calculate(T error, float dt)
+        {
+            float previous_error = p;
+            p = error;
+            i += p * dt;
+            d = (p - previous_error) / dt;
+            return p * Kp + i * Ki + d * Kd;
+        }
+    };
 
-glm::vec3 intercept_point(
-    const glm::vec3& position, const glm::vec3& velocity, 
-    const glm::vec3& target_position, const glm::vec3& target_velocity)
-{
-    auto velocity_delta = target_velocity - velocity;
-    auto position_delta = target_position - position;
-    auto time_to_intercept = glm::length(position_delta) / glm::length(velocity_delta);
-    return target_position + target_velocity * time_to_intercept;
-}
+    struct Pilot {
+        PID<float> pitch_controller;
+        PID<float> roll_controller;
+        PID<float> yaw_controller;
 
+        Pilot() : 
+            pitch_controller(5.0f, 0.0f, 5.0f),
+            roll_controller(3.0f, 0.0f, 0.0f),
+            yaw_controller(3.0f, 0.0f, 0.0f)
+        {}
 
+        void fly_towards(Aircraft& aircraft, const glm::vec3& target, float dt)
+        {
+            auto& rb = aircraft.rigid_body;
+            auto& joystick = aircraft.joystick;
+            auto position = rb.position;
+            auto direction = glm::normalize(rb.inverse_transform_direction(target - rb.position));
+
+            const auto factor = glm::vec3(1.0f, 1.0f, 5.0f);
+
+            // roll
+            //joystick.x = direction.z;
+            joystick.x = roll_controller.calculate(direction.z, dt);
+
+            // yaw
+            //joystick.y = direction.z;
+            joystick.y = yaw_controller.calculate(direction.z, dt);
+
+            // pitch
+            //joystick.z = direction.y;
+            joystick.z = pitch_controller.calculate(direction.y, dt);
+
+            auto tmp = joystick * factor;
+            std::cout << tmp << std::endl;
+
+            joystick = glm::clamp(tmp, glm::vec3(-1.0f), glm::vec3(1.0f));
+        }
+    };
+
+    
+
+    glm::vec3 intercept_point(
+        const glm::vec3& position, const glm::vec3& velocity,
+        const glm::vec3& target_position, const glm::vec3& target_velocity)
+    {
+        auto velocity_delta = target_velocity - velocity;
+        auto position_delta = target_position - position;
+        auto time_to_intercept = glm::length(position_delta) / glm::length(velocity_delta);
+        return target_position + target_velocity * time_to_intercept;
+    }
+};

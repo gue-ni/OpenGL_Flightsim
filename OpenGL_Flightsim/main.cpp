@@ -238,35 +238,39 @@ int main(void)
 
     std::vector<phi::inertia::Element> elements = {
       phi::inertia::cube_element({-0.5f,  0.0f, -2.7f}, {6.96f, 0.10f, 3.50f}, mass * 0.25f),               // left wing
-      phi::inertia::cube_element({ 0.0f,  0.0f, -2.0f}, {3.80f, 0.10f, 1.26f}, mass * 0.05f),               // left aileron
-      phi::inertia::cube_element({ 0.0f,  0.0f,  2.0f}, {3.80f, 0.10f, 1.26f}, mass * 0.05f),               // right aileron
+      phi::inertia::cube_element({-1.0f,  0.0f, -2.0f}, {3.80f, 0.10f, 1.26f}, mass * 0.05f),               // left aileron
+      phi::inertia::cube_element({-1.0f,  0.0f,  2.0f}, {3.80f, 0.10f, 1.26f}, mass * 0.05f),               // right aileron
       phi::inertia::cube_element({-0.5f,  0.0f,  2.7f}, {6.96f, 0.10f, 3.50f}, mass * 0.25f),               // right wing
       phi::inertia::cube_element({-6.6f, -0.1f,  0.0f}, {6.54f, 0.10f, 2.70f}, mass * 0.2f),                // elevator
       phi::inertia::cube_element({-6.6f,  0.0f,  0.0f}, {5.31f, 3.10f, 0.10f}, mass * 0.2f),                // rudder
     };
 
+#if 0
     auto inertia = phi::inertia::tensor({100000.0f, 400000.0f, 500000.0f}); 
-    auto inertia_tensor = phi::inertia::tensor(elements, true);
+#else
+    auto inertia = phi::inertia::tensor(elements, true);
+#endif
 
     std::cout << inertia << std::endl;
-    std::cout << inertia_tensor << std::endl;
 
     std::vector<Wing> wings = {
-      Wing({-0.5f,   0.0f, -2.7f}, 6.96f, 3.50f, &NACA_2412),              // left wing
-      Wing({ 0.0f,   0.0f, -2.0f},  3.80f, 1.26f, &NACA_0012),              // left aileron
-      Wing({ 0.0f,   0.0f,  2.0f},  3.80f, 1.26f, &NACA_0012),              // right aileron
-      Wing({-0.5f,   0.0f,  2.7f}, 6.96f, 3.50f, &NACA_2412),              // right wing
-      Wing({-6.6f, -0.1f, 0.0f},  6.54f, 2.70f, &NACA_0012),              // elevator
-      Wing({-6.6f,  0.0f,  0.0f},  5.31f, 3.10f, &NACA_0012, phi::RIGHT),  // rudder
+      Wing({-0.5f,   0.0f, -2.7f}, 6.96f, 3.50f, &NACA_2412),               // left wing
+      Wing({-1.0f,   0.0f, -2.0f},  3.80f, 1.26f, &NACA_0012),              // left aileron
+      Wing({-1.0f,   0.0f,  2.0f},  3.80f, 1.26f, &NACA_0012),              // right aileron
+      Wing({-0.5f,   0.0f,  2.7f}, 6.96f, 3.50f, &NACA_2412),               // right wing
+      Wing({-6.6f, -0.1f, 0.0f},  6.54f, 2.70f, &NACA_0012),                // elevator
+      Wing({-6.6f,  0.0f,  0.0f},  5.31f, 3.10f, &NACA_0012, phi::RIGHT),   // rudder
     };
 
-    Aircraft player_aircraft(mass, thrust, inertia_tensor, wings);
+    Aircraft player_aircraft(mass, thrust, inertia, wings);
     player_aircraft.rigid_body.position = glm::vec3(0.0f, 2000.0f, 0.0f);
     player_aircraft.rigid_body.velocity = glm::vec3(phi::units::meter_per_second(600.0f), 0.0f, 0.0f);
 
-    Aircraft npc_aircraft(mass, thrust, inertia_tensor, wings);
+    Aircraft npc_aircraft(mass, thrust, inertia, wings);
     npc_aircraft.rigid_body.position = glm::vec3(100.0f, 2050.0f, 10.0f);
     npc_aircraft.rigid_body.velocity = glm::vec3(phi::units::meter_per_second(600.0f), 0.0f, 0.0f);
+
+    ai::Pilot ai;
 
     gfx::Camera camera(glm::radians(45.0f), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 1.0f, 50000.0f);
     camera.set_position({0, 1, 0});
@@ -365,19 +369,22 @@ int main(void)
 
         get_keyboard_state(joystick, dt);
 
-        player_aircraft.joystick = glm::vec3((joystick.roll), joystick.yaw, joystick.pitch);
+        player_aircraft.joystick = glm::vec3(joystick.roll, joystick.yaw, joystick.pitch);
         player_aircraft.engine.throttle = joystick.throttle;
         
         if (!paused)
         {
-#if 1
-            auto ip = intercept_point(
+#if 0
+            auto point = ai::intercept_point(
                 player_aircraft.rigid_body.position, player_aircraft.rigid_body.velocity, 
                 npc_aircraft.rigid_body.position, npc_aircraft.rigid_body.velocity
             );
-            fly_towards(player_aircraft, ip);
+
+            //std::cout << npc_aircraft.rigid_body.position << ", " << point << std::endl;
+
+            ai.fly_towards(player_aircraft, point, dt);
 #else
-            fly_towards(player_aircraft, npc_aircraft.rigid_body.position);
+            ai.fly_towards(player_aircraft, npc_aircraft.rigid_body.position, dt);
 #endif
             player_aircraft.update(dt);
             npc_aircraft.update(dt);
