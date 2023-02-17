@@ -170,19 +170,22 @@ namespace gfx {
         virtual void draw_self(RenderContext& context);
 
         void set_scale(const glm::vec3& scale); 
-        void set_rotation(const glm::vec3& rot);
-        void rotate_by(const glm::vec3& rot);
-        void set_rotation_quaternion(const glm::quat& quat);
-        void set_position(const glm::vec3& pos);
+        void set_rotation(const glm::vec3& rotation);
+        void rotate_by(const glm::vec3& rotation);
+        void set_rotation_quaternion(const glm::quat& rotation);
+        void set_position(const glm::vec3& position);
+        void set_transform(const Object3D& transform);
 
         glm::vec3 get_scale() const;
         glm::vec3 get_rotation() const;
         glm::quat get_rotation_quaternion() const;
         glm::vec3 get_position() const;
+        glm::quat get_world_rotation_quaternion() const;
+        glm::vec3 get_world_position() const;
+
 
         virtual Object3D::Type get_type() const;
 
-        glm::vec3 get_world_position() const;
         void override_transform(const glm::mat4& matrix);
         void update_world_matrix(bool dirty_parent);
         glm::mat4 get_local_transform() const;

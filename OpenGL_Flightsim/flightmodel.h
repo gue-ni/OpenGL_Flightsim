@@ -22,7 +22,7 @@ struct Airfoil
 
     std::tuple<float, float> sample(float alpha) const
     {
-        int index = static_cast<int>(phi::utils::scale(alpha, min, max, 0, data.size() - 1));
+        int index = static_cast<int>(phi::utils::scale(alpha, min, max, 0.0f, static_cast<float>(data.size() - 1)));
         index = glm::clamp(index, 0, static_cast<int>(data.size() - 1U));
         if (!(0 <= index && index < data.size()))
         {

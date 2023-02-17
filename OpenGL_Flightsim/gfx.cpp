@@ -255,6 +255,13 @@ namespace gfx {
         m_position = pos; m_dirty_dof = true;
     }
 
+    void Object3D::set_transform(const Object3D& transform)
+    {
+        set_scale(transform.get_scale());
+        set_position(transform.get_position());
+        set_rotation(transform.get_rotation());
+    }
+
     void Object3D::set_rotation(const glm::vec3& rot)
     {
         m_rotation = glm::quat(rot); m_dirty_dof = true;
@@ -324,10 +331,17 @@ namespace gfx {
         return (*this);
     }
 
+    glm::quat Object3D::get_world_rotation_quaternion() const
+    {
+        if (parent == nullptr)
+            return get_rotation_quaternion();
+        else
+            return parent->get_world_rotation_quaternion() * m_rotation;
+    }
+
     glm::vec3 Object3D::get_world_position() const
     {
-        auto world = transform * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-        return glm::vec3(world.x, world.y, world.z);
+        return glm::vec3(transform * glm::vec4(glm::vec3(0.0f), 1.0f));
     }
 
     Object3D::Type Object3D::get_type() const

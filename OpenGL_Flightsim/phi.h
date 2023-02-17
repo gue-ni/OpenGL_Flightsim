@@ -124,12 +124,14 @@ namespace phi {
 
     namespace utils {
 
-        constexpr inline float scale(float input, float in_min, float in_max, float out_min, float out_max)
+        template <typename T>
+        constexpr inline T scale(T input, T in_min, T in_max, T out_min, T out_max)
         {
             return (input - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
         }
     
-        constexpr inline float lerp(float a, float b, float t)
+        template <typename T>
+        constexpr inline T lerp(T a, T b, float t)
         {
             return a + t * (b - a);
         }

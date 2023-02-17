@@ -19,8 +19,8 @@ using std::make_shared;
 using std::cout;
 using std::endl;
 
-constexpr int SCREEN_WIDTH  = 640;
-constexpr int SCREEN_HEIGHT = 480;
+constexpr int SCREEN_WIDTH  = 800;
+constexpr int SCREEN_HEIGHT = 600;
 
 struct Joystick {
     int num_axis{0}, num_hats{0}, num_buttons{0};
@@ -272,10 +272,15 @@ int main(void)
 
     ai::Pilot ai;
 
+    gfx::Object3D camera_transform;
+    camera_transform.set_position({-15.0f, 1, 0});
+    camera_transform.set_rotation({0, glm::radians(-90.0f), 0.0f});
+    aircraft_transform.add(&camera_transform);
+
     gfx::Camera camera(glm::radians(45.0f), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 1.0f, 50000.0f);
-    camera.set_position({0, 1, 0});
+    scene.add(&camera);
+    camera.set_position(player_aircraft.rigid_body.position);
     camera.set_rotation({0, glm::radians(-90.0f), 0.0f});
-    aircraft_transform.add(&camera);
 
     gfx::OrbitController controller(20.0f);
 
@@ -384,7 +389,7 @@ int main(void)
 
             ai.fly_towards(player_aircraft, point, dt);
 #else
-            ai.fly_towards(player_aircraft, npc_aircraft.rigid_body.position, dt);
+            //ai.fly_towards(player_aircraft, npc_aircraft.rigid_body.position, dt);
 #endif
             player_aircraft.update(dt);
             npc_aircraft.update(dt);
@@ -404,8 +409,13 @@ int main(void)
         }
         else
         {
-            //camera.set_position({ -15.0f, 0.0f, 0.0f });
-            camera.set_position({ -15.0f, 3.0f + player_aircraft.rigid_body.angular_velocity.z * 1.0f, 0.0f });
+            auto& rb = player_aircraft.rigid_body;
+            camera.set_position(glm::mix(camera.get_position(), rb.position + rb.up() * 1.0f, dt * 5.0f));
+#if 1
+            camera.set_rotation_quaternion(glm::mix(camera.get_rotation_quaternion(), camera_transform.get_world_rotation_quaternion(), dt * 5.0f));
+#else
+            camera.look_at(player_aircraft.rigid_body.position);
+#endif
             cross.visible = fpm.visible = true;
         }
         renderer.render(camera, scene);
