@@ -410,7 +410,7 @@ int main(void)
         else
         {
             auto& rb = player_aircraft.rigid_body;
-            camera.set_position(glm::mix(camera.get_position(), rb.position + rb.up() * 3.0f, dt * 5.0f));
+            camera.set_position(glm::mix(camera.get_position(), rb.position + rb.up() * 3.0f, dt * 8.0f));
 #if 1
             camera.set_rotation_quaternion(glm::mix(camera.get_rotation_quaternion(), camera_transform.get_world_rotation_quaternion(), dt * 5.0f));
 #else
