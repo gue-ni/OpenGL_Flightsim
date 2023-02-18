@@ -2,7 +2,10 @@
 
 You can read an article about how it works [here](https://www.jakobmaier.at/posts/flight-simulation/). There is also a compiled demo available, please let me know if the executable does not work.
 
-https://user-images.githubusercontent.com/45669207/219897820-c5e0866a-f0c6-4f9d-b425-e2d6f9729362.mp4
+
+https://user-images.githubusercontent.com/45669207/219898917-bd1352ec-f60e-4094-b07d-5d3253b4de5a.mp4
+
+
 
 ## Controls
 
