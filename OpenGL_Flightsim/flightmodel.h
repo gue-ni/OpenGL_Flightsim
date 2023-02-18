@@ -177,7 +177,7 @@ struct Aircraft
         if ((log_timer += dt) > 0.5f)
         {
             log_timer = 0;
-#if 1
+#if 0
             printf(
                 "%.2f km/h, thr: %.2f, alt: %.2f m\n", 
                 phi::units::kilometer_per_hour(glm::length(rigid_body.velocity)),

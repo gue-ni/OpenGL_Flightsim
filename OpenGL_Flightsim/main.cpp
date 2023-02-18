@@ -374,7 +374,9 @@ int main(void)
 
         get_keyboard_state(joystick, dt);
 
-        player_aircraft.joystick = glm::vec3(joystick.roll, joystick.yaw, joystick.pitch);
+        //player_aircraft.joystick = glm::vec3(joystick.roll, joystick.yaw, joystick.pitch);
+        std::cout << player_aircraft.joystick << std::endl;
+        player_aircraft.joystick = glm::vec3(joystick.roll, 0.0f, joystick.pitch);
         player_aircraft.engine.throttle = joystick.throttle;
         
         if (!paused)
@@ -439,7 +441,7 @@ inline float center(float value, float factor, float dt)
 
 void get_keyboard_state(Joystick& joystick, phi::Seconds dt)
 {
-    const glm::vec3 factor = {3.0f, 3.0f, 3.0f}; // roll, yaw, pitch
+    const glm::vec3 factor = {3.0f, 3.0f, 1.0f}; // roll, yaw, pitch
     const uint8_t* key_states = SDL_GetKeyboardState(NULL);
 
     if (key_states[SDL_SCANCODE_A])
