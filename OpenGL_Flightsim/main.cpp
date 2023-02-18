@@ -172,8 +172,6 @@ int main(void)
     std::vector<float> fuselage_vertices;
     std::vector<float> prop_vertices;
 
-    gfx::load_obj("assets/models/cube.obj", cube_vertices);
-    gfx::load_obj("assets/models/icosphere.obj", ico_vertices);
 #if 0
     gfx::load_obj("assets/models/cessna/fuselage.obj", fuselage_vertices);
 #else
@@ -183,16 +181,8 @@ int main(void)
 
     gfx::Renderer renderer(RESOLUTION.x, RESOLUTION.y);
 
-    auto blue = make_shared<gfx::Phong>(gfx::rgb(0, 0, 255));
     auto grey = make_shared<gfx::Phong>(glm::vec3(0.5f));
-    auto green = make_shared<gfx::Phong>(gfx::rgb(0, 255, 0));
     auto colors = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/textures/colorpalette.png"));
-    auto test = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/textures/uv-test.png"));
-    auto grass = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/textures/grass.jpg"));
-    auto container = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/textures/container.jpg"));
-    auto cube_geo = std::make_shared<gfx::Geometry>(cube_vertices_2, gfx::Geometry::POS_NORM_UV);
-    auto ico_geo = std::make_shared<gfx::Geometry>(ico_vertices, gfx::Geometry::POS_NORM_UV);
-    auto triangle = std::make_shared<gfx::Geometry>(triangle_vertices, gfx::Geometry::POS_NORM_UV);
 
     gfx::Object3D scene;
 
@@ -226,18 +216,14 @@ int main(void)
     auto fg = std::make_shared<gfx::Geometry>(fuselage_vertices, gfx::Geometry::POS_NORM_UV);
     auto pg = std::make_shared<gfx::Geometry>(prop_vertices, gfx::Geometry::POS_NORM_UV);
     gfx::Mesh fuselage(fg, colors);
-    gfx::Mesh prop(pg, grey);
     aircraft_transform.add(&fuselage);
-    //aircraft_transform.add(&prop);
 #endif
 
 #if 1
     gfx::Object3D npc_aircraft_transform;
     scene.add(&npc_aircraft_transform);
     gfx::Mesh fuselage2(fg, colors);
-    gfx::Mesh prop2(pg, grey);
     npc_aircraft_transform.add(&fuselage2);
-    //npc_aircraft_transform.add(&prop2);
 #endif
 
 #if 0
@@ -411,7 +397,6 @@ int main(void)
                 }
                 break;
             }
-                
             }
         }
 
@@ -440,7 +425,6 @@ int main(void)
             apply_to_object3d(npc_aircraft.rigid_body, npc_aircraft_transform);
         }
 
-        prop.rotate_by({0.1f, 0.0f, 0.0f});
         fpm.set_position(glm::normalize(player_aircraft.rigid_body.get_body_velocity()) * (projection_distance + 1));
        
         if (orbit)

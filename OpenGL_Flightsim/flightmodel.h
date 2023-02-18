@@ -43,7 +43,7 @@ float air_density(float altitude, float sea_level_pressure, float temperature)
 
 struct Engine : public phi::ForceEffector
 {   
-    float throttle = 0.1f;    
+    float throttle = 0.3f;    
     float thrust = 10000.0f; 
     float horsepower = 1000.0f;
     float rpm = 2400.0f;
