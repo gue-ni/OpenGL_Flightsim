@@ -208,15 +208,6 @@ int main(void)
     aircraft_transform.add(&prop);
 #endif
 
-#if 1
-    gfx::Object3D npc_aircraft_transform;
-    scene.add(&npc_aircraft_transform);
-    gfx::Mesh fuselage2(fg, colors);
-    gfx::Mesh prop2(pg, grey);
-    npc_aircraft_transform.add(&fuselage2);
-    npc_aircraft_transform.add(&prop2);
-#endif
-
 #if 0
     gfx::Mesh cube(cube_geo, container);
     transform.add(&cube);
@@ -266,12 +257,6 @@ int main(void)
     Aircraft player_aircraft(mass, thrust, inertia, wings);
     player_aircraft.rigid_body.position = glm::vec3(0.0f, 2000.0f, 0.0f);
     player_aircraft.rigid_body.velocity = glm::vec3(phi::units::meter_per_second(600.0f), 0.0f, 0.0f);
-
-    Aircraft npc_aircraft(mass, thrust, inertia, wings);
-    npc_aircraft.rigid_body.position = glm::vec3(100.0f, 2050.0f, 10.0f);
-    npc_aircraft.rigid_body.velocity = glm::vec3(phi::units::meter_per_second(600.0f), 0.0f, 0.0f);
-
-    ai::Pilot ai;
 
     gfx::Object3D camera_transform;
     camera_transform.set_position({-15.0f, 1, 0});
@@ -381,22 +366,9 @@ int main(void)
         
         if (!paused)
         {
-#if 0
-            auto point = ai::intercept_point(
-                player_aircraft.rigid_body.position, player_aircraft.rigid_body.velocity, 
-                npc_aircraft.rigid_body.position, npc_aircraft.rigid_body.velocity
-            );
-
-            ai.fly_towards(player_aircraft, point, dt);
-#else
-            //ai.fly_towards(player_aircraft, npc_aircraft.rigid_body.position, dt);
-#endif
             player_aircraft.update(dt);
-            npc_aircraft.update(dt);
-
             // solve_constraints(aircraft.rigid_body);
             apply_to_object3d(player_aircraft.rigid_body, aircraft_transform);
-            apply_to_object3d(npc_aircraft.rigid_body, npc_aircraft_transform);
         }
 
         prop.rotate_by({0.1f, 0.0f, 0.0f});
