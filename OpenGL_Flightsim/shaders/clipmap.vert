@@ -27,6 +27,11 @@ float scale(float input_val, float in_min, float in_max, float out_min, float ou
 
 float getHeight(vec2 uv)
 {
+    if (uv.x < 0 || uv.x > 1 || uv.y < 0 || uv.x > 1)
+    {
+        return 0.0;
+    }
+
     float height = texture(u_Heightmap, uv).r;
     float coarser = textureLod(u_Heightmap, uv, 1).r;
 

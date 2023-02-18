@@ -41,9 +41,9 @@ float air_density(float altitude, float sea_level_pressure, float temperature)
     return 0.0f;
 }
 
-struct Engine
+struct Engine : public phi::ForceEffector
 {   
-    float throttle = 0.1f;    
+    float throttle = 0.3f;    
     float thrust = 10000.0f; 
     float horsepower = 1000.0f;
     float rpm = 2400.0f;
@@ -51,7 +51,7 @@ struct Engine
 
     Engine(float thrust) : thrust(thrust) {}
     
-    void apply_forces(phi::RigidBody &rigid_body)
+    void apply_forces(phi::RigidBody &rigid_body) override
     {
 #if 1
         float force = thrust * throttle;
@@ -154,7 +154,7 @@ struct Aircraft
         float roll = joystick.x;
         float yaw = joystick.y;
         float pitch = joystick.z;
-        float max_elevator_deflection = 5.0f, max_aileron_deflection = 12.0f, max_rudder_deflection = 5.0f;
+        float max_elevator_deflection = 5.0f, max_aileron_deflection = 15.0f, max_rudder_deflection = 3.0f;
         float aileron_deflection = roll * max_aileron_deflection;
 
         la.deflection = +aileron_deflection;

@@ -129,6 +129,7 @@ xcopy /y /i /s $(ProjectDir)shaders  $(OutDir)shaders</Command>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\Users\jakob\Documents\libraries\glew-2.1.0\include;C:\Users\jakob\Documents\libraries\SDL2\include;C:\Users\jakob\Documents\libraries\glm-0.9.9.8\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <DebugInformationFormat>None</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

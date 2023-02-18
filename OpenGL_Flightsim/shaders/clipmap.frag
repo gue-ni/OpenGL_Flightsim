@@ -3,6 +3,7 @@
 out vec4 FragColor;
 
 uniform float u_Level;
+uniform vec3 u_Background;
 uniform sampler2D u_Heightmap;
 uniform sampler2D u_Normalmap;
 uniform sampler2D u_Texture;
@@ -34,13 +35,22 @@ void main()
 {
 	if (gl_FrontFacing)
 	{
-
-
 		vec3 lightDir = vec3(-2.0, 4.0, -1.0);
 		FragColor = vec4(calculateDirLight(lightDir, Normal, texture(u_Texture, TexCoord).rgb), 1.0);
 		//FragColor = vec4(Normal, 1.0);
 		//FragColor = texture(u_Texture, TexCoord);
 		//FragColor = vec4(Color, 1.0); 
+
+		// Calculate fog
+		float fog_maxdist = 40000.0;
+		float fog_mindist = 16000.0;
+		vec4 fog_color = vec4(u_Background, 1.0);
+
+		float dist = length(FragPos.xyz);
+		float fog_factor = (fog_maxdist - dist) / (fog_maxdist - fog_mindist);
+		fog_factor = clamp(fog_factor, 0.0, 1.0);
+
+		FragColor = mix(fog_color, FragColor, fog_factor);
 	}
 	else
 	{

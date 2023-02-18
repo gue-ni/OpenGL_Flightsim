@@ -374,7 +374,7 @@ namespace gfx {
     class Renderer {
     public:
         Renderer(unsigned int width, unsigned int height) 
-            : shadow_map(new ShadowMap(1024, 1024)),  m_width(width), m_height(height), background(rgb(18, 100, 132))
+            : shadow_map(new ShadowMap(1024, 1024)),  m_width(width), m_height(height), background(rgb(222, 253, 255))
         {
             const std::vector<float> quad_vertices = {
                 -1.0f,  1.0f, 0.0f, 0.0f, 1.0f, // top left
@@ -402,7 +402,7 @@ namespace gfx {
         }
 
         void render(Camera& camera, Object3D& scene);
-        glm::vec3 background = glm::vec3(1.0f, 0.0f, 1.0f);
+        glm::vec3 background;
     private:
         unsigned int m_width, m_height;
         ShadowMap* shadow_map = nullptr;
@@ -444,14 +444,14 @@ namespace gfx {
     class OrbitController {
     public:
         OrbitController(float radius)
-            : m_radius(radius)
+            : radius(radius)
         {}
 
+        float radius;
         void update(Object3D& object, const glm::vec3& center, float dt);
         void move_mouse(float x, float y);
 
     private:
-        float m_radius;
         float m_yaw		= 0.0f;
         float m_pitch	= 0.0f;
     };
