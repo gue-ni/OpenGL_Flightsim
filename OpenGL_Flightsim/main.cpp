@@ -19,10 +19,23 @@ using std::make_shared;
 using std::cout;
 using std::endl;
 
+std::string USAGE = R"(
+Usage: 
+
+P       pause game
+O       toggle camera
+I       toggle wireframe terrain
+WASD    control pitch and roll
+EQ      control yaw
+JK      control thrust
+ 
+)";
+
+
 #if 0
-constexpr glm::ivec2 SCREEN{ 640, 480 };
+constexpr glm::ivec2 RESOLUTION{ 640, 480 };
 #else
-constexpr glm::ivec2 SCREEN{ 1024, 728 };
+constexpr glm::ivec2 RESOLUTION{ 1024, 728 };
 #endif
 
 struct Joystick {
@@ -53,8 +66,8 @@ int main(void)
         "Flightsim", 
         SDL_WINDOWPOS_CENTERED, 
         SDL_WINDOWPOS_CENTERED, 
-        SCREEN.x, 
-        SCREEN.y, 
+        RESOLUTION.x, 
+        RESOLUTION.y, 
         SDL_WINDOW_OPENGL
     );
 
@@ -64,7 +77,10 @@ int main(void)
     if (GLEW_OK != glewInit())
         return -1;
 
-    glViewport(0, 0, SCREEN.x, SCREEN.y);
+    std::cout << glGetString(GL_VERSION) << std::endl;
+    std::cout << USAGE << std::endl;
+
+    glViewport(0, 0, RESOLUTION.x, RESOLUTION.y);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);
     glEnable(GL_BLEND);
@@ -97,6 +113,7 @@ int main(void)
         printf("found %d buttons, %d axis\n", joystick.num_buttons, joystick.num_axis);
     }
 
+    
 #if 1
     std::vector<float> cube_vertices_2 = {
         -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f,
@@ -160,7 +177,7 @@ int main(void)
     gfx::load_obj("assets/models/cessna/fuselage.obj", fuselage_vertices);
     gfx::load_obj("assets/models/cessna/Cessna_172_prop.obj", prop_vertices);
 
-    gfx::Renderer renderer(SCREEN.x, SCREEN.y);
+    gfx::Renderer renderer(RESOLUTION.x, RESOLUTION.y);
 
     auto blue = make_shared<gfx::Phong>(gfx::rgb(0, 0, 255));
     auto grey = make_shared<gfx::Phong>(glm::vec3(0.5f));
@@ -214,7 +231,7 @@ int main(void)
 #endif
 
 #if 1
-    float projection_distance = 500.0f;
+    float projection_distance = 1500.0f;
     float size = 0.3f;
     gfx::Billboard cross(make_shared<gfx::Texture>("assets/textures/sprites/cross.png"));
     cross.set_position(phi::FORWARD * projection_distance);
@@ -263,7 +280,7 @@ int main(void)
     camera_transform.set_rotation({0, glm::radians(-90.0f), 0.0f});
     aircraft_transform.add(&camera_transform);
 
-    gfx::Camera camera(glm::radians(45.0f), (float)SCREEN.x / (float)SCREEN.y, 1.0f, 50000.0f);
+    gfx::Camera camera(glm::radians(45.0f), (float)RESOLUTION.x / (float)RESOLUTION.y, 1.0f, 50000.0f);
     scene.add(&camera);
     camera.set_position(player_aircraft.rigid_body.position);
     camera.set_rotation({0, glm::radians(-90.0f), 0.0f});
@@ -275,7 +292,6 @@ int main(void)
     uint64_t last = 0, now = SDL_GetPerformanceCounter();
     phi::Seconds dt, timer = 0, log_timer = 0;
 
-    std::cout << glGetString(GL_VERSION) << std::endl;
 
     while (!quit)
     {
@@ -360,8 +376,8 @@ int main(void)
 
         get_keyboard_state(joystick, dt);
 
-        //player_aircraft.joystick = glm::vec3(joystick.roll, joystick.yaw, joystick.pitch);
-        player_aircraft.joystick = glm::vec3(joystick.roll, 0.0f, joystick.pitch);
+        player_aircraft.joystick = glm::vec3(joystick.roll, joystick.yaw, joystick.pitch);
+        //player_aircraft.joystick = glm::vec3(joystick.roll, 0.0f, joystick.pitch);
         player_aircraft.engine.throttle = joystick.throttle;
         
         if (!paused)
@@ -379,15 +395,11 @@ int main(void)
             controller.update(camera, player_aircraft.rigid_body.position, dt);
             cross.visible = fpm.visible = false;
         }
-        else
+        else if (!paused)
         {
             auto& rb = player_aircraft.rigid_body;
-            camera.set_position(glm::mix(camera.get_position(), rb.position + rb.up() * 1.0f, dt * 5.0f));
-#if 1
+            camera.set_position(glm::mix(camera.get_position(), rb.position + rb.up() * 3.0f, dt * 8.0f));
             camera.set_rotation_quaternion(glm::mix(camera.get_rotation_quaternion(), camera_transform.get_world_rotation_quaternion(), dt * 5.0f));
-#else
-            camera.look_at(player_aircraft.rigid_body.position);
-#endif
             cross.visible = fpm.visible = true;
         }
         renderer.render(camera, scene);
@@ -411,7 +423,7 @@ inline float center(float value, float factor, float dt)
 
 void get_keyboard_state(Joystick& joystick, phi::Seconds dt)
 {
-    const glm::vec3 factor = {3.0f, 3.0f, 1.0f}; // roll, yaw, pitch
+    const glm::vec3 factor = {3.0f, 0.5f, 1.0f}; // roll, yaw, pitch
     const uint8_t* key_states = SDL_GetKeyboardState(NULL);
 
     if (key_states[SDL_SCANCODE_A])
