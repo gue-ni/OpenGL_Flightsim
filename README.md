@@ -2,7 +2,7 @@
 
 You can read an article about how it works [here](https://www.jakobmaier.at/posts/flight-simulation/). There is also a compiled demo available, please let me know if the executable does not work.
 
-![](OpenGL_Flightsim/reference/screencap/Flightsim_2023-02-18_09-09-41.gif)
+https://user-images.githubusercontent.com/45669207/219897820-c5e0866a-f0c6-4f9d-b425-e2d6f9729362.mp4
 
 ## Controls
 
