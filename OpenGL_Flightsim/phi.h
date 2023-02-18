@@ -310,5 +310,9 @@ namespace phi {
             m_force = glm::vec3(0.0f), m_torque = glm::vec3(0.0f);
         }
     };
+
+    struct ForceEffector {
+        virtual void apply_forces(phi::RigidBody& rigid_body) = 0;
+    };
 };
 

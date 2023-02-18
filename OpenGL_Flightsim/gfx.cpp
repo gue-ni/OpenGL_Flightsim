@@ -553,7 +553,7 @@ namespace gfx {
         front.x = cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
         front.y = sin(glm::radians(m_pitch));
         front.z = sin(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
-        auto offset = glm::normalize(front) * m_radius;
+        auto offset = glm::normalize(front) * radius;
 
         const auto pos = center + offset;
         target.set_position(pos);
@@ -949,6 +949,7 @@ namespace gfx {
 
             auto u_View = glm::mat4(glm::mat3(context.camera->get_view_matrix()));
             shader->uniform("u_View", u_View);
+            shader->uniform("u_Model", transform);
             shader->uniform("u_Projection", context.camera->get_projection_matrix());
 
             m_geometry->bind();

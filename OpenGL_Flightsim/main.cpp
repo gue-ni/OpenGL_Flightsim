@@ -186,7 +186,7 @@ int main(void)
     auto blue = make_shared<gfx::Phong>(gfx::rgb(0, 0, 255));
     auto grey = make_shared<gfx::Phong>(glm::vec3(0.5f));
     auto green = make_shared<gfx::Phong>(gfx::rgb(0, 255, 0));
-    auto colors = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/textures/colors.png"));
+    auto colors = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/textures/colorpalette.png"));
     auto test = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/textures/uv-test.png"));
     auto grass = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/textures/grass.jpg"));
     auto container = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/textures/container.jpg"));
@@ -196,7 +196,7 @@ int main(void)
 
     gfx::Object3D scene;
 
-#if 0
+#if 1
     gfx::Skybox skybox({
         "assets/textures/skybox2/right.jpg",
         "assets/textures/skybox2/left.jpg",
@@ -205,6 +205,7 @@ int main(void)
         "assets/textures/skybox2/front.jpg",
         "assets/textures/skybox2/back.jpg",
     });
+    skybox.set_scale(glm::vec3(3.0f));
     scene.add(&skybox);
 #endif
 #if 1
@@ -277,20 +278,20 @@ int main(void)
 #endif
 
     std::vector<Wing> wings = {
-      Wing({-0.5f,   0.0f, -2.7f}, 6.96f, 3.50f, &NACA_2412),               // left wing
-      Wing({-1.0f,   0.0f, -2.0f},  3.80f, 1.26f, &NACA_0012),              // left aileron
-      Wing({-1.0f,   0.0f,  2.0f},  3.80f, 1.26f, &NACA_0012),              // right aileron
-      Wing({-0.5f,   0.0f,  2.7f}, 6.96f, 3.50f, &NACA_2412),               // right wing
-      Wing({-6.6f, -0.1f, 0.0f},  6.54f, 2.70f, &NACA_0012),                // elevator
-      Wing({-6.6f,  0.0f,  0.0f},  5.31f, 3.10f, &NACA_0012, phi::RIGHT),   // rudder
+      Wing({-0.5f,   0.0f, -2.7f},  6.96f, 3.50f, &NACA_2412),                // left wing
+      Wing({-1.0f,   0.0f, -2.0f},  3.80f, 1.26f, &NACA_0012),                // left aileron
+      Wing({-1.0f,   0.0f,  2.0f},  3.80f, 1.26f, &NACA_0012),                // right aileron
+      Wing({-0.5f,   0.0f,  2.7f},  6.96f, 3.50f, &NACA_2412),                // right wing
+      Wing({-6.6f,  -0.1f,  0.0f},  6.54f, 2.70f, &NACA_0012),                // elevator
+      Wing({-6.6f,   0.0f,  0.0f},  5.31f, 3.10f, &NACA_0012, phi::RIGHT),    // rudder
     };
 
     Aircraft player_aircraft(mass, thrust, inertia, wings);
-    player_aircraft.rigid_body.position = glm::vec3(0.0f, 2000.0f, 0.0f);
+    player_aircraft.rigid_body.position = glm::vec3(-7000.0f, 2000.0f, 0.0f);
     player_aircraft.rigid_body.velocity = glm::vec3(phi::units::meter_per_second(600.0f), 0.0f, 0.0f);
 
     Aircraft npc_aircraft(mass, thrust, inertia, wings);
-    npc_aircraft.rigid_body.position = glm::vec3(100.0f, 2050.0f, 10.0f);
+    npc_aircraft.rigid_body.position = glm::vec3(-6900.0f, 2050.0f, 10.0f);
     npc_aircraft.rigid_body.velocity = glm::vec3(phi::units::meter_per_second(600.0f), 0.0f, 0.0f);
 
     ai::Pilot ai;
@@ -312,7 +313,6 @@ int main(void)
     uint64_t last = 0, now = SDL_GetPerformanceCounter();
     phi::Seconds dt, timer = 0, log_timer = 0;
 
-
     while (!quit)
     {
         // delta time in seconds
@@ -324,6 +324,13 @@ int main(void)
         if ((timer += dt) >= 1.0f)
         {
             timer = 0.0f;
+
+            printf(
+                "%.2f km/h, thr: %.2f, alt: %.2f m\n", 
+                phi::units::kilometer_per_hour(glm::length(player_aircraft.rigid_body.velocity)),
+                player_aircraft.engine.throttle,
+                player_aircraft.rigid_body.position.y
+            );
         }
 
         while (SDL_PollEvent(&event) != 0)
@@ -368,10 +375,10 @@ int main(void)
                     switch (axis)
                     {
                     case 0:
-                        joystick.roll = Joystick::scale(value);
+                        joystick.roll = std::pow(Joystick::scale(value), 3.0f);
                         break;
                     case 1:
-                        joystick.pitch = Joystick::scale(value);
+                        joystick.pitch = std::pow(Joystick::scale(value), 3.0f);
                         break;
 
                     case 2:
@@ -383,21 +390,34 @@ int main(void)
                         break;
 
                     case 4:
-                        joystick.yaw = Joystick::scale(value);
+                        joystick.yaw = std::pow(Joystick::scale(value), 3.0f);
                         break;
+
                     default:
                         break;
                     }
                 }
                 break;
             }
+            case SDL_MOUSEWHEEL: {
+                if (event.wheel.y > 0)
+                {
+                    controller.radius *= 1.1f;
+
+                }
+                else if (event.wheel.y < 0)
+                {
+                    controller.radius *= 0.9f;
+                }
+                break;
+            }
+                
             }
         }
 
         get_keyboard_state(joystick, dt);
 
         player_aircraft.joystick = glm::vec3(joystick.roll, joystick.yaw, joystick.pitch);
-        //player_aircraft.joystick = glm::vec3(joystick.roll, 0.0f, joystick.pitch);
         player_aircraft.engine.throttle = joystick.throttle;
         
         if (!paused)
@@ -431,7 +451,7 @@ int main(void)
         else if (!paused)
         {
             auto& rb = player_aircraft.rigid_body;
-            camera.set_position(glm::mix(camera.get_position(), rb.position + rb.up() * 3.0f, dt * 5.0f));
+            camera.set_position(glm::mix(camera.get_position(), rb.position + rb.up() * 3.0f, dt * 7.0f));
             camera.set_rotation_quaternion(glm::mix(camera.get_rotation_quaternion(), camera_transform.get_world_rotation_quaternion(), dt * 5.0f));
             cross.visible = fpm.visible = true;
         }
@@ -467,7 +487,7 @@ void get_keyboard_state(Joystick& joystick, phi::Seconds dt)
     {
         joystick.roll = move(joystick.roll, -factor.x, dt);
     }
-    else
+    else if (joystick.num_axis <= 0)
     {
         joystick.roll = center(joystick.roll, factor.x, dt);
     }
@@ -480,7 +500,7 @@ void get_keyboard_state(Joystick& joystick, phi::Seconds dt)
     {
         joystick.pitch = move(joystick.pitch, -factor.z, dt);
     }
-    else
+    else if (joystick.num_axis <= 0)
     {
         joystick.pitch = center(joystick.pitch, factor.z, dt);
     }
@@ -493,7 +513,7 @@ void get_keyboard_state(Joystick& joystick, phi::Seconds dt)
     {
         joystick.yaw = move(joystick.yaw, +factor.x, dt);
     }
-    else
+    else if (joystick.num_axis <= 0)
     {
         joystick.yaw = center(joystick.yaw, factor.z, dt);
     }

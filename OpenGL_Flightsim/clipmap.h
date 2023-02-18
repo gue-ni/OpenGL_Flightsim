@@ -90,21 +90,21 @@ public:
 
     bool wireframe = false;
 
-    Clipmap(int l = 16, int segs = 32, float s = 2.0f) 
+    Clipmap(int levels = 16, int segs = 32, float segment_size = 2.0f) 
         : shader("shaders/clipmap"),
-        heightmap("assets/textures/heightmap_5.png"),
-        normalmap("assets/textures/normalmap_5.png"),
-        terrain("assets/textures/tmp.png"),
-        levels(l),
+        heightmap("assets/textures/heightmap_6.png"),
+        normalmap("assets/textures/normalmap_6.png"),
+        terrain("assets/textures/terrain_6.png"),
+        levels(levels),
         segments(segs),
-        segment_size(s)
+        segment_size(segment_size)
 #if 1
-        , tile(segs, segs, s),
-        col_fixup(2, segs, s),
-        row_fixup(segs, 2, s),
-        horizontal(2 * segs + 2, 1, s),
-        vertical(1, 2 * segs + 2, s),
-        center(2 * segs + 2, 2 * segs + 2, s)
+        , tile(segs, segs, segment_size),
+        col_fixup(2, segs, segment_size),
+        row_fixup(segs, 2, segment_size),
+        horizontal(2 * segs + 2, 1, segment_size),
+        vertical(1, 2 * segs + 2, segment_size),
+        center(2 * segs + 2, 2 * segs + 2, segment_size)
 #endif
     {}
 
@@ -149,6 +149,7 @@ public:
             shader.uniform("u_Heightmap", 2);
             shader.uniform("u_Normalmap", 3);
             shader.uniform("u_Texture", 4);
+            shader.uniform("u_Background", context.background_color);
 
 
             glEnable(GL_PRIMITIVE_RESTART);
