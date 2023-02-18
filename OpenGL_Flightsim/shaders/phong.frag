@@ -36,6 +36,7 @@ uniform Light u_Lights[MAX_LIGHTS];
 vec3 getColor()
 {
 	return u_UseTexture ? vec3(texture(u_Texture1, TexCoords)) : u_SolidObjectColor;
+	//return vec3(1, 0, 0);
 
 }
 
@@ -79,6 +80,7 @@ vec3 calculateDirLight(Light light)
 	}
 
     return (ambient + (1.0 - shadow) * (diffuse + specular)) * color;
+	//return color;
 }
 
 vec3 calculatePointLight(Light light)

@@ -660,18 +660,6 @@ namespace gfx {
                     tinyobj::real_t tx = attributes.texcoords[2 * idx.texcoord_index + 0];
                     tinyobj::real_t ty = attributes.texcoords[2 * idx.texcoord_index + 1];
 
-                    glm::vec3 position, normal;
-
-                    position.x = vx;
-                    position.y = vy;
-                    position.z = vz;
-
-                    normal.x = nx;
-                    normal.y = ny;
-                    normal.z = nz;
-
-                    //std::cout << position.x <<  ", " << position.y  << ", " << position.z << std::endl;
-
                     vertices.push_back(vx);
                     vertices.push_back(vy);
                     vertices.push_back(vz);

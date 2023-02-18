@@ -183,6 +183,7 @@ int main(void)
     auto grey = make_shared<gfx::Phong>(glm::vec3(0.5f));
     auto green = make_shared<gfx::Phong>(gfx::rgb(0, 255, 0));
     auto colors = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/textures/colors.png"));
+    auto test = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/textures/uv-test.png"));
     auto grass = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/textures/grass.jpg"));
     auto container = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/textures/container.jpg"));
     auto cube_geo = std::make_shared<gfx::Geometry>(cube_vertices_2, gfx::Geometry::POS_NORM_UV);
@@ -203,7 +204,7 @@ int main(void)
     scene.add(&skybox);
 #endif
 #if 1
-    gfx::Light sun(gfx::Light::DIRECTIONAL, gfx::rgb(154, 219, 172));
+    gfx::Light sun(gfx::Light::DIRECTIONAL, glm::vec3(1.0f));
     sun.set_position(glm::vec3(-2.0f, 4.0f, -1.0f));
     sun.cast_shadow = false;
     scene.add(&sun);
@@ -228,7 +229,7 @@ int main(void)
 #if 1
     gfx::Object3D npc_aircraft_transform;
     scene.add(&npc_aircraft_transform);
-    gfx::Mesh fuselage2(fg, colors);
+    gfx::Mesh fuselage2(fg, test);
     gfx::Mesh prop2(pg, grey);
     npc_aircraft_transform.add(&fuselage2);
     npc_aircraft_transform.add(&prop2);
