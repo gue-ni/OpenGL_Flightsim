@@ -150,6 +150,8 @@ xcopy /y /i /s $(ProjectDir)shaders  $(OutDir)shaders</Command>
   <ItemGroup>
     <None Include="shaders\basic.frag" />
     <None Include="shaders\basic.vert" />
+    <None Include="shaders\billboard.frag" />
+    <None Include="shaders\billboard.vert" />
     <None Include="shaders\clipmap.frag" />
     <None Include="shaders\clipmap.vert" />
     <None Include="shaders\depth.frag" />
@@ -157,10 +159,7 @@ xcopy /y /i /s $(ProjectDir)shaders  $(OutDir)shaders</Command>
     <None Include="shaders\phong.frag">
       <FileType>Document</FileType>
     </None>
-    <None Include="shaders\phong.vert">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </None>
+    <None Include="shaders\phong.vert" />
     <None Include="shaders\screen.frag" />
     <None Include="shaders\screen.vert" />
     <None Include="shaders\skybox.frag" />

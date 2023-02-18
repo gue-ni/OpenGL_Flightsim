@@ -25,7 +25,6 @@
   <ItemGroup>
     <None Include="shaders\basic.frag" />
     <None Include="shaders\basic.vert" />
-    <None Include="shaders\phong.vert" />
     <None Include="shaders\depth.vert" />
     <None Include="shaders\depth.frag" />
     <None Include="shaders\screen.frag" />
@@ -35,6 +34,9 @@
     <None Include="shaders\clipmap.frag" />
     <None Include="shaders\clipmap.vert" />
     <None Include="shaders\phong.frag" />
+    <None Include="shaders\billboard.frag" />
+    <None Include="shaders\billboard.vert" />
+    <None Include="shaders\phong.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="gfx.h">
