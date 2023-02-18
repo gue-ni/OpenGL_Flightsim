@@ -19,8 +19,11 @@ using std::make_shared;
 using std::cout;
 using std::endl;
 
-constexpr int SCREEN_WIDTH  = 800;
-constexpr int SCREEN_HEIGHT = 600;
+#if 1
+constexpr glm::ivec2 SCREEN{ 640, 480 };
+#else
+constexpr glm::ivec2 SCREEN{ 1024, 728 };
+#endif
 
 struct Joystick {
     int num_axis{0}, num_hats{0}, num_buttons{0};
@@ -50,8 +53,8 @@ int main(void)
         "Flightsim", 
         SDL_WINDOWPOS_CENTERED, 
         SDL_WINDOWPOS_CENTERED, 
-        SCREEN_WIDTH, 
-        SCREEN_HEIGHT, 
+        SCREEN.x, 
+        SCREEN.y, 
         SDL_WINDOW_OPENGL
     );
 
@@ -61,7 +64,7 @@ int main(void)
     if (GLEW_OK != glewInit())
         return -1;
 
-    glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    glViewport(0, 0, SCREEN.x, SCREEN.y);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);
     glEnable(GL_BLEND);
@@ -157,7 +160,7 @@ int main(void)
     gfx::load_obj("assets/models/cessna/fuselage.obj", fuselage_vertices);
     gfx::load_obj("assets/models/cessna/Cessna_172_prop.obj", prop_vertices);
 
-    gfx::Renderer renderer(SCREEN_WIDTH, SCREEN_HEIGHT);
+    gfx::Renderer renderer(SCREEN.x, SCREEN.y);
 
     auto blue = make_shared<gfx::Phong>(gfx::rgb(0, 0, 255));
     auto grey = make_shared<gfx::Phong>(glm::vec3(0.5f));
@@ -277,7 +280,7 @@ int main(void)
     camera_transform.set_rotation({0, glm::radians(-90.0f), 0.0f});
     aircraft_transform.add(&camera_transform);
 
-    gfx::Camera camera(glm::radians(45.0f), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 1.0f, 50000.0f);
+    gfx::Camera camera(glm::radians(45.0f), (float)SCREEN.x / (float)SCREEN.y, 1.0f, 50000.0f);
     scene.add(&camera);
     camera.set_position(player_aircraft.rigid_body.position);
     camera.set_rotation({0, glm::radians(-90.0f), 0.0f});
