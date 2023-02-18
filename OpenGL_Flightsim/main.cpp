@@ -174,7 +174,11 @@ int main(void)
 
     gfx::load_obj("assets/models/cube.obj", cube_vertices);
     gfx::load_obj("assets/models/icosphere.obj", ico_vertices);
+#if 0
     gfx::load_obj("assets/models/cessna/fuselage.obj", fuselage_vertices);
+#else
+    gfx::load_obj("assets/models/falcon.obj", fuselage_vertices);
+#endif
     gfx::load_obj("assets/models/cessna/Cessna_172_prop.obj", prop_vertices);
 
     gfx::Renderer renderer(RESOLUTION.x, RESOLUTION.y);
@@ -223,16 +227,16 @@ int main(void)
     gfx::Mesh fuselage(fg, colors);
     gfx::Mesh prop(pg, grey);
     aircraft_transform.add(&fuselage);
-    aircraft_transform.add(&prop);
+    //aircraft_transform.add(&prop);
 #endif
 
 #if 1
     gfx::Object3D npc_aircraft_transform;
     scene.add(&npc_aircraft_transform);
-    gfx::Mesh fuselage2(fg, test);
+    gfx::Mesh fuselage2(fg, colors);
     gfx::Mesh prop2(pg, grey);
     npc_aircraft_transform.add(&fuselage2);
-    npc_aircraft_transform.add(&prop2);
+    //npc_aircraft_transform.add(&prop2);
 #endif
 
 #if 0
@@ -427,7 +431,7 @@ int main(void)
         else if (!paused)
         {
             auto& rb = player_aircraft.rigid_body;
-            camera.set_position(glm::mix(camera.get_position(), rb.position + rb.up() * 3.0f, dt * 8.0f));
+            camera.set_position(glm::mix(camera.get_position(), rb.position + rb.up() * 3.0f, dt * 5.0f));
             camera.set_rotation_quaternion(glm::mix(camera.get_rotation_quaternion(), camera_transform.get_world_rotation_quaternion(), dt * 5.0f));
             cross.visible = fpm.visible = true;
         }
