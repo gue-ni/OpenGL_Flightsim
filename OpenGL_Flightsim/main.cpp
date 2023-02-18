@@ -19,6 +19,19 @@ using std::make_shared;
 using std::cout;
 using std::endl;
 
+std::string USAGE = R"(
+Usage: 
+
+P       pause game
+O       toggle camera
+I       toggle wireframe terrain
+WASD    control pitch and roll
+EQ      control yaw
+JK      control thrust
+ 
+)";
+
+
 #if 0
 constexpr glm::ivec2 RESOLUTION{ 640, 480 };
 #else
@@ -64,6 +77,9 @@ int main(void)
     if (GLEW_OK != glewInit())
         return -1;
 
+    std::cout << glGetString(GL_VERSION) << std::endl;
+    std::cout << USAGE << std::endl;
+
     glViewport(0, 0, RESOLUTION.x, RESOLUTION.y);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);
@@ -97,6 +113,7 @@ int main(void)
         printf("found %d buttons, %d axis\n", joystick.num_buttons, joystick.num_axis);
     }
 
+    
 #if 1
     std::vector<float> cube_vertices_2 = {
         -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f,
@@ -290,7 +307,6 @@ int main(void)
     uint64_t last = 0, now = SDL_GetPerformanceCounter();
     phi::Seconds dt, timer = 0, log_timer = 0;
 
-    std::cout << glGetString(GL_VERSION) << std::endl;
 
     while (!quit)
     {
@@ -375,8 +391,8 @@ int main(void)
 
         get_keyboard_state(joystick, dt);
 
-        //player_aircraft.joystick = glm::vec3(joystick.roll, joystick.yaw, joystick.pitch);
-        player_aircraft.joystick = glm::vec3(joystick.roll, 0.0f, joystick.pitch);
+        player_aircraft.joystick = glm::vec3(joystick.roll, joystick.yaw, joystick.pitch);
+        //player_aircraft.joystick = glm::vec3(joystick.roll, 0.0f, joystick.pitch);
         player_aircraft.engine.throttle = joystick.throttle;
         
         if (!paused)
@@ -407,15 +423,11 @@ int main(void)
             controller.update(camera, player_aircraft.rigid_body.position, dt);
             cross.visible = fpm.visible = false;
         }
-        else
+        else if (!paused)
         {
             auto& rb = player_aircraft.rigid_body;
             camera.set_position(glm::mix(camera.get_position(), rb.position + rb.up() * 3.0f, dt * 8.0f));
-#if 1
             camera.set_rotation_quaternion(glm::mix(camera.get_rotation_quaternion(), camera_transform.get_world_rotation_quaternion(), dt * 5.0f));
-#else
-            camera.look_at(player_aircraft.rigid_body.position);
-#endif
             cross.visible = fpm.visible = true;
         }
         renderer.render(camera, scene);
@@ -439,7 +451,7 @@ inline float center(float value, float factor, float dt)
 
 void get_keyboard_state(Joystick& joystick, phi::Seconds dt)
 {
-    const glm::vec3 factor = {3.0f, 3.0f, 1.0f}; // roll, yaw, pitch
+    const glm::vec3 factor = {3.0f, 0.5f, 1.0f}; // roll, yaw, pitch
     const uint8_t* key_states = SDL_GetKeyboardState(NULL);
 
     if (key_states[SDL_SCANCODE_A])
