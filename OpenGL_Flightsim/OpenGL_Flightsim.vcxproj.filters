@@ -34,6 +34,7 @@
     <None Include="shaders\skybox.vert" />
     <None Include="shaders\clipmap.frag" />
     <None Include="shaders\clipmap.vert" />
+    <None Include="shaders\phong.frag" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="gfx.h">
@@ -60,9 +61,6 @@
     <ClInclude Include="collisions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <CopyFileToFolders Include="shaders\phong.frag" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="assets\textures\container.jpg">

@@ -19,7 +19,7 @@ using std::make_shared;
 using std::cout;
 using std::endl;
 
-#if 1
+#if 0
 constexpr glm::ivec2 SCREEN{ 640, 480 };
 #else
 constexpr glm::ivec2 SCREEN{ 1024, 728 };
@@ -254,8 +254,6 @@ int main(void)
     auto inertia = phi::inertia::tensor(elements, true);
 #endif
 
-    std::cout << inertia << std::endl;
-
     std::vector<Wing> wings = {
       Wing({-0.5f,   0.0f, -2.7f}, 6.96f, 3.50f, &NACA_2412),               // left wing
       Wing({-1.0f,   0.0f, -2.0f},  3.80f, 1.26f, &NACA_0012),              // left aileron
@@ -378,7 +376,6 @@ int main(void)
         get_keyboard_state(joystick, dt);
 
         //player_aircraft.joystick = glm::vec3(joystick.roll, joystick.yaw, joystick.pitch);
-        std::cout << player_aircraft.joystick << std::endl;
         player_aircraft.joystick = glm::vec3(joystick.roll, 0.0f, joystick.pitch);
         player_aircraft.engine.throttle = joystick.throttle;
         
@@ -389,8 +386,6 @@ int main(void)
                 player_aircraft.rigid_body.position, player_aircraft.rigid_body.velocity, 
                 npc_aircraft.rigid_body.position, npc_aircraft.rigid_body.velocity
             );
-
-            //std::cout << npc_aircraft.rigid_body.position << ", " << point << std::endl;
 
             ai.fly_towards(player_aircraft, point, dt);
 #else
