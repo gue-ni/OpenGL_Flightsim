@@ -2,14 +2,11 @@
 
 You can read an article about how it works [here](https://www.jakobmaier.at/posts/flight-simulation/). There is also a compiled demo available, please let me know if the executable does not work.
 
-
-https://user-images.githubusercontent.com/45669207/219898917-bd1352ec-f60e-4094-b07d-5d3253b4de5a.mp4
-
-
+https://user-images.githubusercontent.com/45669207/219899026-6b996cd6-d09c-4e43-887d-31981ad71fb4.mp4
 
 ## Controls
 
-The demo supports input with a keyboard and a joystick. With a keyboard, use WASD to control pitch and roll and F and K to increase and decrease thrust. E and Q control the rudder. 
+The demo supports input with a keyboard and a joystick. With a keyboard, use WASD to control pitch and roll and F and K to increase and decrease thrust. E and Q control the rudder. You can use P to pause and O to toggle the camera.
 
 ## Build instructions (Windows)
 
