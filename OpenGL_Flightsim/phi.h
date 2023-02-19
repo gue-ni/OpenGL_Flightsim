@@ -262,6 +262,12 @@ namespace phi {
             m_torque += torque; 
         }
 
+        // get speed
+        inline float get_speed() const
+        {
+            return glm::length(velocity);
+        }
+
         // get torque in body space
         inline glm::vec3 get_torque() const
         {

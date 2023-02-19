@@ -235,7 +235,7 @@ int main(void)
 #endif
 
     const float mass = 10000.0f;
-    const float thrust = 50000.0f;
+    const float thrust = 30000.0f;
 
     std::vector<phi::inertia::Element> elements = {
       phi::inertia::cube_element({-0.5f,  0.0f, -2.7f}, {6.96f, 0.10f, 3.50f}, mass * 0.25f),               // left wing
@@ -406,7 +406,7 @@ int main(void)
         else if (!paused)
         {
             auto& rb = player_aircraft.rigid_body;
-            camera.set_position(glm::mix(camera.get_position(), rb.position + rb.up() * 3.0f, dt * 7.0f));
+            camera.set_position(glm::mix(camera.get_position(), rb.position + rb.up() * 5.0f, dt * 7.0f * rb.get_speed() * 0.005));
             camera.set_rotation_quaternion(glm::mix(camera.get_rotation_quaternion(), camera_transform.get_world_rotation_quaternion(), dt * 5.0f));
             cross.visible = fpm.visible = true;
         }

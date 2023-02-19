@@ -63,7 +63,7 @@ struct Engine : public phi::ForceEffector
     }
 };
 
-struct Wing
+struct Wing : public phi::ForceEffector
 {
     const float area{};
     const glm::vec3 position{};
