@@ -892,13 +892,13 @@ namespace gfx {
         glTexParameteri(target, pname, param);
     }
 
-    CubemapTexture::CubemapTexture(const std::vector<std::string>& paths)
+    CubemapTexture::CubemapTexture(const std::array<std::string, 6>& paths)
     {
         glGenTextures(1, &id);
         glBindTexture(GL_TEXTURE_CUBE_MAP, id);
 
         int width, height, channels;
-        for (int i = 0; i < paths.size(); i++)
+        for (int i = 0; i < 6; i++)
         {
             unsigned char* data = stbi_load(paths[i].c_str(), &width, &height, &channels, 0);
             if (data)
@@ -931,7 +931,7 @@ namespace gfx {
         glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
     }
 
-    Skybox::Skybox(const std::vector<std::string>& faces) 
+    Skybox::Skybox(const std::array<std::string, 6>& faces) 
         : 
         Mesh(make_cube_geometry(10.0f), 
         std::make_shared<SkyboxMaterial>(std::make_shared<CubemapTexture>(faces)))

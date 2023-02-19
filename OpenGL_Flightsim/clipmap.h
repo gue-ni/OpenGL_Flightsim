@@ -84,28 +84,27 @@ struct Block {
     }
 };
 
+const std::string path = "assets/textures/terrain/1/";
 
 class Clipmap : public gfx::Object3D {
 public:
 
     bool wireframe = false;
 
-    Clipmap(int levels = 16, int segs = 32, float segment_size = 2.0f) 
+    Clipmap(int levels = 16, int segments = 32, float segment_size = 2.0f) 
         : shader("shaders/clipmap"),
-        heightmap("assets/textures/heightmap_6.png"),
-        normalmap("assets/textures/normalmap_6.png"),
-        terrain("assets/textures/terrain_6.png"),
+        heightmap(path + "heightmap.png"),
+        normalmap(path + "normalmap.png"),
+        terrain(path + "terrain.png"),
         levels(levels),
-        segments(segs),
-        segment_size(segment_size)
-#if 1
-        , tile(segs, segs, segment_size),
-        col_fixup(2, segs, segment_size),
-        row_fixup(segs, 2, segment_size),
-        horizontal(2 * segs + 2, 1, segment_size),
-        vertical(1, 2 * segs + 2, segment_size),
-        center(2 * segs + 2, 2 * segs + 2, segment_size)
-#endif
+        segments(segments),
+        segment_size(segment_size), 
+        tile(segments, segments, segment_size),
+        col_fixup(2, segments, segment_size),
+        row_fixup(segments, 2, segment_size),
+        horizontal(2 * segments + 2, 1, segment_size),
+        vertical(1, 2 * segments + 2, segment_size),
+        center(2 * segments + 2, 2 * segments + 2, segment_size)
     {}
 
     glm::mat4 transform_matrix(const glm::vec2& position, float scale, float angle = 0)

@@ -176,9 +176,6 @@ xcopy /y /i /s $(ProjectDir)shaders  $(OutDir)shaders</Command>
     <ClInclude Include="lib\tiny_obj_loader.h" />
     <ClInclude Include="phi.h" />
   </ItemGroup>
-  <ItemGroup>
-    <Image Include="assets\textures\container.jpg" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

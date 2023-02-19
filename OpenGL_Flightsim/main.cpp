@@ -28,7 +28,6 @@ I       toggle wireframe terrain
 WASD    control pitch and roll
 EQ      control yaw
 JK      control thrust
- 
 )";
 
 
@@ -167,17 +166,13 @@ int main(void)
     };
 #endif
 
-    std::vector<float> ico_vertices;
-    std::vector<float> cube_vertices;
     std::vector<float> fuselage_vertices;
-    std::vector<float> prop_vertices;
 
 #if 0
     gfx::load_obj("assets/models/cessna/fuselage.obj", fuselage_vertices);
 #else
     gfx::load_obj("assets/models/falcon.obj", fuselage_vertices);
 #endif
-    gfx::load_obj("assets/models/cessna/Cessna_172_prop.obj", prop_vertices);
 
     gfx::Renderer renderer(RESOLUTION.x, RESOLUTION.y);
 
@@ -187,13 +182,14 @@ int main(void)
     gfx::Object3D scene;
 
 #if 1
+    const std::string skybox_path = "assets/textures/skybox/2/";
     gfx::Skybox skybox({
-        "assets/textures/skybox2/right.jpg",
-        "assets/textures/skybox2/left.jpg",
-        "assets/textures/skybox2/top.jpg",
-        "assets/textures/skybox2/bottom.jpg",
-        "assets/textures/skybox2/front.jpg",
-        "assets/textures/skybox2/back.jpg",
+        skybox_path + "right.jpg",
+        skybox_path + "left.jpg",
+        skybox_path + "top.jpg",
+        skybox_path + "bottom.jpg",
+        skybox_path + "front.jpg",
+        skybox_path + "back.jpg",
     });
     skybox.set_scale(glm::vec3(3.0f));
     scene.add(&skybox);
@@ -213,9 +209,8 @@ int main(void)
 #if 1
     gfx::Object3D aircraft_transform;
     scene.add(&aircraft_transform);
-    auto fg = std::make_shared<gfx::Geometry>(fuselage_vertices, gfx::Geometry::POS_NORM_UV);
-    auto pg = std::make_shared<gfx::Geometry>(prop_vertices, gfx::Geometry::POS_NORM_UV);
-    gfx::Mesh fuselage(fg, colors);
+    auto fuselage_geo = std::make_shared<gfx::Geometry>(fuselage_vertices, gfx::Geometry::POS_NORM_UV);
+    gfx::Mesh fuselage(fuselage_geo, colors);
     aircraft_transform.add(&fuselage);
 #endif
 

@@ -14,6 +14,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <array>
 #include <functional>
 #include <unordered_map>
 
@@ -112,7 +113,7 @@ namespace gfx {
     };
 
     struct CubemapTexture : public Texture {
-        CubemapTexture(const std::vector<std::string>& paths);
+        CubemapTexture(const std::array<std::string, 6>& paths);
         void bind(GLuint texture) const override;
         void unbind() const override;
     };
@@ -366,7 +367,7 @@ namespace gfx {
 
     class Skybox : public Mesh {
     public:
-        Skybox(const std::vector<std::string>& faces);
+        Skybox(const std::array<std::string, 6>& faces);
         void draw_self(RenderContext& context) override;
         Object3D& add(Object3D* child) = delete;
     };
