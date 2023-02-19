@@ -121,7 +121,7 @@ struct Wing : public phi::ForceEffector
 
         float air_density = phi::rho;
 
-        float tmp = 0.5f * phi::sq(speed) * air_density * area;
+        float tmp = 0.5f * std::pow(speed, 2.0f) * air_density * area;
         glm::vec3 lift = lift_direction * lift_coefficient * lift_multiplier * tmp;
         glm::vec3 drag = drag_direction * drag_coefficient * drag_multiplier * tmp;
 

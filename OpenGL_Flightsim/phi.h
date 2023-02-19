@@ -13,21 +13,21 @@ namespace phi {
     typedef float Degrees;
 
     // constants
-    constexpr float g           = 9.81f;    // gravity of earth, m/s^2
-    constexpr float rho         = 1.225f;   // air density, kg/m^3
-    constexpr float epsilon     = 1e-8f;
+    constexpr float g            = 9.81f;    // gravity of earth, m/s^2
+    constexpr float rho          = 1.224f;   // air density, kg/m^3
+    constexpr float epsilon      = 1e-8f;
 
     // directions in body space
-    constexpr glm::vec3 UP(0.0f, 1.0f, 0.0f);
-    constexpr glm::vec3 DOWN(0.0f, -1.0f, 0.0f);
-    constexpr glm::vec3 RIGHT(0.0f, 0.0f, 1.0f);
-    constexpr glm::vec3 LEFT(0.0f, 0.0f, -1.0f);
-    constexpr glm::vec3 FORWARD(1.0f, 0.0f, 0.0f);
-    constexpr glm::vec3 BACKWARD(-1.0f, 0.0f, 0.0f);
+    constexpr glm::vec3 UP       = { 0.0f,  1.0f,  0.0f };
+    constexpr glm::vec3 DOWN     = { 0.0f, -1.0f,  0.0f };
+    constexpr glm::vec3 RIGHT    = { 0.0f,  0.0f,  1.0f };
+    constexpr glm::vec3 LEFT     = { 0.0f,  0.0f, -1.0f };
+    constexpr glm::vec3 FORWARD  = { 1.0f,  0.0f,  0.0f };
+    constexpr glm::vec3 BACKWARD = {-1.0f,  0.0f,  0.0f };
 
-    constexpr glm::vec3 X_AXIS(1.0f, 0.0f, 0.0f);
-    constexpr glm::vec3 Y_AXIS(0.0f, 1.0f, 0.0f);
-    constexpr glm::vec3 Z_AXIS(0.0f, 0.0f, 1.0f);
+    constexpr glm::vec3 X_AXIS   = { 1.0f,  0.0f,  0.0f };
+    constexpr glm::vec3 Y_AXIS   = { 0.0f,  1.0f,  0.0f };
+    constexpr glm::vec3 Z_AXIS   = { 0.0f,  0.0f,  1.0f };
 
     template<typename T>
     constexpr inline T sq(T a)
@@ -208,6 +208,11 @@ namespace phi {
             return inverse_transform_direction(velocity) + glm::cross(angular_velocity, point);
         }
 
+        // get velocity in body space
+        inline glm::vec3 get_body_velocity() const {
+            return inverse_transform_direction(velocity);
+        }
+
         // force and point vectors are in body space 
         inline void add_force_at_point(const glm::vec3& force, const glm::vec3& point)
         {
@@ -219,11 +224,6 @@ namespace phi {
         inline glm::vec3 transform_direction(const glm::vec3& direction) const
         {
             return orientation * direction;
-        }
-
-        // get velocity in body space
-        inline glm::vec3 get_body_velocity() const {
-            return inverse_transform_direction(velocity);
         }
 
         // transform direction from world space to body space 
