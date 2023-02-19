@@ -32,6 +32,57 @@ void generate_mesh(std::vector<glm::vec3>& vertices, std::vector<unsigned int>& 
     }
 }
 
+struct Seam {
+    gfx::VertexBuffer vbo;
+    gfx::VertexArrayObject vao;
+    unsigned int index_count;
+
+    Seam(int columns, float size)
+    {
+        int rows = 1;
+        index_count = columns;
+
+        std::vector<glm::vec3> vertices;
+
+        int x;
+        for (x = 0; x < columns; x++)
+        {
+            vertices.push_back({ x * size,               0.0f, 0 * size });
+            vertices.push_back({ x * size + size/2.0f,   size, 0 * size });
+            vertices.push_back({ x * size + size,        0.0f, 0 * size});
+        }
+
+        vao.generate();
+        vbo.generate();
+
+        vao.bind();
+        vbo.buffer(&vertices[0], vertices.size() * sizeof(vertices[0]));
+
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+
+        vao.unbind();
+    }
+
+    void bind()
+    {
+        vao.bind();
+    }
+
+    void unbind()
+    {
+        vao.unbind();
+    }
+
+    void draw()
+    {
+        bind();
+        //glDrawElements(GL_TRIANGLE_STRIP, index_count, GL_UNSIGNED_INT, 0);
+        glDrawArrays(GL_TRIANGLES, 0, 3 * index_count);
+        unbind();
+    }
+};
+
 struct Block {
     gfx::VertexBuffer vbo;
     gfx::ElementBufferObject ebo;
@@ -91,20 +142,21 @@ public:
 
     bool wireframe = false;
 
-    Clipmap(int levels = 16, int segments = 32, float segment_size = 2.0f) 
+    Clipmap(int levels = 16, int segments = 32, float segment_size = 2.0f)
         : shader("shaders/clipmap"),
         heightmap(path + "heightmap.png"),
         normalmap(path + "normalmap.png"),
         terrain(path + "terrain.png"),
         levels(levels),
         segments(segments),
-        segment_size(segment_size), 
+        segment_size(segment_size),
         tile(segments, segments, segment_size),
         col_fixup(2, segments, segment_size),
         row_fixup(segments, 2, segment_size),
         horizontal(2 * segments + 2, 1, segment_size),
         vertical(1, 2 * segments + 2, segment_size),
-        center(2 * segments + 2, 2 * segments + 2, segment_size)
+        center(2 * segments + 2, 2 * segments + 2, segment_size),
+        seam_1(segments, segment_size)
     {}
 
     glm::mat4 transform_matrix(const glm::vec2& position, float scale, float angle = 0)
@@ -133,8 +185,7 @@ public:
         {
             auto camera_pos = context.camera->get_world_position();
             float height = camera_pos.y;
-            //printf("height = %f\n", height);
-            glm::vec2 camera_pos_xy = glm::vec2(camera_pos.x, camera_pos.z);
+            auto camera_pos_xy = glm::vec2(camera_pos.x, camera_pos.z);
 
 
             heightmap.bind(2);
@@ -142,13 +193,13 @@ public:
             terrain.bind(4);
 
             shader.bind();
-            shader.uniform("u_CameraPos", context.camera->get_world_position());
-            shader.uniform("u_View", context.camera->get_view_matrix());
-            shader.uniform("u_Projection", context.camera->get_projection_matrix());
-            shader.uniform("u_Heightmap", 2);
-            shader.uniform("u_Normalmap", 3);
-            shader.uniform("u_Texture", 4);
-            shader.uniform("u_Background", context.background_color);
+            shader.uniform("u_CameraPos",   context.camera->get_world_position());
+            shader.uniform("u_View",        context.camera->get_view_matrix());
+            shader.uniform("u_Projection",  context.camera->get_projection_matrix());
+            shader.uniform("u_Heightmap",   2);
+            shader.uniform("u_Normalmap",   3);
+            shader.uniform("u_Texture",     4);
+            shader.uniform("u_Background",  context.background_color);
 
 
             glEnable(GL_PRIMITIVE_RESTART);
@@ -179,7 +230,6 @@ public:
                     continue;
                 }
 #endif
-
 #if 1
                 if (l == min_level)
                 {
@@ -199,13 +249,16 @@ public:
                     shader.uniform("u_Model", transform_matrix(base + l_offset, scale));
                     horizontal.draw();
 
+
                     auto v_offset = glm::vec2(tile_size, tile_size);
                     if (diff.y == tile_size)
                     {
                         v_offset.y += (2 * segments + 1) * scaled_segment_size;
                     }
+
                     shader.uniform("u_Model", transform_matrix(base + v_offset, scale));
                     vertical.draw();
+
                 }
 #endif
 
@@ -215,17 +268,21 @@ public:
                     offset.y = 0;
                     for (int c = 0; c < cols; c++)
                     {
-                        if 
-                        (
-                            ((r == 0 || r == rows - 1) || 
-                            (c == 0 || c == cols - 1)) 
-                        )
+                        if (r == 0 || r == rows - 1 || c == 0 || c == cols - 1)
                         {
                             auto tile_pos = base + offset;
                             shader.uniform("u_Model", transform_matrix(tile_pos, scale));
 
                             if ((c != 2) && (r != 2))
                             {
+
+                                if (c == 0)
+                                {
+                                    shader.uniform("u_Flag", true);
+                                    seam_1.draw();
+                                    shader.uniform("u_Flag", false);
+                                }
+
                                 tile.draw();
                             }
                             else if(c == 2)
@@ -278,6 +335,7 @@ private:
     Block row_fixup; 
     Block horizontal;
     Block vertical;
+    Seam seam_1;
 #endif
 
     unsigned int index_count = 0;

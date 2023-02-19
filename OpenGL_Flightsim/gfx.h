@@ -100,9 +100,8 @@ namespace gfx {
         GLuint id = 0;
         Texture() : id(0) { glGenTextures(1, &id); }
         Texture(GLuint texture_id) : id(texture_id) {}
-        //Texture(const std::string& path);
-
-        Texture(const std::string& path);
+        //Texture(const std::string& path, bool flip_vertically = false);
+        Texture(const std::string& path, bool flip_vertically = false);
 
 
         ~Texture();
@@ -113,7 +112,7 @@ namespace gfx {
     };
 
     struct CubemapTexture : public Texture {
-        CubemapTexture(const std::array<std::string, 6>& paths);
+        CubemapTexture(const std::array<std::string, 6>& paths, bool flip_vertically = false);
         void bind(GLuint texture) const override;
         void unbind() const override;
     };

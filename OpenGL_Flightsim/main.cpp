@@ -171,13 +171,14 @@ int main(void)
 #if 0
     gfx::load_obj("assets/models/cessna/fuselage.obj", fuselage_vertices);
 #else
-    gfx::load_obj("assets/models/falcon.obj", fuselage_vertices);
+    gfx::load_obj("assets/models/falcon2.obj", fuselage_vertices);
 #endif
 
     gfx::Renderer renderer(RESOLUTION.x, RESOLUTION.y);
 
     auto grey = make_shared<gfx::Phong>(glm::vec3(0.5f));
     auto colors = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/textures/colorpalette.png"));
+    auto f16 = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/textures/f16_large.jpg", true));
 
     gfx::Object3D scene;
 
@@ -210,7 +211,7 @@ int main(void)
     gfx::Object3D aircraft_transform;
     scene.add(&aircraft_transform);
     auto fuselage_geo = std::make_shared<gfx::Geometry>(fuselage_vertices, gfx::Geometry::POS_NORM_UV);
-    gfx::Mesh fuselage(fuselage_geo, colors);
+    gfx::Mesh fuselage(fuselage_geo, f16);
     aircraft_transform.add(&fuselage);
 #endif
 
@@ -261,7 +262,7 @@ int main(void)
     };
 
     Aircraft player_aircraft(mass, thrust, inertia, wings);
-    player_aircraft.rigid_body.position = glm::vec3(-7000.0f, 2000.0f, 0.0f);
+    player_aircraft.rigid_body.position = glm::vec3(-7000.0f, 1000.0f, 0.0f);
     player_aircraft.rigid_body.velocity = glm::vec3(phi::units::meter_per_second(600.0f), 0.0f, 0.0f);
 
 

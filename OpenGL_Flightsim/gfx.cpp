@@ -570,6 +570,8 @@ namespace gfx {
 
         m_yaw	+= offset.x;
         m_pitch += offset.y;
+
+        m_pitch = glm::clamp(m_pitch, -89.0f, 89.0f);
     }
 
     void Phong::bind()
@@ -817,7 +819,7 @@ namespace gfx {
         return std::make_shared<Geometry>(vertices, Geometry::POS_NORM_UV);
     }
 
-    Texture::Texture(const std::string& path)
+    Texture::Texture(const std::string& path, bool flip_vertically)
     {
         glGenTextures(1, &id);
         glBindTexture(GL_TEXTURE_2D, id); 
@@ -831,6 +833,7 @@ namespace gfx {
         //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         int width, height, channels;
+        stbi_set_flip_vertically_on_load(flip_vertically);
         unsigned char* data = stbi_load(path.c_str(), &width, &height, &channels, 0);
 
         //printf("channels = %d\n", channels);
@@ -892,7 +895,7 @@ namespace gfx {
         glTexParameteri(target, pname, param);
     }
 
-    CubemapTexture::CubemapTexture(const std::array<std::string, 6>& paths)
+    CubemapTexture::CubemapTexture(const std::array<std::string, 6>& paths, bool flip_vertically)
     {
         glGenTextures(1, &id);
         glBindTexture(GL_TEXTURE_CUBE_MAP, id);
@@ -900,6 +903,7 @@ namespace gfx {
         int width, height, channels;
         for (int i = 0; i < 6; i++)
         {
+            stbi_set_flip_vertically_on_load(flip_vertically);
             unsigned char* data = stbi_load(paths[i].c_str(), &width, &height, &channels, 0);
             if (data)
             {
