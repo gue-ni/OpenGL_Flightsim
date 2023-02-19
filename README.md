@@ -1,8 +1,12 @@
 # OpenGL Flightsim
 
-You can read an article about how it works [here](https://www.jakobmaier.at/posts/flight-simulation/).
+You can read an article about how it works [here](https://www.jakobmaier.at/posts/flight-simulation/). There is also a compiled demo available, please let me know if the executable does not work.
 
-![](OpenGL_Flightsim/reference/screencap/Flightsim_2023-02-18_09-09-41.gif)
+https://user-images.githubusercontent.com/45669207/219900645-df832175-75a3-4521-bbed-368e9f299200.mp4
+
+## Controls
+
+The demo supports input with a keyboard and a joystick. With a keyboard, use WASD to control pitch and roll and F and K to increase and decrease thrust. E and Q control the rudder. You can use P to pause and O to toggle the camera.
 
 ## Build instructions (Windows)
 
