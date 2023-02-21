@@ -13,6 +13,7 @@
 #include "phi.h"
 #include "clipmap.h"
 #include "flightmodel.h"
+#include "collisions.h"
 
 using std::shared_ptr;
 using std::make_shared;
@@ -54,6 +55,10 @@ void apply_to_object3d(const phi::RigidBody& rigid_body, gfx::Object3D& object);
 
 int main(void)
 {
+#if RUN_COLLISION_UNITTESTS
+    collisions::run_unit_tests();
+#endif
+
     SDL_Init(SDL_INIT_EVERYTHING);
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
@@ -406,7 +411,7 @@ int main(void)
         else if (!paused)
         {
             auto& rb = player_aircraft.rigid_body;
-            camera.set_position(glm::mix(camera.get_position(), rb.position + rb.up() * 5.0f, dt * 7.0f * rb.get_speed() * 0.005));
+            camera.set_position(glm::mix(camera.get_position(), rb.position + rb.up() * 5.0f, dt * 0.035f * rb.get_speed()));
             camera.set_rotation_quaternion(glm::mix(camera.get_rotation_quaternion(), camera_transform.get_world_rotation_quaternion(), dt * 5.0f));
             cross.visible = fpm.visible = true;
         }
@@ -434,11 +439,11 @@ void get_keyboard_state(Joystick& joystick, phi::Seconds dt)
     const glm::vec3 factor = {3.0f, 0.5f, 1.0f}; // roll, yaw, pitch
     const uint8_t* key_states = SDL_GetKeyboardState(NULL);
 
-    if (key_states[SDL_SCANCODE_A])
+    if (key_states[SDL_SCANCODE_A] || key_states[SDL_SCANCODE_LEFT])
     {
         joystick.roll = move(joystick.roll, +factor.x, dt);
     }
-    else if (key_states[SDL_SCANCODE_D])
+    else if (key_states[SDL_SCANCODE_D] || key_states[SDL_SCANCODE_RIGHT])
     {
         joystick.roll = move(joystick.roll, -factor.x, dt);
     }
@@ -447,11 +452,11 @@ void get_keyboard_state(Joystick& joystick, phi::Seconds dt)
         joystick.roll = center(joystick.roll, factor.x, dt);
     }
 
-    if (key_states[SDL_SCANCODE_W])
+    if (key_states[SDL_SCANCODE_W] || key_states[SDL_SCANCODE_UP])
     {
         joystick.pitch = move(joystick.pitch, +factor.z, dt);
     }
-    else if (key_states[SDL_SCANCODE_S])
+    else if (key_states[SDL_SCANCODE_S] || key_states[SDL_SCANCODE_DOWN])
     {
         joystick.pitch = move(joystick.pitch, -factor.z, dt);
     }

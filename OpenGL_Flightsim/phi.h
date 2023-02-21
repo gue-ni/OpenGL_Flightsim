@@ -30,10 +30,7 @@ namespace phi {
     constexpr glm::vec3 Z_AXIS   = { 0.0f,  0.0f,  1.0f };
 
     template<typename T>
-    constexpr inline T sq(T a)
-    {
-        return a * a;
-    }
+    constexpr inline T sq(T a) { return a * a; }
 
     namespace inertia {
         struct Element {

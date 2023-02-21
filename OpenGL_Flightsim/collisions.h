@@ -1,6 +1,9 @@
+/*
+    Algorithms based on Christer_Ericson's Real-Time Collision Detection
+*/
 #pragma once
 
-#include <optional>
+#include <tuple>
 
 #include <glm/vec3.hpp>
 #include <glm/mat4x4.hpp>
@@ -8,12 +11,23 @@
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/vector_angle.hpp>
 
+#define RUN_COLLISION_UNITTESTS 0
+
 namespace collisions {
 
     constexpr float EPSILON = 1e-8f;
 
+    template<typename T>
+    constexpr inline T sq(T x) { return x * x; }
+
+    typedef void CollisionCallback(const glm::vec3& point, const glm::vec3& normal);
+
+    struct Collider {
+        CollisionCallback* on_collision = nullptr;
+    };
+
     // axis aligned bounding box
-    struct AABB {
+    struct AABB : public Collider {
         glm::vec3 center, size;
 
         glm::vec3 min() const
@@ -28,13 +42,43 @@ namespace collisions {
     };
 
     // bounding sphere
-    struct Sphere {
+    struct Sphere : public Collider {
         glm::vec3 center;
         float radius;
     };
 
-    // test collision of two axis aligned bounding boxes
-    constexpr bool test_collision(const AABB& a, const AABB& b)
+    // ray = origin + direction * t
+    struct Ray : public Collider {
+        glm::vec3 origin, direction;
+    };
+
+    // test collision between a ray and a sphere
+    bool test_collision(const Ray& ray, const Sphere& sphere, float *t)
+    {
+        auto m = ray.origin - sphere.center;
+        auto b = glm::dot(m, ray.direction);
+        auto c = glm::dot(m, m) - sq(sphere.radius);
+
+        if (c > 0.0f && b > 0.0f)
+            return false;
+
+        auto discr = sq(b) - c;
+
+        if (discr < 0.0f)
+            return false;
+
+        *t = std::max(-b - std::sqrt(discr), 0.0f);
+        return true;
+    }
+
+    // test collision between two spheres
+    bool test_collision(const Sphere& s0, const Sphere& s1)
+    {
+        return glm::length(s0.center - s1.center) < (s0.radius + s1.radius);
+    }
+
+    // test collision between two axis aligned bounding boxes
+    bool test_collision(const AABB& a, const AABB& b)
     {
         auto a_min = a.min(), a_max = a.max();
         auto b_min = b.min(), b_max = b.max();
@@ -45,45 +89,73 @@ namespace collisions {
         );
     }
 
-    // test collision of two spheres
-    constexpr bool test_collision(const Sphere& a, const Sphere& b)
-    {
-        return glm::length(a.center - a.center) < (a.radius + b.radius);
-    }
-
     // test collision of two moving spheres
-    constexpr bool test_moving_collision(const Sphere& a, const glm::vec3& a_velocity, const Sphere& b, const glm::vec3& b_velocity, float *t)
+    bool test_moving_collision(
+        const Sphere& s0, const glm::vec3& velocity0, 
+        const Sphere& s1, const glm::vec3& velocity1, 
+        float *t)
     { 
         // Christer_Ericson-Real-Time_Collision_Detection.pdf#page=264
-        if (test_collision(a, b))
-            return true;
+#if 0
+        auto direction = s1.center - s0.center;
+        auto radius_sum = s0.radius + s1.radius;
+        auto relative_velocity = velocity1 - velocity0;
 
-        auto distance = a.center - b.center;
-        auto relative_velocity = b_velocity - a_velocity;
+        float c = glm::dot(direction, direction) - sq(radius_sum);
 
-        float tmp = glm::dot(relative_velocity, relative_velocity);
-        if (tmp < EPSILON)
-            return false;
+        if (c < 0.0f)
+        {
+            *t = 0.0f;
+            return true; // spheres are intersecting
+        }
 
-        float tmp2 = glm::dot(relative_velocity, distance);
-        if (tmp2 >= 0.0f)
-            return false;
+        float a = glm::dot(relative_velocity, relative_velocity);
 
-        //float d = tmp2 * tmp2 - tmp * 
+        if (a < EPSILON)
+            return false; // spheres not moving relative to each other
+
+        float b = glm::dot(relative_velocity, direction);
+
+        if (b >= 0.0f)
+            return false; // spheres moving away from each other
+
+        float d = sq(b) - a * c;
+
+        if (d < 0.0f)
+            return false; // spheres are not intersecting
        
+        *t = (-b - std::sqrt(d)) / a;
+        return true;
+#else
+        Sphere sphere = { .center = s1.center, .radius = s0.radius + s1.radius };
+    
+        auto v = velocity0 - velocity1;
+        auto vlen = glm::length(v);
 
-        return false;
+        Ray ray = { .origin = s0.center, .direction = v / vlen };
+
+        if (test_collision(ray, sphere, t))
+            return *t <= vlen;
+        else
+            return false;
+#endif
     }
 
-    constexpr AABB update_with_orientation(const AABB& aabb, glm::quat orientation)
+#if RUN_COLLISION_UNITTESTS
+    // run unit test
+    bool run_unit_tests()
     {
-        return {};
-    }
+        float t;
+        Sphere s_0 = {nullptr, { 0.0f,0.0f,0.0f }, 1.0f};
+        Sphere s_1 = {nullptr, { 1.0f,0.0f,0.0f }, 2.0f};
+        Sphere s_2 = {nullptr, { 5.0f,0.0f,0.0f }, 1.0f};
 
-    constexpr void run_tests()
-    {
-        AABB aabb_0(glm::vec3(0.0f), glm::vec3(1.0f));
-        AABB aabb_1(glm::vec3(0.5f, 0.0f, 0.0f), glm::vec3(1.0f));
-        assert(test_collision(aabb_0, aabb_1));
+        assert(test_collision(s_0, s_1) == true);
+        assert(test_collision(s_0, s_2) == false);
+
+        assert(test_moving_collision(s_0, glm::vec3(10.0f, 0.0f, 0.0f), s_1, glm::vec3(0.0f), &t) == true);
+        assert(test_moving_collision(s_0, glm::vec3(5.0f, 0.0f, 0.0f), s_1, glm::vec3(0.0f), &t) == false);
+        return true;
     }
+#endif
 };

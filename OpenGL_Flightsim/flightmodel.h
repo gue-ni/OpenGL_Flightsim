@@ -36,30 +36,22 @@ struct Airfoil
 Airfoil NACA_0012(NACA_0012_data);
 Airfoil NACA_2412(NACA_2412_data);
 
-float air_density(float altitude, float sea_level_pressure, float temperature)
+float calculate_air_density(float altitude)
 {
-    return 0.0f;
+    return 1.204f;
 }
 
 struct Engine : public phi::ForceEffector
 {   
-    float throttle = 0.3f;    
-    float thrust = 10000.0f; 
-    float horsepower = 1000.0f;
-    float rpm = 2400.0f;
-    float propellor_diameter = 1.8f;
+    float throttle = 0.3f;
+    float thrust = 10000.0f;
 
     Engine(float thrust) : thrust(thrust) {}
     
     void apply_forces(phi::RigidBody &rigid_body) override
     {
-#if 1
         float force = thrust * throttle;
-#else
-#endif
         rigid_body.add_relative_force({ force, 0.0f, 0.0f });
-
-        // TODO: implement torque from propeller
     }
 };
 
@@ -100,7 +92,7 @@ struct Wing : public phi::ForceEffector
 
         if (abs(deflection) > phi::epsilon)
         {
-            // set rotation of wing
+            // rotate wing
             auto axis = glm::normalize(glm::cross(phi::FORWARD, normal));
             auto rotation = glm::rotate(glm::mat4(1.0f), glm::radians(deflection), axis);
             wing_normal = glm::vec3(rotation * glm::vec4(normal, 1.0f));
@@ -119,7 +111,7 @@ struct Wing : public phi::ForceEffector
         // sample our aerodynamic data
         auto [lift_coefficient, drag_coefficient] = airfoil->sample(angle_of_attack);
 
-        float air_density = phi::rho;
+        float air_density = calculate_air_density(rigid_body.position.y);
 
         float tmp = 0.5f * std::pow(speed, 2.0f) * air_density * area;
         glm::vec3 lift = lift_direction * lift_coefficient * lift_multiplier * tmp;
@@ -250,8 +242,6 @@ namespace ai {
             joystick = glm::clamp(tmp, glm::vec3(-1.0f), glm::vec3(1.0f));
         }
     };
-
-    
 
     glm::vec3 intercept_point(
         const glm::vec3& position, const glm::vec3& velocity,
