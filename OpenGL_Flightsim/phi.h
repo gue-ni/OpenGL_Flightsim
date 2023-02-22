@@ -13,8 +13,8 @@ namespace phi {
     typedef float Degrees;
 
     // constants
-    constexpr float g            = 9.80665f;    // gravity of earth, m/s^2
-    constexpr float epsilon      = 1e-8f;
+    constexpr float EARTH_GRAVITY            = 9.80665f;    // gravity of earth, m/s^2
+    constexpr float EPSILON      = 1e-8f;
 
     // directions in body space
     constexpr glm::vec3 UP       = { 0.0f,  1.0f,  0.0f };
@@ -307,7 +307,7 @@ namespace phi {
             glm::vec3 acceleration = m_force / mass;
 
             if (apply_gravity)
-                acceleration.y -= g;
+                acceleration.y -= EARTH_GRAVITY;
 
             velocity += acceleration * dt;
             position += velocity * dt;

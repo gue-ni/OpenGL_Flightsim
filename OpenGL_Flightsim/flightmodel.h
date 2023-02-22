@@ -14,13 +14,9 @@
 float calculate_air_density(float altitude)
 {
     assert(0.0f <= altitude && altitude <= 11000.0f);
-#if 0
-    return 1.224f;
-#else
     float temperature = 288.15f - 0.0065f * altitude; // kelvin
     float pressure = 101325.0f * std::pow(1 - 0.0065f * (altitude / 288.15f), 5.25f);
     return 0.00348f * (pressure / temperature);
-#endif
 }
 
 float calculate_propellor_thrust(const phi::RigidBody& rb, float engine_horsepower, float propellor_rpm, float propellor_diameter)
@@ -29,7 +25,7 @@ float calculate_propellor_thrust(const phi::RigidBody& rb, float engine_horsepow
     float engine_power = phi::units::watts(engine_horsepower); 
     
 #if 1
-    float a = 1.83f, b = -1.32f;
+    const float a = 1.83f, b = -1.32f;
     float propellor_advance_ratio = speed / ((propellor_rpm / 60.0f) * propellor_diameter);
     float propellor_efficiency = a * propellor_advance_ratio + std::pow(b * propellor_advance_ratio, 3.0f);
 #else
@@ -64,13 +60,16 @@ float calculate_g_force(const phi::RigidBody& rb)
     auto angular_velocity = rb.angular_velocity;
     
     // avoid division by zero
-    float turn_radius = (std::abs(angular_velocity.z) < phi::epsilon) 
-        ? numeric_limits<float>::max() : velocity.x / angular_velocity.z;
+    float turn_radius = (std::abs(angular_velocity.z) < phi::EPSILON) 
+        ? std::numeric_limits<float>::max() : velocity.x / angular_velocity.z;
     
+    // centrifugal force = mass * velocity^2 / radius
+    // centrifugal acceleration = force / mass
+    // simplified, this results in:
     float centrifugal_acceleration = phi::sq(velocity.x) / turn_radius;
     
-    float g_force = centrifugal_acceleration / phi::g;
-    g_force += rb.up().y * phi::g; // earth gravity
+    float g_force = centrifugal_acceleration / phi::EARTH_GRAVITY;
+    g_force += (rb.up().y * phi::EARTH_GRAVITY) / phi::EARTH_GRAVITY; // add earth gravity
     return g_force;
 }
 
@@ -146,7 +145,7 @@ struct Wing : public phi::ForceEffector
 
         glm::vec3 wing_normal = normal;
 
-        if (abs(deflection) > phi::epsilon)
+        if (abs(deflection) > phi::EPSILON)
         {
             // rotate wing
             auto axis = glm::normalize(glm::cross(phi::FORWARD, normal));

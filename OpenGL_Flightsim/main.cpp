@@ -301,10 +301,11 @@ int main(void)
             timer = 0.0f;
 
             printf(
-                "%.2f km/h, thr: %.2f, alt: %.2f m\n", 
+                "%.2f km/h, thr: %.2f, alt: %.2f m, g: %.2f\n", 
                 phi::units::kilometer_per_hour(glm::length(player_aircraft.rigid_body.velocity)),
                 player_aircraft.engine.throttle,
-                player_aircraft.rigid_body.position.y
+                player_aircraft.rigid_body.position.y,
+                calculate_g_force(player_aircraft.rigid_body)
             );
         }
 
@@ -480,11 +481,11 @@ void get_keyboard_state(Joystick& joystick, phi::Seconds dt)
     
     if (key_states[SDL_SCANCODE_J])
     {
-        joystick.throttle = glm::clamp(joystick.throttle - 0.01f, 0.0f, 1.0f);
+        joystick.throttle = glm::clamp(joystick.throttle - 0.005f, 0.0f, 1.0f);
     }
     else if (key_states[SDL_SCANCODE_K])
     {
-        joystick.throttle = glm::clamp(joystick.throttle + 0.01f, 0.0f, 1.0f);
+        joystick.throttle = glm::clamp(joystick.throttle + 0.005f, 0.0f, 1.0f);
     }
 }
 
