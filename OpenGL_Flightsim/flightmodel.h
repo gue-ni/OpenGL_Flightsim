@@ -25,7 +25,7 @@ float calculate_air_density(float altitude)
 float calculate_propellor_thrust(const phi::RigidBody& rb, float engine_horsepower, float propellor_rpm, float propellor_diameter)
 {
     float speed = glm::length(rb.velocity);
-    float engine_power = engine_horsepower * 745.7f; // watts
+    float engine_power = phi::units::watts(engine_horsepower); 
     
 #if 1
     float a = 1.83f, b = -1.32f;

@@ -13,8 +13,7 @@ namespace phi {
     typedef float Degrees;
 
     // constants
-    constexpr float g            = 9.81f;    // gravity of earth, m/s^2
-    constexpr float rho          = 1.224f;   // air density, kg/m^3
+    constexpr float g            = 9.80665f;    // gravity of earth, m/s^2
     constexpr float epsilon      = 1e-8f;
 
     // directions in body space
@@ -31,6 +30,9 @@ namespace phi {
 
     template<typename T>
     constexpr inline T sq(T a) { return a * a; }
+
+    template<typename T>
+    constexpr inline T cb(T a) { return a * a * a; }
 
     namespace inertia {
         struct Element {
@@ -124,6 +126,7 @@ namespace phi {
         template <typename T>
         constexpr inline T scale(T input, T in_min, T in_max, T out_min, T out_max)
         {
+            assert(in_min <= input && input <= in_max);
             return (input - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
         }
     
@@ -153,6 +156,11 @@ namespace phi {
         constexpr inline float kelvin(float celsius)
         {
             return celsius - 273.15f;
+        }
+
+        constexpr inline float watts(float horsepower)
+        {
+            return horsepower * 745.7f;
         }
     };
 
