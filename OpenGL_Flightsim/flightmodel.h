@@ -9,6 +9,55 @@
 #include <tuple>
 #include <algorithm>
 
+// only accurate for altitudes < 11km
+float calculate_air_density(float altitude)
+{
+#if 0
+    return 1.224f;
+#else
+    float temperature = 288.15f - 0.0065f * altitude; // kelvin
+    float pressure = 101325.0f * std::pow(1 - 0.0065f * (altitude / 288.15f), 5.25f);
+    return 0.00348f * (pressure / temperature);
+#endif
+}
+
+float calculate_propellor_thrust(const phi::RigidBody& rb, float engine_horsepower, float propellor_rpm, float propellor_diameter)
+{
+    float speed = glm::length(rb.velocity);
+    float engine_power = engine_horsepower * 745.7f; // watts
+    
+    float a = 1.83f, b = -1.32f;
+    float propellor_advance_ratio = speed / ((propellor_rpm / 60.0f) * propellor_diameter);
+    float propellor_efficiency = a * propellor_advance_ratio + std::pow(b * propellor_advance_ratio, 3);
+    
+#if 0    
+    const float C = 0.12f;
+    float air_density = calculate_air_density(rb.position.y);
+    float sea_level_air_density = calculate_air_density(0.0f);
+    float power_drop_off_factor = ((air_density / sea_level_air_density) - C) / (1 - C);
+#else
+    float power_drop_off_factor = 1.0f;
+#endif
+    
+    return ((propellor_efficiency * engine_power) / speed) * power_drop_off_factor;
+}
+
+float calculate_turn_radius(const phi::RigidBody& rb)
+{
+    // TODO
+    auto angular_velocity = rb.transform_direction(rb.angular_velocity);
+    auto center_of_rotation = glm::cross(angular_velocity, rb.velocity);
+    return glm::length(center_of_rotation - rb.position);
+}
+
+float calculate_g_force(const phi::RigidBody& rb)
+{
+    // TODO
+    auto radius = calculate_turn_radius(rb);
+    auto lspeed = glm::length(rb.velocity);
+    return (sq(speed) / radius) / phi::g;
+}
+
 struct Airfoil
 {
     float min, max;
@@ -36,14 +85,9 @@ struct Airfoil
 Airfoil NACA_0012(NACA_0012_data);
 Airfoil NACA_2412(NACA_2412_data);
 
-float calculate_air_density(float altitude)
-{
-    return 1.204f;
-}
-
 struct Engine : public phi::ForceEffector
 {   
-    float throttle = 0.3f;
+    float throttle = 0.25f;
     float thrust = 10000.0f;
 
     Engine(float thrust) : thrust(thrust) {}
@@ -57,8 +101,8 @@ struct Engine : public phi::ForceEffector
 
 struct Wing : public phi::ForceEffector
 {
-    const float area{};
-    const glm::vec3 position{};
+    const float area{}; // m^2
+    const glm::vec3 center_of_pressure;
     const Airfoil *airfoil;
     const glm::vec3 normal;
 
@@ -67,22 +111,22 @@ struct Wing : public phi::ForceEffector
     phi::Degrees deflection = 0.0f;
     
     Wing(const glm::vec3 &position, float area, const Airfoil *aero, const glm::vec3 &normal = phi::UP)
-         : position(position),
+         : center_of_pressure(position),
           area(area),
           airfoil(aero),
           normal(normal)
     {}
 
     Wing(const glm::vec3& position, float wingspan, float chord, const Airfoil* aero, const glm::vec3& normal = phi::UP)
-        : position(position),
+        : center_of_pressure(position),
         area(chord * wingspan),
         airfoil(aero),
         normal(normal)
     {}
     
-    void apply_forces(phi::RigidBody &rigid_body)
+    void apply_forces(phi::RigidBody &rigid_body) override
     {
-        glm::vec3 local_velocity = rigid_body.get_point_velocity(position);
+        glm::vec3 local_velocity = rigid_body.get_point_velocity(center_of_pressure);
         float speed = glm::length(local_velocity);
 
         if (speed <= 0.0f)
@@ -105,20 +149,21 @@ struct Wing : public phi::ForceEffector
         glm::vec3 lift_direction 
             = glm::normalize(glm::cross(glm::cross(drag_direction, wing_normal), drag_direction));
 
-        // angle between wing and air flow
+        // angle between chord line and air flow
         float angle_of_attack = glm::degrees(std::asin(glm::dot(drag_direction, wing_normal)));
 
         // sample our aerodynamic data
         auto [lift_coefficient, drag_coefficient] = airfoil->sample(angle_of_attack);
 
+        // air density depends on altitude
         float air_density = calculate_air_density(rigid_body.position.y);
 
-        float tmp = 0.5f * std::pow(speed, 2.0f) * air_density * area;
+        float tmp = 0.5f * std::pow(speed, 2) * air_density * area;
         glm::vec3 lift = lift_direction * lift_coefficient * lift_multiplier * tmp;
         glm::vec3 drag = drag_direction * drag_coefficient * drag_multiplier * tmp;
 
         // apply forces
-        rigid_body.add_force_at_point(lift + drag, position);
+        rigid_body.add_force_at_point(lift + drag, center_of_pressure);
     }
 };
 
