@@ -5,6 +5,7 @@
 #include "data.h"
 
 #include <cmath>
+#include <limits>
 #include <vector>
 #include <tuple>
 #include <algorithm>
@@ -12,7 +13,7 @@
 // only accurate for altitudes < 11km
 float calculate_air_density(float altitude)
 {
-    assert(altitude >= 0.0f);
+    assert(0.0f <= altitude && altitude <= 11000.0f);
 #if 0
     return 1.224f;
 #else
@@ -24,7 +25,7 @@ float calculate_air_density(float altitude)
 
 float calculate_propellor_thrust(const phi::RigidBody& rb, float engine_horsepower, float propellor_rpm, float propellor_diameter)
 {
-    float speed = glm::length(rb.velocity);
+    float speed = rb.get_speed();
     float engine_power = phi::units::watts(engine_horsepower); 
     
 #if 1
@@ -47,18 +48,30 @@ float calculate_propellor_thrust(const phi::RigidBody& rb, float engine_horsepow
     return ((propellor_efficiency * engine_power) / speed) * power_drop_off_factor;
 }
 
-float calculate_turn_radius(const phi::RigidBody& rb)
+float calculate_indicated_air_speed(const phi::RigidBody& rb)
 {
-    // TODO
-    auto angular_velocity = rb.transform_direction(rb.angular_velocity);
-    auto center_of_rotation = glm::cross(angular_velocity, rb.velocity);
-    return glm::length(center_of_rotation - rb.position);
+    // https://www.eaa.org/eaa/news-and-publications/eaa-news-and-aviation-news/bits-and-pieces-newsletter/02-17-2020-aviation-words-true-airspeed
+    float true_air_speed = rb.get_speed();
+    float air_density = calculate_air_density(rb.position.y);
+    float sea_level_air_density = calculate_air_density(0.0f);
+    return true_air_speed / std::sqrt(sea_level_air_density / air_density);
 }
 
+// get g-force from pitching movement 
 float calculate_g_force(const phi::RigidBody& rb)
 {
-    // TODO
-    return 0.0f;
+    auto velocity = rb.get_body_velocity();
+    auto angular_velocity = rb.angular_velocity;
+    
+    // avoid division by zero
+    float turn_radius = (std::abs(angular_velocity.z) < phi::epsilon) 
+        ? numeric_limits<float>::max() : velocity.x / angular_velocity.z;
+    
+    float centrifugal_acceleration = phi::sq(velocity.x) / turn_radius;
+    
+    float g_force = centrifugal_acceleration / phi::g;
+    g_force += rb.up().y * phi::g; // earth gravity
+    return g_force;
 }
 
 struct Airfoil
@@ -161,7 +174,7 @@ struct Wing : public phi::ForceEffector
         glm::vec3 lift = lift_direction * lift_coefficient * lift_multiplier * tmp;
         glm::vec3 drag = drag_direction * drag_coefficient * drag_multiplier * tmp;
 
-        // apply forces
+        // aerodynamic forces are applied at the center of pressure
         rigid_body.add_force_at_point(lift + drag, center_of_pressure);
     }
 };
