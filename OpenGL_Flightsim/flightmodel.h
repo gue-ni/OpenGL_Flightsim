@@ -53,9 +53,7 @@ float calculate_turn_radius(const phi::RigidBody& rb)
 float calculate_g_force(const phi::RigidBody& rb)
 {
     // TODO
-    auto radius = calculate_turn_radius(rb);
-    auto lspeed = glm::length(rb.velocity);
-    return (sq(speed) / radius) / phi::g;
+    return 0.0f;
 }
 
 struct Airfoil
