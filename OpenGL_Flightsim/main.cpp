@@ -240,7 +240,7 @@ int main(void)
 #endif
 
     const float mass = 10000.0f;
-    const float thrust = 30000.0f;
+    const float thrust = 40000.0f;
 
     std::vector<phi::inertia::Element> elements = {
       phi::inertia::cube_element({-0.5f,  0.0f, -2.7f}, {6.96f, 0.10f, 3.50f}, mass * 0.25f),               // left wing

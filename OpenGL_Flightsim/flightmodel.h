@@ -12,6 +12,7 @@
 // only accurate for altitudes < 11km
 float calculate_air_density(float altitude)
 {
+    assert(altitude >= 0.0f);
 #if 0
     return 1.224f;
 #else
@@ -26,11 +27,15 @@ float calculate_propellor_thrust(const phi::RigidBody& rb, float engine_horsepow
     float speed = glm::length(rb.velocity);
     float engine_power = engine_horsepower * 745.7f; // watts
     
+#if 1
     float a = 1.83f, b = -1.32f;
     float propellor_advance_ratio = speed / ((propellor_rpm / 60.0f) * propellor_diameter);
-    float propellor_efficiency = a * propellor_advance_ratio + std::pow(b * propellor_advance_ratio, 3);
+    float propellor_efficiency = a * propellor_advance_ratio + std::pow(b * propellor_advance_ratio, 3.0f);
+#else
+    float propellor_efficiency = 1.0f;
+#endif
     
-#if 0    
+#if 1    
     const float C = 0.12f;
     float air_density = calculate_air_density(rb.position.y);
     float sea_level_air_density = calculate_air_density(0.0f);
@@ -69,14 +74,10 @@ struct Airfoil
 
     std::tuple<float, float> sample(float alpha) const
     {
-        int index = static_cast<int>(phi::utils::scale(alpha, min, max, 0.0f, static_cast<float>(data.size() - 1)));
-        index = glm::clamp(index, 0, static_cast<int>(data.size() - 1U));
-        if (!(0 <= index && index < data.size()))
-        {
-            printf("alpha = %f, index = %d, size = %d\n", alpha, index, (int)data.size());
-            assert(false);
-        }
-        return { data[index].cl, data[index].Kd };
+        int max_index = static_cast<int>(data.size() - 1);
+        int index = static_cast<int>(phi::utils::scale(alpha, min, max, 0.0f, static_cast<float>(max_index)));
+        assert(0 <= index && index < max_index);
+        return { data[index].cl, data[index].cd };
     }
 };
 

@@ -53,11 +53,13 @@ namespace collisions {
     };
 
     // test collision between a ray and a sphere
-    bool test_collision(const Ray& ray, const Sphere& sphere, float *t)
+    bool test_collision(const Ray& r, const Sphere& s, float *t)
     {
-        auto m = ray.origin - sphere.center;
-        auto b = glm::dot(m, ray.direction);
-        auto c = glm::dot(m, m) - sq(sphere.radius);
+        assert(std::abs(glm::length(r.direction) - 1.0f) < EPSILON);
+
+        auto m = r.origin - s.center;
+        auto b = glm::dot(m, r.direction);
+        auto c = glm::dot(m, m) - sq(s.radius);
 
         if (c > 0.0f && b > 0.0f)
             return false;

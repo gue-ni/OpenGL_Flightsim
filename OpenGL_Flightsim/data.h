@@ -4,7 +4,7 @@
 
 struct ValueTuple
 {
-    float alpha, cl, Kd;
+    float alpha, cl, cd;
 };
 
 // NACA 0012 (n0012-il) Xfoil prediction polar at RE=1,000,000 Ncrit=9
