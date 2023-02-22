@@ -1,6 +1,6 @@
 # OpenGL Flightsim
 
-You can read an article about how it works [here](https://www.jakobmaier.at/posts/flight-simulation/). There is also a compiled demo available, please let me know if the executable does not work.
+You can read an article about how it works [here](https://www.jakobmaier.at/posts/flight-simulation/). There is also a compiled demo available.
 
 https://user-images.githubusercontent.com/45669207/219900645-df832175-75a3-4521-bbed-368e9f299200.mp4
 
