@@ -102,9 +102,9 @@ int main(void)
 
 
     // SDL options
-    SDL_ShowCursor(SDL_TRUE);
+    SDL_ShowCursor(SDL_FALSE);
     SDL_CaptureMouse(SDL_TRUE);
-    SDL_SetRelativeMouseMode(SDL_FALSE);
+    SDL_SetRelativeMouseMode(SDL_TRUE);
 
     ImGui_ImplSDL2_InitForOpenGL(window, context);
     ImGui_ImplOpenGL3_Init();
@@ -294,7 +294,7 @@ int main(void)
     camera.set_position(player_aircraft.rigid_body.position);
     camera.set_rotation({0, glm::radians(-90.0f), 0.0f});
 
-    gfx::OrbitController controller(20.0f);
+    gfx::OrbitController controller(30.0f);
 
     SDL_Event event;
     bool quit = false, paused = false, orbit = false;
