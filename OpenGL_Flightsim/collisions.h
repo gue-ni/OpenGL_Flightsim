@@ -55,6 +55,7 @@ namespace collisions {
     // test collision between a ray and a sphere
     bool test_collision(const Ray& r, const Sphere& s, float *t)
     {
+        // page 178
         assert(std::abs(glm::length(r.direction) - 1.0f) < EPSILON);
 
         auto m = r.origin - s.center;
@@ -129,12 +130,12 @@ namespace collisions {
         *t = (-b - std::sqrt(d)) / a;
         return true;
 #else
-        Sphere sphere = { .center = s1.center, .radius = s0.radius + s1.radius };
-    
+        // page 226
         auto v = velocity0 - velocity1;
         auto vlen = glm::length(v);
 
         Ray ray = { .origin = s0.center, .direction = v / vlen };
+        Sphere sphere = { .center = s1.center, .radius = s0.radius + s1.radius };
 
         if (test_collision(ray, sphere, t))
             return *t <= vlen;
