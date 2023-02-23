@@ -25,14 +25,12 @@ namespace gfx {
     typedef glm::vec3 RGB;
     typedef glm::vec4 RGBA;
 
+    class Mesh;
     class Light;
     class Camera;
-    class Mesh;
-    class Geometry;
     class Skybox;
-    struct Shader;
-    struct Texture;
     class Material;
+    class Geometry;
 
     constexpr RGB rgb(int r, int g, int b)
     {
@@ -54,74 +52,83 @@ namespace gfx {
     std::shared_ptr<Geometry> make_cube_geometry(float size);
     std::shared_ptr<Geometry> make_plane_geometry(int x_elements, int y_elements, float size);
 
-    struct Shader {
-        GLuint id;
-        Shader(const std::string& path);
-        Shader(const std::string& vertShader, const std::string& fragShader);
-        Shader(GLuint shader_id) : id(shader_id) {}
-        ~Shader();
-        void bind() const;
-        void unbind() const;
-        void uniform(const std::string& name, int value);
-        void uniform(const std::string& name, float value);
-        void uniform(const std::string& name, unsigned int value);
-        void uniform(const std::string& name, const glm::vec3& value);
-        void uniform(const std::string& name, const glm::vec4& value);
-        void uniform(const std::string& name, const glm::mat4& value);
-    };
+    // opengl primitives
+    namespace opengl {
 
-    struct VertexBuffer {
-        GLuint id = 0;
-        void buffer(const void* data, size_t size);
-        ~VertexBuffer();
-        void generate();
-        void bind() const;
-        void unbind() const;
-    };
+        struct Shader {
+            GLuint id;
+            Shader(const std::string& path);
+            Shader(const std::string& vertShader, const std::string& fragShader);
+            Shader(GLuint shader_id) : id(shader_id) {}
+            ~Shader();
+            void bind() const;
+            void unbind() const;
+            void uniform(const std::string& name, int value);
+            void uniform(const std::string& name, float value);
+            void uniform(const std::string& name, unsigned int value);
+            void uniform(const std::string& name, const glm::vec3& value);
+            void uniform(const std::string& name, const glm::vec4& value);
+            void uniform(const std::string& name, const glm::mat4& value);
+        };
 
-    struct VertexArrayObject {
-        GLuint id = 0;
-        ~VertexArrayObject();
-        void generate();
-        void bind() const;
-        void unbind() const;
-    };
+        struct VertexBuffer {
+            GLuint id = 0;
+            void buffer(const void* data, size_t size);
 
-    struct ElementBufferObject {
-        GLuint id = 0;
-        ~ElementBufferObject();
-        void buffer(const void* data, size_t size);
-        void generate();
-        void bind() const;
-        void unbind() const;
-    };
+            template<typename T>
+            void buffer(std::vector<T> data)
+            {
+                buffer(&data[0], sizeof(data[0]) * data.size());
+            }
 
-    struct Texture {
-        GLuint id = 0;
-        Texture() : id(0) { glGenTextures(1, &id); }
-        Texture(GLuint texture_id) : id(texture_id) {}
-        //Texture(const std::string& path, bool flip_vertically = false);
-        Texture(const std::string& path, bool flip_vertically = false);
+            VertexBuffer();
+            ~VertexBuffer();
+            void bind() const;
+            void unbind() const;
+        };
 
+        struct VertexArrayObject {
+            GLuint id = 0;
+            VertexArrayObject();
+            ~VertexArrayObject();
+            void bind() const;
+            void unbind() const;
+        };
 
-        ~Texture();
-        virtual void bind(GLuint texture) const;
-        virtual void unbind() const;
-        GLint get_format(int channels);
-        void set_parameteri(GLenum target, GLenum pname, GLint param);
-    };
+        struct ElementBufferObject {
+            GLuint id = 0;
+            ElementBufferObject();
+            ~ElementBufferObject();
+            void bind() const;
+            void unbind() const;
+            void buffer(const void* data, size_t size);
+        };
 
-    struct CubemapTexture : public Texture {
-        CubemapTexture(const std::array<std::string, 6>& paths, bool flip_vertically = false);
-        void bind(GLuint texture) const override;
-        void unbind() const override;
+        struct Texture {
+            GLuint id = 0;
+            Texture() : id(0) { glGenTextures(1, &id); }
+            Texture(GLuint texture_id) : id(texture_id) {}
+            Texture(const std::string& path, bool flip_vertically = false);
+            ~Texture();
+
+            virtual void bind(GLuint texture = 0U) const;
+            virtual void unbind() const;
+            GLint get_format(int channels);
+            void set_parameteri(GLenum target, GLenum pname, GLint param);
+        };
+
+        struct CubemapTexture : public Texture {
+            CubemapTexture(const std::array<std::string, 6>& paths, bool flip_vertically = false);
+            void bind(GLuint texture) const override;
+            void unbind() const override;
+        };
     };
 
     struct ShadowMap {
         ShadowMap(unsigned int shadow_width, unsigned int shadow_height);
         GLuint fbo;
-        Texture depth_map;
-        Shader shader;
+        opengl::Texture depth_map;
+        opengl::Shader shader;
         GLuint width, height;
     };
 
@@ -261,12 +268,14 @@ namespace gfx {
 
     private:
         unsigned int m_vao, m_vbo;
+        opengl::VertexBuffer vbo;
+        opengl::VertexArrayObject vao;
         static int get_stride(const VertexLayout& layout);
     };
 
     class Material  {
     public:
-        virtual Shader* get_shader()
+        virtual opengl::Shader* get_shader()
         {
             return nullptr;
         }
@@ -279,17 +288,17 @@ namespace gfx {
         MaterialX(const std::string& path)
         {
             if (shader == nullptr)
-                shader = std::make_shared<Shader>(path);
+                shader = std::make_shared<opengl::Shader>(path);
         }
-        Shader* get_shader() { return shader.get(); }
-        static std::shared_ptr<Shader> shader;
+        opengl::Shader* get_shader() { return shader.get(); }
+        static std::shared_ptr<opengl::Shader> shader;
     };
 
     class Phong : public MaterialX<Phong> {
     public:
         RGB rgb{};
         float ka, kd, ks, alpha;
-        std::shared_ptr<Texture> texture = nullptr;
+        std::shared_ptr<opengl::Texture> texture = nullptr;
 
         Phong(const glm::vec3& color_, float ka_, float kd_, float ks_, float alpha_) 
             : MaterialX<Phong>("shaders/phong"), rgb(color_), ka(ka_), kd(kd_), ks(ks_), alpha(alpha_) 
@@ -299,7 +308,7 @@ namespace gfx {
             : MaterialX<Phong>("shaders/phong"), rgb(color_), ka(0.3f), kd(1.0f), ks(0.5f), alpha(10.0f) 
         {}
 
-        Phong(std::shared_ptr<Texture> tex)
+        Phong(std::shared_ptr<opengl::Texture> tex)
             : MaterialX<Phong>("shaders/phong"), texture(tex), rgb(0.0f, 1.0f, 0.0f), ka(0.3f), kd(1.0f), ks(0.5f), alpha(20.0f) 
         {}
 
@@ -320,16 +329,16 @@ namespace gfx {
 
     class ScreenMaterial : public MaterialX<ScreenMaterial> {
     private:
-        std::shared_ptr<Texture> texture = nullptr;
+        std::shared_ptr<opengl::Texture> texture = nullptr;
     public:
-        ScreenMaterial(std::shared_ptr<Texture> t) : MaterialX<ScreenMaterial>("shaders/screen"), texture(t) {}
+        ScreenMaterial(std::shared_ptr<opengl::Texture> t) : MaterialX<ScreenMaterial>("shaders/screen"), texture(t) {}
         void bind() override;
     };
 
     class SkyboxMaterial : public MaterialX<SkyboxMaterial> {
     public:
-        std::shared_ptr<CubemapTexture> cubemap = nullptr;
-        SkyboxMaterial(std::shared_ptr<CubemapTexture> map) :
+        std::shared_ptr<opengl::CubemapTexture> cubemap = nullptr;
+        SkyboxMaterial(std::shared_ptr<opengl::CubemapTexture> map) :
             MaterialX<SkyboxMaterial>("shaders/skybox"), cubemap(map) {}
 
         void bind() override;
@@ -348,21 +357,16 @@ namespace gfx {
     
     class Billboard : public Object3D {
     public:
-        Billboard(std::shared_ptr<Texture> sprite);
+        Billboard(std::shared_ptr<opengl::Texture> sprite);
         void draw_self(RenderContext& context) override;
         Object3D& add(Object3D* child) = delete;
     private:
-        Shader shader;
-        std::shared_ptr<Texture> texture;
-        VertexArrayObject vao;
-        VertexBuffer vbo;
-        ElementBufferObject ebo;
+        opengl::Shader shader;
+        std::shared_ptr<opengl::Texture> texture;
+        opengl::VertexArrayObject vao;
+        opengl::VertexBuffer vbo;
+        opengl::ElementBufferObject ebo;
     }; 
-
-    class Line : public Mesh {
-    public:
-
-    };
 
     class Skybox : public Mesh {
     public:
@@ -386,12 +390,9 @@ namespace gfx {
                  1.0f, -1.0f, 0.0f, 1.0f, 0.0f, // bottom right
             };
 
-            //std::cout << "depth map: " << shadow_map->depth_map_texture_id << std::endl;
-
             auto geometry = std::make_shared<Geometry>(quad_vertices, Geometry::POS_UV);
-            //auto texture = std::make_shared<gfx::Texture>("assets/textures/container.jpg");
-            auto texture = std::make_shared<gfx::Texture>(shadow_map->depth_map.id);
-            auto material = std::make_shared<gfx::ScreenMaterial>(texture);
+            auto texture = std::make_shared<gfx::opengl::Texture>(shadow_map->depth_map.id);
+            auto material = std::make_shared<ScreenMaterial>(texture);
             screen_quad = std::make_shared<Mesh>(geometry, material);
         }
 
@@ -409,9 +410,9 @@ namespace gfx {
         std::shared_ptr<Mesh> screen_quad;
     };
 
-    class FirstPersonController 
-    {
+    class FirstPersonController {
     public:
+
         enum Direction {
             FORWARD,
             RIGHT,

@@ -19,111 +19,305 @@ std::string load_text_file(const std::string& path)
 
 namespace gfx {
 
-    Shader::Shader(const std::string& path) : Shader(load_text_file(path + ".vert"), load_text_file(path + ".frag")) {}
-    
-    Shader::Shader(const std::string& vertShader, const std::string& fragShader)
-    {
-        //std::cout << "create Shader\n";
-        const char* vertexShaderSource = vertShader.c_str();
-        const char* fragmentShaderSource = fragShader.c_str();
+    namespace opengl {
 
-        unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-        glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-        glCompileShader(vertexShader);
+        Shader::Shader(const std::string& path) : Shader(load_text_file(path + ".vert"), load_text_file(path + ".frag")) {}
 
-        // check for shader compile errors
-        int success;
-        char infoLog[512];
-        glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-        if (!success)
+        Shader::Shader(const std::string& vertShader, const std::string& fragShader)
         {
-            glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-            std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+            //std::cout << "create Shader\n";
+            const char* vertexShaderSource = vertShader.c_str();
+            const char* fragmentShaderSource = fragShader.c_str();
+
+            unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
+            glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+            glCompileShader(vertexShader);
+
+            // check for shader compile errors
+            int success;
+            char infoLog[512];
+            glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+            if (!success)
+            {
+                glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+                std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+            }
+
+            // fragment shader
+            unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+            glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+            glCompileShader(fragmentShader);
+            // check for shader compile errors
+            glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+            if (!success)
+            {
+                glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
+                std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
+            }
+            // link shaders
+            id = glCreateProgram();
+            glAttachShader(id, vertexShader);
+            glAttachShader(id, fragmentShader);
+            glLinkProgram(id);
+            // check for linking errors
+            glGetProgramiv(id, GL_LINK_STATUS, &success);
+            if (!success) {
+                glGetProgramInfoLog(id, 512, NULL, infoLog);
+                std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
+            }
+            glDeleteShader(vertexShader);
+            glDeleteShader(fragmentShader);
         }
 
-        // fragment shader
-        unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-        glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-        glCompileShader(fragmentShader);
-        // check for shader compile errors
-        glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-        if (!success)
+        Shader::~Shader()
         {
-            glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-            std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
+            glDeleteProgram(id);
         }
-        // link shaders
-        id = glCreateProgram();
-        glAttachShader(id, vertexShader);
-        glAttachShader(id, fragmentShader);
-        glLinkProgram(id);
-        // check for linking errors
-        glGetProgramiv(id, GL_LINK_STATUS, &success);
-        if (!success) {
-            glGetProgramInfoLog(id, 512, NULL, infoLog);
-            std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
+
+        void Shader::bind() const
+        {
+            glUseProgram(id);
         }
-        glDeleteShader(vertexShader);
-        glDeleteShader(fragmentShader);
-    }
 
-    Shader::~Shader()
-    {
-        glDeleteProgram(id);
-    }
+        void Shader::unbind() const
+        {
+            glUseProgram(0);
+        }
 
-    void Shader::bind() const
-    {
-        glUseProgram(id);
-    }
+        void Shader::uniform(const std::string& name, int value)
+        {
+            glUniform1i(glGetUniformLocation(id, name.c_str()), value);
+        }
 
-    void Shader::unbind() const
-    {
-        glUseProgram(0);
-    }
+        void Shader::uniform(const std::string& name, unsigned int value)
+        {
+            glUniform1ui(glGetUniformLocation(id, name.c_str()), value);
+        }
 
-    void Shader::uniform(const std::string& name, int value) 
-    {
-        glUniform1i(glGetUniformLocation(id, name.c_str()), value);
-    }
+        void Shader::uniform(const std::string& name, float value)
+        {
+            glUniform1f(glGetUniformLocation(id, name.c_str()), value);
+        }
 
-    void Shader::uniform(const std::string& name, unsigned int value)
-    {
-        glUniform1ui(glGetUniformLocation(id, name.c_str()), value);
-    }
+        void Shader::uniform(const std::string& name, const glm::vec3& value)
+        {
+            glUniform3fv(glGetUniformLocation(id, name.c_str()), 1, &value[0]);
+        }
 
-    void Shader::uniform(const std::string& name, float value) 
-    {
-        glUniform1f(glGetUniformLocation(id, name.c_str()), value);
-    }
+        void Shader::uniform(const std::string& name, const glm::vec4& value)
+        {
+            glUniform4fv(glGetUniformLocation(id, name.c_str()), 1, &value[0]);
+        }
 
-    void Shader::uniform(const std::string& name, const glm::vec3& value)
-    {
-        glUniform3fv(glGetUniformLocation(id, name.c_str()), 1, &value[0]);
-    }
+        void Shader::uniform(const std::string& name, const glm::mat4& value)
+        {
+            glUniformMatrix4fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE, &value[0][0]);
+        }
 
-    void Shader::uniform(const std::string& name, const glm::vec4& value)
-    {
-        glUniform4fv(glGetUniformLocation(id, name.c_str()), 1, &value[0]);
-    }
 
-    void Shader::uniform(const std::string& name, const glm::mat4& value)
-    {
-        glUniformMatrix4fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE, &value[0][0]);
-    }
-    
+        Texture::Texture(const std::string& path, bool flip_vertically)
+        {
+            glGenTextures(1, &id);
+            glBindTexture(GL_TEXTURE_2D, id); 
+
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+            //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+            int width, height, channels;
+            stbi_set_flip_vertically_on_load(flip_vertically);
+            unsigned char* data = stbi_load(path.c_str(), &width, &height, &channels, 0);
+
+            //printf("channels = %d\n", channels);
+
+            if (data)
+            {
+                auto format = get_format(channels);
+
+                //std::cout  << path << ": format = " << format << ", channels = " << channels << std::endl;
+                glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+                glGenerateMipmap(GL_TEXTURE_2D);
+            }
+            else
+            {
+                std::cout << "Failed to load texture" << std::endl;
+            }
+            stbi_image_free(data);
+        }
+
+        Texture::~Texture()
+        {
+            glDeleteTextures(1, &id);
+        }
+
+        void Texture::bind(GLuint texture) const
+        {
+            glActiveTexture(GL_TEXTURE0 + texture);
+            glBindTexture(GL_TEXTURE_2D, id);
+        }
+
+        void Texture::unbind() const
+        {
+            glBindTexture(GL_TEXTURE_2D, 0);
+        }
+
+        GLint Texture::get_format(int channels)
+        {
+            GLint format{};
+
+            switch (channels)
+            {
+            case 1:
+                format = GL_RED;
+                break;
+            case 3:
+                format = GL_RGB;
+                break;
+            case 4:
+                format = GL_RGBA;
+                break;
+            default:
+                std::cout << "Failed to load texture, invalid format, channels = " << channels << std::endl;
+                assert(false);
+                break;
+            }
+
+            return format;
+        }
+
+        void Texture::set_parameteri(GLenum target, GLenum pname, GLint param)
+        {
+            glTexParameteri(target, pname, param);
+        }
+
+
+        CubemapTexture::CubemapTexture(const std::array<std::string, 6>& paths, bool flip_vertically)
+        {
+            glGenTextures(1, &id);
+            glBindTexture(GL_TEXTURE_CUBE_MAP, id);
+
+            int width, height, channels;
+            for (int i = 0; i < 6; i++)
+            {
+                stbi_set_flip_vertically_on_load(flip_vertically);
+                unsigned char* data = stbi_load(paths[i].c_str(), &width, &height, &channels, 0);
+                if (data)
+                {
+                    auto format = get_format(channels);
+                    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+                    stbi_image_free(data);
+                }
+                else
+                {
+                    std::cout << "Cubemap tex failed to load at path: " << paths[i] << std::endl;
+                    stbi_image_free(data);
+                }
+            }
+            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+        }
+
+        void CubemapTexture::bind(GLuint texture) const
+        {
+            glActiveTexture(GL_TEXTURE0 + texture);
+            glBindTexture(GL_TEXTURE_CUBE_MAP, id);
+        }
+
+        void CubemapTexture::unbind() const
+        {
+            glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+        }
+
+
+        VertexBuffer::VertexBuffer()
+        {
+            glGenBuffers(1, &id);
+        }
+
+        VertexBuffer::~VertexBuffer()
+        {
+            glDeleteBuffers(1, &id);
+        }
+
+        void VertexBuffer::bind() const
+        {
+            glBindBuffer(GL_ARRAY_BUFFER, id);
+        }
+
+        void VertexBuffer::unbind() const
+        {
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+        }
+
+        void VertexBuffer::buffer(const void* data, size_t size)
+        {
+            bind();
+            glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
+        }
+
+
+        VertexArrayObject::VertexArrayObject()
+        {
+            glGenVertexArrays(1, &id);
+        }
+
+        VertexArrayObject::~VertexArrayObject()
+        {
+            glDeleteVertexArrays(1, &id);
+        }
+
+        void VertexArrayObject::bind() const
+        {
+            glBindVertexArray(id);
+        }
+
+        void VertexArrayObject::unbind() const
+        {
+            glBindVertexArray(0);
+        }
+
+
+        ElementBufferObject::ElementBufferObject()
+        {
+            glGenBuffers(1, &id);
+        }
+
+        ElementBufferObject::~ElementBufferObject()
+        {
+            glDeleteBuffers(1, &id);
+        }
+
+        void ElementBufferObject::bind() const
+        {
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, id);
+        }
+
+        void ElementBufferObject::unbind() const
+        {
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        }
+
+        void ElementBufferObject::buffer(const void* data, size_t size)
+        {
+            bind();
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
+        }
+    };
+
     Geometry::Geometry(const std::vector<float>& vertices, const VertexLayout& layout)
         : triangle_count(static_cast<int>(vertices.size()) / (get_stride(layout)))
     {
         const int stride = get_stride(layout);
 
-        glGenVertexArrays(1, &m_vao);
-        glGenBuffers(1, &m_vbo);
-
-        glBindVertexArray(m_vao);
-
-        glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices[0]) * vertices.size(), &vertices[0], GL_STATIC_DRAW);
+        vao.bind();
+        vbo.buffer(vertices);
 
         unsigned int index = 0;
         glVertexAttribPointer(index, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
@@ -143,31 +337,27 @@ namespace gfx {
             glEnableVertexAttribArray(index);
         }
 
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
+        vbo.unbind();
+        vao.bind();
     }
 
     Geometry::Geometry(const Geometry& geometry)
     {
         triangle_count = geometry.triangle_count;
-        m_vao = geometry.m_vao;
-        m_vbo = geometry.m_vbo;
     }
 
     Geometry::~Geometry()
     {
-        glDeleteVertexArrays(1, &m_vao);
-        glDeleteBuffers(1, &m_vbo);
     }
 
     void Geometry::bind()
     {
-        glBindVertexArray(m_vao); 
+        vao.bind();
     }
 
     void Geometry::unbind()
     {
-        glBindVertexArray(0); 
+        vao.unbind();
     }
 
     int Geometry::get_stride(const VertexLayout& layout)
@@ -203,7 +393,7 @@ namespace gfx {
     }
 
     template<class Derived>
-    std::shared_ptr<Shader> MaterialX<Derived>::shader = nullptr;
+    std::shared_ptr<opengl::Shader> MaterialX<Derived>::shader = nullptr;
 
     int Object3D::counter = 0;
     
@@ -419,14 +609,14 @@ namespace gfx {
         {
             assert(context.shadow_caster);
 
-            Shader* shader = &context.shadow_map->shader;
+            opengl::Shader* shader = &context.shadow_map->shader;
 
             shader->bind();
             shader->uniform("u_Model", transform);
             shader->uniform("u_LightSpaceMatrix", context.shadow_caster->light_space_matrix());
         }
         else {
-            Shader* shader = m_material->get_shader();
+            opengl::Shader* shader = m_material->get_shader();
 
             shader->bind();
             shader->uniform("u_Model", transform);
@@ -589,7 +779,7 @@ namespace gfx {
             shader->uniform("u_SolidObjectColor", rgb);
         }
 
-        Shader* shader = get_shader();
+        opengl::Shader* shader = get_shader();
         shader->bind();
         shader->uniform("ka", ka);
         shader->uniform("kd", kd);
@@ -599,7 +789,7 @@ namespace gfx {
 
     void Basic::bind()
     {
-        Shader* shader = get_shader();
+        opengl::Shader* shader = get_shader();
         shader->uniform("ka", 0.6f);
         shader->uniform("kd", 0.8f);
         shader->uniform("ks", 0.2f);
@@ -819,242 +1009,7 @@ namespace gfx {
         return std::make_shared<Geometry>(vertices, Geometry::POS_NORM_UV);
     }
 
-    Texture::Texture(const std::string& path, bool flip_vertically)
-    {
-        glGenTextures(1, &id);
-        glBindTexture(GL_TEXTURE_2D, id); 
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        int width, height, channels;
-        stbi_set_flip_vertically_on_load(flip_vertically);
-        unsigned char* data = stbi_load(path.c_str(), &width, &height, &channels, 0);
-
-        //printf("channels = %d\n", channels);
-
-        if (data)
-        {
-            auto format = get_format(channels);
-
-            //std::cout  << path << ": format = " << format << ", channels = " << channels << std::endl;
-            glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-            glGenerateMipmap(GL_TEXTURE_2D);
-        }
-        else
-        {
-            std::cout << "Failed to load texture" << std::endl;
-        }
-        stbi_image_free(data);
-    }
-
-    Texture::~Texture()
-    {
-        glDeleteTextures(1, &id);
-    }
-
-    void Texture::bind(GLuint texture) const
-    {
-        glActiveTexture(GL_TEXTURE0 + texture);
-        glBindTexture(GL_TEXTURE_2D, id);
-    }
-
-    void Texture::unbind() const
-    {
-        glBindTexture(GL_TEXTURE_2D, 0);
-    }
-
-    GLint Texture::get_format(int channels)
-    {
-        GLint format{};
-
-        switch (channels)
-        {
-        case 3:
-            format = GL_RGB;
-            break;
-        case 4:
-            format = GL_RGBA;
-            break;
-        default:
-            std::cout << "Failed to load texture, invalid format, channels = " << channels << std::endl;
-            assert(false);
-            break;
-        }
-
-        return format;
-    }
-
-    void Texture::set_parameteri(GLenum target, GLenum pname, GLint param)
-    {
-        glTexParameteri(target, pname, param);
-    }
-
-    CubemapTexture::CubemapTexture(const std::array<std::string, 6>& paths, bool flip_vertically)
-    {
-        glGenTextures(1, &id);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, id);
-
-        int width, height, channels;
-        for (int i = 0; i < 6; i++)
-        {
-            stbi_set_flip_vertically_on_load(flip_vertically);
-            unsigned char* data = stbi_load(paths[i].c_str(), &width, &height, &channels, 0);
-            if (data)
-            {
-                auto format = get_format(channels);
-                glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-                stbi_image_free(data);
-            }
-            else
-            {
-                std::cout << "Cubemap tex failed to load at path: " << paths[i] << std::endl;
-                stbi_image_free(data);
-            }
-        }
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-    }
-
-    void CubemapTexture::bind(GLuint texture) const
-    {
-        glActiveTexture(GL_TEXTURE0 + texture);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, id);
-    }
-
-    void CubemapTexture::unbind() const
-    {
-        glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-    }
-
-    Skybox::Skybox(const std::array<std::string, 6>& faces) 
-        : 
-        Mesh(make_cube_geometry(10.0f), 
-        std::make_shared<SkyboxMaterial>(std::make_shared<CubemapTexture>(faces)))
-    {
-    }
-
-    void Skybox::draw_self(RenderContext& context)
-    {
-        if (!context.is_shadow_pass)
-        {
-            glDepthMask(GL_FALSE);
-
-            m_material->bind();
-            Shader* shader = m_material->get_shader();
-
-            auto u_View = glm::mat4(glm::mat3(context.camera->get_view_matrix()));
-            shader->uniform("u_View", u_View);
-            shader->uniform("u_Model", transform);
-            shader->uniform("u_Projection", context.camera->get_projection_matrix());
-
-            m_geometry->bind();
-            glDrawArrays(GL_TRIANGLES, 0, m_geometry->triangle_count);
-            
-            glDepthMask(GL_TRUE);
-        }
-    }
-
-    void SkyboxMaterial::bind()
-    {
-        Shader* shader = get_shader();
-        int unit = 2;
-        cubemap->bind(unit);
-        shader->bind();
-        shader->uniform("u_Skybox", unit);
-    }
-
-    void ScreenMaterial::bind()
-    {
-        Shader* shader = get_shader();
-        texture->bind(0);
-        shader->bind();
-        shader->uniform("u_ShadowMap", 0);
-    }
-
-    void VertexBuffer::generate()
-    {
-        glGenBuffers(1, &id);
-    }
-
-    void VertexBuffer::buffer(const void* data, size_t size)
-    {
-        bind();
-        glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
-    }
-
-    VertexBuffer::~VertexBuffer()
-    {
-        glDeleteBuffers(1, &id);
-    }
-
-    void VertexBuffer::bind() const
-    {
-        glBindBuffer(GL_ARRAY_BUFFER, id);
-    }
-
-    void VertexBuffer::unbind() const
-    {
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-    }
-
-    VertexArrayObject::~VertexArrayObject()
-    {
-        glDeleteVertexArrays(1, &id);
-    }
-
-    void VertexArrayObject::bind() const
-    {
-        glBindVertexArray(id);
-    }
-
-    void VertexArrayObject::generate() 
-    {
-        glGenVertexArrays(1, &id);
-    }
-
-    void VertexArrayObject::unbind() const
-    {
-        glBindVertexArray(0);
-    }
-
-    void ElementBufferObject::generate()
-    {
-        glGenBuffers(1, &id);
-    }
-
-    ElementBufferObject::~ElementBufferObject()
-    {
-        glDeleteBuffers(1, &id);
-    }
-
-    void ElementBufferObject::buffer(const void* data, size_t size)
-    {
-        bind();
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
-    }
-
-    void ElementBufferObject::bind() const
-    {
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, id);
-    }
-
-    void ElementBufferObject::unbind() const
-    {
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    }
-
-
-
-    Billboard::Billboard(std::shared_ptr<Texture> sprite)
+    Billboard::Billboard(std::shared_ptr<opengl::Texture> sprite)
         : texture(sprite), shader("shaders/billboard")
     {
         float vertices[] = {
@@ -1068,10 +1023,6 @@ namespace gfx {
             0, 1, 3,  // first Triangle
             1, 2, 3   // second Triangle
         };
-
-        vao.generate();
-        vbo.generate();
-        ebo.generate();
 
         vao.bind();
         
@@ -1127,4 +1078,49 @@ namespace gfx {
 
     }
 
+    Skybox::Skybox(const std::array<std::string, 6>& faces) 
+        : 
+        Mesh(make_cube_geometry(10.0f), 
+        std::make_shared<SkyboxMaterial>(std::make_shared<opengl::CubemapTexture>(faces)))
+    {
+    }
+
+    void Skybox::draw_self(RenderContext& context)
+    {
+        if (!context.is_shadow_pass)
+        {
+            glDepthMask(GL_FALSE);
+
+            m_material->bind();
+            opengl::Shader* shader = m_material->get_shader();
+
+            auto u_View = glm::mat4(glm::mat3(context.camera->get_view_matrix()));
+            shader->uniform("u_View", u_View);
+            shader->uniform("u_Model", transform);
+            shader->uniform("u_Projection", context.camera->get_projection_matrix());
+
+            m_geometry->bind();
+            glDrawArrays(GL_TRIANGLES, 0, m_geometry->triangle_count);
+            
+            glDepthMask(GL_TRUE);
+        }
+    }
+
+    void SkyboxMaterial::bind()
+    {
+        opengl::Shader* shader = get_shader();
+        int unit = 2;
+        cubemap->bind(unit);
+        shader->bind();
+        shader->uniform("u_Skybox", unit);
+    }
+
+   void ScreenMaterial::bind()
+    {
+        opengl::Shader* shader = get_shader();
+        texture->bind(0);
+        shader->bind();
+        shader->uniform("u_ShadowMap", 0);
+    }
+ 
 }

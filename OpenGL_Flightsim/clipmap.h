@@ -33,8 +33,8 @@ void generate_mesh(std::vector<glm::vec3>& vertices, std::vector<unsigned int>& 
 }
 
 struct Seam {
-    gfx::VertexBuffer vbo;
-    gfx::VertexArrayObject vao;
+    gfx::opengl::VertexBuffer vbo;
+    gfx::opengl::VertexArrayObject vao;
     unsigned int index_count;
 
     Seam(int columns, float size)
@@ -51,9 +51,6 @@ struct Seam {
             vertices.push_back({ x * size + size/2.0f,   size, 0 * size });
             vertices.push_back({ x * size + size,        0.0f, 0 * size});
         }
-
-        vao.generate();
-        vbo.generate();
 
         vao.bind();
         vbo.buffer(&vertices[0], vertices.size() * sizeof(vertices[0]));
@@ -84,9 +81,9 @@ struct Seam {
 };
 
 struct Block {
-    gfx::VertexBuffer vbo;
-    gfx::ElementBufferObject ebo;
-    gfx::VertexArrayObject vao;
+    gfx::opengl::VertexBuffer vbo;
+    gfx::opengl::ElementBufferObject ebo;
+    gfx::opengl::VertexArrayObject vao;
     unsigned int index_count;
 
     Block(int width, int height, float segment_size)
@@ -100,10 +97,6 @@ struct Block {
         index_count = indices.size();
 
         assert(indices.size() > 0 && vertices.size() > 0);
-
-        vao.generate();
-        vbo.generate();
-        ebo.generate();
 
         vao.bind();
 
@@ -156,7 +149,7 @@ public:
         horizontal(2 * segments + 2, 1, segment_size),
         vertical(1, 2 * segments + 2, segment_size),
         center(2 * segments + 2, 2 * segments + 2, segment_size),
-        seam_1(segments, segment_size)
+        seam_1(segments * 2, segment_size / 2)
     {}
 
     glm::mat4 transform_matrix(const glm::vec2& position, float scale, float angle = 0)
@@ -223,7 +216,7 @@ public:
                 shader.uniform("u_SegmentSize", scaled_segment_size);
                 shader.uniform("u_Level", static_cast<float>(l) / levels);
 
-#if 1
+#if 0
                 if (tile_size * 5 < height * 2.5)
                 {
                     min_level = l + 1;
@@ -248,7 +241,6 @@ public:
                     }
                     shader.uniform("u_Model", transform_matrix(base + l_offset, scale));
                     horizontal.draw();
-
 
                     auto v_offset = glm::vec2(tile_size, tile_size);
                     if (diff.y == tile_size)
@@ -323,10 +315,10 @@ public:
     }
 
 private:
-    gfx::Shader shader;
-    gfx::Texture heightmap;
-    gfx::Texture normalmap;
-    gfx::Texture terrain;
+    gfx::opengl::Shader shader;
+    gfx::opengl::Texture heightmap;
+    gfx::opengl::Texture normalmap;
+    gfx::opengl::Texture terrain;
 
 #if 1
     Block tile; 

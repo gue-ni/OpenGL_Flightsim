@@ -195,8 +195,8 @@ int main(void)
     gfx::Renderer renderer(RESOLUTION.x, RESOLUTION.y);
 
     auto grey = make_shared<gfx::Phong>(glm::vec3(0.5f));
-    auto colors = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/textures/colorpalette.png"));
-    auto f16 = make_shared<gfx::Phong>(make_shared<gfx::Texture>("assets/textures/f16_large.jpg", true));
+    auto colors = make_shared<gfx::Phong>(make_shared<gfx::opengl::Texture>("assets/textures/colorpalette.png"));
+    auto f16 = make_shared<gfx::Phong>(make_shared<gfx::opengl::Texture>("assets/textures/f16_large.jpg", true));
 
     gfx::Object3D scene;
 
@@ -241,13 +241,13 @@ int main(void)
 #if 1
     float projection_distance = 1500.0f;
     float size = 0.3f;
-    gfx::Billboard cross(make_shared<gfx::Texture>("assets/textures/sprites/cross.png"));
+    gfx::Billboard cross(make_shared<gfx::opengl::Texture>("assets/textures/sprites/cross.png"));
     cross.set_position(phi::FORWARD * projection_distance);
     cross.set_scale(glm::vec3(size));
     aircraft_transform.add(&cross);
 
     // flight path marker
-    gfx::Billboard fpm(make_shared<gfx::Texture>("assets/textures/sprites/fpm.png"));
+    gfx::Billboard fpm(make_shared<gfx::opengl::Texture>("assets/textures/sprites/fpm.png"));
     fpm.set_scale(glm::vec3(size));
     aircraft_transform.add(&fpm);
 #endif

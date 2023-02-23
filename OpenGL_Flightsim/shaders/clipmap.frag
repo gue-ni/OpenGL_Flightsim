@@ -3,6 +3,7 @@
 out vec4 FragColor;
 
 uniform float u_Level;
+uniform bool u_Flag;
 uniform vec3 u_Background;
 uniform sampler2D u_Heightmap;
 uniform sampler2D u_Normalmap;
@@ -51,6 +52,11 @@ void main()
 		fog_factor = clamp(fog_factor, 0.0, 1.0);
 
 		FragColor = mix(fog_color, FragColor, fog_factor);
+
+		if(u_Flag)
+		{
+			FragColor = vec4(1, 0, 0, 1);
+		}
 	}
 	else
 	{
