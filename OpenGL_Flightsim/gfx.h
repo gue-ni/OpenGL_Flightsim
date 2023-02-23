@@ -73,18 +73,18 @@ namespace gfx {
 
         struct VertexBuffer {
             GLuint id = 0;
-            void buffer(const void* data, size_t size);
-
-            template<typename T>
-            void buffer(std::vector<T> data)
-            {
-                buffer(&data[0], sizeof(data[0]) * data.size());
-            }
-
             VertexBuffer();
             ~VertexBuffer();
             void bind() const;
             void unbind() const;
+            void buffer(const void* data, size_t size);
+
+            template<typename T>
+            void buffer(const std::vector<T>& data)
+            {
+                buffer(&data[0], sizeof(data[0]) * data.size());
+            }
+
         };
 
         struct VertexArrayObject {
@@ -102,6 +102,12 @@ namespace gfx {
             void bind() const;
             void unbind() const;
             void buffer(const void* data, size_t size);
+
+            template<typename T>
+            void buffer(const std::vector<T>& data)
+            {
+                buffer(&data[0], sizeof(data[0]) * data.size());
+            }
         };
 
         struct Texture {
