@@ -9,6 +9,10 @@
 #include <sstream>
 #include <vector>
 
+#include "lib/imgui/imgui.h"
+#include "lib/imgui/imgui_impl_sdl2.h"
+#include "lib/imgui/imgui_impl_opengl3.h"
+
 #include "gfx.h"
 #include "phi.h"
 #include "clipmap.h"
@@ -75,7 +79,7 @@ int main(void)
         SDL_WINDOW_OPENGL
     );
 
-    SDL_GLContext glContext = SDL_GL_CreateContext(window);
+    SDL_GLContext context = SDL_GL_CreateContext(window);
     glewExperimental = GL_TRUE;
 
     if (GLEW_OK != glewInit())
@@ -84,6 +88,10 @@ int main(void)
     std::cout << glGetString(GL_VERSION) << std::endl;
     std::cout << USAGE << std::endl;
 
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+
     glViewport(0, 0, RESOLUTION.x, RESOLUTION.y);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);
@@ -91,10 +99,15 @@ int main(void)
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
     //glEnable(GL_CULL_FACE);
 
+
+
     // SDL options
-    SDL_ShowCursor(SDL_FALSE);
-    //SDL_CaptureMouse(SDL_TRUE);
-    SDL_SetRelativeMouseMode(SDL_TRUE);
+    SDL_ShowCursor(SDL_TRUE);
+    SDL_CaptureMouse(SDL_TRUE);
+    SDL_SetRelativeMouseMode(SDL_FALSE);
+
+    ImGui_ImplSDL2_InitForOpenGL(window, context);
+    ImGui_ImplOpenGL3_Init();
 
     Joystick joystick;
     SDL_Joystick* sdl_joystick = nullptr;
@@ -287,6 +300,7 @@ int main(void)
     bool quit = false, paused = false, orbit = false;
     uint64_t last = 0, now = SDL_GetPerformanceCounter();
     phi::Seconds dt, timer = 0, log_timer = 0;
+    float fps = 0.0f;
 
     while (!quit)
     {
@@ -299,18 +313,12 @@ int main(void)
         if ((timer += dt) >= 1.0f)
         {
             timer = 0.0f;
-
-            printf(
-                "%.2f km/h, thr: %.2f, alt: %.2f m, g: %.2f\n", 
-                phi::units::kilometer_per_hour(glm::length(player_aircraft.rigid_body.velocity)),
-                player_aircraft.engine.throttle,
-                player_aircraft.rigid_body.position.y,
-                calculate_g_force(player_aircraft.rigid_body)
-            );
+            fps = 1.0f / dt;
         }
 
         while (SDL_PollEvent(&event) != 0)
         {
+            ImGui_ImplSDL2_ProcessEvent(&event);
             switch (event.type) {
             case SDL_QUIT: {
                 quit = true;
@@ -390,6 +398,28 @@ int main(void)
             }
         }
 
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplSDL2_NewFrame();
+        ImGui::NewFrame();
+#if 0
+        ImGui::ShowDemoWindow();
+#else
+        ImGuiWindowFlags window_flags = 0;
+        window_flags |= ImGuiWindowFlags_NoTitleBar;
+        window_flags |= ImGuiWindowFlags_NoMove;
+        window_flags |= ImGuiWindowFlags_NoResize;
+        //window_flags |= ImGuiWindowFlags_NoBackground;
+
+        ImGui::SetNextWindowPos(ImVec2(10, 10));
+        ImGui::Begin("Flightsim", nullptr, window_flags);
+        ImGui::Text("ALT: %.2f m", player_aircraft.rigid_body.position.y);
+        ImGui::Text("SPD: %.2f km/h", phi::units::kilometer_per_hour(player_aircraft.rigid_body.get_speed()));
+        ImGui::Text("THR: %.2f", player_aircraft.engine.throttle);
+        ImGui::Text("G:   %.1f", calculate_g_force(player_aircraft.rigid_body));
+        ImGui::Text("FPS: %.2f", fps);
+        ImGui::End();
+#endif
+
         get_keyboard_state(joystick, dt);
 
         player_aircraft.joystick = glm::vec3(joystick.roll, joystick.yaw, joystick.pitch);
@@ -418,6 +448,8 @@ int main(void)
         }
         renderer.render(camera, scene);
 
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         SDL_GL_SwapWindow(window);
     }
     return 0;

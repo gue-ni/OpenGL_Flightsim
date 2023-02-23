@@ -5,6 +5,7 @@ Debug/
 Release/
 OpenGL_Flightsim/reference/stuff/
 
+*.ini
 *.user
 *.suo
 *.ncb
