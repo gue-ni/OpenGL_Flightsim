@@ -289,7 +289,7 @@ int main(void)
     camera_transform.set_rotation({0, glm::radians(-90.0f), 0.0f});
     aircraft_transform.add(&camera_transform);
 
-    gfx::Camera camera(glm::radians(45.0f), (float)RESOLUTION.x / (float)RESOLUTION.y, 1.0f, 50000.0f);
+    gfx::Camera camera(glm::radians(45.0f), (float)RESOLUTION.x / (float)RESOLUTION.y, 1.0f, 80000.0f);
     scene.add(&camera);
     camera.set_position(player_aircraft.rigid_body.position);
     camera.set_rotation({0, glm::radians(-90.0f), 0.0f});
@@ -408,15 +408,30 @@ int main(void)
         window_flags |= ImGuiWindowFlags_NoTitleBar;
         window_flags |= ImGuiWindowFlags_NoMove;
         window_flags |= ImGuiWindowFlags_NoResize;
-        //window_flags |= ImGuiWindowFlags_NoBackground;
+
+        auto& rb = player_aircraft.rigid_body;
+
+        float speed = phi::units::kilometer_per_hour(rb.get_speed());
+        float ias = phi::units::kilometer_per_hour(get_indicated_air_speed(rb));
+
+        float angle_of_attack = glm::degrees(std::asin(glm::dot(glm::normalize(-rb.velocity), rb.up())));
+
+        auto forward = rb.forward();
+        float heading = glm::degrees(glm::angle(glm::vec2(1.0f, 0.0f), glm::normalize(glm::vec2(forward.x, forward.z))));
 
         ImGui::SetNextWindowPos(ImVec2(10, 10));
+        ImGui::SetNextWindowSize(ImVec2(135, 140));
+        ImGui::SetNextWindowBgAlpha(0.35f);
         ImGui::Begin("Flightsim", nullptr, window_flags);
-        ImGui::Text("ALT: %.2f m", player_aircraft.rigid_body.position.y);
-        ImGui::Text("SPD: %.2f km/h", phi::units::kilometer_per_hour(player_aircraft.rigid_body.get_speed()));
-        ImGui::Text("THR: %.2f", player_aircraft.engine.throttle);
-        ImGui::Text("G:   %.1f", calculate_g_force(player_aircraft.rigid_body));
+        ImGui::Text("ALT: %.2f m", rb.position.y);
+        ImGui::Text("SPD: %.2f km/h", speed);
+        ImGui::Text("IAS: %.2f km/h", ias);
+        ImGui::Text("THR: %.0f %%", player_aircraft.engine.throttle * 100.0f);
+        //ImGui::Text("AOA: %.0f deg", angle_of_attack);
+        ImGui::Text("G:   %.1f", get_g_force(rb));
         ImGui::Text("FPS: %.2f", fps);
+
+        //ImGui::Text("HDG: %.1f", heading);
         ImGui::End();
 #endif
 

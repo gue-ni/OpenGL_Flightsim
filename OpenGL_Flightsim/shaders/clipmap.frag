@@ -43,13 +43,15 @@ void main()
 		//FragColor = vec4(Color, 1.0); 
 
 		// Calculate fog
-		float fog_maxdist = 40000.0;
-		float fog_mindist = 16000.0;
+		float fog_maxdist = 64000.0;
+		float fog_mindist = 8000.0;
 		vec4 fog_color = vec4(u_Background, 1.0);
 
 		float dist = length(FragPos.xyz);
 		float fog_factor = (fog_maxdist - dist) / (fog_maxdist - fog_mindist);
 		fog_factor = clamp(fog_factor, 0.0, 1.0);
+
+		//fog_factor = 1;
 
 		FragColor = mix(fog_color, FragColor, fog_factor);
 

@@ -11,7 +11,7 @@
 #include <algorithm>
 
 // only accurate for altitudes < 11km
-float calculate_air_density(float altitude)
+float get_air_density(float altitude)
 {
     assert(0.0f <= altitude && altitude <= 11000.0f);
     float temperature = 288.15f - 0.0065f * altitude; // kelvin
@@ -19,7 +19,7 @@ float calculate_air_density(float altitude)
     return 0.00348f * (pressure / temperature);
 }
 
-float calculate_propellor_thrust(const phi::RigidBody& rb, float engine_horsepower, float propellor_rpm, float propellor_diameter)
+float get_propellor_thrust(const phi::RigidBody& rb, float engine_horsepower, float propellor_rpm, float propellor_diameter)
 {
     float speed = rb.get_speed();
     float engine_power = phi::units::watts(engine_horsepower); 
@@ -34,8 +34,8 @@ float calculate_propellor_thrust(const phi::RigidBody& rb, float engine_horsepow
     
 #if 1    
     const float C = 0.12f;
-    float air_density = calculate_air_density(rb.position.y);
-    float sea_level_air_density = calculate_air_density(0.0f);
+    float air_density = get_air_density(rb.position.y);
+    float sea_level_air_density = get_air_density(0.0f);
     float power_drop_off_factor = ((air_density / sea_level_air_density) - C) / (1 - C);
 #else
     float power_drop_off_factor = 1.0f;
@@ -44,17 +44,18 @@ float calculate_propellor_thrust(const phi::RigidBody& rb, float engine_horsepow
     return ((propellor_efficiency * engine_power) / speed) * power_drop_off_factor;
 }
 
-float calculate_indicated_air_speed(const phi::RigidBody& rb)
+// https://aerotoolbox.com/airspeed-conversions/
+float get_indicated_air_speed(const phi::RigidBody& rb)
 {
-    // https://www.eaa.org/eaa/news-and-publications/eaa-news-and-aviation-news/bits-and-pieces-newsletter/02-17-2020-aviation-words-true-airspeed
-    float true_air_speed = rb.get_speed();
-    float air_density = calculate_air_density(rb.position.y);
-    float sea_level_air_density = calculate_air_density(0.0f);
-    return true_air_speed / std::sqrt(sea_level_air_density / air_density);
+    const float airspeed = rb.get_speed();
+    const float air_density = get_air_density(rb.position.y);
+    const float sea_level_air_density = get_air_density(0.0f);
+    float dynamic_pressure = 0.5f * air_density * phi::sq(airspeed); // bernoulli's equation
+    return std::sqrt(2 * dynamic_pressure / sea_level_air_density);
 }
 
-// get g-force from pitching movement 
-float calculate_g_force(const phi::RigidBody& rb)
+// get g-force in pitch direction 
+float get_g_force(const phi::RigidBody& rb)
 {
     auto velocity = rb.get_body_velocity();
     auto angular_velocity = rb.angular_velocity;
@@ -75,21 +76,21 @@ float calculate_g_force(const phi::RigidBody& rb)
 
 struct Airfoil
 {
-    float min, max;
-    std::vector<ValueTuple> data;
+    float min_alpha, max_alpha;
+    std::vector<glm::vec3> data;
 
-    Airfoil(const std::vector<ValueTuple> &curve_data) : data(curve_data)
+    Airfoil(const std::vector<glm::vec3> &curve_data) : data(curve_data)
     {
-        min = curve_data[0].alpha;
-        max = curve_data[curve_data.size() - 1].alpha;
+        min_alpha = curve_data[0].x;
+        max_alpha = curve_data[curve_data.size() - 1].x;
     }
 
     std::tuple<float, float> sample(float alpha) const
     {
         int max_index = static_cast<int>(data.size() - 1);
-        int index = static_cast<int>(phi::utils::scale(alpha, min, max, 0.0f, static_cast<float>(max_index)));
+        int index = static_cast<int>(phi::utils::scale(alpha, min_alpha, max_alpha, 0.0f, static_cast<float>(max_index)));
         assert(0 <= index && index < max_index);
-        return { data[index].cl, data[index].cd };
+        return { data[index].y, data[index].z };
     }
 };
 
@@ -113,9 +114,9 @@ struct Engine : public phi::ForceEffector
 struct Wing : public phi::ForceEffector
 {
     const float area{}; // m^2
-    const glm::vec3 center_of_pressure;
-    const Airfoil *airfoil;
+    const Airfoil *airfoil;                 
     const glm::vec3 normal;
+    const glm::vec3 center_of_pressure;
 
     float lift_multiplier = 1.0f;
     float drag_multiplier = 1.0f;
@@ -145,7 +146,7 @@ struct Wing : public phi::ForceEffector
 
         glm::vec3 wing_normal = normal;
 
-        if (abs(deflection) > phi::EPSILON)
+        if (std::abs(deflection) > phi::EPSILON)
         {
             // rotate wing
             auto axis = glm::normalize(glm::cross(phi::FORWARD, normal));
@@ -167,7 +168,7 @@ struct Wing : public phi::ForceEffector
         auto [lift_coefficient, drag_coefficient] = airfoil->sample(angle_of_attack);
 
         // air density depends on altitude
-        float air_density = calculate_air_density(rigid_body.position.y);
+        float air_density = get_air_density(rigid_body.position.y);
 
         float tmp = 0.5f * std::pow(speed, 2) * air_density * area;
         glm::vec3 lift = lift_direction * lift_coefficient * lift_multiplier * tmp;

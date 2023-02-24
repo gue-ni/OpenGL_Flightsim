@@ -216,7 +216,7 @@ public:
                 shader.uniform("u_SegmentSize", scaled_segment_size);
                 shader.uniform("u_Level", static_cast<float>(l) / levels);
 
-#if 0
+#if 1
                 if (tile_size * 5 < height * 2.5)
                 {
                     min_level = l + 1;
