@@ -1115,12 +1115,11 @@ namespace gfx {
         shader->uniform("u_Skybox", unit);
     }
 
-   void ScreenMaterial::bind()
+    void ScreenMaterial::bind()
     {
         opengl::Shader* shader = get_shader();
         texture->bind(0);
         shader->bind();
         shader->uniform("u_ShadowMap", 0);
     }
- 
 }
