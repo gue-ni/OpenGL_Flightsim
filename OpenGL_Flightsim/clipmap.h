@@ -149,15 +149,14 @@ public:
         horizontal(2 * segments + 2, 1, segment_size),
         vertical(1, 2 * segments + 2, segment_size),
         center(2 * segments + 2, 2 * segments + 2, segment_size),
-        seam_1(segments * 2, segment_size / 2)
+        seam_1(2 * segments + 2, segment_size * 2)
     {}
 
     glm::mat4 transform_matrix(const glm::vec2& position, float scale, float angle = 0)
     {
-        const auto one = glm::mat4(1.0f);
-        auto S = glm::scale(one, glm::vec3(scale));
-        auto T = glm::translate(one, glm::vec3(position.x, 0.0f, position.y));
-        auto R = glm::rotate(one, angle, glm::vec3(0.0f, 1.0f, 0.0f));
+        auto S = glm::scale(glm::mat4(1.0f), glm::vec3(scale));
+        auto T = glm::translate(glm::mat4(1.0f), glm::vec3(position.x, 0.0f, position.y));
+        auto R = glm::rotate(glm::mat4(1.0f), glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
         return T * R * S;
     }
 
@@ -216,7 +215,7 @@ public:
                 shader.uniform("u_SegmentSize", scaled_segment_size);
                 shader.uniform("u_Level", static_cast<float>(l) / levels);
 
-#if 1
+#if 0
                 if (tile_size * 5 < height * 2.5)
                 {
                     min_level = l + 1;
@@ -268,13 +267,25 @@ public:
                             if ((c != 2) && (r != 2))
                             {
 
-                                if (c == 0)
+                                if (c == 0 && r == 0)
                                 {
-                                    shader.uniform("u_Flag", true);
+                                    shader.uniform("u_Flag", false);
+                                    shader.uniform("u_Model", transform_matrix(tile_pos, scale));
                                     seam_1.draw();
                                     shader.uniform("u_Flag", false);
                                 }
 
+                                if (r == 0)
+                                {
+#if 0
+                                    shader.uniform("u_Flag", true);
+                                    shader.uniform("u_Model", transform_matrix(tile_pos, scale, -80.0f));
+                                    seam_1.draw();
+                                    shader.uniform("u_Flag", false);
+#endif
+                                }
+
+                                shader.uniform("u_Model", transform_matrix(tile_pos, scale));
                                 tile.draw();
                             }
                             else if(c == 2)

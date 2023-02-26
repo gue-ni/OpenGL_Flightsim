@@ -97,7 +97,7 @@ int main(void)
     glEnable(GL_MULTISAMPLE);
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-    //glEnable(GL_CULL_FACE);
+    glEnable(GL_CULL_FACE);
 
 
 
@@ -184,12 +184,10 @@ int main(void)
     };
 #endif
 
-    std::vector<float> fuselage_vertices;
-
 #if 0
-    gfx::load_obj("assets/models/cessna/fuselage.obj", fuselage_vertices);
+    auto fuselage_vertices = gfx::load_obj("assets/models/cessna/fuselage.obj");
 #else
-    gfx::load_obj("assets/models/falcon2.obj", fuselage_vertices);
+    auto fuselage_vertices = gfx::load_obj("assets/models/falcon2.obj");
 #endif
 
     gfx::Renderer renderer(RESOLUTION.x, RESOLUTION.y);
@@ -220,7 +218,8 @@ int main(void)
     scene.add(&sun);
 #endif
 
-#if 1
+#define CLIPMAP 1
+#if CLIPMAP
     Clipmap clipmap;
     scene.add(&clipmap);
 #endif
@@ -280,7 +279,7 @@ int main(void)
     };
 
     Aircraft player_aircraft(mass, thrust, inertia, wings);
-    player_aircraft.rigid_body.position = glm::vec3(-7000.0f, 1000.0f, 0.0f);
+    player_aircraft.rigid_body.position = glm::vec3(-7000.0f, 3000.0f, 0.0f);
     player_aircraft.rigid_body.velocity = glm::vec3(phi::units::meter_per_second(600.0f), 0.0f, 0.0f);
 
 
@@ -343,7 +342,9 @@ int main(void)
                     break;
 
                 case SDLK_i:
+#if CLIPMAP
                     clipmap.wireframe = !clipmap.wireframe;
+#endif
                     break;
 
                 default:
@@ -420,7 +421,7 @@ int main(void)
         float heading = glm::degrees(glm::angle(glm::vec2(1.0f, 0.0f), glm::normalize(glm::vec2(forward.x, forward.z))));
 
         ImGui::SetNextWindowPos(ImVec2(10, 10));
-        ImGui::SetNextWindowSize(ImVec2(135, 140));
+        ImGui::SetNextWindowSize(ImVec2(135, 130));
         ImGui::SetNextWindowBgAlpha(0.35f);
         ImGui::Begin("Flightsim", nullptr, window_flags);
         ImGui::Text("ALT: %.2f m", rb.position.y);
@@ -457,7 +458,7 @@ int main(void)
         else if (!paused)
         {
             auto& rb = player_aircraft.rigid_body;
-            camera.set_position(glm::mix(camera.get_position(), rb.position + rb.up() * 5.0f, dt * 0.035f * rb.get_speed()));
+            camera.set_position(glm::mix(camera.get_position(), rb.position + rb.up() * 4.5f, dt * 0.035f * rb.get_speed()));
             camera.set_rotation_quaternion(glm::mix(camera.get_rotation_quaternion(), camera_transform.get_world_rotation_quaternion(), dt * 5.0f));
             cross.visible = fpm.visible = true;
         }

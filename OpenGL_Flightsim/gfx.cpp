@@ -471,7 +471,6 @@ namespace gfx {
     {
         auto S = glm::scale(glm::mat4(1.0f), m_scale);
         auto T = glm::translate(glm::mat4(1.0f), m_position);
-        //auto R = glm::eulerAngleYXZ(m_rotation.x, m_rotation.y, m_rotation.z);
         auto R = glm::toMat4(m_rotation);
         return T * R * S;
     }
@@ -798,8 +797,10 @@ namespace gfx {
         shader->uniform("u_SolidObjectColor", rgb);
     }
 
-    bool load_obj(const std::string path, std::vector<float>& vertices)
+    std::vector<float> load_obj(const std::string path)
     {
+        std::vector<float> vertices;
+
         std::istringstream source(load_text_file(path));
 
         std::string warning, error;
@@ -816,7 +817,7 @@ namespace gfx {
             &source))
         {
             std::cout << "loadObj::Error: " << warning << error << std::endl;
-            return false;
+            return {};
         }
 
 #if 0
@@ -864,7 +865,8 @@ namespace gfx {
                 index_offset += fv;
             }
         }
-        return true;
+
+        return vertices;
 #if 0
         int i = 0;
         for (const auto& shape : shapes) {
