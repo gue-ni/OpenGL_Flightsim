@@ -906,6 +906,7 @@ namespace gfx {
     std::shared_ptr<Geometry> make_cube_geometry(float size)
     {
         float s = size / 2;
+#if 0
         std::vector<float> vertices = {
         -s, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f,
          s, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 1.0f, 0.0f,
@@ -948,8 +949,61 @@ namespace gfx {
          s,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f, 1.0f, 1.0f,
         -s,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f,
         -s,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f, 0.0f, 0.0f,
+        };
+#else
+        std::vector<float> vertices = {
+        // left
+        -s, -s, -s,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f,
+         s, -s, -s,  0.0f,  0.0f, -1.0f, 1.0f, 0.0f,
+         s,  s, -s,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f,
+         s,  s, -s,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f,
+        -s,  s, -s,  0.0f,  0.0f, -1.0f, 0.0f, 1.0f,
+        -s, -s, -s,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f,
+
+        // right
+        -s, -s,  s,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f,
+         s, -s,  s,  0.0f,  0.0f,  1.0f, 1.0f, 0.0f,
+         s,  s,  s,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f,
+         s,  s,  s,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f,
+        -s,  s,  s,  0.0f,  0.0f,  1.0f, 0.0f, 1.0f,
+        -s, -s,  s,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f,
+
+        // backward
+        -s,  s,  s, -1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
+        -s,  s, -s, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
+        -s, -s, -s, -1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
+        -s, -s, -s, -1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
+        -s, -s,  s, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
+        -s,  s,  s, -1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
+
+        // forward
+         s,  s,  s,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
+         s,  s, -s,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
+         s, -s, -s,  1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
+         s, -s, -s,  1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
+         s, -s,  s,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
+         s,  s,  s,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
+
+         // down
+        -s, -s, -s,  0.0f, -1.0f,  0.0f, 0.0f, 0.0f,
+         s, -s, -s,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f,
+         s, -s,  s,  0.0f, -1.0f,  0.0f, 1.0f, 1.0f,
+         s, -s,  s,  0.0f, -1.0f,  0.0f, 1.0f, 1.0f,
+        -s, -s,  s,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f,
+        -s, -s, -s,  0.0f, -1.0f,  0.0f, 0.0f, 0.0f,
+
+        // up
+        -s,  s, -s,  0.0f,  1.0f,  0.0f, 0.0f, 0.0f,
+         s,  s, -s,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f,
+         s,  s,  s,  0.0f,  1.0f,  0.0f, 1.0f, 1.0f,
+         s,  s,  s,  0.0f,  1.0f,  0.0f, 1.0f, 1.0f,
+        -s,  s,  s,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f,
+        -s,  s, -s,  0.0f,  1.0f,  0.0f, 0.0f, 0.0f,
 
         };
+
+
+#endif
         return std::make_shared<Geometry>(vertices, Geometry::POS_NORM_UV);
     }
 

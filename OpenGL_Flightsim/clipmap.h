@@ -175,6 +175,8 @@ public:
 #if 1
         if (!context.is_shadow_pass)
         {
+
+
             auto camera_pos = context.camera->get_world_position();
             float height = camera_pos.y;
             auto camera_pos_xy = glm::vec2(camera_pos.x, camera_pos.z);
@@ -194,6 +196,7 @@ public:
             shader.uniform("u_Background",  context.background_color);
 
 
+            glEnable(GL_CULL_FACE);
             glEnable(GL_PRIMITIVE_RESTART);
             glPrimitiveRestartIndex(primitive_restart);
             if (wireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -330,6 +333,9 @@ public:
             }
 
             if (wireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+            glDisable(GL_CULL_FACE);
+
             shader.unbind();
         }
 #endif

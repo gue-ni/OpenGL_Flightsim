@@ -382,9 +382,8 @@ namespace gfx {
 
     class Renderer {
     public:
-        //  background(rgb(222, 253, 255)
         Renderer(unsigned int width, unsigned int height) 
-            : shadow_map(new ShadowMap(1024, 1024)),  m_width(width), m_height(height), background(1.0f, 1.0f, 0.0f)
+            : shadow_map(new ShadowMap(1024, 1024)),  m_width(width), m_height(height), background(rgb(222, 253, 255))
         {
             const std::vector<float> quad_vertices = {
                 -1.0f,  1.0f, 0.0f, 0.0f, 1.0f, // top left
