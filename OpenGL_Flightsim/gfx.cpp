@@ -452,6 +452,12 @@ namespace gfx {
         set_rotation(transform.get_rotation());
     }
 
+    void Object3D::set_transform(const glm::vec3& position, const glm::quat& rotation)
+    {
+        set_position(position);
+        set_rotation_quaternion(rotation);
+    }
+
     void Object3D::set_rotation(const glm::vec3& rot)
     {
         m_rotation = glm::quat(rot); m_dirty_dof = true;

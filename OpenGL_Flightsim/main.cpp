@@ -472,20 +472,21 @@ void get_keyboard_state(Joystick& joystick, phi::Seconds dt)
         joystick.yaw = center(joystick.yaw, factor.z, dt);
     }
     
+    const float tmp = 0.002f;
+
     if (key_states[SDL_SCANCODE_J])
     {
-        joystick.throttle = glm::clamp(joystick.throttle - 0.005f, 0.0f, 1.0f);
+        joystick.throttle = glm::clamp(joystick.throttle - tmp, 0.0f, 1.0f);
     }
     else if (key_states[SDL_SCANCODE_K])
     {
-        joystick.throttle = glm::clamp(joystick.throttle + 0.005f, 0.0f, 1.0f);
+        joystick.throttle = glm::clamp(joystick.throttle + tmp, 0.0f, 1.0f);
     }
 }
 
 void apply_to_object3d(const phi::RigidBody& rigid_body, gfx::Object3D& object3d)
 {
-    object3d.set_position(rigid_body.position);
-    object3d.set_rotation_quaternion(rigid_body.orientation);
+    object3d.set_transform(rigid_body.position, rigid_body.orientation);
 }
 
 void solve_constraints(phi::RigidBody& rigid_body)

@@ -187,6 +187,7 @@ namespace gfx {
         void set_rotation_quaternion(const glm::quat& rotation);
         void set_position(const glm::vec3& position);
         void set_transform(const Object3D& transform);
+        void set_transform(const glm::vec3& position, const glm::quat& rotation);
 
         glm::vec3 get_scale() const;
         glm::vec3 get_rotation() const;

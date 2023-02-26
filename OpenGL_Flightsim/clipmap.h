@@ -175,8 +175,6 @@ public:
 #if 1
         if (!context.is_shadow_pass)
         {
-
-
             auto camera_pos = context.camera->get_world_position();
             float height = camera_pos.y;
             auto camera_pos_xy = glm::vec2(camera_pos.x, camera_pos.z);
@@ -218,7 +216,7 @@ public:
                 shader.uniform("u_SegmentSize", scaled_segment_size);
                 shader.uniform("u_Level", static_cast<float>(l) / levels);
 
-#if 0
+#if 1
                 if (tile_size * 5 < height * 2.5)
                 {
                     min_level = l + 1;
