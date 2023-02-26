@@ -266,23 +266,33 @@ public:
 
                             if ((c != 2) && (r != 2))
                             {
-
-                                if (c == 0 && r == 0)
+                                if (c == 0 && r == 0) // east
                                 {
                                     shader.uniform("u_Flag", false);
                                     shader.uniform("u_Model", transform_matrix(tile_pos, scale));
                                     seam_1.draw();
                                     shader.uniform("u_Flag", false);
                                 }
-
-                                if (r == 0)
+                                else if (c == cols - 1 && r == rows - 1) // west
                                 {
-#if 0
-                                    shader.uniform("u_Flag", true);
-                                    shader.uniform("u_Model", transform_matrix(tile_pos, scale, -80.0f));
+                                    shader.uniform("u_Flag", false);
+                                    shader.uniform("u_Model", transform_matrix(tile_pos + glm::vec2(tile_size), scale, 180.0f));
                                     seam_1.draw();
                                     shader.uniform("u_Flag", false);
-#endif
+                                }
+                                else if (c == cols - 1 && r == 0) // south
+                                {
+                                    shader.uniform("u_Flag", false);
+                                    shader.uniform("u_Model", transform_matrix(tile_pos + glm::vec2(0, tile_size), scale, 90.0f));
+                                    seam_1.draw();
+                                    shader.uniform("u_Flag", false);
+                                }
+                                else if (c == 0 && r == rows - 1) // north
+                                {
+                                    shader.uniform("u_Flag", false);
+                                    shader.uniform("u_Model", transform_matrix(tile_pos + glm::vec2(tile_size, 0), scale, -90.0f));
+                                    seam_1.draw();
+                                    shader.uniform("u_Flag", false);
                                 }
 
                                 shader.uniform("u_Model", transform_matrix(tile_pos, scale));

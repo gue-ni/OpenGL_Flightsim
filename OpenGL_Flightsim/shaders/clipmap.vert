@@ -8,10 +8,10 @@ uniform mat4 u_Projection;
 uniform sampler2D u_Heightmap;
 uniform sampler2D u_Normalmap;
 
-uniform vec3 u_CameraPos;
-uniform float u_Scale;
-uniform float u_SegmentSize;
-uniform float u_Level;
+uniform vec3    u_CameraPos;
+uniform float   u_Scale;
+uniform float   u_SegmentSize;
+uniform float   u_Level;
 
 out vec3 Color;
 out vec3 Normal;
