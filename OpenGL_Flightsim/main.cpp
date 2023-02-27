@@ -13,6 +13,7 @@
 #include "lib/imgui/imgui_impl_sdl2.h"
 #include "lib/imgui/imgui_impl_opengl3.h"
 
+#include "ai.h"
 #include "gfx.h"
 #include "phi.h"
 #include "clipmap.h"
@@ -55,7 +56,13 @@ struct Joystick {
 
 struct GameObject {
     gfx::Mesh transform;
-    Aircraft flightmodel;
+    Aircraft aircraft;
+
+    void update(float dt)
+    {
+        aircraft.update(dt);
+        transform.set_transform(aircraft.rigid_body.position, aircraft.rigid_body.orientation);
+    }
 };
 
 void get_keyboard_state(Joystick& joystick, phi::Seconds dt);
@@ -92,7 +99,6 @@ int main(void)
 
     std::cout << glGetString(GL_VERSION) << std::endl;
     std::cout << USAGE << std::endl;
-
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -174,18 +180,9 @@ int main(void)
     Clipmap clipmap;
     scene.add(&clipmap);
 #endif
-   
-
-#define AI_AIRCRAFT 0
-#if AI_AIRCRAFT
-    gfx::Object3D npc_aircraft;
-    scene.add(&npc_aircraft);
-    gfx::Mesh npc_fuselage(f16_fuselage, f16_texture);
-    aircraft_transform.add(&npc_fuselage);
-#endif
 
     const float mass = 10000.0f;
-    const float thrust = 40000.0f;
+    const float thrust = 50000.0f;
 
     std::vector<phi::inertia::Element> elements = {
       phi::inertia::cube_element({-0.5f,  0.0f, -2.7f}, {6.96f, 0.10f, 3.50f}, mass * 0.25f),               // left wing
@@ -207,15 +204,29 @@ int main(void)
       Wing({-6.6f,   0.0f,  0.0f},  5.31f, 3.10f, &NACA_0012, phi::RIGHT),    // rudder
     };
 
-#if 1
+    std::vector<GameObject*> objects;
+
     GameObject player = {
         .transform = gfx::Mesh(f16_fuselage, f16_texture),
-        .flightmodel = Aircraft(mass, thrust, inertia, wings)
+        .aircraft = Aircraft(mass, thrust, inertia, wings)
     };
 
-    player.flightmodel.rigid_body.position = glm::vec3(-7000.0f, 3000.0f, 0.0f);
-    player.flightmodel.rigid_body.velocity = glm::vec3(phi::units::meter_per_second(600.0f), 0.0f, 0.0f);
+    player.aircraft.rigid_body.position = glm::vec3(-7000.0f, 3000.0f, 0.0f);
+    player.aircraft.rigid_body.velocity = glm::vec3(phi::units::meter_per_second(600.0f), 0.0f, 0.0f);
     scene.add(&player.transform);
+    objects.push_back(&player);
+
+#define NPC_AIRCRAFT 1
+#if NPC_AIRCRAFT
+    GameObject npc = {
+        .transform = gfx::Mesh(f16_fuselage, f16_texture),
+        .aircraft = Aircraft(mass, thrust, inertia, wings)
+    };
+
+    npc.aircraft.rigid_body.position = glm::vec3(-6800.0f, 3020.0f, 50.0f);
+    npc.aircraft.rigid_body.velocity = glm::vec3(phi::units::meter_per_second(600.0f), 0.0f, 0.0f);
+    scene.add(&npc.transform);
+    objects.push_back(&npc);
 #endif
 
 #if 1
@@ -226,7 +237,6 @@ int main(void)
     cross.set_scale(glm::vec3(size));
     player.transform.add(&cross);
 
-    // flight path marker
     gfx::Billboard fpm(make_shared<gfx::opengl::Texture>("assets/textures/sprites/fpm.png"));
     fpm.set_scale(glm::vec3(size));
     player.transform.add(&fpm);
@@ -239,7 +249,7 @@ int main(void)
 
     gfx::Camera camera(glm::radians(45.0f), (float)RESOLUTION.x / (float)RESOLUTION.y, 1.0f, 150000.0f);
     scene.add(&camera);
-    camera.set_position(player.flightmodel.rigid_body.position);
+    camera.set_position(player.aircraft.rigid_body.position);
     camera.set_rotation({0, glm::radians(-90.0f), 0.0f});
 
     gfx::OrbitController controller(30.0f);
@@ -359,15 +369,10 @@ int main(void)
         window_flags |= ImGuiWindowFlags_NoMove;
         window_flags |= ImGuiWindowFlags_NoResize;
 
-        auto& rb =  player.flightmodel.rigid_body;
+        auto& rb =  player.aircraft.rigid_body;
 
         float speed = phi::units::kilometer_per_hour(rb.get_speed());
         float ias = phi::units::kilometer_per_hour(get_indicated_air_speed(rb));
-
-        float angle_of_attack = glm::degrees(std::asin(glm::dot(glm::normalize(-rb.velocity), rb.up())));
-
-        auto forward = rb.forward();
-        float heading = glm::degrees(glm::angle(glm::vec2(1.0f, 0.0f), glm::normalize(glm::vec2(forward.x, forward.z))));
 
         ImGui::SetNextWindowPos(ImVec2(10, 10));
         ImGui::SetNextWindowSize(ImVec2(145, 140));
@@ -376,25 +381,28 @@ int main(void)
         ImGui::Text("ALT:   %.2f m", rb.position.y);
         ImGui::Text("SPD:   %.2f km/h", speed);
         ImGui::Text("IAS:   %.2f km/h", ias);
-        //ImGui::Text("THR:   %.0f %%", airplane.flightmodel.engine.throttle * 100.0f);
+        ImGui::Text("THR:   %.0f %%", player.aircraft.engine.throttle * 100.0f);
         ImGui::Text("Mach:  %.2f", get_mach_number(rb));
         ImGui::Text("G:     %.1f", get_g_force(rb));
         ImGui::Text("FPS:   %.2f", fps);
-        //ImGui::Text("AOA: %.0f deg", angle_of_attack);
-        //ImGui::Text("HDG: %.1f", heading);
         ImGui::End();
 #endif
 
         get_keyboard_state(joystick, dt);
 
-        auto& player_aircraft = player.flightmodel;
+        auto& player_aircraft = player.aircraft;
         player_aircraft.joystick = glm::vec3(joystick.roll, joystick.yaw, joystick.pitch);
         player_aircraft.engine.throttle = joystick.throttle;
+
+        fly_towards(npc.aircraft, player.aircraft.rigid_body.position);
+        //fly_towards(player.aircraft, npc.aircraft.rigid_body.position);
         
         if (!paused)
         {
-            player_aircraft.update(dt);
-            apply_to_object3d(player_aircraft.rigid_body, player.transform);
+            for (auto obj : objects)
+            {
+                obj->update(dt);
+            }
         }
 
         fpm.set_position(glm::normalize(player_aircraft.rigid_body.get_body_velocity()) * (projection_distance + 1));

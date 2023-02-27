@@ -130,10 +130,18 @@ namespace phi {
             return (input - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
         }
     
+        // 
         template <typename T>
         constexpr inline T lerp(T a, T b, float t)
         {
             return a + t * (b - a);
+        }
+
+        // 
+        template <typename T>
+        constexpr inline float inverse_lerp(T a, T b, T v)
+        {
+            return (v - a) / (b - a);
         }
     };
     
