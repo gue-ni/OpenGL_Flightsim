@@ -13,8 +13,8 @@ namespace phi {
     typedef float Degrees;
 
     // constants
-    constexpr float EARTH_GRAVITY            = 9.80665f;    // gravity of earth, m/s^2
-    constexpr float EPSILON      = 1e-8f;
+    constexpr float EARTH_GRAVITY   = 9.80665f;    // gravity of earth, m/s^2
+    constexpr float EPSILON         = 1e-8f;
 
     // directions in body space
     constexpr glm::vec3 UP       = { 0.0f,  1.0f,  0.0f };
@@ -295,7 +295,7 @@ namespace phi {
             return transform_direction(phi::UP);
         }
 
-        // get rigth direction in world space
+        // get right direction in world space
         inline glm::vec3 right() const {
             return transform_direction(phi::RIGHT);
         }

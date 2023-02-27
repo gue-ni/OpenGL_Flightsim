@@ -109,11 +109,20 @@ namespace gfx {
             }
         };
 
+        struct TextureParams {
+            bool flip_vertically = false;
+            GLint texture_wrap_s = GL_REPEAT;
+            GLint texture_wrap_t = GL_REPEAT;
+            GLint texture_min_filter = GL_LINEAR_MIPMAP_LINEAR;
+            GLint texture_mag_filter = GL_NEAREST;
+        };
+
         struct Texture {
             GLuint id = 0;
             Texture() : id(0) { glGenTextures(1, &id); }
             Texture(GLuint texture_id) : id(texture_id) {}
-            Texture(const std::string& path, bool flip_vertically = false);
+            Texture(const std::string& path);
+            Texture(const std::string& path, const TextureParams& params);
             ~Texture();
 
             virtual void bind(GLuint texture = 0U) const;

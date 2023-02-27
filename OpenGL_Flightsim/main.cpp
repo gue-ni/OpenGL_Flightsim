@@ -35,7 +35,6 @@ EQ      control yaw
 JK      control thrust
 )";
 
-
 #if 0
 constexpr glm::ivec2 RESOLUTION{ 640, 480 };
 #else
@@ -49,7 +48,8 @@ struct Joystick {
     // scale from int16 to -1.0, 1.0
     inline static float scale(int16_t value)
     {
-        return static_cast<float>(value) / static_cast<float>(32767);
+        //return static_cast<float>(value) / static_cast<float>(32767);
+        return static_cast<float>(value) / static_cast<float>(std::numeric_limits<int16_t>::max() / 2);
     }
 };
 
@@ -127,8 +127,6 @@ int main(void)
         printf("found %d buttons, %d axis\n", joystick.num_buttons, joystick.num_axis);
     }
 
-    
-
 #if 0
     auto fuselage_vertices = gfx::load_obj("assets/models/cessna/fuselage.obj");
 #else
@@ -139,7 +137,9 @@ int main(void)
 
     auto grey = make_shared<gfx::Phong>(glm::vec3(0.5f));
     auto colors = make_shared<gfx::Phong>(make_shared<gfx::opengl::Texture>("assets/textures/colorpalette.png"));
-    auto f16 = make_shared<gfx::Phong>(make_shared<gfx::opengl::Texture>("assets/textures/f16_large.jpg", true));
+    gfx::opengl::TextureParams params = { .flip_vertically = true };
+    auto tex = make_shared<gfx::opengl::Texture>("assets/textures/f16_large.jpg", params);
+    auto f16 = make_shared<gfx::Phong>(tex);
 
     gfx::Object3D scene;
 
@@ -366,17 +366,17 @@ int main(void)
         float heading = glm::degrees(glm::angle(glm::vec2(1.0f, 0.0f), glm::normalize(glm::vec2(forward.x, forward.z))));
 
         ImGui::SetNextWindowPos(ImVec2(10, 10));
-        ImGui::SetNextWindowSize(ImVec2(135, 130));
+        ImGui::SetNextWindowSize(ImVec2(145, 140));
         ImGui::SetNextWindowBgAlpha(0.35f);
         ImGui::Begin("Flightsim", nullptr, window_flags);
-        ImGui::Text("ALT: %.2f m", rb.position.y);
-        ImGui::Text("SPD: %.2f km/h", speed);
-        ImGui::Text("IAS: %.2f km/h", ias);
-        ImGui::Text("THR: %.0f %%", player_aircraft.engine.throttle * 100.0f);
+        ImGui::Text("ALT:   %.2f m", rb.position.y);
+        ImGui::Text("SPD:   %.2f km/h", speed);
+        ImGui::Text("IAS:   %.2f km/h", ias);
+        ImGui::Text("THR:   %.0f %%", player_aircraft.engine.throttle * 100.0f);
+        ImGui::Text("Mach:  %.2f", get_mach_number(rb));
+        ImGui::Text("G:     %.1f", get_g_force(rb));
+        ImGui::Text("FPS:   %.2f", fps);
         //ImGui::Text("AOA: %.0f deg", angle_of_attack);
-        ImGui::Text("G:   %.1f", get_g_force(rb));
-        ImGui::Text("FPS: %.2f", fps);
-
         //ImGui::Text("HDG: %.1f", heading);
         ImGui::End();
 #endif

@@ -137,9 +137,9 @@ public:
 
     Clipmap(int levels = 16, int segments = 32, float segment_size = 2.0f)
         : shader("shaders/clipmap"),
-        heightmap(path + "heightmap.png"),
-        normalmap(path + "normalmap.png"),
-        terrain(path + "terrain.png"),
+        heightmap(path + "heightmap.png", { .texture_mag_filter = GL_LINEAR }),
+        normalmap(path + "normalmap.png", { .texture_mag_filter = GL_LINEAR }),
+        terrain(path + "terrain.png", { .texture_mag_filter = GL_NEAREST }),
         levels(levels),
         segments(segments),
         segment_size(segment_size),

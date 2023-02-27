@@ -10,11 +10,17 @@
 #include <tuple>
 #include <algorithm>
 
+// get temperture in kelvin
+inline float get_air_temperature(float altitude)
+{
+    return 288.15f - 0.0065f * altitude; // kelvin
+}
+
 // only accurate for altitudes < 11km
 float get_air_density(float altitude)
 {
     assert(0.0f <= altitude && altitude <= 11000.0f);
-    float temperature = 288.15f - 0.0065f * altitude; // kelvin
+    float temperature = get_air_temperature(altitude); // kelvin
     float pressure = 101325.0f * std::pow(1 - 0.0065f * (altitude / 288.15f), 5.25f);
     return 0.00348f * (pressure / temperature);
 }
@@ -50,7 +56,7 @@ float get_indicated_air_speed(const phi::RigidBody& rb)
     const float airspeed = rb.get_speed();
     const float air_density = get_air_density(rb.position.y);
     const float sea_level_air_density = get_air_density(0.0f);
-    float dynamic_pressure = 0.5f * air_density * phi::sq(airspeed); // bernoulli's equation
+    const float dynamic_pressure = 0.5f * air_density * phi::sq(airspeed); // bernoulli's equation
     return std::sqrt(2 * dynamic_pressure / sea_level_air_density);
 }
 
@@ -72,6 +78,14 @@ float get_g_force(const phi::RigidBody& rb)
     float g_force = centrifugal_acceleration / phi::EARTH_GRAVITY;
     g_force += (rb.up().y * phi::EARTH_GRAVITY) / phi::EARTH_GRAVITY; // add earth gravity
     return g_force;
+}
+
+float get_mach_number(const phi::RigidBody& rb)
+{
+    float speed = rb.get_speed();
+    float temperature = get_air_temperature(rb.position.y);
+    float speed_of_sound = std::sqrt(1.402f * 286.f * temperature);
+    return speed / speed_of_sound;
 }
 
 struct Airfoil
@@ -186,8 +200,6 @@ struct Aircraft
     phi::RigidBody rigid_body;
     glm::vec3 joystick{}; // roll, yaw, pitch
 
-    float log_timer = 1.0f;
-
     Aircraft(float mass, float thrust, glm::mat3 inertia, std::vector<Wing> wings)
         : elements(wings), rigid_body({ .mass = mass, .inertia = inertia }), engine(thrust)
     {}
@@ -223,90 +235,7 @@ struct Aircraft
 
         engine.apply_forces(rigid_body);
 
-        if ((log_timer += dt) > 0.5f)
-        {
-            log_timer = 0;
-#if 0
-            printf(
-                "%.2f km/h, thr: %.2f, alt: %.2f m\n", 
-                phi::units::kilometer_per_hour(glm::length(rigid_body.velocity)),
-                engine.throttle,
-                rigid_body.position.y
-            );
-#endif
-        }
-
         rigid_body.update(dt);
     }
 };
 
-namespace ai {
-
-    template<typename T>
-    struct PID {
-        T p{}, i{}, d{};
-        const T Kp, Ki, Kd;
-
-        PID(T kp, T ki, T kd)
-            : Kp(kp), Ki(ki), Kd(kd)
-        {}
-
-        T calculate(T error, float dt)
-        {
-            float previous_error = p;
-            p = error;
-            i += p * dt;
-            d = (p - previous_error) / dt;
-            return p * Kp + i * Ki + d * Kd;
-        }
-    };
-
-    struct Pilot {
-        PID<float> pitch_controller;
-        PID<float> roll_controller;
-        PID<float> yaw_controller;
-
-        Pilot() : 
-            pitch_controller(5.0f, 0.0f, 5.0f),
-            roll_controller(3.0f, 0.0f, 0.0f),
-            yaw_controller(3.0f, 0.0f, 0.0f)
-        {}
-
-        void fly_towards(Aircraft& aircraft, const glm::vec3& target, float dt)
-        {
-            auto& rb = aircraft.rigid_body;
-            auto& joystick = aircraft.joystick;
-            auto position = rb.position;
-            auto direction = glm::normalize(rb.inverse_transform_direction(target - rb.position));
-
-            const auto factor = glm::vec3(1.0f, 1.0f, 5.0f);
-
-            // roll
-            //joystick.x = direction.z;
-            joystick.x = roll_controller.calculate(direction.z, dt);
-
-            // yaw
-            //joystick.y = direction.z;
-            joystick.y = yaw_controller.calculate(direction.z, dt);
-
-            // pitch
-            //joystick.z = direction.y;
-            joystick.z = pitch_controller.calculate(direction.y, dt);
-
-            auto tmp = joystick * factor;
-            std::cout << tmp << std::endl;
-
-            joystick = glm::clamp(tmp, glm::vec3(-1.0f), glm::vec3(1.0f));
-        }
-    };
-
-    glm::vec3 intercept_point(
-        const glm::vec3& position, const glm::vec3& velocity,
-        const glm::vec3& target_position, const glm::vec3& target_velocity)
-    {
-        auto velocity_delta = target_velocity - velocity;
-        auto position_delta = target_position - position;
-        auto time_to_intercept = glm::length(position_delta) / glm::length(velocity_delta);
-        return target_position + target_velocity * time_to_intercept;
-    }
-};

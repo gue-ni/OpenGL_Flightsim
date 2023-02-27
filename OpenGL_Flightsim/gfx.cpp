@@ -115,21 +115,25 @@ namespace gfx {
         }
 
 
-        Texture::Texture(const std::string& path, bool flip_vertically)
+        Texture::Texture(const std::string& path)
+            : Texture(path, {})
+        {}
+
+        Texture::Texture(const std::string& path, const TextureParams& params)
         {
             glGenTextures(1, &id);
             glBindTexture(GL_TEXTURE_2D, id); 
 
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, params.texture_wrap_s);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, params.texture_wrap_t);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, params.texture_min_filter);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, params.texture_mag_filter);
 
             //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
             int width, height, channels;
-            stbi_set_flip_vertically_on_load(flip_vertically);
+            stbi_set_flip_vertically_on_load(params.flip_vertically);
             unsigned char* data = stbi_load(path.c_str(), &width, &height, &channels, 0);
 
             //printf("channels = %d\n", channels);
