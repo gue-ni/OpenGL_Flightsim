@@ -53,6 +53,11 @@ struct Joystick {
     }
 };
 
+struct GameObject {
+    gfx::Mesh transform;
+    Aircraft flightmodel;
+};
+
 void get_keyboard_state(Joystick& joystick, phi::Seconds dt);
 void solve_constraints(phi::RigidBody& rigid_body);
 void apply_to_object3d(const phi::RigidBody& rigid_body, gfx::Object3D& object);
@@ -139,7 +144,8 @@ int main(void)
     auto colors = make_shared<gfx::Phong>(make_shared<gfx::opengl::Texture>("assets/textures/colorpalette.png"));
     gfx::opengl::TextureParams params = { .flip_vertically = true };
     auto tex = make_shared<gfx::opengl::Texture>("assets/textures/f16_large.jpg", params);
-    auto f16 = make_shared<gfx::Phong>(tex);
+    auto f16_texture = make_shared<gfx::Phong>(tex);
+    auto f16_fuselage = std::make_shared<gfx::Geometry>(fuselage_vertices, gfx::Geometry::POS_NORM_UV);
 
     gfx::Object3D scene;
 
@@ -169,31 +175,13 @@ int main(void)
     scene.add(&clipmap);
 #endif
    
-#if 1
-    gfx::Object3D aircraft_transform;
-    scene.add(&aircraft_transform);
-    auto fuselage_geo = std::make_shared<gfx::Geometry>(fuselage_vertices, gfx::Geometry::POS_NORM_UV);
-    gfx::Mesh fuselage(fuselage_geo, f16);
-    aircraft_transform.add(&fuselage);
-#endif
 
-#if 0
-    gfx::Mesh cube(cube_geo, container);
-    transform.add(&cube);
-#endif
-
-#if 1
-    float projection_distance = 1500.0f;
-    float size = 0.3f;
-    gfx::Billboard cross(make_shared<gfx::opengl::Texture>("assets/textures/sprites/cross.png"));
-    cross.set_position(phi::FORWARD * projection_distance);
-    cross.set_scale(glm::vec3(size));
-    aircraft_transform.add(&cross);
-
-    // flight path marker
-    gfx::Billboard fpm(make_shared<gfx::opengl::Texture>("assets/textures/sprites/fpm.png"));
-    fpm.set_scale(glm::vec3(size));
-    aircraft_transform.add(&fpm);
+#define AI_AIRCRAFT 0
+#if AI_AIRCRAFT
+    gfx::Object3D npc_aircraft;
+    scene.add(&npc_aircraft);
+    gfx::Mesh npc_fuselage(f16_fuselage, f16_texture);
+    aircraft_transform.add(&npc_fuselage);
 #endif
 
     const float mass = 10000.0f;
@@ -208,11 +196,7 @@ int main(void)
       phi::inertia::cube_element({-6.6f,  0.0f,  0.0f}, {5.31f, 3.10f, 0.10f}, mass * 0.2f),                // rudder
     };
 
-#if 0
-    auto inertia = phi::inertia::tensor({100000.0f, 400000.0f, 500000.0f}); 
-#else
     auto inertia = phi::inertia::tensor(elements, true);
-#endif
 
     std::vector<Wing> wings = {
       Wing({-0.5f,   0.0f, -2.7f},  6.96f, 3.50f, &NACA_2412),                // left wing
@@ -223,19 +207,39 @@ int main(void)
       Wing({-6.6f,   0.0f,  0.0f},  5.31f, 3.10f, &NACA_0012, phi::RIGHT),    // rudder
     };
 
-    Aircraft player_aircraft(mass, thrust, inertia, wings);
-    player_aircraft.rigid_body.position = glm::vec3(-7000.0f, 3000.0f, 0.0f);
-    player_aircraft.rigid_body.velocity = glm::vec3(phi::units::meter_per_second(600.0f), 0.0f, 0.0f);
+#if 1
+    GameObject player = {
+        .transform = gfx::Mesh(f16_fuselage, f16_texture),
+        .flightmodel = Aircraft(mass, thrust, inertia, wings)
+    };
 
+    player.flightmodel.rigid_body.position = glm::vec3(-7000.0f, 3000.0f, 0.0f);
+    player.flightmodel.rigid_body.velocity = glm::vec3(phi::units::meter_per_second(600.0f), 0.0f, 0.0f);
+    scene.add(&player.transform);
+#endif
+
+#if 1
+    float size = 0.3f;
+    float projection_distance = 1500.0f;
+    gfx::Billboard cross(make_shared<gfx::opengl::Texture>("assets/textures/sprites/cross.png"));
+    cross.set_position(phi::FORWARD * projection_distance);
+    cross.set_scale(glm::vec3(size));
+    player.transform.add(&cross);
+
+    // flight path marker
+    gfx::Billboard fpm(make_shared<gfx::opengl::Texture>("assets/textures/sprites/fpm.png"));
+    fpm.set_scale(glm::vec3(size));
+    player.transform.add(&fpm);
+#endif
 
     gfx::Object3D camera_transform;
-    camera_transform.set_position({-15.0f, 1, 0});
-    camera_transform.set_rotation({0, glm::radians(-90.0f), 0.0f});
-    aircraft_transform.add(&camera_transform);
+    camera_transform.set_position({ -15.0f, 1, 0 });
+    camera_transform.set_rotation({ 0, glm::radians(-90.0f), 0.0f });
+    player.transform.add(&camera_transform);
 
     gfx::Camera camera(glm::radians(45.0f), (float)RESOLUTION.x / (float)RESOLUTION.y, 1.0f, 150000.0f);
     scene.add(&camera);
-    camera.set_position(player_aircraft.rigid_body.position);
+    camera.set_position(player.flightmodel.rigid_body.position);
     camera.set_rotation({0, glm::radians(-90.0f), 0.0f});
 
     gfx::OrbitController controller(30.0f);
@@ -355,7 +359,7 @@ int main(void)
         window_flags |= ImGuiWindowFlags_NoMove;
         window_flags |= ImGuiWindowFlags_NoResize;
 
-        auto& rb = player_aircraft.rigid_body;
+        auto& rb =  player.flightmodel.rigid_body;
 
         float speed = phi::units::kilometer_per_hour(rb.get_speed());
         float ias = phi::units::kilometer_per_hour(get_indicated_air_speed(rb));
@@ -372,7 +376,7 @@ int main(void)
         ImGui::Text("ALT:   %.2f m", rb.position.y);
         ImGui::Text("SPD:   %.2f km/h", speed);
         ImGui::Text("IAS:   %.2f km/h", ias);
-        ImGui::Text("THR:   %.0f %%", player_aircraft.engine.throttle * 100.0f);
+        //ImGui::Text("THR:   %.0f %%", airplane.flightmodel.engine.throttle * 100.0f);
         ImGui::Text("Mach:  %.2f", get_mach_number(rb));
         ImGui::Text("G:     %.1f", get_g_force(rb));
         ImGui::Text("FPS:   %.2f", fps);
@@ -383,14 +387,14 @@ int main(void)
 
         get_keyboard_state(joystick, dt);
 
+        auto& player_aircraft = player.flightmodel;
         player_aircraft.joystick = glm::vec3(joystick.roll, joystick.yaw, joystick.pitch);
         player_aircraft.engine.throttle = joystick.throttle;
         
         if (!paused)
         {
             player_aircraft.update(dt);
-            // solve_constraints(aircraft.rigid_body);
-            apply_to_object3d(player_aircraft.rigid_body, aircraft_transform);
+            apply_to_object3d(player_aircraft.rigid_body, player.transform);
         }
 
         fpm.set_position(glm::normalize(player_aircraft.rigid_body.get_body_velocity()) * (projection_distance + 1));
