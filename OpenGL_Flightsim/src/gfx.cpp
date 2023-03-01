@@ -19,8 +19,7 @@ namespace gfx {
 
 namespace gl {
 
-Shader::Shader(const std::string& path)
-    : Shader(load_text_file(path + ".vert"), load_text_file(path + ".frag")) {}
+Shader::Shader(const std::string& path) : Shader(load_text_file(path + ".vert"), load_text_file(path + ".frag")) {}
 
 Shader::Shader(const std::string& vertShader, const std::string& fragShader) {
   // std::cout << "create Shader\n";
@@ -37,8 +36,7 @@ Shader::Shader(const std::string& vertShader, const std::string& fragShader) {
   glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
   if (!success) {
     glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-    std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n"
-              << infoLog << std::endl;
+    std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
   }
 
   // fragment shader
@@ -49,8 +47,7 @@ Shader::Shader(const std::string& vertShader, const std::string& fragShader) {
   glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
   if (!success) {
     glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-    std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n"
-              << infoLog << std::endl;
+    std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
   }
   // link shaders
   id = glCreateProgram();
@@ -61,8 +58,7 @@ Shader::Shader(const std::string& vertShader, const std::string& fragShader) {
   glGetProgramiv(id, GL_LINK_STATUS, &success);
   if (!success) {
     glGetProgramInfoLog(id, 512, NULL, infoLog);
-    std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n"
-              << infoLog << std::endl;
+    std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
   }
   glDeleteShader(vertexShader);
   glDeleteShader(fragmentShader);
@@ -74,9 +70,7 @@ void Shader::bind() const { glUseProgram(id); }
 
 void Shader::unbind() const { glUseProgram(0); }
 
-void Shader::uniform(const std::string& name, int value) {
-  glUniform1i(glGetUniformLocation(id, name.c_str()), value);
-}
+void Shader::uniform(const std::string& name, int value) { glUniform1i(glGetUniformLocation(id, name.c_str()), value); }
 
 void Shader::uniform(const std::string& name, unsigned int value) {
   glUniform1ui(glGetUniformLocation(id, name.c_str()), value);
@@ -95,8 +89,7 @@ void Shader::uniform(const std::string& name, const glm::vec4& value) {
 }
 
 void Shader::uniform(const std::string& name, const glm::mat4& value) {
-  glUniformMatrix4fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE,
-                     &value[0][0]);
+  glUniformMatrix4fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE, &value[0][0]);
 }
 
 Texture::Texture(const std::string& path) : Texture(path, {}) {}
@@ -107,10 +100,8 @@ Texture::Texture(const std::string& path, const TextureParams& params) {
 
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, params.texture_wrap_s);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, params.texture_wrap_t);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                  params.texture_min_filter);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
-                  params.texture_mag_filter);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, params.texture_min_filter);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, params.texture_mag_filter);
 
   // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -126,8 +117,7 @@ Texture::Texture(const std::string& path, const TextureParams& params) {
 
     // std::cout  << path << ": format = " << format << ", channels = " <<
     // channels << std::endl;
-    glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format,
-                 GL_UNSIGNED_BYTE, data);
+    glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
   } else {
     std::cout << "Failed to load texture" << std::endl;
@@ -158,8 +148,7 @@ GLint Texture::get_format(int channels) {
       format = GL_RGBA;
       break;
     default:
-      std::cout << "Failed to load texture, invalid format, channels = "
-                << channels << std::endl;
+      std::cout << "Failed to load texture, invalid format, channels = " << channels << std::endl;
       assert(false);
       break;
   }
@@ -167,28 +156,22 @@ GLint Texture::get_format(int channels) {
   return format;
 }
 
-void Texture::set_parameteri(GLenum target, GLenum pname, GLint param) {
-  glTexParameteri(target, pname, param);
-}
+void Texture::set_parameteri(GLenum target, GLenum pname, GLint param) { glTexParameteri(target, pname, param); }
 
-CubemapTexture::CubemapTexture(const std::array<std::string, 6>& paths,
-                               bool flip_vertically) {
+CubemapTexture::CubemapTexture(const std::array<std::string, 6>& paths, bool flip_vertically) {
   glGenTextures(1, &id);
   glBindTexture(GL_TEXTURE_CUBE_MAP, id);
 
   int width, height, channels;
   for (int i = 0; i < 6; i++) {
     stbi_set_flip_vertically_on_load(flip_vertically);
-    unsigned char* data =
-        stbi_load(paths[i].c_str(), &width, &height, &channels, 0);
+    unsigned char* data = stbi_load(paths[i].c_str(), &width, &height, &channels, 0);
     if (data) {
       auto format = get_format(channels);
-      glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, width, height,
-                   0, format, GL_UNSIGNED_BYTE, data);
+      glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
       stbi_image_free(data);
     } else {
-      std::cout << "Cubemap tex failed to load at path: " << paths[i]
-                << std::endl;
+      std::cout << "Cubemap tex failed to load at path: " << paths[i] << std::endl;
       stbi_image_free(data);
     }
   }
@@ -231,13 +214,9 @@ ElementBufferObject::ElementBufferObject() { glGenBuffers(1, &id); }
 
 ElementBufferObject::~ElementBufferObject() { glDeleteBuffers(1, &id); }
 
-void ElementBufferObject::bind() const {
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, id);
-}
+void ElementBufferObject::bind() const { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, id); }
 
-void ElementBufferObject::unbind() const {
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-}
+void ElementBufferObject::unbind() const { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); }
 
 void ElementBufferObject::buffer(const void* data, size_t size) {
   bind();
@@ -245,8 +224,7 @@ void ElementBufferObject::buffer(const void* data, size_t size) {
 }
 };  // namespace gl
 
-Geometry::Geometry(const std::vector<float>& vertices,
-                   const VertexLayout& layout)
+Geometry::Geometry(const std::vector<float>& vertices, const VertexLayout& layout)
     : triangle_count(static_cast<int>(vertices.size()) / (get_stride(layout))) {
   const int stride = get_stride(layout);
 
@@ -254,15 +232,13 @@ Geometry::Geometry(const std::vector<float>& vertices,
   vbo.buffer(vertices);
 
   unsigned int index = 0;
-  glVertexAttribPointer(index, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float),
-                        (void*)0);
+  glVertexAttribPointer(index, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
   glEnableVertexAttribArray(index);
 
   if (layout == POS_NORM || layout == POS_NORM_UV)  // add normal
   {
     index++;
-    glVertexAttribPointer(index, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float),
-                          (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(index, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(index);
   }
 
@@ -278,9 +254,7 @@ Geometry::Geometry(const std::vector<float>& vertices,
   vao.bind();
 }
 
-Geometry::Geometry(const Geometry& geometry) {
-  triangle_count = geometry.triangle_count;
-}
+Geometry::Geometry(const Geometry& geometry) { triangle_count = geometry.triangle_count; }
 
 Geometry::~Geometry() {}
 
@@ -332,9 +306,7 @@ void Object3D::draw_children(RenderContext& context) {
 
 glm::vec3 Object3D::get_position() const { return m_position; }
 
-glm::vec3 Object3D::get_rotation() const {
-  return glm::eulerAngles(m_rotation);
-}
+glm::vec3 Object3D::get_rotation() const { return glm::eulerAngles(m_rotation); }
 
 glm::quat Object3D::get_rotation_quaternion() const { return m_rotation; }
 
@@ -356,8 +328,7 @@ void Object3D::set_transform(const Object3D& transform) {
   set_rotation(transform.get_rotation());
 }
 
-void Object3D::set_transform(const glm::vec3& position,
-                             const glm::quat& rotation) {
+void Object3D::set_transform(const glm::vec3& position, const glm::quat& rotation) {
   set_position(position);
   set_rotation_quaternion(rotation);
 }
@@ -367,13 +338,9 @@ void Object3D::set_rotation(const glm::vec3& rot) {
   m_dirty_dof = true;
 }
 
-void Object3D::rotate_by(const glm::vec3& rot) {
-  set_rotation(get_rotation() + rot);
-}
+void Object3D::rotate_by(const glm::vec3& rot) { set_rotation(get_rotation() + rot); }
 
-void Object3D::set_rotation_quaternion(const glm::quat& quat) {
-  m_rotation = quat;
-}
+void Object3D::set_rotation_quaternion(const glm::quat& quat) { m_rotation = quat; }
 
 glm::mat4 Object3D::get_local_transform() const {
   auto S = glm::scale(glm::mat4(1.0f), m_scale);
@@ -427,9 +394,7 @@ glm::quat Object3D::get_world_rotation_quaternion() const {
     return parent->get_world_rotation_quaternion() * m_rotation;
 }
 
-glm::vec3 Object3D::get_world_position() const {
-  return glm::vec3(transform * glm::vec4(glm::vec3(0.0f), 1.0f));
-}
+glm::vec3 Object3D::get_world_position() const { return glm::vec3(transform * glm::vec4(glm::vec3(0.0f), 1.0f)); }
 
 Object3D::Type Object3D::get_type() const { return Type::OBJECT3D; }
 
@@ -438,8 +403,7 @@ Object3D::Type Light::get_type() const { return Object3D::Type::LIGHT; }
 glm::mat4 Light::light_space_matrix() {
   float near_plane = 0.1f, far_plane = 10.0f, m = 10.0f;
   auto wp = get_world_position();
-  glm::mat4 light_view =
-      glm::lookAt(wp, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+  glm::mat4 light_view = glm::lookAt(wp, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
   glm::mat4 light_projection = glm::ortho(-m, m, -m, m, near_plane, far_plane);
   return light_projection * light_view;
 }
@@ -498,8 +462,7 @@ void Mesh::draw_self(RenderContext& context) {
 
     shader->bind();
     shader->uniform("u_Model", transform);
-    shader->uniform("u_LightSpaceMatrix",
-                    context.shadow_caster->light_space_matrix());
+    shader->uniform("u_LightSpaceMatrix", context.shadow_caster->light_space_matrix());
   } else {
     gl::Shader* shader = m_material->get_shader();
 
@@ -509,15 +472,13 @@ void Mesh::draw_self(RenderContext& context) {
     shader->uniform("u_Projection", context.camera->get_projection_matrix());
 
     if (context.shadow_caster) {
-      shader->uniform("u_LightSpaceMatrix",
-                      context.shadow_caster->light_space_matrix());
+      shader->uniform("u_LightSpaceMatrix", context.shadow_caster->light_space_matrix());
     }
 
     shader->uniform("u_BackgroundColor", context.background_color);
     shader->uniform("u_NumLights", static_cast<int>(context.lights.size()));
     shader->uniform("u_CameraPosition", context.camera->get_world_position());
-    shader->uniform("u_ReceiveShadow",
-                    (receive_shadow && context.shadow_caster));
+    shader->uniform("u_ReceiveShadow", (receive_shadow && context.shadow_caster));
 
     for (int i = 0; i < context.lights.size(); i++) {
       auto index = std::to_string(i);
@@ -525,8 +486,7 @@ void Mesh::draw_self(RenderContext& context) {
 
       shader->uniform("u_Lights[" + index + "].type", type);
       shader->uniform("u_Lights[" + index + "].color", context.lights[i]->rgb);
-      shader->uniform("u_Lights[" + index + "].position",
-                      context.lights[i]->get_world_position());
+      shader->uniform("u_Lights[" + index + "].position", context.lights[i]->get_world_position());
     }
 
     context.shadow_map->depth_map.bind(0);
@@ -547,8 +507,8 @@ ShadowMap::ShadowMap(unsigned int shadow_width, unsigned int shadow_height)
     : width(shadow_width), height(shadow_height), shader("shaders/depth") {
   // glGenTextures(1, &depth_map_texture_id);
   glBindTexture(GL_TEXTURE_2D, depth_map.id);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadow_width,
-               shadow_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadow_width, shadow_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT,
+               NULL);
 
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -557,8 +517,7 @@ ShadowMap::ShadowMap(unsigned int shadow_width, unsigned int shadow_height)
 
   glGenFramebuffers(1, &fbo);
   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
-                         depth_map.id, 0);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_map.id, 0);
   glDrawBuffer(GL_NONE);
   glReadBuffer(GL_NONE);
   glBindBuffer(GL_FRAMEBUFFER, 0);
@@ -572,8 +531,7 @@ ShadowMap::ShadowMap(unsigned int shadow_width, unsigned int shadow_height)
 void FirstPersonController::update(Object3D& target, float dt) {
   const auto pos = target.get_position();
   target.set_position(pos + m_velocity * dt);
-  target.override_transform(
-      glm::inverse(glm::lookAt(pos, pos + m_front, m_up)));
+  target.override_transform(glm::inverse(glm::lookAt(pos, pos + m_front, m_up)));
   m_velocity = glm::vec3(0.0f);
 }
 
@@ -619,8 +577,7 @@ void FirstPersonController::move(const Direction& direction) {
   }
 }
 
-void OrbitController::update(Object3D& target, const glm::vec3& center,
-                             float dt) {
+void OrbitController::update(Object3D& target, const glm::vec3& center, float dt) {
   glm::vec3 front;
   front.x = cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
   front.y = sin(glm::radians(m_pitch));
@@ -629,8 +586,7 @@ void OrbitController::update(Object3D& target, const glm::vec3& center,
 
   const auto pos = center + offset;
   target.set_position(pos);
-  target.override_transform(
-      glm::inverse(glm::lookAt(pos, pos - front, glm::vec3(0, 1, 0))));
+  target.override_transform(glm::inverse(glm::lookAt(pos, pos - front, glm::vec3(0, 1, 0))));
 }
 
 void OrbitController::move_mouse(float x, float y) {
@@ -684,8 +640,7 @@ std::vector<float> load_obj(const std::string path) {
   std::vector<tinyobj::shape_t> shapes;
   std::vector<tinyobj::material_t> materials;
 
-  if (!tinyobj::LoadObj(&attributes, &shapes, &materials, &warning, &error,
-                        &source)) {
+  if (!tinyobj::LoadObj(&attributes, &shapes, &materials, &warning, &error, &source)) {
     std::cout << "loadObj::Error: " << warning << error << std::endl;
     return {};
   }
@@ -1058,15 +1013,13 @@ void push_back(std::vector<float>& vector, const glm::vec2& v) {
   vector.push_back(v.y);
 }
 
-void push_back(std::vector<float>& vector, const glm::vec3& pos,
-               const glm::vec3& normal, const glm::vec2& uv) {
+void push_back(std::vector<float>& vector, const glm::vec3& pos, const glm::vec3& normal, const glm::vec2& uv) {
   push_back(vector, pos);
   push_back(vector, normal);
   push_back(vector, uv);
 }
 
-std::shared_ptr<Geometry> make_plane_geometry(int x_elements, int y_elements,
-                                              float size) {
+std::shared_ptr<Geometry> make_plane_geometry(int x_elements, int y_elements, float size) {
   // TODO
   const float width = size, height = size;
 
@@ -1081,9 +1034,8 @@ std::shared_ptr<Geometry> make_plane_geometry(int x_elements, int y_elements,
       auto top_left = glm::vec3((x + 0) * width, 0.0f, (y + 1) * height);
       auto top_right = glm::vec3((x + 1) * width, 0.0f, (y + 1) * height);
 
-      auto tex_coord =
-          glm::vec2(static_cast<float>(x) / static_cast<float>(x_elements),
-                    static_cast<float>(y) / static_cast<float>(y_elements));
+      auto tex_coord = glm::vec2(static_cast<float>(x) / static_cast<float>(x_elements),
+                                 static_cast<float>(y) / static_cast<float>(y_elements));
 
       // triangle 1
       push_back(vertices, top_right, normal, glm::vec2(1.0f, 1.0f));
@@ -1118,8 +1070,7 @@ Billboard::Billboard(std::shared_ptr<gl::Texture> sprite, glm::vec3 color)
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
   glEnableVertexAttribArray(0);
 
-  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
-                        (void*)(3 * sizeof(float)));
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
   glEnableVertexAttribArray(1);
 
   ebo.buffer(indices, sizeof(indices));
@@ -1162,9 +1113,7 @@ void Billboard::draw_self(RenderContext& context) {
 }
 
 Skybox::Skybox(const std::array<std::string, 6>& faces)
-    : Mesh(make_cube_geometry(10.0f),
-           std::make_shared<SkyboxMaterial>(
-               std::make_shared<gl::CubemapTexture>(faces))) {}
+    : Mesh(make_cube_geometry(10.0f), std::make_shared<SkyboxMaterial>(std::make_shared<gl::CubemapTexture>(faces))) {}
 
 void Skybox::draw_self(RenderContext& context) {
   if (!context.is_shadow_pass) {
