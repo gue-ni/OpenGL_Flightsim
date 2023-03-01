@@ -367,11 +367,13 @@ class Mesh : public Object3D {
 
 class Billboard : public Object3D {
  public:
-  Billboard(std::shared_ptr<opengl::Texture> sprite);
+  Billboard(std::shared_ptr<opengl::Texture> sprite,
+            glm::vec3 color = glm::vec3(1.0f));
   void draw_self(RenderContext& context) override;
   Object3D& add(Object3D* child) = delete;
 
  private:
+  glm::vec3 color;
   opengl::Shader shader;
   std::shared_ptr<opengl::Texture> texture;
   opengl::VertexArrayObject vao;

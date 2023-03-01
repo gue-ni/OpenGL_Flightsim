@@ -131,7 +131,7 @@ int main(void) {
 #if 0
   auto fuselage_vertices = gfx::load_obj("assets/models/cessna/fuselage.obj");
 #else
-  auto fuselage_vertices = gfx::load_obj("assets/models/falcon2.obj");
+  auto fuselage_vertices = gfx::load_obj("assets/models/falcon.obj");
 #endif
 
   gfx::Renderer renderer(RESOLUTION.x, RESOLUTION.y);
@@ -149,7 +149,7 @@ int main(void) {
   gfx::Object3D scene;
 
 #if 1
-  const std::string skybox_path = "assets/textures/skybox/2/";
+  const std::string skybox_path = "assets/textures/skybox/1/";
   gfx::Skybox skybox({
       skybox_path + "right.jpg",
       skybox_path + "left.jpg",
@@ -230,14 +230,17 @@ int main(void) {
 #if 1
   float size = 0.3f;
   float projection_distance = 1500.0f;
+  auto green = glm::vec3(0.0f, 1.0f, 0.0f);
   gfx::Billboard cross(
-      make_shared<gfx::opengl::Texture>("assets/textures/sprites/cross.png"));
+      make_shared<gfx::opengl::Texture>("assets/textures/sprites/cross.png"),
+      green);
   cross.set_position(phi::FORWARD * projection_distance);
   cross.set_scale(glm::vec3(size));
   player.transform.add(&cross);
 
   gfx::Billboard fpm(
-      make_shared<gfx::opengl::Texture>("assets/textures/sprites/fpm.png"));
+      make_shared<gfx::opengl::Texture>("assets/textures/sprites/fpm.png"),
+      green);
   fpm.set_scale(glm::vec3(size));
   player.transform.add(&fpm);
 #endif

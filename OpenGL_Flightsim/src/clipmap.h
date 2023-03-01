@@ -4,31 +4,6 @@
 
 constexpr unsigned int primitive_restart = 0xFFFFU;
 
-void generate_mesh(std::vector<glm::vec3>& vertices,
-                   std::vector<unsigned int>& indices, int rows = 3,
-                   int columns = 2, float size = 1.0f) {
-  vertices.clear();
-
-  for (int y = 0; y <= rows; y++) {
-    for (int x = 0; x <= columns; x++) {
-      vertices.push_back({x * size, 0.0f, y * size});
-    }
-  }
-
-  indices.clear();
-
-  for (int r = 0; r < rows; r++) {
-    for (int c = 0; c < columns + 1; c++) {
-      auto i0 = (r + 0) * (columns + 1) + c;
-      indices.push_back(i0);
-
-      auto i1 = (r + 1) * (columns + 1) + c;
-      indices.push_back(i1);
-    }
-    indices.push_back(primitive_restart);  // restart primitive
-  }
-}
-
 struct Seam {
   gfx::opengl::VertexBuffer vbo;
   gfx::opengl::VertexArrayObject vao;
@@ -80,7 +55,22 @@ struct Block {
     std::vector<glm::vec3> vertices;
     std::vector<unsigned int> indices;
 
-    generate_mesh(vertices, indices, width, height, segment_size);
+		for (int y = 0; y <= width; y++) {
+			for (int x = 0; x <= height; x++) {
+				vertices.push_back({x * segment_size, 0.0f, y * segment_size});
+			}
+		}
+
+		for (int r = 0; r < width; r++) {
+			for (int c = 0; c < height + 1; c++) {
+				auto i0 = (r + 0) * (height + 1) + c;
+				indices.push_back(i0);
+
+				auto i1 = (r + 1) * (height + 1) + c;
+				indices.push_back(i1);
+			}
+			indices.push_back(primitive_restart);  // restart primitive
+		}
 
     index_count = indices.size();
 

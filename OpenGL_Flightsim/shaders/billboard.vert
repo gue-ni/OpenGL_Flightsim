@@ -10,14 +10,12 @@ uniform vec3 u_Up;
 uniform vec3 u_Right;
 uniform vec3 u_Scale;
 
-
 out vec2 TexCoords;
 
 void main()
 {
 	vec3 Up = u_Up;
 	vec3 Right = u_Right;
-
 
 	vec3 vertexPos = u_Position + Right * a_Pos.x * + Up * a_Pos.y;
 
@@ -26,7 +24,5 @@ void main()
 	gl_Position.xy += a_Pos.xy * vec2(0.2, 0.2);
 	gl_Position *= vec4(u_Scale, 1.0);
 
-
-
-    TexCoords = a_TexCoord;
+	TexCoords = a_TexCoord;
 }

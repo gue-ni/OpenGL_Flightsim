@@ -1100,8 +1100,8 @@ std::shared_ptr<Geometry> make_plane_geometry(int x_elements, int y_elements,
   return std::make_shared<Geometry>(vertices, Geometry::POS_NORM_UV);
 }
 
-Billboard::Billboard(std::shared_ptr<opengl::Texture> sprite)
-    : texture(sprite), shader("shaders/billboard") {
+Billboard::Billboard(std::shared_ptr<opengl::Texture> sprite, glm::vec3 color)
+    : texture(sprite), shader("shaders/billboard"), color(color) {
   float vertices[] = {
       0.5f,  0.5f,  0.0f, 0.0f, 0.0f, 0.5f,  -0.5f, 0.0f, 0.0f, 1.0f,
       -0.5f, -0.5f, 0.0f, 1.0f, 1.0f, -0.5f, 0.5f,  0.0f, 1.0f, 0.0f,
@@ -1139,7 +1139,7 @@ void Billboard::draw_self(RenderContext& context) {
   shader.uniform("u_View", view);
   shader.uniform("u_Projection", camera->get_projection_matrix());
   shader.uniform("u_Texture", 5);
-  shader.uniform("u_UseTexture", true);
+  shader.uniform("u_Color", color);
   shader.uniform("u_Position", get_world_position());
   shader.uniform("u_Scale", get_scale());
   shader.uniform("u_Right", right);
