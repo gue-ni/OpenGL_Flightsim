@@ -3,23 +3,21 @@
 #include <SDL.h>
 #include <SDL_opengl.h>
 
-#include "../lib/imgui/imgui.h"
-#include "../lib/imgui/imgui_impl_opengl3.h"
-#include "../lib/imgui/imgui_impl_sdl2.h"
-
 #include <cstdio>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <vector>
 
+#include "../lib/imgui/imgui.h"
+#include "../lib/imgui/imgui_impl_opengl3.h"
+#include "../lib/imgui/imgui_impl_sdl2.h"
 #include "ai.h"
 #include "clipmap.h"
 #include "collisions.h"
 #include "flightmodel.h"
 #include "gfx.h"
 #include "phi.h"
-
 
 using std::cout;
 using std::endl;
