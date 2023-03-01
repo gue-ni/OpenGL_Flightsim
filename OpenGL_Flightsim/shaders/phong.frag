@@ -36,8 +36,6 @@ uniform Light u_Lights[MAX_LIGHTS];
 vec3 getColor()
 {
 	return u_UseTexture ? vec3(texture(u_Texture1, TexCoords)) : u_SolidObjectColor;
-	//return vec3(1, 0, 0);
-
 }
 
 float calculateAttenuation(float constant, float linear, float quadratic, float distance)
@@ -47,11 +45,11 @@ float calculateAttenuation(float constant, float linear, float quadratic, float 
 
 float calculateShadow(vec4 fragPosLightSpace)
 {
-    vec3 projectionCoords = (fragPosLightSpace.xyz / fragPosLightSpace.w) * 0.5 + 0.5;
-    float closestDepth = texture(u_ShadowMap, projectionCoords.xy).r; 
-    float currentDepth = projectionCoords.z;
+  vec3 projectionCoords = (fragPosLightSpace.xyz / fragPosLightSpace.w) * 0.5 + 0.5;
+  float closestDepth = texture(u_ShadowMap, projectionCoords.xy).r; 
+  float currentDepth = projectionCoords.z;
 	float bias = 0.005;
-    return (currentDepth - bias) > closestDepth ? 1.0 : 0.0;
+  return (currentDepth - bias) > closestDepth ? 1.0 : 0.0;
 }
 
 vec3 calculateDirLight(Light light)
@@ -60,18 +58,18 @@ vec3 calculateDirLight(Light light)
 	
 	vec3 color = getColor();
 
-    // ambient
-    vec3 ambient = ka * light.color;
-  	
-    // diffuse 
-    vec3 norm = normalize(Normal);
-    vec3 lightDir = normalize(direction);
-    vec3 diffuse = kd * max(dot(norm, lightDir), 0.0) * light.color;
-    
-    // specular
-    vec3 u_ViewDir = normalize(u_CameraPosition - FragPos);
-    vec3 reflectDir = reflect(-lightDir, norm);  
-    vec3 specular = ks * pow(max(dot(u_ViewDir, reflectDir), 0.0), alpha) * light.color;
+  // ambient
+  vec3 ambient = ka * light.color;
+  
+  // diffuse 
+  vec3 norm = normalize(Normal);
+  vec3 lightDir = normalize(direction);
+  vec3 diffuse = kd * max(dot(norm, lightDir), 0.0) * light.color;
+  
+  // specular
+  vec3 u_ViewDir = normalize(u_CameraPosition - FragPos);
+  vec3 reflectDir = reflect(-lightDir, norm);  
+  vec3 specular = ks * pow(max(dot(u_ViewDir, reflectDir), 0.0), alpha) * light.color;
 
 	float shadow = 0.0;
 	if (u_ReceiveShadow)
@@ -90,18 +88,18 @@ vec3 calculatePointLight(Light light)
 
 	vec3 color = getColor();
 
-    // ambient
-    vec3 ambient = ka * light.color;
-  	
-    // diffuse 
-    vec3 norm = normalize(Normal);
-    vec3 lightDir = normalize(position - FragPos);
-    vec3 diffuse = kd * max(dot(norm, lightDir), 0.0) * light.color;
-    
-    // specular
-    vec3 u_ViewDir = normalize(u_CameraPosition - FragPos);
-    vec3 reflectDir = reflect(-lightDir, norm);  
-    vec3 specular = ks * pow(max(dot(u_ViewDir, reflectDir), 0.0), alpha) * light.color;
+  // ambient
+  vec3 ambient = ka * light.color;
+  
+  // diffuse 
+  vec3 norm = normalize(Normal);
+  vec3 lightDir = normalize(position - FragPos);
+  vec3 diffuse = kd * max(dot(norm, lightDir), 0.0) * light.color;
+  
+  // specular
+  vec3 u_ViewDir = normalize(u_CameraPosition - FragPos);
+  vec3 reflectDir = reflect(-lightDir, norm);  
+  vec3 specular = ks * pow(max(dot(u_ViewDir, reflectDir), 0.0), alpha) * light.color;
 
 	// attenuation
 	float constant		= 1.0;

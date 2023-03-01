@@ -33,11 +33,6 @@ constexpr inline T sq(T a) {
   return a * a;
 }
 
-template <typename T>
-constexpr inline T cb(T a) {
-  return a * a * a;
-}
-
 namespace inertia {
 struct Element {
   float mass;
@@ -106,12 +101,17 @@ constexpr glm::mat3 tensor(std::vector<Element>& elements, bool precomputed_offs
     Iyz += element.mass * (offset.y * offset.z);
   }
 
-  return {Ixx, -Ixy, -Ixz, -Ixy, Iyy, -Iyz, -Ixz, -Iyz, Izz};
+  return {
+      Ixx,  -Ixy, -Ixz,  //
+      -Ixy, Iyy,  -Iyz,  //
+      -Ixz, -Iyz, Izz,   //
+  };
 }
 };  // namespace inertia
 
 namespace utils {
 
+//
 template <typename T>
 constexpr inline T scale(T input, T in_min, T in_max, T out_min, T out_max) {
   assert(in_min <= input && input <= in_max);
@@ -129,6 +129,16 @@ template <typename T>
 constexpr inline float inverse_lerp(T a, T b, T v) {
   return (v - a) / (b - a);
 }
+
+//
+template <typename T>
+inline T move_towards(T current, T target, T speed) {
+  if (std::abs(target - current) <= speed) {
+    return target;
+  }
+  return current + glm::sign(target - current) * speed;
+}
+
 };  // namespace utils
 
 namespace units {
@@ -140,7 +150,14 @@ constexpr inline float kilometer_per_hour(float meter_per_second) { return meter
 
 constexpr inline float kelvin(float celsius) { return celsius - 273.15f; }
 
+constexpr inline float celsius(float kelvin) { return kelvin + 273.15f; }
+
 constexpr inline float watts(float horsepower) { return horsepower * 745.7f; }
+
+constexpr inline float meters_to_feet(float meters) { return meters * 3.281f; };
+
+constexpr inline float feet_to_meters(float feet) { return feet / 3.281f; };
+
 };  // namespace units
 
 struct RigidBodyParams {
@@ -256,6 +273,6 @@ class RigidBody {
 };
 
 struct ForceEffector {
-  virtual void apply_forces(phi::RigidBody& rigid_body) = 0;
+  virtual void apply_forces(phi::RigidBody& rigid_body, phi::Seconds dt) = 0;
 };
 };  // namespace phi

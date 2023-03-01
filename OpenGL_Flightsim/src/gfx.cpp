@@ -1113,7 +1113,7 @@ void Billboard::draw_self(RenderContext& context) {
 }
 
 Skybox::Skybox(const std::array<std::string, 6>& faces)
-    : Mesh(make_cube_geometry(10.0f), std::make_shared<SkyboxMaterial>(std::make_shared<gl::CubemapTexture>(faces))) {}
+    : Mesh(make_cube_geometry(1.0f), std::make_shared<SkyboxMaterial>(std::make_shared<gl::CubemapTexture>(faces))) {}
 
 void Skybox::draw_self(RenderContext& context) {
   if (!context.is_shadow_pass) {

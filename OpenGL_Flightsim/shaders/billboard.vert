@@ -17,6 +17,7 @@ void main()
 	vec3 Up = u_Up;
 	vec3 Right = u_Right;
 	vec3 Pos = a_Pos * u_Scale;
+	//vec3 Pos = a_Pos;
 
 	vec3 vertexPos = u_Position + Right * Pos.x * + Up * Pos.y;
 
