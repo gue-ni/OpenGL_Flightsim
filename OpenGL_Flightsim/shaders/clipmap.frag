@@ -44,7 +44,7 @@ void main()
 
 		// Calculate fog
 		float fog_maxdist = 64000.0;
-		float fog_mindist = 8000.0;
+		float fog_mindist = 1000.0;
 		vec4 fog_color = vec4(u_Background, 1.0);
 
 		float dist = length(FragPos.xyz);

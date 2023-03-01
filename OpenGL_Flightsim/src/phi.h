@@ -66,23 +66,16 @@ constexpr glm::vec3 cylinder(float radius, float length, float mass) {
 // inertia tensor
 constexpr glm::mat3 tensor(const glm::vec3& moment_of_inertia) {
   return {
-      moment_of_inertia.x, 0.0f, 0.0f, 0.0f,
-      moment_of_inertia.y, 0.0f, 0.0f, 0.0f,
-      moment_of_inertia.z,
+      moment_of_inertia.x, 0.0f, 0.0f, 0.0f, moment_of_inertia.y, 0.0f, 0.0f, 0.0f, moment_of_inertia.z,
   };
 }
 
-constexpr Element cube(const glm::vec3& position, const glm::vec3& size,
-                       float mass) {
-  return {.mass = mass,
-          .position = position,
-          .inertia = cube(size, mass),
-          .offset = position};
+constexpr Element cube(const glm::vec3& position, const glm::vec3& size, float mass) {
+  return {.mass = mass, .position = position, .inertia = cube(size, mass), .offset = position};
 }
 
 // calculate inertia tensor from list of connected masses
-constexpr glm::mat3 tensor(std::vector<Element>& elements,
-                           bool precomputed_offset = false) {
+constexpr glm::mat3 tensor(std::vector<Element>& elements, bool precomputed_offset = false) {
   float Ixx = 0, Iyy = 0, Izz = 0;
   float Ixy = 0, Ixz = 0, Iyz = 0;
 
@@ -139,17 +132,11 @@ constexpr inline float inverse_lerp(T a, T b, T v) {
 };  // namespace utils
 
 namespace units {
-constexpr inline float knots(float meter_per_second) {
-  return meter_per_second * 1.94384f;
-}
+constexpr inline float knots(float meter_per_second) { return meter_per_second * 1.94384f; }
 
-constexpr inline float meter_per_second(float kilometer_per_hour) {
-  return kilometer_per_hour / 3.6f;
-}
+constexpr inline float meter_per_second(float kilometer_per_hour) { return kilometer_per_hour / 3.6f; }
 
-constexpr inline float kilometer_per_hour(float meter_per_second) {
-  return meter_per_second * 3.6f;
-}
+constexpr inline float kilometer_per_hour(float meter_per_second) { return meter_per_second * 3.6f; }
 
 constexpr inline float kelvin(float celsius) { return celsius - 273.15f; }
 
@@ -172,21 +159,17 @@ class RigidBody {
   glm::vec3 m_torque{};  // torque vector in body space
 
  public:
-  float mass;                    // rigidbody mass in kg
-  glm::vec3 position{};          // position in world space
-  glm::quat orientation{};       // orientation in world space
-  glm::vec3 velocity{};          // velocity in world space
-  glm::vec3 angular_velocity{};  // angular velocity in object space, x
-                                 // represents rotation around x axis
+  float mass;                              // rigidbody mass in kg
+  glm::vec3 position{};                    // position in world space
+  glm::quat orientation{};                 // orientation in world space
+  glm::vec3 velocity{};                    // velocity in world space
+  glm::vec3 angular_velocity{};            // angular velocity in object space, x
+                                           // represents rotation around x axis
   glm::mat3 inertia{}, inverse_inertia{};  // inertia tensor
   bool apply_gravity = true;
   bool active = true;
 
-  RigidBody()
-      : RigidBody({.mass = 1.0f,
-                   .inertia =
-                       inertia::tensor(inertia::cube(glm::vec3(1.0f), 1.0f))}) {
-  }
+  RigidBody() : RigidBody({.mass = 1.0f, .inertia = inertia::tensor(inertia::cube(glm::vec3(1.0f), 1.0f))}) {}
 
   RigidBody(const RigidBodyParams& params)
       : mass(params.mass),
@@ -200,55 +183,40 @@ class RigidBody {
 
   // get velocity of point in body space
   inline glm::vec3 get_point_velocity(const glm::vec3& point) const {
-    return inverse_transform_direction(velocity) +
-           glm::cross(angular_velocity, point);
+    return inverse_transform_direction(velocity) + glm::cross(angular_velocity, point);
   }
 
   // get velocity in body space
-  inline glm::vec3 get_body_velocity() const {
-    return inverse_transform_direction(velocity);
-  }
+  inline glm::vec3 get_body_velocity() const { return inverse_transform_direction(velocity); }
 
   // force and point vectors are in body space
-  inline void add_force_at_point(const glm::vec3& force,
-                                 const glm::vec3& point) {
+  inline void add_force_at_point(const glm::vec3& force, const glm::vec3& point) {
     m_force += transform_direction(force);
     m_torque += glm::cross(point, force);
   }
 
   // transform direction from body space to world space
-  inline glm::vec3 transform_direction(const glm::vec3& direction) const {
-    return orientation * direction;
-  }
+  inline glm::vec3 transform_direction(const glm::vec3& direction) const { return orientation * direction; }
 
   // transform direction from world space to body space
-  inline glm::vec3 inverse_transform_direction(
-      const glm::vec3& direction) const {
+  inline glm::vec3 inverse_transform_direction(const glm::vec3& direction) const {
     return glm::inverse(orientation) * direction;
   }
 
   // set inertia tensor
-  inline void set_inertia(const glm::mat3& tensor) {
-    inertia = tensor, inverse_inertia = glm::inverse(tensor);
-  }
+  inline void set_inertia(const glm::mat3& tensor) { inertia = tensor, inverse_inertia = glm::inverse(tensor); }
 
   // force vector in world space
   inline void add_force(const glm::vec3& force) { m_force += force; }
 
   // force vector in body space
-  inline void add_relative_force(const glm::vec3& force) {
-    m_force += orientation * force;
-  }
+  inline void add_relative_force(const glm::vec3& force) { m_force += orientation * force; }
 
   // torque vector in world space
-  inline void add_torque(const glm::vec3& torque) {
-    m_torque += inverse_transform_direction(torque);
-  }
+  inline void add_torque(const glm::vec3& torque) { m_torque += inverse_transform_direction(torque); }
 
   // torque vector in body space
-  inline void add_relative_torque(const glm::vec3& torque) {
-    m_torque += torque;
-  }
+  inline void add_relative_torque(const glm::vec3& torque) { m_torque += torque; }
 
   // get speed
   inline float get_speed() const { return glm::length(velocity); }
@@ -278,12 +246,8 @@ class RigidBody {
     velocity += acceleration * dt;
     position += velocity * dt;
 
-    angular_velocity +=
-        inverse_inertia *
-        (m_torque - glm::cross(angular_velocity, inertia * angular_velocity)) *
-        dt;
-    orientation +=
-        (orientation * glm::quat(0.0f, angular_velocity)) * (0.5f * dt);
+    angular_velocity += inverse_inertia * (m_torque - glm::cross(angular_velocity, inertia * angular_velocity)) * dt;
+    orientation += (orientation * glm::quat(0.0f, angular_velocity)) * (0.5f * dt);
     orientation = glm::normalize(orientation);
 
     // reset accumulators
