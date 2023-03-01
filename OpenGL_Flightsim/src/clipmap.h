@@ -3,10 +3,11 @@
 #include "gfx.h"
 
 constexpr unsigned int primitive_restart = 0xFFFFU;
+const std::string path = "assets/textures/terrain/1/";
 
 struct Seam {
-  gfx::opengl::VertexBuffer vbo;
-  gfx::opengl::VertexArrayObject vao;
+  gfx::gl::VertexBuffer vbo;
+  gfx::gl::VertexArrayObject vao;
   unsigned int index_count;
 
   Seam(int columns, float size) {
@@ -45,9 +46,9 @@ struct Seam {
 };
 
 struct Block {
-  gfx::opengl::VertexBuffer vbo;
-  gfx::opengl::ElementBufferObject ebo;
-  gfx::opengl::VertexArrayObject vao;
+  gfx::gl::VertexBuffer vbo;
+  gfx::gl::ElementBufferObject ebo;
+  gfx::gl::VertexArrayObject vao;
   unsigned int index_count;
 
   Block(int width, int height, float segment_size) {
@@ -55,22 +56,22 @@ struct Block {
     std::vector<glm::vec3> vertices;
     std::vector<unsigned int> indices;
 
-		for (int y = 0; y <= width; y++) {
-			for (int x = 0; x <= height; x++) {
-				vertices.push_back({x * segment_size, 0.0f, y * segment_size});
-			}
-		}
+    for (int y = 0; y <= width; y++) {
+      for (int x = 0; x <= height; x++) {
+        vertices.push_back({x * segment_size, 0.0f, y * segment_size});
+      }
+    }
 
-		for (int r = 0; r < width; r++) {
-			for (int c = 0; c < height + 1; c++) {
-				auto i0 = (r + 0) * (height + 1) + c;
-				indices.push_back(i0);
+    for (int r = 0; r < width; r++) {
+      for (int c = 0; c < height + 1; c++) {
+        auto i0 = (r + 0) * (height + 1) + c;
+        indices.push_back(i0);
 
-				auto i1 = (r + 1) * (height + 1) + c;
-				indices.push_back(i1);
-			}
-			indices.push_back(primitive_restart);  // restart primitive
-		}
+        auto i1 = (r + 1) * (height + 1) + c;
+        indices.push_back(i1);
+      }
+      indices.push_back(primitive_restart);  // restart primitive
+    }
 
     index_count = indices.size();
 
@@ -99,8 +100,6 @@ struct Block {
     unbind();
   }
 };
-
-const std::string path = "assets/textures/terrain/1/";
 
 class Clipmap : public gfx::Object3D {
  public:
@@ -284,10 +283,10 @@ class Clipmap : public gfx::Object3D {
   }
 
  private:
-  gfx::opengl::Shader shader;
-  gfx::opengl::Texture heightmap;
-  gfx::opengl::Texture normalmap;
-  gfx::opengl::Texture terrain;
+  gfx::gl::Shader shader;
+  gfx::gl::Texture heightmap;
+  gfx::gl::Texture normalmap;
+  gfx::gl::Texture terrain;
 
   Block tile;
   Block center;

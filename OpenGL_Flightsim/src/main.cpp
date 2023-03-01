@@ -41,6 +41,8 @@ constexpr glm::ivec2 RESOLUTION{ 640, 480 };
 constexpr glm::ivec2 RESOLUTION{1024, 728};
 #endif
 
+const std::string textures = "assets/textures";
+
 struct Joystick {
   int num_axis{0}, num_hats{0}, num_buttons{0};
   float roll{0.0f}, pitch{0.0f}, yaw{0.0f}, throttle{0.0f};
@@ -128,28 +130,24 @@ int main(void) {
            joystick.num_axis);
   }
 
-#if 0
-  auto fuselage_vertices = gfx::load_obj("assets/models/cessna/fuselage.obj");
-#else
-  auto fuselage_vertices = gfx::load_obj("assets/models/falcon.obj");
-#endif
+  auto vertices = gfx::load_obj("assets/models/falcon.obj");
 
   gfx::Renderer renderer(RESOLUTION.x, RESOLUTION.y);
 
   auto grey = make_shared<gfx::Phong>(glm::vec3(0.5f));
   auto colors = make_shared<gfx::Phong>(
-      make_shared<gfx::opengl::Texture>("assets/textures/colorpalette.png"));
-  gfx::opengl::TextureParams params = {.flip_vertically = true};
-  auto tex = make_shared<gfx::opengl::Texture>("assets/textures/f16_large.jpg",
-                                               params);
+      make_shared<gfx::gl::Texture>(textures + "/colorpalette.png"));
+
+  gfx::gl::TextureParams params = {.flip_vertically = true};
+  auto tex = make_shared<gfx::gl::Texture>(textures + "/f16_large.jpg", params);
   auto f16_texture = make_shared<gfx::Phong>(tex);
-  auto f16_fuselage = std::make_shared<gfx::Geometry>(
-      fuselage_vertices, gfx::Geometry::POS_NORM_UV);
+  auto f16_fuselage =
+      make_shared<gfx::Geometry>(vertices, gfx::Geometry::POS_NORM_UV);
 
   gfx::Object3D scene;
 
 #if 1
-  const std::string skybox_path = "assets/textures/skybox/1/";
+  const std::string skybox_path = textures + "/skybox/1/";
   gfx::Skybox skybox({
       skybox_path + "right.jpg",
       skybox_path + "left.jpg",
@@ -178,18 +176,18 @@ int main(void) {
   const float thrust = 50000.0f;
 
   std::vector<phi::inertia::Element> elements = {
-      phi::inertia::cube_element({-0.5f, 0.0f, -2.7f}, {6.96f, 0.10f, 3.50f},
-                                 mass * 0.25f),  // left wing
-      phi::inertia::cube_element({-1.0f, 0.0f, -2.0f}, {3.80f, 0.10f, 1.26f},
-                                 mass * 0.05f),  // left aileron
-      phi::inertia::cube_element({-1.0f, 0.0f, 2.0f}, {3.80f, 0.10f, 1.26f},
-                                 mass * 0.05f),  // right aileron
-      phi::inertia::cube_element({-0.5f, 0.0f, 2.7f}, {6.96f, 0.10f, 3.50f},
-                                 mass * 0.25f),  // right wing
-      phi::inertia::cube_element({-6.6f, -0.1f, 0.0f}, {6.54f, 0.10f, 2.70f},
-                                 mass * 0.2f),  // elevator
-      phi::inertia::cube_element({-6.6f, 0.0f, 0.0f}, {5.31f, 3.10f, 0.10f},
-                                 mass * 0.2f),  // rudder
+      phi::inertia::cube({-0.5f, 0.0f, -2.7f}, {6.96f, 0.10f, 3.50f},
+                         mass * 0.25f),  // left wing
+      phi::inertia::cube({-1.0f, 0.0f, -2.0f}, {3.80f, 0.10f, 1.26f},
+                         mass * 0.05f),  // left aileron
+      phi::inertia::cube({-1.0f, 0.0f, 2.0f}, {3.80f, 0.10f, 1.26f},
+                         mass * 0.05f),  // right aileron
+      phi::inertia::cube({-0.5f, 0.0f, 2.7f}, {6.96f, 0.10f, 3.50f},
+                         mass * 0.25f),  // right wing
+      phi::inertia::cube({-6.6f, -0.1f, 0.0f}, {6.54f, 0.10f, 2.70f},
+                         mass * 0.2f),  // elevator
+      phi::inertia::cube({-6.6f, 0.0f, 0.0f}, {5.31f, 3.10f, 0.10f},
+                         mass * 0.2f),  // rudder
   };
 
   auto inertia = phi::inertia::tensor(elements, true);
@@ -232,15 +230,14 @@ int main(void) {
   float projection_distance = 1500.0f;
   auto green = glm::vec3(0.0f, 1.0f, 0.0f);
   gfx::Billboard cross(
-      make_shared<gfx::opengl::Texture>("assets/textures/sprites/cross.png"),
+      make_shared<gfx::gl::Texture>("assets/textures/sprites/cross.png"),
       green);
   cross.set_position(phi::FORWARD * projection_distance);
   cross.set_scale(glm::vec3(size));
   player.transform.add(&cross);
 
   gfx::Billboard fpm(
-      make_shared<gfx::opengl::Texture>("assets/textures/sprites/fpm.png"),
-      green);
+      make_shared<gfx::gl::Texture>("assets/textures/sprites/fpm.png"), green);
   fpm.set_scale(glm::vec3(size));
   player.transform.add(&fpm);
 #endif

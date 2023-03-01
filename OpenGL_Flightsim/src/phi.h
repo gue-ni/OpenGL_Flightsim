@@ -72,7 +72,7 @@ constexpr glm::mat3 tensor(const glm::vec3& moment_of_inertia) {
   };
 }
 
-constexpr Element cube_element(const glm::vec3& position, const glm::vec3& size,
+constexpr Element cube(const glm::vec3& position, const glm::vec3& size,
                                float mass) {
   return {.mass = mass,
           .position = position,
