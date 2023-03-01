@@ -15,10 +15,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="src\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="gfx.cpp">
+    <ClCompile Include="src\gfx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="lib\imgui\imgui.cpp">
@@ -60,7 +60,7 @@
     <None Include="shaders\clipmap.vert" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="gfx.h">
+    <ClInclude Include="src\gfx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="lib\stb_image.h">
@@ -69,19 +69,19 @@
     <ClInclude Include="lib\tiny_obj_loader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="phi.h">
+    <ClInclude Include="src\phi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="flightmodel.h">
+    <ClInclude Include="src\flightmodel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="clipmap.h">
+    <ClInclude Include="src\clipmap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="data.h">
+    <ClInclude Include="src\data.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="collisions.h">
+    <ClInclude Include="src\collisions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="lib\imgui\imgui.h">
@@ -109,6 +109,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="lib\imgui\imstb_truetype.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ai.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
