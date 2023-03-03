@@ -57,11 +57,11 @@ struct Joystick {
 
 struct GameObject {
   gfx::Mesh transform;
-  Airplane aircraft;
+  Airplane airplane;
 
   void update(float dt) {
-    aircraft.update(dt);
-    transform.set_transform(aircraft.rigid_body.position, aircraft.rigid_body.orientation);
+    airplane.update(dt);
+    transform.set_transform(airplane.rigid_body.position, airplane.rigid_body.orientation);
   }
 };
 
@@ -86,7 +86,6 @@ int main(void) {
   if (GLEW_OK != glewInit()) return -1;
 
   std::cout << glGetString(GL_VERSION) << std::endl;
-  std::cout << USAGE << std::endl;
 
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
@@ -196,19 +195,19 @@ int main(void) {
   std::vector<GameObject*> objects;
 
   GameObject player = {.transform = gfx::Mesh(f16_fuselage, f16_texture),
-                       .aircraft = Airplane(mass, thrust, inertia, wings)};
+                       .airplane = Airplane(mass, thrust, inertia, wings)};
 
-  player.aircraft.rigid_body.position = glm::vec3(-7000.0f, 3000.0f, 0.0f);
-  player.aircraft.rigid_body.velocity = glm::vec3(phi::units::meter_per_second(600.0f), 0.0f, 0.0f);
+  player.airplane.rigid_body.position = glm::vec3(-7000.0f, 3000.0f, 0.0f);
+  player.airplane.rigid_body.velocity = glm::vec3(phi::units::meter_per_second(600.0f), 0.0f, 0.0f);
   scene.add(&player.transform);
   objects.push_back(&player);
 
 #if NPC_AIRCRAFT
   GameObject npc = {.transform = gfx::Mesh(f16_fuselage, f16_texture),
-                    .aircraft = Airplane(mass, thrust, inertia, wings)};
+                    .airplane = Airplane(mass, thrust, inertia, wings)};
 
-  npc.aircraft.rigid_body.position = glm::vec3(-6800.0f, 3020.0f, 50.0f);
-  npc.aircraft.rigid_body.velocity = glm::vec3(phi::units::meter_per_second(600.0f), 0.0f, 0.0f);
+  npc.airplane.rigid_body.position = glm::vec3(-6800.0f, 3020.0f, 50.0f);
+  npc.airplane.rigid_body.velocity = glm::vec3(phi::units::meter_per_second(600.0f), 0.0f, 0.0f);
   scene.add(&npc.transform);
   objects.push_back(&npc);
 #endif
@@ -242,7 +241,7 @@ int main(void) {
 
   gfx::Camera camera(glm::radians(45.0f), (float)RESOLUTION.x / (float)RESOLUTION.y, 1.0f, 150000.0f);
   scene.add(&camera);
-  camera.set_position(player.aircraft.rigid_body.position);
+  camera.set_position(player.airplane.rigid_body.position);
   camera.set_rotation({0, glm::radians(-90.0f), 0.0f});
 
   gfx::OrbitController controller(30.0f);
@@ -355,7 +354,7 @@ int main(void) {
     window_flags |= ImGuiWindowFlags_NoMove;
     window_flags |= ImGuiWindowFlags_NoResize;
 
-    auto& rb = player.aircraft.rigid_body;
+    auto& rb = player.airplane.rigid_body;
     float speed = phi::units::kilometer_per_hour(rb.get_speed());
     float ias = phi::units::kilometer_per_hour(get_indicated_air_speed(rb));
     auto direction = glm::normalize(rb.get_body_velocity());
@@ -368,7 +367,7 @@ int main(void) {
     ImGui::Text("ALT:   %.2f m", rb.position.y);
     ImGui::Text("SPD:   %.2f km/h", speed);
     ImGui::Text("IAS:   %.2f km/h", ias);
-    ImGui::Text("THR:   %d %%", static_cast<int>(player.aircraft.engine.throttle * 100.0f));
+    ImGui::Text("THR:   %d %%", static_cast<int>(player.airplane.engine.throttle * 100.0f));
     ImGui::Text("Mach:  %.2f", get_mach_number(rb));
     ImGui::Text("G:     %.1f", get_g_force(rb));
     ImGui::Text("FPS:   %.2f", fps);
@@ -390,12 +389,12 @@ int main(void) {
 
     get_keyboard_state(joystick, dt);
 
-    auto& player_aircraft = player.aircraft;
+    auto& player_aircraft = player.airplane;
     player_aircraft.joystick = glm::vec3(joystick.roll, joystick.yaw, joystick.pitch);
     player_aircraft.engine.throttle = joystick.throttle;
 
 #if NPC_AIRCRAFT
-    fly_towards(npc.aircraft, player.aircraft.rigid_body.position);
+    fly_towards(npc.airplane, player.airplane.rigid_body.position);
     // fly_towards(player.aircraft, npc.aircraft.rigid_body.position);
 #endif
 

@@ -26,28 +26,20 @@ float get_propellor_thrust(const phi::RigidBody& rb, float engine_horsepower, fl
   float speed = rb.get_speed();
   float engine_power = phi::units::watts(engine_horsepower);
 
-#if 1
   const float a = 1.83f, b = -1.32f;  // curve coefficients
   float propellor_advance_ratio = speed / ((propellor_rpm / 60.0f) * propellor_diameter);
   float propellor_efficiency = a * propellor_advance_ratio + std::pow(b * propellor_advance_ratio, 3.0f);
-#else
-  float propellor_efficiency = 1.0f;
-#endif
 
-#if 1
   const float C = 0.12f;
   float air_density = get_air_density(rb.position.y);
   float sea_level_air_density = get_air_density(0.0f);
   float power_drop_off_factor = ((air_density / sea_level_air_density) - C) / (1 - C);
-#else
-  float power_drop_off_factor = 1.0f;
-#endif
 
   return ((propellor_efficiency * engine_power) / speed) * power_drop_off_factor;
 }
 
-// https://aerotoolbox.com/airspeed-conversions/
 float get_indicated_air_speed(const phi::RigidBody& rb) {
+  // https://aerotoolbox.com/airspeed-conversions/
   float airspeed = rb.get_speed();
   float air_density = get_air_density(rb.position.y);
   float sea_level_air_density = get_air_density(0.0f);
@@ -117,22 +109,16 @@ struct Engine : public phi::ForceEffector {
   }
 };
 
-struct Wing : public phi::ForceEffector {
+class Wing : public phi::ForceEffector {
+ public:
   const float area{};  // m^2
   const Airfoil* airfoil;
   const glm::vec3 normal;
   const glm::vec3 center_of_pressure;
 
-  glm::vec3 wing_normal;  // is computed depending on deflection
   float lift_multiplier = 1.0f;
   float drag_multiplier = 1.0f;
-
-  // control surface
-  float control_input = 0.0f;    // range [-1.0f, 1.0f]
   float actuator_speed = 90.0f;  // degrees per second
-  float deflection = 0.0f;       // degrees
-  float min_deflection = -10.0f;
-  float max_deflection = 10.0f;
 
   Wing(const glm::vec3& position, float area, const Airfoil* aero, const glm::vec3& normal = phi::UP)
       : center_of_pressure(position), area(area), airfoil(aero), normal(normal), wing_normal(normal) {}
@@ -140,13 +126,54 @@ struct Wing : public phi::ForceEffector {
   Wing(const glm::vec3& position, float wingspan, float chord, const Airfoil* aero, const glm::vec3& normal = phi::UP)
       : center_of_pressure(position), area(chord * wingspan), airfoil(aero), normal(normal), wing_normal(normal) {}
 
-  void set_deflection_limits(float min, float max) { min_deflection = min, max_deflection = max; }
+  // how far a control surface can be deflected (degrees)
+  void set_deflection_limits(float min, float max) {
+    assert(min < max);
+    min_deflection = min, max_deflection = max;
+  }
 
-  // input is [-1.0f, 1.0f]
+  // input controls wing deflection
   void set_control_input(float input) {
     assert(-1.0f <= input && input <= 1.0f);
     control_input = input;
   }
+
+  void apply_forces(phi::RigidBody& rigid_body, phi::Seconds dt) override {
+    glm::vec3 local_velocity = rigid_body.get_point_velocity(center_of_pressure);
+    float speed = glm::length(local_velocity);
+
+    // rotate wing according to control input
+    apply_deflection(rigid_body, dt);
+
+    // drag acts in the opposite direction of velocity
+    glm::vec3 drag_direction = glm::normalize(-local_velocity);
+
+    // lift is always perpendicular to drag
+    glm::vec3 lift_direction = glm::normalize(glm::cross(glm::cross(drag_direction, wing_normal), drag_direction));
+
+    // angle between chord line and air flow
+    float angle_of_attack = glm::degrees(std::atan(glm::dot(drag_direction, wing_normal)));
+
+    // sample our aerodynamic data
+    auto [lift_coefficient, drag_coefficient] = airfoil->sample(angle_of_attack);
+
+    // air density depends on altitude
+    float air_density = get_air_density(rigid_body.position.y);
+
+    float tmp = 0.5f * std::pow(speed, 2) * air_density * area;
+    glm::vec3 lift = lift_direction * lift_coefficient * lift_multiplier * tmp;
+    glm::vec3 drag = drag_direction * drag_coefficient * drag_multiplier * tmp;
+
+    // aerodynamic forces are applied at the center of pressure
+    rigid_body.add_force_at_point(lift + drag, center_of_pressure);
+  }
+
+ private:
+  float deflection = 0.0f;  // degrees
+  float min_deflection = -10.0f;
+  float max_deflection = 10.0f;
+  float control_input = 0.0f;  // range [-1.0f, 1.0f]
+  glm::vec3 wing_normal;       // is computed depending on deflection
 
   void deflect(float angle) {
     angle = glm::clamp(angle, min_deflection, max_deflection);
@@ -173,37 +200,6 @@ struct Wing : public phi::ForceEffector {
 
     deflect(deflection);
   }
-
-  void apply_forces(phi::RigidBody& rigid_body, phi::Seconds dt) override {
-    glm::vec3 local_velocity = rigid_body.get_point_velocity(center_of_pressure);
-    float speed = glm::length(local_velocity);
-
-    if (speed <= 0.0f) return;
-
-    apply_deflection(rigid_body, dt);
-
-    // drag acts in the opposite direction of velocity
-    glm::vec3 drag_direction = glm::normalize(-local_velocity);
-
-    // lift is always perpendicular to drag
-    glm::vec3 lift_direction = glm::normalize(glm::cross(glm::cross(drag_direction, wing_normal), drag_direction));
-
-    // angle between chord line and air flow
-    float angle_of_attack = glm::degrees(std::atan(glm::dot(drag_direction, wing_normal)));
-
-    // sample our aerodynamic data
-    auto [lift_coefficient, drag_coefficient] = airfoil->sample(angle_of_attack);
-
-    // air density depends on altitude
-    float air_density = get_air_density(rigid_body.position.y);
-
-    float tmp = 0.5f * std::pow(speed, 2) * air_density * area;
-    glm::vec3 lift = lift_direction * lift_coefficient * lift_multiplier * tmp;
-    glm::vec3 drag = drag_direction * drag_coefficient * drag_multiplier * tmp;
-
-    // aerodynamic forces are applied at the center of pressure
-    rigid_body.add_force_at_point(lift + drag, center_of_pressure);
-  }
 };
 
 struct Airplane {
@@ -223,9 +219,15 @@ struct Airplane {
 
   void update(phi::Seconds dt) {
     float roll = joystick.x, yaw = joystick.y, pitch = joystick.z;
+
+    float pitch_trim = 0.0f;
+    if (std::abs(pitch) < 0.1f) {
+      // TODO: pitch trim
+    }
+
     elements[1].set_control_input(roll);
     elements[2].set_control_input(-roll);
-    elements[4].set_control_input(-pitch);
+    elements[4].set_control_input(-pitch + pitch_trim);
     elements[5].set_control_input(yaw);
 
     for (Wing& wing : elements) {

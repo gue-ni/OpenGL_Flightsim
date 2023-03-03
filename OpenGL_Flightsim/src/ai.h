@@ -32,9 +32,9 @@ glm::vec3 get_intercept_point(const glm::vec3& position, const glm::vec3& veloci
   return target_position + target_velocity * time_to_intercept;
 }
 
-void fly_towards(Airplane& aircraft, const glm::vec3& target) {
-  auto& rb = aircraft.rigid_body;
-  auto& joystick = aircraft.joystick;
+void fly_towards(Airplane& airplane, const glm::vec3& target) {
+  auto& rb = airplane.rigid_body;
+  auto& joystick = airplane.joystick;
   auto position = rb.position;
   auto direction = glm::normalize(rb.inverse_transform_direction(target - rb.position));
   auto angle = glm::angle(phi::FORWARD, direction);
@@ -42,6 +42,7 @@ void fly_towards(Airplane& aircraft, const glm::vec3& target) {
   float yaw = direction.z;
   float pitch = direction.y * 5.0f;
 
+  // TODO: roll airplane if target if far below
   float m = M_PI / 4.0f;
   float agressive_roll = direction.z;
   float wings_level_roll = rb.right().y;
@@ -52,10 +53,10 @@ void fly_towards(Airplane& aircraft, const glm::vec3& target) {
 }
 
 #if 1
-void fly_towards(Airplane& aircraft, const Airplane& target) {
-  auto point = get_intercept_point(aircraft.rigid_body.position, aircraft.rigid_body.velocity,
+void fly_towards(Airplane& airplane, const Airplane& target) {
+  auto point = get_intercept_point(airplane.rigid_body.position, airplane.rigid_body.velocity,
                                    target.rigid_body.position, target.rigid_body.velocity);
 
-  fly_towards(aircraft, point);
+  fly_towards(airplane, point);
 }
 #endif
