@@ -8,22 +8,6 @@
 
 #include "flightmodel.h"
 
-template <typename T>
-struct PID {
-  T p{}, i{}, d{};
-  const T Kp, Ki, Kd;
-
-  PID(T kp, T ki, T kd) : Kp(kp), Ki(ki), Kd(kd) {}
-
-  T calculate(T error, float dt) {
-    float previous_error = p;
-    p = error;
-    i += p * dt;
-    d = (p - previous_error) / dt;
-    return p * Kp + i * Ki + d * Kd;
-  }
-};
-
 glm::vec3 get_intercept_point(const glm::vec3& position, const glm::vec3& velocity, const glm::vec3& target_position,
                               const glm::vec3& target_velocity) {
   auto velocity_delta = target_velocity - velocity;
@@ -52,11 +36,9 @@ void fly_towards(Airplane& airplane, const glm::vec3& target) {
   joystick = glm::clamp(glm::vec3(roll, yaw, pitch), glm::vec3(-1.0f), glm::vec3(1.0f));
 }
 
-#if 1
 void fly_towards(Airplane& airplane, const Airplane& target) {
   auto point = get_intercept_point(airplane.rigid_body.position, airplane.rigid_body.velocity,
                                    target.rigid_body.position, target.rigid_body.velocity);
 
   fly_towards(airplane, point);
 }
-#endif

@@ -25,7 +25,7 @@ using std::make_shared;
 using std::shared_ptr;
 
 #define CLIPMAP 1
-#define NPC_AIRCRAFT 1
+#define NPC_AIRCRAFT 0
 
 std::string USAGE = R"(
 H:            Show Help Dialog
@@ -37,7 +37,7 @@ W & S:        Control Thrust
 A & D:        Control Yaw
 )";
 
-#if 0
+#if 1
 constexpr glm::ivec2 RESOLUTION{640, 480};
 #else
 constexpr glm::ivec2 RESOLUTION{1024, 728};
@@ -160,7 +160,7 @@ int main(void) {
   const float mass = 10000.0f;
   const float thrust = 50000.0f;
 
-#if 0
+#if 1
   std::vector<phi::inertia::Element> elements = {
       phi::inertia::cube({-0.5f, 0.0f, -2.7f}, {6.96f, 0.10f, 3.50f}, mass * 0.25f),  // left wing
       phi::inertia::cube({-1.0f, 0.0f, -2.0f}, {3.80f, 0.10f, 1.26f}, mass * 0.05f),  // left aileron
@@ -172,22 +172,22 @@ int main(void) {
 
   auto inertia = phi::inertia::tensor(elements, true);
 #else
-  glm::mat3 inertia = {100000.0f, 0.0f,      0.0f,  //
-                       0.0f,      500000.0f, 0.0f,  //
-                       0.0f,      0.0f,      500000.0f};
+  glm::mat3 inertia = {100000.0f, 0.0f,      1000.0f,  //
+                       0.0f,      500000.0f, 0.0f,     //
+                       1000.0f,   0.0f,      500000.0f};
 #endif
 
   std::cout << inertia << std::endl;
 
-  Airfoil NACA_0012(NACA_0012_data);
-  Airfoil NACA_2412(NACA_2412_data);
-  Airfoil F_16(NACA_64_206_data);
+  const Airfoil NACA_0012(NACA_0012_data);
+  const Airfoil NACA_2412(NACA_2412_data);
+  const Airfoil NACA_64_206(NACA_64_206_data);
 
   std::vector<Wing> wings = {
-      Wing({-0.5f, 0.0f, -2.7f}, 6.96f, 2.50f, &F_16),                  // left wing
+      Wing({-0.5f, 0.0f, -2.7f}, 6.96f, 2.50f, &NACA_64_206),           // left wing
       Wing({-1.0f, 0.0f, -2.0f}, 3.80f, 1.26f, &NACA_0012),             // left aileron
       Wing({-1.0f, 0.0f, 2.0f}, 3.80f, 1.26f, &NACA_0012),              // right aileron
-      Wing({-0.5f, 0.0f, 2.7f}, 6.96f, 2.50f, &F_16),                   // right wing
+      Wing({-0.5f, 0.0f, 2.7f}, 6.96f, 2.50f, &NACA_64_206),            // right wing
       Wing({-6.6f, -0.1f, 0.0f}, 6.54f, 2.70f, &NACA_0012),             // elevator
       Wing({-6.6f, 0.0f, 0.0f}, 5.31f, 3.10f, &NACA_0012, phi::RIGHT),  // rudder
   };
@@ -458,9 +458,9 @@ void get_keyboard_state(Joystick& joystick, phi::Seconds dt) {
   }
 
   if (key_states[SDL_SCANCODE_A]) {
-    joystick.yaw = move(joystick.yaw, -factor.x, dt);
-  } else if (key_states[SDL_SCANCODE_D]) {
     joystick.yaw = move(joystick.yaw, +factor.x, dt);
+  } else if (key_states[SDL_SCANCODE_D]) {
+    joystick.yaw = move(joystick.yaw, -factor.x, dt);
   } else if (joystick.num_axis <= 0) {
     joystick.yaw = center(joystick.yaw, factor.z, dt);
   }

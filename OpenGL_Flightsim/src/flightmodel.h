@@ -10,6 +10,8 @@
 #include "gfx.h"
 #include "phi.h"
 
+#define PITCH_RATE_CONTROL 1
+
 // get temperture in kelvin
 inline float get_air_temperature(float altitude) { return 288.15f - 0.0065f * altitude; }
 
@@ -133,10 +135,7 @@ class Wing : public phi::ForceEffector {
   }
 
   // input controls wing deflection
-  void set_control_input(float input) {
-    assert(-1.0f <= input && input <= 1.0f);
-    control_input = input;
-  }
+  void set_control_input(float input) { control_input = glm::clamp(input, -1.0f, 1.0f); }
 
   void apply_forces(phi::RigidBody& rigid_body, phi::Seconds dt) override {
     glm::vec3 local_velocity = rigid_body.get_point_velocity(center_of_pressure);
@@ -202,33 +201,74 @@ class Wing : public phi::ForceEffector {
   }
 };
 
+class PID {
+  float integral = 0.0f;
+  bool use_value, initialized;
+  float previous_value = 0.0f, previous_error = 0.0f;
+  const float proportional_gain, integral_gain, derivative_gain;
+
+  void reset() { initialized = false; }
+
+ public:
+  PID(float kp, float ki, float kd, bool use_value = true)
+      : proportional_gain(kp), integral_gain(ki), derivative_gain(kd), use_value(use_value), initialized(false) {}
+
+  float calculate(float current_value, float target_value, float dt) {
+    float error = target_value - current_value;
+    float P = error * proportional_gain;
+
+    if (!initialized) {
+      previous_error = error;
+      previous_value = current_value;
+    }
+
+    integral += error * dt;
+    float I = integral * integral_gain;
+
+    float error_rate_of_change = (error - previous_error) / dt;
+    previous_error = error;
+
+    float value_rate_of_change = (current_value - previous_value) / dt;
+    previous_value = current_value;
+
+    float D = (use_value ? value_rate_of_change : error_rate_of_change) * derivative_gain;
+    return P + I + D;
+  }
+};
+
 struct Airplane {
   Engine engine;
   std::vector<Wing> elements;
   phi::RigidBody rigid_body;
   glm::vec3 joystick{};  // roll, yaw, pitch
+  PID pid;
 
   Airplane(float mass, float thrust, glm::mat3 inertia, std::vector<Wing> wings)
-      : elements(wings), rigid_body({.mass = mass, .inertia = inertia}), engine(thrust) {
+      : elements(wings), rigid_body({.mass = mass, .inertia = inertia}), engine(thrust), pid(20.0f, 0.0f, 0.1f) {
     assert(elements.size() >= 6U);
-    elements[1].set_deflection_limits(-15.0f, 15.0f);  // aileron
-    elements[2].set_deflection_limits(-15.0f, 15.0f);  // aileron
-    elements[4].set_deflection_limits(-5.0f, 5.0f);    // elevator
+    elements[1].set_deflection_limits(-21.0f, 21.0f);  // aileron
+    elements[2].set_deflection_limits(-21.0f, 21.0f);  // aileron
+    elements[4].set_deflection_limits(-10.0f, 15.0f);  // elevator
     elements[5].set_deflection_limits(-3.0f, 3.0f);    // rudder
   }
 
   void update(phi::Seconds dt) {
+    // control input
     float roll = joystick.x, yaw = joystick.y, pitch = joystick.z;
 
-    float pitch_trim = 0.0f;
-    if (std::abs(pitch) < 0.1f) {
-      // TODO: pitch trim
-    }
-
-    elements[1].set_control_input(roll);
+    elements[1].set_control_input(+roll);
     elements[2].set_control_input(-roll);
-    elements[4].set_control_input(-pitch + pitch_trim);
-    elements[5].set_control_input(yaw);
+    elements[5].set_control_input(-yaw);
+
+#if PITCH_RATE_CONTROL
+    // pitch input controls rate of pitch (radians/second)
+    constexpr float max_pitch_rate = glm::radians(180.0f);
+    float target_pitch_rate = max_pitch_rate * pitch;
+    float current_pitch_rate = rigid_body.angular_velocity.z;
+    elements[4].set_control_input(-pid.calculate(current_pitch_rate, target_pitch_rate, dt));
+#else
+    elements[4].set_control_input(-pitch);
+#endif
 
     for (Wing& wing : elements) {
       wing.apply_forces(rigid_body, dt);
