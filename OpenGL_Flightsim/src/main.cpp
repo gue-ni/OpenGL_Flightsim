@@ -157,7 +157,7 @@ int main(void) {
   scene.add(&clipmap);
 #endif
 
-  const float mass = 10000.0f;
+  const float mass = 16000.0f;
   const float thrust = 50000.0f;
 
 #if 1
@@ -172,9 +172,9 @@ int main(void) {
 
   auto inertia = phi::inertia::tensor(elements, true);
 #else
-  glm::mat3 inertia = {100000.0f, 0.0f,      1000.0f,  //
-                       0.0f,      500000.0f, 0.0f,     //
-                       1000.0f,   0.0f,      500000.0f};
+  glm::mat3 inertia = {37399.0f, 0.0f,      0.0f,  //
+                       0.0f,     362494.0f, 0.0f,  //
+                       0.0f,     0.0f,      329899.0f};
 #endif
 
   std::cout << inertia << std::endl;
@@ -184,10 +184,12 @@ int main(void) {
   const Airfoil NACA_64_206(NACA_64_206_data);
 
   std::vector<Wing> wings = {
-      Wing({-0.5f, 0.0f, -2.7f}, 6.96f, 2.50f, &NACA_64_206),           // left wing
-      Wing({-1.0f, 0.0f, -2.0f}, 3.80f, 1.26f, &NACA_0012),             // left aileron
-      Wing({-1.0f, 0.0f, 2.0f}, 3.80f, 1.26f, &NACA_0012),              // right aileron
-      Wing({-0.5f, 0.0f, 2.7f}, 6.96f, 2.50f, &NACA_64_206),            // right wing
+      // Wing({-0.5f, 0.0f, -2.7f}, 6.96f, 2.50f, &NACA_64_206),           // left wing
+      Wing({0.0f, 0.0f, 0.0f}, 6.96f, 3.50f, &NACA_64_206),  // left wing
+      Wing({-1.0f, 0.0f, -2.0f}, 3.80f, 1.26f, &NACA_0012),  // left aileron
+      Wing({-1.0f, 0.0f, 2.0f}, 3.80f, 1.26f, &NACA_0012),   // right aileron
+      // Wing({-0.5f, 0.0f, 2.7f}, 6.96f, 2.50f, &NACA_64_206),            // right wing
+      Wing({0.0f, 0.0f, 0.0f}, 6.96f, 3.50f, &NACA_64_206),             // right wing
       Wing({-6.6f, -0.1f, 0.0f}, 6.54f, 2.70f, &NACA_0012),             // elevator
       Wing({-6.6f, 0.0f, 0.0f}, 5.31f, 3.10f, &NACA_0012, phi::RIGHT),  // rudder
   };
@@ -235,14 +237,14 @@ int main(void) {
 #endif
 
   gfx::Object3D camera_transform;
-  camera_transform.set_position({-15.0f, 1, 0});
+  camera_transform.set_position({-25.0f, 5.0f, 0.0f});
   camera_transform.set_rotation({0, glm::radians(-90.0f), 0.0f});
   player.transform.add(&camera_transform);
 
   gfx::Camera camera(glm::radians(45.0f), (float)RESOLUTION.x / (float)RESOLUTION.y, 1.0f, 150000.0f);
+  // camera.set_position(player.airplane.rigid_body.position);
+  // camera.set_rotation({0, glm::radians(-90.0f), 0.0f});
   scene.add(&camera);
-  camera.set_position(player.airplane.rigid_body.position);
-  camera.set_rotation({0, glm::radians(-90.0f), 0.0f});
 
   gfx::OrbitController controller(30.0f);
 
@@ -413,10 +415,7 @@ int main(void) {
       controller.update(camera, player_aircraft.rigid_body.position, dt);
     } else if (!paused) {
       auto& rb = player_aircraft.rigid_body;
-#if 0
-      camera.set_position(camera_transform.get_world_position() - glm::vec3(15.0f, -5.0f, 0.0f));
-      camera.set_rotation_quaternion(air.get_world_rotation_quaternion());
-#else
+#if 1
       camera.set_position(glm::mix(camera.get_position(), rb.position + rb.up() * 4.5f, dt * 0.035f * rb.get_speed()));
       camera.set_rotation_quaternion(
           glm::mix(camera.get_rotation_quaternion(), camera_transform.get_world_rotation_quaternion(), dt * 4.0f));

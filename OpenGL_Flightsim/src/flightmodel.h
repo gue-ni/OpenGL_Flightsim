@@ -10,7 +10,7 @@
 #include "gfx.h"
 #include "phi.h"
 
-#define PITCH_RATE_CONTROL 1
+#define PITCH_RATE_CONTROL 0
 
 // get temperture in kelvin
 inline float get_air_temperature(float altitude) { return 288.15f - 0.0065f * altitude; }
@@ -40,13 +40,17 @@ float get_propellor_thrust(const phi::RigidBody& rb, float engine_horsepower, fl
   return ((propellor_efficiency * engine_power) / speed) * power_drop_off_factor;
 }
 
-float get_indicated_air_speed(const phi::RigidBody& rb) {
+float get_indicated_air_speed(float airspeed, float air_density, float sea_level_air_density) {
   // https://aerotoolbox.com/airspeed-conversions/
+  float dynamic_pressure = 0.5f * air_density * phi::sq(airspeed);  // bernoulli's equation
+  return std::sqrt(2 * dynamic_pressure / sea_level_air_density);
+}
+
+float get_indicated_air_speed(const phi::RigidBody& rb) {
   float airspeed = rb.get_speed();
   float air_density = get_air_density(rb.position.y);
   float sea_level_air_density = get_air_density(0.0f);
-  float dynamic_pressure = 0.5f * air_density * phi::sq(airspeed);  // bernoulli's equation
-  return std::sqrt(2 * dynamic_pressure / sea_level_air_density);
+  return get_indicated_air_speed(airspeed, air_density, sea_level_air_density);
 }
 
 // get g-force in pitch direction
@@ -120,7 +124,7 @@ class Wing : public phi::ForceEffector {
 
   float lift_multiplier = 1.0f;
   float drag_multiplier = 1.0f;
-  float actuator_speed = 90.0f;  // degrees per second
+  float actuator_speed = 40.0f;  // degrees per second
 
   Wing(const glm::vec3& position, float area, const Airfoil* aero, const glm::vec3& normal = phi::UP)
       : center_of_pressure(position), area(area), airfoil(aero), normal(normal), wing_normal(normal) {}
@@ -129,10 +133,7 @@ class Wing : public phi::ForceEffector {
       : center_of_pressure(position), area(chord * wingspan), airfoil(aero), normal(normal), wing_normal(normal) {}
 
   // how far a control surface can be deflected (degrees)
-  void set_deflection_limits(float min, float max) {
-    assert(min < max);
-    min_deflection = min, max_deflection = max;
-  }
+  void set_deflection_limits(float min, float max) { min_deflection = min, max_deflection = max; }
 
   // input controls wing deflection
   void set_control_input(float input) { control_input = glm::clamp(input, -1.0f, 1.0f); }
@@ -159,7 +160,7 @@ class Wing : public phi::ForceEffector {
     // air density depends on altitude
     float air_density = get_air_density(rigid_body.position.y);
 
-    float tmp = 0.5f * std::pow(speed, 2) * air_density * area;
+    float tmp = std::pow(speed, 2) * air_density * area;
     glm::vec3 lift = lift_direction * lift_coefficient * lift_multiplier * tmp;
     glm::vec3 drag = drag_direction * drag_coefficient * drag_multiplier * tmp;
 
@@ -174,13 +175,6 @@ class Wing : public phi::ForceEffector {
   float control_input = 0.0f;  // range [-1.0f, 1.0f]
   glm::vec3 wing_normal;       // is computed depending on deflection
 
-  void deflect(float angle) {
-    angle = glm::clamp(angle, min_deflection, max_deflection);
-    auto axis = glm::normalize(glm::cross(phi::FORWARD, normal));
-    auto rotation = glm::rotate(glm::mat4(1.0f), glm::radians(angle), axis);
-    wing_normal = glm::vec3(rotation * glm::vec4(normal, 1.0f));
-  }
-
   void apply_deflection(phi::RigidBody rigid_body, phi::Seconds dt) {
     float target_deflection = (control_input >= 0.0f ? max_deflection : min_deflection) * std::abs(control_input);
 
@@ -192,12 +186,15 @@ class Wing : public phi::ForceEffector {
     std::cout << max_available_deflection << std::endl;
     target_deflection *= glm::clamp(max_available_deflection, 0.0f, 1.0f);
 
-    deflection = phi::utils::move_towards(deflection, target_deflection, actuator_speed * dt);
 #else
+    // TODO: max deflection and actuator speed should depend on air speed
     deflection = phi::utils::move_towards(deflection, target_deflection, actuator_speed * dt);
+    deflection = glm::clamp(deflection, min_deflection, max_deflection);
 #endif
 
-    deflect(deflection);
+    auto axis = glm::normalize(glm::cross(phi::FORWARD, normal));
+    auto rotation = glm::rotate(glm::mat4(1.0f), glm::radians(deflection), axis);
+    wing_normal = glm::vec3(rotation * glm::vec4(normal, 1.0f));
   }
 };
 
@@ -206,6 +203,7 @@ class PID {
   bool use_value, initialized;
   float previous_value = 0.0f, previous_error = 0.0f;
   const float proportional_gain, integral_gain, derivative_gain;
+  glm::vec2 output_range{-1.0f, 1.0f};
 
   void reset() { initialized = false; }
 
@@ -232,7 +230,9 @@ class PID {
     previous_value = current_value;
 
     float D = (use_value ? value_rate_of_change : error_rate_of_change) * derivative_gain;
-    return P + I + D;
+
+    printf("error = %.2f\n", error);
+    return glm::clamp(P + I + D, output_range.x, output_range.y);
   }
 };
 
@@ -244,12 +244,12 @@ struct Airplane {
   PID pid;
 
   Airplane(float mass, float thrust, glm::mat3 inertia, std::vector<Wing> wings)
-      : elements(wings), rigid_body({.mass = mass, .inertia = inertia}), engine(thrust), pid(20.0f, 0.0f, 0.1f) {
+      : elements(wings), rigid_body({.mass = mass, .inertia = inertia}), engine(thrust), pid(15.0f, 0.1f, 0.0f, false) {
     assert(elements.size() >= 6U);
-    elements[1].set_deflection_limits(-21.0f, 21.0f);  // aileron
-    elements[2].set_deflection_limits(-21.0f, 21.0f);  // aileron
-    elements[4].set_deflection_limits(-10.0f, 15.0f);  // elevator
-    elements[5].set_deflection_limits(-3.0f, 3.0f);    // rudder
+    elements[1].set_deflection_limits(-5.0f, 5.0f);   // aileron
+    elements[2].set_deflection_limits(-5.0f, 5.0f);   // aileron
+    elements[4].set_deflection_limits(-5.0f, 15.0f);  // elevator
+    elements[5].set_deflection_limits(-3.0f, 3.0f);   // rudder
   }
 
   void update(phi::Seconds dt) {
@@ -262,13 +262,25 @@ struct Airplane {
 
 #if PITCH_RATE_CONTROL
     // pitch input controls rate of pitch (radians/second)
-    constexpr float max_pitch_rate = glm::radians(180.0f);
+    constexpr float max_pitch_rate = glm::radians(30.0f);
     float target_pitch_rate = max_pitch_rate * pitch;
     float current_pitch_rate = rigid_body.angular_velocity.z;
-    elements[4].set_control_input(-pid.calculate(current_pitch_rate, target_pitch_rate, dt));
-#else
-    elements[4].set_control_input(-pitch);
+    pitch = pid.calculate(current_pitch_rate, target_pitch_rate, dt);
+    // printf("pitch %.2f, c = %.2f, t = %.2f,  i = %.2f\n", pitch, current_pitch_rate, target_pitch_rate, input);
 #endif
+#if 0
+    // g limit
+    float g_force = get_g_force(rigid_body);
+
+    if (g_force > 8.0f )
+        pitch = std::max(0.0f, pitch);
+
+    if (g_force < -3.0f)
+        pitch = std::max(0.0f, pitch);
+#endif
+
+    printf("pitch = %.2f\n", pitch);
+    elements[4].set_control_input(-pitch);
 
     for (Wing& wing : elements) {
       wing.apply_forces(rigid_body, dt);
