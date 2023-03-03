@@ -114,7 +114,11 @@ namespace utils {
 //
 template <typename T>
 constexpr inline T scale(T input, T in_min, T in_max, T out_min, T out_max) {
+#if 0
   assert(in_min <= input && input <= in_max);
+#else
+  input = glm::clamp(input, in_min, in_max);
+#endif
   return (input - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 

@@ -161,7 +161,7 @@ int main(void) {
   const float mass = 10000.0f;
   const float thrust = 50000.0f;
 
-#if 1
+#if 0
   std::vector<phi::inertia::Element> elements = {
       phi::inertia::cube({-0.5f, 0.0f, -2.7f}, {6.96f, 0.10f, 3.50f}, mass * 0.25f),  // left wing
       phi::inertia::cube({-1.0f, 0.0f, -2.0f}, {3.80f, 0.10f, 1.26f}, mass * 0.05f),  // left aileron
@@ -175,16 +175,20 @@ int main(void) {
 #else
   glm::mat3 inertia = {150000.0f, 0.0f,      0.0f,  //
                        0.0f,      500000.0f, 0.0f,  //
-                       0.0f,      0.0f,      500000.0f};
+                       0.0f,      0.0f,      900000.0f};
 #endif
 
   std::cout << inertia << std::endl;
 
+  Airfoil NACA_0012(NACA_0012_data);
+  Airfoil NACA_2412(NACA_2412_data);
+  Airfoil F_16(NACA_64_206_data);
+
   std::vector<Wing> wings = {
-      Wing({-0.5f, 0.0f, -2.7f}, 6.96f, 3.50f, &NACA_2412),             // left wing
+      Wing({-0.5f, 0.0f, -2.7f}, 6.96f, 2.50f, &F_16),                  // left wing
       Wing({-1.0f, 0.0f, -2.0f}, 3.80f, 1.26f, &NACA_0012),             // left aileron
       Wing({-1.0f, 0.0f, 2.0f}, 3.80f, 1.26f, &NACA_0012),              // right aileron
-      Wing({-0.5f, 0.0f, 2.7f}, 6.96f, 3.50f, &NACA_2412),              // right wing
+      Wing({-0.5f, 0.0f, 2.7f}, 6.96f, 2.50f, &F_16),                   // right wing
       Wing({-6.6f, -0.1f, 0.0f}, 6.54f, 2.70f, &NACA_0012),             // elevator
       Wing({-6.6f, 0.0f, 0.0f}, 5.31f, 3.10f, &NACA_0012, phi::RIGHT),  // rudder
   };
@@ -244,7 +248,7 @@ int main(void) {
   gfx::OrbitController controller(30.0f);
 
   SDL_Event event;
-  bool quit = false, paused = false, orbit = false, help_dialog = true;
+  bool quit = false, paused = false, orbit = false, help_dialog = false;
   uint64_t last = 0, now = SDL_GetPerformanceCounter();
   phi::Seconds dt, timer = 0, log_timer = 0;
   float fps = 0.0f;
@@ -354,9 +358,11 @@ int main(void) {
     auto& rb = player.aircraft.rigid_body;
     float speed = phi::units::kilometer_per_hour(rb.get_speed());
     float ias = phi::units::kilometer_per_hour(get_indicated_air_speed(rb));
+    auto direction = glm::normalize(rb.get_body_velocity());
+    float alpha = -glm::degrees(glm::atan(direction.y));
 
     ImGui::SetNextWindowPos(ImVec2(10, 10));
-    ImGui::SetNextWindowSize(ImVec2(145, 140));
+    ImGui::SetNextWindowSize(ImVec2(145, 150));
     ImGui::SetNextWindowBgAlpha(0.35f);
     ImGui::Begin("HUD", nullptr, window_flags);
     ImGui::Text("ALT:   %.2f m", rb.position.y);
@@ -366,6 +372,7 @@ int main(void) {
     ImGui::Text("Mach:  %.2f", get_mach_number(rb));
     ImGui::Text("G:     %.1f", get_g_force(rb));
     ImGui::Text("FPS:   %.2f", fps);
+    ImGui::Text("AOA:   %.2f", alpha);
     ImGui::End();
 
     if (help_dialog) {
