@@ -86,22 +86,18 @@ struct Airfoil {
   std::vector<glm::vec3> data;
 
   Airfoil(const std::vector<glm::vec3>& curve_data) : data(curve_data) {
-    min_alpha = curve_data[0].x;
-    max_alpha = curve_data[curve_data.size() - 1].x;
+    assert(curve_data.size() > 0);
+    min_alpha = curve_data.front().x;
+    max_alpha = curve_data.back().x;
   }
 
   std::tuple<float, float> sample(float alpha) const {
-    int max_index = static_cast<int>(data.size() - 1);
+    int max_index = data.size() - 1;
     int index = static_cast<int>(phi::utils::scale(alpha, min_alpha, max_alpha, 0.0f, static_cast<float>(max_index)));
-#if 0
-    assert(0 <= index && index < max_index);
-#else
     index = glm::clamp(index, 0, max_index);
-#endif
     return {data[index].y, data[index].z};
   }
 };
-
 
 struct Engine : public phi::ForceEffector {
   enum Type { PROPELLOR, JET };
@@ -219,10 +215,10 @@ struct Airplane {
   Airplane(float mass, float thrust, glm::mat3 inertia, std::vector<Wing> wings)
       : elements(wings), rigid_body({.mass = mass, .inertia = inertia}), engine(thrust) {
     assert(elements.size() >= 6U);
-    elements[1].set_deflection_limits(-15.0f, 15.0f); // aileron
-    elements[2].set_deflection_limits(-15.0f, 15.0f); // aileron 
-    elements[4].set_deflection_limits(-5.0f, 5.0f); // elevator
-    elements[5].set_deflection_limits(-3.0f, 3.0f); // rudder
+    elements[1].set_deflection_limits(-15.0f, 15.0f);  // aileron
+    elements[2].set_deflection_limits(-15.0f, 15.0f);  // aileron
+    elements[4].set_deflection_limits(-5.0f, 5.0f);    // elevator
+    elements[5].set_deflection_limits(-3.0f, 3.0f);    // rudder
   }
 
   void update(phi::Seconds dt) {

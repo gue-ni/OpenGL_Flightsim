@@ -173,9 +173,9 @@ int main(void) {
 
   auto inertia = phi::inertia::tensor(elements, true);
 #else
-  glm::mat3 inertia = {150000.0f, 0.0f,      0.0f,  //
+  glm::mat3 inertia = {100000.0f, 0.0f,      0.0f,  //
                        0.0f,      500000.0f, 0.0f,  //
-                       0.0f,      0.0f,      900000.0f};
+                       0.0f,      0.0f,      500000.0f};
 #endif
 
   std::cout << inertia << std::endl;
