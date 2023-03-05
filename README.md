@@ -1,4 +1,4 @@
-# OpenGL Flightsim
+# OpenGL Flight Simulator
 
 You can read an article about how it works [here](https://www.jakobmaier.at/posts/flight-simulation/). There is also a compiled demo available.
 
