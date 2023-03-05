@@ -4,9 +4,8 @@
 
 constexpr unsigned int primitive_restart = 0xFFFFU;
 
-void generate_mesh(std::vector<glm::vec3>& vertices,
-                   std::vector<unsigned int>& indices, int rows = 3,
-                   int columns = 2, float size = 1.0f) {
+void generate_mesh(std::vector<glm::vec3>& vertices, std::vector<unsigned int>& indices, int rows = 3, int columns = 2,
+                   float size = 1.0f) {
   vertices.clear();
 
   for (int y = 0; y <= rows; y++) {
@@ -50,8 +49,7 @@ struct Seam {
     vao.bind();
     vbo.buffer(&vertices[0], vertices.size() * sizeof(vertices[0]));
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float),
-                          (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
     vao.unbind();
@@ -91,8 +89,7 @@ struct Block {
     vbo.buffer(&vertices[0], vertices.size() * sizeof(vertices[0]));
     ebo.buffer(&indices[0], indices.size() * sizeof(indices[0]));
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float),
-                          (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
     vao.unbind();
@@ -132,13 +129,10 @@ class Clipmap : public gfx::Object3D {
         center(2 * segments + 2, 2 * segments + 2, segment_size),
         seam(2 * segments + 2, segment_size * 2) {}
 
-  glm::mat4 transform_matrix(const glm::vec2& position, float scale,
-                             float angle = 0) {
+  glm::mat4 transform_matrix(const glm::vec2& position, float scale, float angle = 0) {
     auto S = glm::scale(glm::mat4(1.0f), glm::vec3(scale));
-    auto T = glm::translate(glm::mat4(1.0f),
-                            glm::vec3(position.x, 0.0f, position.y));
-    auto R = glm::rotate(glm::mat4(1.0f), glm::radians(angle),
-                         glm::vec3(0.0f, 1.0f, 0.0f));
+    auto T = glm::translate(glm::mat4(1.0f), glm::vec3(position.x, 0.0f, position.y));
+    auto R = glm::rotate(glm::mat4(1.0f), glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
     return T * R * S;
   }
 
@@ -200,9 +194,7 @@ class Clipmap : public gfx::Object3D {
 #endif
 #if 1
         if (l == min_level) {
-          shader.uniform(
-              "u_Model",
-              transform_matrix(base + glm::vec2(tile_size, tile_size), scale));
+          shader.uniform("u_Model", transform_matrix(base + glm::vec2(tile_size, tile_size), scale));
           center.draw();
         } else {
           auto prev_base = calc_base(l - 1, camera_pos_xy);
@@ -240,23 +232,15 @@ class Clipmap : public gfx::Object3D {
                   seam.draw();
                 } else if (c == cols - 1 && r == rows - 1)  // west
                 {
-                  shader.uniform("u_Model", transform_matrix(
-                                                tile_pos + glm::vec2(tile_size),
-                                                scale, 180.0f));
+                  shader.uniform("u_Model", transform_matrix(tile_pos + glm::vec2(tile_size), scale, 180.0f));
                   seam.draw();
                 } else if (c == cols - 1 && r == 0)  // south
                 {
-                  shader.uniform(
-                      "u_Model",
-                      transform_matrix(tile_pos + glm::vec2(0, tile_size),
-                                       scale, 90.0f));
+                  shader.uniform("u_Model", transform_matrix(tile_pos + glm::vec2(0, tile_size), scale, 90.0f));
                   seam.draw();
                 } else if (c == 0 && r == rows - 1)  // north
                 {
-                  shader.uniform(
-                      "u_Model",
-                      transform_matrix(tile_pos + glm::vec2(tile_size, 0),
-                                       scale, -90.0f));
+                  shader.uniform("u_Model", transform_matrix(tile_pos + glm::vec2(tile_size, 0), scale, -90.0f));
                   seam.draw();
                 }
 

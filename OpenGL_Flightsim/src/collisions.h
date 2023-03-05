@@ -75,14 +75,12 @@ bool test_collision(const Sphere& s0, const Sphere& s1) {
 bool test_collision(const AABB& a, const AABB& b) {
   auto a_min = a.min(), a_max = a.max();
   auto b_min = b.min(), b_max = b.max();
-  return ((a_max.x < b_min.x || a_min.x > b_max.x) &&
-          (a_max.y < b_min.y || a_min.y > b_max.y) &&
+  return ((a_max.x < b_min.x || a_min.x > b_max.x) && (a_max.y < b_min.y || a_min.y > b_max.y) &&
           (a_max.z < b_min.z || a_min.z > b_max.z));
 }
 
 // test collision of two moving spheres
-bool test_moving_collision(const Sphere& s0, const glm::vec3& velocity0,
-                           const Sphere& s1, const glm::vec3& velocity1,
+bool test_moving_collision(const Sphere& s0, const glm::vec3& velocity0, const Sphere& s1, const glm::vec3& velocity1,
                            float* t) {
   // Christer_Ericson-Real-Time_Collision_Detection.pdf#page=264
 #if 0

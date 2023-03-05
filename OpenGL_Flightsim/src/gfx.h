@@ -32,22 +32,18 @@ class Material;
 class Geometry;
 
 constexpr RGB rgb(int r, int g, int b) {
-  return RGB(static_cast<float>(r), static_cast<float>(g),
-             static_cast<float>(b)) /
-         255.0f;
+  return RGB(static_cast<float>(r), static_cast<float>(g), static_cast<float>(b)) / 255.0f;
 }
 
 constexpr RGB rgb(uint32_t hex) {
   assert(hex <= 0xffffffU);
-  return RGB{static_cast<float>((hex & 0xff0000U) >> 16) / 255.0f,
-             static_cast<float>((hex & 0x00ff00U) >> 8) / 255.0f,
+  return RGB{static_cast<float>((hex & 0xff0000U) >> 16) / 255.0f, static_cast<float>((hex & 0x00ff00U) >> 8) / 255.0f,
              static_cast<float>((hex & 0x0000ffU) >> 0) / 255.0f};
 }
 
 std::vector<float> load_obj(const std::string path);
 std::shared_ptr<Geometry> make_cube_geometry(float size);
-std::shared_ptr<Geometry> make_plane_geometry(int x_elements, int y_elements,
-                                              float size);
+std::shared_ptr<Geometry> make_plane_geometry(int x_elements, int y_elements, float size);
 
 // opengl primitives
 namespace opengl {
@@ -127,8 +123,7 @@ struct Texture {
 };
 
 struct CubemapTexture : public Texture {
-  CubemapTexture(const std::array<std::string, 6>& paths,
-                 bool flip_vertically = false);
+  CubemapTexture(const std::array<std::string, 6>& paths, bool flip_vertically = false);
   void bind(GLuint texture) const override;
   void unbind() const override;
 };
@@ -157,12 +152,7 @@ class Object3D {
   enum Type { OBJECT3D, LIGHT, CAMERA };
 
   Object3D()
-      : id(counter++),
-        parent(nullptr),
-        transform(1.0),
-        m_position(0.0f),
-        m_rotation(glm::vec3(0.0f)),
-        m_scale(1.0f) {}
+      : id(counter++), parent(nullptr), transform(1.0), m_position(0.0f), m_rotation(glm::vec3(0.0f)), m_scale(1.0f) {}
 
   const int id;
   static int counter;
@@ -213,9 +203,7 @@ class Object3D {
 class Camera : public Object3D {
  public:
   Camera(float fov, float aspect, float near, float far)
-      : m_projection(glm::perspective(fov, aspect, near, far)),
-        m_up(0.0f, 1.0f, 0.0f),
-        m_front(0.0f, 0.0f, 1.0f) {}
+      : m_projection(glm::perspective(fov, aspect, near, far)), m_up(0.0f, 1.0f, 0.0f), m_front(0.0f, 0.0f, 1.0f) {}
 
   Object3D::Type get_type() const override;
   glm::mat4 get_view_matrix() const;
@@ -234,11 +222,9 @@ class Light : public Object3D {
     DIRECTIONAL = 1,
   };
 
-  Light(glm::vec3 color_)
-      : rgb(color_), type(POINT), cast_shadow(false), Object3D() {}
+  Light(glm::vec3 color_) : rgb(color_), type(POINT), cast_shadow(false), Object3D() {}
 
-  Light(LightType type_, glm::vec3 color_)
-      : rgb(color_), type(type_), cast_shadow(false), Object3D() {}
+  Light(LightType type_, glm::vec3 color_) : rgb(color_), type(type_), cast_shadow(false), Object3D() {}
 
   Object3D::Type get_type() const override;
 
@@ -295,20 +281,10 @@ class Phong : public MaterialX<Phong> {
   std::shared_ptr<opengl::Texture> texture = nullptr;
 
   Phong(const glm::vec3& color_, float ka_, float kd_, float ks_, float alpha_)
-      : MaterialX<Phong>("shaders/phong"),
-        rgb(color_),
-        ka(ka_),
-        kd(kd_),
-        ks(ks_),
-        alpha(alpha_) {}
+      : MaterialX<Phong>("shaders/phong"), rgb(color_), ka(ka_), kd(kd_), ks(ks_), alpha(alpha_) {}
 
   Phong(const glm::vec3& color_)
-      : MaterialX<Phong>("shaders/phong"),
-        rgb(color_),
-        ka(0.3f),
-        kd(1.0f),
-        ks(0.5f),
-        alpha(10.0f) {}
+      : MaterialX<Phong>("shaders/phong"), rgb(color_), ka(0.3f), kd(1.0f), ks(0.5f), alpha(10.0f) {}
 
   Phong(std::shared_ptr<opengl::Texture> tex)
       : MaterialX<Phong>("shaders/phong"),
@@ -325,8 +301,7 @@ class Phong : public MaterialX<Phong> {
 class Basic : public MaterialX<Basic> {
  public:
   glm::vec3 rgb;
-  Basic(const glm::vec3& color_)
-      : MaterialX<Basic>("shaders/basic"), rgb(color_) {}
+  Basic(const glm::vec3& color_) : MaterialX<Basic>("shaders/basic"), rgb(color_) {}
   void bind();
 };
 
@@ -340,8 +315,7 @@ class ScreenMaterial : public MaterialX<ScreenMaterial> {
   std::shared_ptr<opengl::Texture> texture = nullptr;
 
  public:
-  ScreenMaterial(std::shared_ptr<opengl::Texture> t)
-      : MaterialX<ScreenMaterial>("shaders/screen"), texture(t) {}
+  ScreenMaterial(std::shared_ptr<opengl::Texture> t) : MaterialX<ScreenMaterial>("shaders/screen"), texture(t) {}
   void bind() override;
 };
 
@@ -389,10 +363,7 @@ class Skybox : public Mesh {
 class Renderer {
  public:
   Renderer(unsigned int width, unsigned int height)
-      : shadow_map(new ShadowMap(1024, 1024)),
-        m_width(width),
-        m_height(height),
-        background(rgb(222, 253, 255)) {
+      : shadow_map(new ShadowMap(1024, 1024)), m_width(width), m_height(height), background(rgb(222, 253, 255)) {
     const std::vector<float> quad_vertices = {
         -1.0f, 1.0f,  0.0f, 0.0f, 1.0f,  // top left
         -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,  // bottom left
@@ -404,8 +375,7 @@ class Renderer {
     };
 
     auto geometry = std::make_shared<Geometry>(quad_vertices, Geometry::POS_UV);
-    auto texture =
-        std::make_shared<gfx::opengl::Texture>(shadow_map->depth_map.id);
+    auto texture = std::make_shared<gfx::opengl::Texture>(shadow_map->depth_map.id);
     auto material = std::make_shared<ScreenMaterial>(texture);
     screen_quad = std::make_shared<Mesh>(geometry, material);
   }
