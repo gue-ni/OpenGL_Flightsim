@@ -26,6 +26,7 @@ using std::shared_ptr;
 
 #define CLIPMAP 1
 #define NPC_AIRCRAFT 0
+#define SMOOTH_CAMERA 1
 
 std::string USAGE = R"(
 H:            Show Help Dialog
@@ -163,11 +164,8 @@ int main(void) {
 #if 1
   std::vector<phi::inertia::Element> elements = {
       phi::inertia::cube({-0.5f, 0.0f, -2.7f}, {6.96f, 0.10f, 3.50f}, mass * 0.25f),  // left wing
-      phi::inertia::cube({-1.0f, 0.0f, -2.0f}, {3.80f, 0.10f, 1.26f}, mass * 0.05f),  // left aileron
-      phi::inertia::cube({-1.0f, 0.0f, 2.0f}, {3.80f, 0.10f, 1.26f}, mass * 0.05f),   // right aileron
       phi::inertia::cube({-0.5f, 0.0f, 2.7f}, {6.96f, 0.10f, 3.50f}, mass * 0.25f),   // right wing
-      phi::inertia::cube({-6.6f, -0.1f, 0.0f}, {6.54f, 0.10f, 2.70f}, mass * 0.2f),   // elevator
-      phi::inertia::cube({-6.6f, 0.0f, 0.0f}, {5.31f, 3.10f, 0.10f}, mass * 0.2f),    // rudder
+      phi::inertia::cube({0.0f, 0.0f, 0.0f}, {12.0f, 2.0f, 2.0f}, mass * 0.5f),       // fuselage
   };
 
   auto inertia = phi::inertia::tensor(elements, true);
@@ -184,14 +182,16 @@ int main(void) {
   const Airfoil NACA_64_206(NACA_64_206_data);
 
   std::vector<Wing> wings = {
-      // Wing({-0.5f, 0.0f, -2.7f}, 6.96f, 2.50f, &NACA_64_206),           // left wing
-      Wing({0.0f, 0.0f, 0.0f}, 6.96f, 3.50f, &NACA_64_206),  // left wing
-      Wing({-1.0f, 0.0f, -2.0f}, 3.80f, 1.26f, &NACA_0012),  // left aileron
-      Wing({-1.0f, 0.0f, 2.0f}, 3.80f, 1.26f, &NACA_0012),   // right aileron
-      // Wing({-0.5f, 0.0f, 2.7f}, 6.96f, 2.50f, &NACA_64_206),            // right wing
-      Wing({0.0f, 0.0f, 0.0f}, 6.96f, 3.50f, &NACA_64_206),             // right wing
-      Wing({-6.6f, -0.1f, 0.0f}, 6.54f, 2.70f, &NACA_0012),             // elevator
-      Wing({-6.6f, 0.0f, 0.0f}, 5.31f, 3.10f, &NACA_0012, phi::RIGHT),  // rudder
+      // Wing({0.0f, 0.0f, 0.0f}, 6.96f, 3.50f, &NACA_64_206),                                        // left wing
+      Wing({-0.5f, 0.0f, 2.7f}, 6.96f, 3.50f, &NACA_64_206),                                     // left wing
+      Wing({-1.0f, 0.0f, -2.0f}, 3.80f, 1.26f, &NACA_0012, phi::UP, WingType::CONTROL_SURFACE),  // left aileron
+      Wing({-1.0f, 0.0f, 2.0f}, 3.80f, 1.26f, &NACA_0012, phi::UP, WingType::CONTROL_SURFACE),   // right aileron
+      // Wing({0.0f, 0.0f, 0.0f}, 6.96f, 3.50f, &NACA_64_206),                                        // right wing
+      Wing({-0.5f, 0.0f, -2.7f}, 6.96f, 3.50f, &NACA_64_206),                                      // right wing
+      Wing({-6.6f, -0.1f, 0.0f}, 6.54f, 2.70f, &NACA_0012, phi::UP, WingType::CONTROL_SURFACE),    // elevator
+      Wing({-6.6f, 0.0f, 0.0f}, 5.31f, 3.10f, &NACA_0012, phi::RIGHT, WingType::CONTROL_SURFACE),  // rudder
+      Wing({0.0f, 0.0f, 0.0f}, 2.0f, 12.0f, &NACA_0012, phi::UP),                                  // fuselage
+      Wing({0.0f, 0.0f, 0.0f}, 2.0f, 12.0f, &NACA_0012, phi::RIGHT),                               // fuselage
   };
 
   std::vector<GameObject*> objects;
@@ -242,9 +242,13 @@ int main(void) {
   player.transform.add(&camera_transform);
 
   gfx::Camera camera(glm::radians(45.0f), (float)RESOLUTION.x / (float)RESOLUTION.y, 1.0f, 150000.0f);
-  // camera.set_position(player.airplane.rigid_body.position);
-  // camera.set_rotation({0, glm::radians(-90.0f), 0.0f});
+#if SMOOTH_CAMERA
+  camera.set_position(player.airplane.rigid_body.position);
+  camera.set_rotation({0, glm::radians(-90.0f), 0.0f});
   scene.add(&camera);
+#else
+  camera_transform.add(&camera);
+#endif
 
   gfx::OrbitController controller(30.0f);
 
@@ -414,8 +418,8 @@ int main(void) {
     if (orbit) {
       controller.update(camera, player_aircraft.rigid_body.position, dt);
     } else if (!paused) {
+#if SMOOTH_CAMERA
       auto& rb = player_aircraft.rigid_body;
-#if 1
       camera.set_position(glm::mix(camera.get_position(), rb.position + rb.up() * 4.5f, dt * 0.035f * rb.get_speed()));
       camera.set_rotation_quaternion(
           glm::mix(camera.get_rotation_quaternion(), camera_transform.get_world_rotation_quaternion(), dt * 4.0f));
