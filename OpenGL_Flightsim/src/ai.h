@@ -39,16 +39,16 @@ void fly_towards(Aircraft& aircraft, const glm::vec3& target) {
   auto direction = glm::normalize(rb.inverse_transform_direction(target - rb.position));
   auto angle = glm::angle(phi::FORWARD, direction);
 
-  float yaw = direction.z;
-  float pitch = direction.y * 5.0f;
+  float rudder = direction.z;
+  float elevator = direction.y * 5.0f;
 
   float m = M_PI / 4.0f;
   float agressive_roll = direction.z;
   float wings_level_roll = rb.right().y;
   float wings_level_influence = phi::utils::inverse_lerp(0.0f, m, glm::clamp(angle, -m, m));
-  float roll = phi::utils::lerp(wings_level_roll, agressive_roll, wings_level_influence);
+  float aileron = phi::utils::lerp(wings_level_roll, agressive_roll, wings_level_influence);
 
-  joystick = glm::clamp(glm::vec3(roll, yaw, pitch), glm::vec3(-1.0f), glm::vec3(1.0f));
+  joystick = glm::clamp(glm::vec3(aileron, rudder, elevator), glm::vec3(-1.0f), glm::vec3(1.0f));
 }
 
 #if 1

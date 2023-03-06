@@ -10,6 +10,8 @@
 #include "gfx.h"
 #include "phi.h"
 
+#define DEBUG_FLIGHTMODEL 0
+
 // get temperture in kelvin
 inline float get_air_temperature(float altitude) {
   return 288.15f - 0.0065f * altitude;  // kelvin
@@ -95,7 +97,7 @@ struct Airfoil {
   std::tuple<float, float> sample(float alpha) const {
     int max_index = static_cast<int>(data.size() - 1);
     int index = static_cast<int>(phi::utils::scale(alpha, min_alpha, max_alpha, 0.0f, static_cast<float>(max_index)));
-    assert(0 <= index && index < max_index);
+    index = glm::clamp(index, 0, max_index);
     return {data[index].y, data[index].z};
   }
 };
@@ -106,9 +108,8 @@ struct Engine : public phi::ForceEffector {
 
   Engine(float thrust) : thrust(thrust) {}
 
-  void apply_forces(phi::RigidBody& rigid_body) override {
-    float force = thrust * throttle;
-    rigid_body.add_relative_force({force, 0.0f, 0.0f});
+  void apply_forces(phi::RigidBody& rigid_body, phi::Seconds dt) override {
+    rigid_body.add_relative_force({thrust * throttle, 0.0f, 0.0f});
   }
 };
 
@@ -117,6 +118,12 @@ struct Wing : public phi::ForceEffector {
   const Airfoil* airfoil;
   const glm::vec3 normal;
   const glm::vec3 center_of_pressure;
+
+#if DEBUG_FLIGHTMODEL
+  bool log = false;
+  float log_timer = 0.0f;
+  std::string name = "None";
+#endif
 
   float lift_multiplier = 1.0f;
   float drag_multiplier = 1.0f;
@@ -128,7 +135,7 @@ struct Wing : public phi::ForceEffector {
   Wing(const glm::vec3& position, float wingspan, float chord, const Airfoil* aero, const glm::vec3& normal = phi::UP)
       : center_of_pressure(position), area(chord * wingspan), airfoil(aero), normal(normal) {}
 
-  void apply_forces(phi::RigidBody& rigid_body) override {
+  void apply_forces(phi::RigidBody& rigid_body, phi::Seconds dt) override {
     glm::vec3 local_velocity = rigid_body.get_point_velocity(center_of_pressure);
     float speed = glm::length(local_velocity);
 
@@ -162,6 +169,15 @@ struct Wing : public phi::ForceEffector {
     glm::vec3 lift = lift_direction * lift_coefficient * lift_multiplier * tmp;
     glm::vec3 drag = drag_direction * drag_coefficient * drag_multiplier * tmp;
 
+#if DEBUG_FLIGHTMODEL
+    log_timer -= dt;
+    if (log && log_timer <= 0.0f) {
+      log_timer = 0.2f;
+      printf("[%s] aoa = %.2f, cl = %.2f, cd = %.2f\n", name.c_str(), angle_of_attack, lift_coefficient,
+             drag_coefficient);
+    }
+#endif
+
     // aerodynamic forces are applied at the center of pressure
     rigid_body.add_force_at_point(lift + drag, center_of_pressure);
   }
@@ -174,23 +190,35 @@ struct Aircraft {
   glm::vec3 joystick{};  // roll, yaw, pitch
 
   Aircraft(float mass, float thrust, glm::mat3 inertia, std::vector<Wing> wings)
-      : elements(wings), rigid_body({.mass = mass, .inertia = inertia}), engine(thrust) {}
+      : elements(wings), rigid_body({.mass = mass, .inertia = inertia}), engine(thrust) {
+#if DEBUG_FLIGHTMODEL
+    elements[0].log = true;
+    elements[0].name = "lw";
+
+    elements[4].log = true;
+    elements[4].name = "el";
+#endif
+  }
 
   void update(phi::Seconds dt) {
+#if 1
     float aileron = joystick.x, rudder = joystick.y, elevator = joystick.z;
-    float max_elevator_deflection = 5.0f, max_aileron_deflection = 15.0f, max_rudder_deflection = 3.0f;
+    float max_elevator_deflection = 10.0f, max_aileron_deflection = 15.0f, max_rudder_deflection = 3.0f;
     float aileron_deflection = aileron * max_aileron_deflection;
 
-    elements[1].deflection = +aileron_deflection;
-    elements[2].deflection = -aileron_deflection;
-    elements[4].deflection = -(elevator * max_elevator_deflection);
-    elements[5].deflection = rudder * max_rudder_deflection;
+    elements[1].deflection = max_aileron_deflection * aileron;
+    elements[2].deflection = max_aileron_deflection * -aileron;
+    elements[4].deflection = max_elevator_deflection * -elevator;
+    elements[5].deflection = max_rudder_deflection * -rudder;
+#else
+    rigid_body.add_relative_torque(glm::vec3(400000.0f, 100000.0f, 1500000.0f) * joystick);
+#endif
 
     for (Wing& wing : elements) {
-      wing.apply_forces(rigid_body);
+      wing.apply_forces(rigid_body, dt);
     }
 
-    engine.apply_forces(rigid_body);
+    engine.apply_forces(rigid_body, dt);
 
     rigid_body.update(dt);
   }

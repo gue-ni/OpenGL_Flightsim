@@ -35,21 +35,22 @@ EQ      control yaw
 JK      control thrust
 )";
 
-#if 0
-constexpr glm::ivec2 RESOLUTION{ 640, 480 };
+#define CLIPMAP 1
+#define SKYBOX 1
+#define SMOOTH_CAMERA 1
+
+#if 1
+constexpr glm::ivec2 RESOLUTION{640, 480};
 #else
 constexpr glm::ivec2 RESOLUTION{1024, 728};
 #endif
 
 struct Joystick {
   int num_axis{0}, num_hats{0}, num_buttons{0};
-  float roll{0.0f}, pitch{0.0f}, yaw{0.0f}, throttle{0.0f};
+  float aileron{0.0f}, elevator{0.0f}, rudder{0.0f}, throttle{0.0f};
 
   // scale from int16 to -1.0, 1.0
-  inline static float scale(int16_t value) {
-    // return static_cast<float>(value) / static_cast<float>(32767);
-    return static_cast<float>(value) / static_cast<float>(std::numeric_limits<int16_t>::max() / 2);
-  }
+  inline static float scale(int16_t value) { return static_cast<float>(value) / static_cast<float>(32767); }
 };
 
 struct GameObject {
@@ -124,11 +125,7 @@ int main(void) {
     printf("found %d buttons, %d axis\n", joystick.num_buttons, joystick.num_axis);
   }
 
-#if 0
-  auto fuselage_vertices = gfx::load_obj("assets/models/cessna/fuselage.obj");
-#else
   auto fuselage_vertices = gfx::load_obj("assets/models/falcon2.obj");
-#endif
 
   gfx::Renderer renderer(RESOLUTION.x, RESOLUTION.y);
 
@@ -141,7 +138,7 @@ int main(void) {
 
   gfx::Object3D scene;
 
-#if 1
+#if SKYBOX
   const std::string skybox_path = "assets/textures/skybox/2/";
   gfx::Skybox skybox({
       skybox_path + "right.jpg",
@@ -154,14 +151,12 @@ int main(void) {
   skybox.set_scale(glm::vec3(3.0f));
   scene.add(&skybox);
 #endif
-#if 1
+
   gfx::Light sun(gfx::Light::DIRECTIONAL, glm::vec3(1.0f));
   sun.set_position(glm::vec3(-2.0f, 4.0f, -1.0f));
   sun.cast_shadow = false;
   scene.add(&sun);
-#endif
 
-#define CLIPMAP 1
 #if CLIPMAP
   Clipmap clipmap;
   scene.add(&clipmap);
@@ -171,18 +166,12 @@ int main(void) {
   const float thrust = 50000.0f;
 
   std::vector<phi::inertia::Element> elements = {
-      phi::inertia::cube_element({-0.5f, 0.0f, -2.7f}, {6.96f, 0.10f, 3.50f},
-                                 mass * 0.25f),  // left wing
-      phi::inertia::cube_element({-1.0f, 0.0f, -2.0f}, {3.80f, 0.10f, 1.26f},
-                                 mass * 0.05f),  // left aileron
-      phi::inertia::cube_element({-1.0f, 0.0f, 2.0f}, {3.80f, 0.10f, 1.26f},
-                                 mass * 0.05f),  // right aileron
-      phi::inertia::cube_element({-0.5f, 0.0f, 2.7f}, {6.96f, 0.10f, 3.50f},
-                                 mass * 0.25f),  // right wing
-      phi::inertia::cube_element({-6.6f, -0.1f, 0.0f}, {6.54f, 0.10f, 2.70f},
-                                 mass * 0.2f),  // elevator
-      phi::inertia::cube_element({-6.6f, 0.0f, 0.0f}, {5.31f, 3.10f, 0.10f},
-                                 mass * 0.2f),  // rudder
+      phi::inertia::cube_element({-0.5f, 0.0f, -2.7f}, {6.96f, 0.10f, 3.50f}, mass * 0.25f),  // left wing
+      phi::inertia::cube_element({-1.0f, 0.0f, -2.0f}, {3.80f, 0.10f, 1.26f}, mass * 0.05f),  // left aileron
+      phi::inertia::cube_element({-1.0f, 0.0f, 2.0f}, {3.80f, 0.10f, 1.26f}, mass * 0.05f),   // right aileron
+      phi::inertia::cube_element({-0.5f, 0.0f, 2.7f}, {6.96f, 0.10f, 3.50f}, mass * 0.25f),   // right wing
+      phi::inertia::cube_element({-6.6f, -0.1f, 0.0f}, {6.54f, 0.10f, 2.70f}, mass * 0.2f),   // elevator
+      phi::inertia::cube_element({-6.6f, 0.0f, 0.0f}, {5.31f, 3.10f, 0.10f}, mass * 0.2f),    // rudder
   };
 
   auto inertia = phi::inertia::tensor(elements, true);
@@ -192,13 +181,12 @@ int main(void) {
   const Airfoil NACA_64_206(NACA_64_206_data);
 
   std::vector<Wing> wings = {
-      Wing({-0.5f, 0.0f, -2.7f}, 6.96f, 3.50f, &NACA_64_206),  // left wing
-      Wing({-1.0f, 0.0f, -2.0f}, 3.80f, 1.26f, &NACA_0012),    // left aileron
-      Wing({-1.0f, 0.0f, 2.0f}, 3.80f, 1.26f, &NACA_0012),     // right aileron
-      Wing({-0.5f, 0.0f, 2.7f}, 6.96f, 3.50f, &NACA_64_206),   // right wing
-      Wing({-6.6f, -0.1f, 0.0f}, 6.54f, 2.70f, &NACA_0012),    // elevator
-      Wing({-6.6f, 0.0f, 0.0f}, 5.31f, 3.10f, &NACA_0012,
-           phi::RIGHT),  // rudder
+      Wing({-0.5f, 0.0f, -2.7f}, 6.96f, 3.50f, &NACA_64_206),           // left wing
+      Wing({-1.0f, 0.0f, -2.0f}, 3.80f, 1.26f, &NACA_0012),             // left aileron
+      Wing({-1.0f, 0.0f, 2.0f}, 3.80f, 1.26f, &NACA_0012),              // right aileron
+      Wing({-0.5f, 0.0f, 2.7f}, 6.96f, 3.50f, &NACA_64_206),            // right wing
+      Wing({-6.6f, -0.1f, 0.0f}, 6.54f, 2.70f, &NACA_0012),             // elevator
+      Wing({-6.6f, 0.0f, 0.0f}, 5.31f, 3.10f, &NACA_0012, phi::RIGHT),  // rudder
   };
 
   std::vector<GameObject*> objects;
@@ -211,7 +199,7 @@ int main(void) {
   scene.add(&player.transform);
   objects.push_back(&player);
 
-#define NPC_AIRCRAFT 1
+#define NPC_AIRCRAFT 0
 #if NPC_AIRCRAFT
   GameObject npc = {.transform = gfx::Mesh(f16_fuselage, f16_texture),
                     .aircraft = Aircraft(mass, thrust, inertia, wings)};
@@ -224,7 +212,7 @@ int main(void) {
 
 #if 1
   float size = 0.3f;
-  float projection_distance = 1500.0f;
+  float projection_distance = 150.0f;
   gfx::Billboard cross(make_shared<gfx::opengl::Texture>("assets/textures/sprites/cross.png"));
   cross.set_position(phi::FORWARD * projection_distance);
   cross.set_scale(glm::vec3(size));
@@ -236,14 +224,18 @@ int main(void) {
 #endif
 
   gfx::Object3D camera_transform;
-  camera_transform.set_position({-15.0f, 1, 0});
+  camera_transform.set_position({-25.0f, 5, 0});
   camera_transform.set_rotation({0, glm::radians(-90.0f), 0.0f});
   player.transform.add(&camera_transform);
 
   gfx::Camera camera(glm::radians(45.0f), (float)RESOLUTION.x / (float)RESOLUTION.y, 1.0f, 150000.0f);
-  scene.add(&camera);
+#if SMOOTH_CAMERA
   camera.set_position(player.aircraft.rigid_body.position);
   camera.set_rotation({0, glm::radians(-90.0f), 0.0f});
+  scene.add(&camera);
+#else
+  camera_transform.add(&camera);
+#endif
 
   gfx::OrbitController controller(30.0f);
 
@@ -307,10 +299,10 @@ int main(void) {
             int16_t value = event.jaxis.value;
             switch (axis) {
               case 0:
-                joystick.roll = std::pow(Joystick::scale(value), 3.0f);
+                joystick.aileron = std::pow(Joystick::scale(value), 3.0f);
                 break;
               case 1:
-                joystick.pitch = std::pow(Joystick::scale(value), 3.0f);
+                joystick.elevator = std::pow(Joystick::scale(value), 3.0f);
                 break;
 
               case 2:
@@ -322,7 +314,7 @@ int main(void) {
                 break;
 
               case 4:
-                joystick.yaw = std::pow(Joystick::scale(value), 3.0f);
+                joystick.rudder = std::pow(Joystick::scale(value), 3.0f);
                 break;
 
               default:
@@ -355,7 +347,6 @@ int main(void) {
     window_flags |= ImGuiWindowFlags_NoResize;
 
     auto& rb = player.aircraft.rigid_body;
-
     float speed = phi::units::kilometer_per_hour(rb.get_speed());
     float ias = phi::units::kilometer_per_hour(get_indicated_air_speed(rb));
 
@@ -364,7 +355,11 @@ int main(void) {
     ImGui::SetNextWindowBgAlpha(0.35f);
     ImGui::Begin("Flightsim", nullptr, window_flags);
     ImGui::Text("ALT:   %.2f m", rb.position.y);
+#if 0
     ImGui::Text("SPD:   %.2f km/h", speed);
+#else
+    ImGui::Text("SPD:   %.2f m/s", rb.get_speed());
+#endif
     ImGui::Text("IAS:   %.2f km/h", ias);
     ImGui::Text("THR:   %d %%", static_cast<int>(player.aircraft.engine.throttle * 100.0f));
     ImGui::Text("Mach:  %.2f", get_mach_number(rb));
@@ -376,11 +371,13 @@ int main(void) {
     get_keyboard_state(joystick, dt);
 
     auto& player_aircraft = player.aircraft;
-    player_aircraft.joystick = glm::vec3(joystick.roll, joystick.yaw, joystick.pitch);
+    player_aircraft.joystick = glm::vec3(joystick.aileron, joystick.rudder, joystick.elevator);
     player_aircraft.engine.throttle = joystick.throttle;
 
+#if NPC_AIRCRAFT
     fly_towards(npc.aircraft, player.aircraft.rigid_body.position);
     // fly_towards(player.aircraft, npc.aircraft.rigid_body.position);
+#endif
 
     if (!paused) {
       for (auto obj : objects) {
@@ -388,18 +385,18 @@ int main(void) {
       }
     }
 
-    fpm.set_position(glm::normalize(player_aircraft.rigid_body.get_body_velocity()) * (projection_distance + 1));
+    fpm.set_position(glm::normalize(player_aircraft.rigid_body.get_body_velocity()) * projection_distance);
 
     if (orbit) {
       controller.update(camera, player_aircraft.rigid_body.position, dt);
       cross.visible = fpm.visible = false;
     } else if (!paused) {
+#if SMOOTH_CAMERA
       auto& rb = player_aircraft.rigid_body;
       camera.set_position(glm::mix(camera.get_position(), rb.position + rb.up() * 4.5f, dt * 0.035f * rb.get_speed()));
-
       camera.set_rotation_quaternion(
           glm::mix(camera.get_rotation_quaternion(), camera_transform.get_world_rotation_quaternion(), dt * 5.0f));
-
+#endif
       cross.visible = fpm.visible = true;
     }
     renderer.render(camera, scene);
@@ -422,27 +419,27 @@ void get_keyboard_state(Joystick& joystick, phi::Seconds dt) {
   const uint8_t* key_states = SDL_GetKeyboardState(NULL);
 
   if (key_states[SDL_SCANCODE_A] || key_states[SDL_SCANCODE_LEFT]) {
-    joystick.roll = move(joystick.roll, +factor.x, dt);
+    joystick.aileron = move(joystick.aileron, +factor.x, dt);
   } else if (key_states[SDL_SCANCODE_D] || key_states[SDL_SCANCODE_RIGHT]) {
-    joystick.roll = move(joystick.roll, -factor.x, dt);
+    joystick.aileron = move(joystick.aileron, -factor.x, dt);
   } else if (joystick.num_axis <= 0) {
-    joystick.roll = center(joystick.roll, factor.x, dt);
+    joystick.aileron = center(joystick.aileron, factor.x, dt);
   }
 
   if (key_states[SDL_SCANCODE_W] || key_states[SDL_SCANCODE_UP]) {
-    joystick.pitch = move(joystick.pitch, +factor.z, dt);
+    joystick.elevator = move(joystick.elevator, +factor.z, dt);
   } else if (key_states[SDL_SCANCODE_S] || key_states[SDL_SCANCODE_DOWN]) {
-    joystick.pitch = move(joystick.pitch, -factor.z, dt);
+    joystick.elevator = move(joystick.elevator, -factor.z, dt);
   } else if (joystick.num_axis <= 0) {
-    joystick.pitch = center(joystick.pitch, factor.z, dt);
+    joystick.elevator = center(joystick.elevator, factor.z, dt);
   }
 
-  if (key_states[SDL_SCANCODE_Q]) {
-    joystick.yaw = move(joystick.yaw, -factor.x, dt);
-  } else if (key_states[SDL_SCANCODE_E]) {
-    joystick.yaw = move(joystick.yaw, +factor.x, dt);
+  if (key_states[SDL_SCANCODE_E]) {
+    joystick.rudder = move(joystick.rudder, -factor.x, dt);
+  } else if (key_states[SDL_SCANCODE_Q]) {
+    joystick.rudder = move(joystick.rudder, +factor.x, dt);
   } else if (joystick.num_axis <= 0) {
-    joystick.yaw = center(joystick.yaw, factor.z, dt);
+    joystick.rudder = center(joystick.rudder, factor.z, dt);
   }
 
   const float tmp = 0.002f;

@@ -114,7 +114,7 @@ namespace utils {
 
 template <typename T>
 constexpr inline T scale(T input, T in_min, T in_max, T out_min, T out_max) {
-  assert(in_min <= input && input <= in_max);
+  input = glm::clamp(input, in_min, in_max);
   return (input - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
@@ -247,6 +247,13 @@ class RigidBody {
     position += velocity * dt;
 
     angular_velocity += inverse_inertia * (m_torque - glm::cross(angular_velocity, inertia * angular_velocity)) * dt;
+
+#if 1
+    // TODO: implement angular drag/damping
+    float angular_drag = 1.0f;
+    angular_velocity -= angular_velocity * angular_drag * dt;
+#endif
+
     orientation += (orientation * glm::quat(0.0f, angular_velocity)) * (0.5f * dt);
     orientation = glm::normalize(orientation);
 
@@ -256,6 +263,6 @@ class RigidBody {
 };
 
 struct ForceEffector {
-  virtual void apply_forces(phi::RigidBody& rigid_body) = 0;
+  virtual void apply_forces(phi::RigidBody& rigid_body, phi::Seconds dt) = 0;
 };
 };  // namespace phi
