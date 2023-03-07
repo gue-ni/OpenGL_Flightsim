@@ -15,6 +15,7 @@ typedef float Degrees;
 // constants
 constexpr float EARTH_GRAVITY = 9.80665f;  // gravity of earth, m/s^2
 constexpr float EPSILON = 1e-8f;
+constexpr float PI = 3.1415926535f;
 
 // directions in body space
 constexpr glm::vec3 UP = {0.0f, 1.0f, 0.0f};

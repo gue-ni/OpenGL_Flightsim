@@ -10,7 +10,7 @@
 #include "gfx.h"
 #include "phi.h"
 
-#define DEBUG_FLIGHTMODEL 1
+#define DEBUG_FLIGHTMODEL 0
 
 // get temperture in kelvin
 inline float get_air_temperature(float altitude) {
@@ -79,13 +79,14 @@ float get_mach_number(const phi::RigidBody& rb) {
 
 struct Airfoil {
   float min_alpha, max_alpha;
-  std::vector<glm::vec3> data;
+  std::vector<glm::vec3> data;  // alpha, cl, cd
 
-  Airfoil(const std::vector<glm::vec3>& curve_data) : data(curve_data) {
-    min_alpha = curve_data[0].x;
-    max_alpha = curve_data[curve_data.size() - 1].x;
+  Airfoil(const std::vector<glm::vec3>& curve) : data(curve) {
+    min_alpha = curve.front().x;
+    max_alpha = curve.back().x;
   }
 
+  // get lift coefficent and drag coefficient
   std::tuple<float, float> sample(float alpha) const {
     int max_index = static_cast<int>(data.size() - 1);
     int index = phi::utils::inverse_lerp(min_alpha, max_alpha, alpha) * max_index;
@@ -106,7 +107,12 @@ struct Engine : public phi::ForceEffector {
 };
 
 struct Wing : public phi::ForceEffector {
-  const float area{};  // m^2
+  const float area;  // m^2
+  const float wingspan;
+  const float chord;
+  const float aspect_ratio;
+  const float efficiency_factor = 1.0f;
+
   const Airfoil* airfoil;
   const glm::vec3 normal;
   const glm::vec3 center_of_pressure;
@@ -126,7 +132,13 @@ struct Wing : public phi::ForceEffector {
   float max_deflection = 10.0f;
 
   Wing(const glm::vec3& position, float wingspan, float chord, const Airfoil* aero, const glm::vec3& normal = phi::UP)
-      : center_of_pressure(position), area(chord * wingspan), airfoil(aero), normal(normal) {}
+      : center_of_pressure(position),
+        area(chord * wingspan),
+        chord(chord),
+        wingspan(wingspan),
+        airfoil(aero),
+        normal(normal),
+        aspect_ratio(std::pow(wingspan, 2) / area) {}
 
   void set_control_input(float input) { control_input = glm::clamp(input, -1.0f, 1.0f); }
 
@@ -136,7 +148,7 @@ struct Wing : public phi::ForceEffector {
     glm::vec3 local_velocity = rigid_body.get_point_velocity(center_of_pressure);
     float speed = glm::length(local_velocity);
 
-    if (speed <= 0.0f) return;
+    if (speed <= phi::EPSILON) return;
 
     glm::vec3 wing_normal = normal;
 
@@ -158,21 +170,25 @@ struct Wing : public phi::ForceEffector {
     // sample our aerodynamic data
     auto [lift_coefficient, drag_coefficient] = airfoil->sample(angle_of_attack);
 
+    // induced drag
+    float induced_drag_coefficient = std::pow(lift_coefficient, 2) / (phi::PI * aspect_ratio * efficiency_factor);
+
     // air density depends on altitude
     float air_density = get_air_density(rigid_body.position.y);
 
     float tmp = 0.5f * std::pow(speed, 2) * air_density * area;
     glm::vec3 lift = lift_direction * lift_coefficient * lift_multiplier * tmp;
-    glm::vec3 drag = drag_direction * drag_coefficient * drag_multiplier * tmp;
+    glm::vec3 drag = drag_direction * (drag_coefficient + induced_drag_coefficient) * drag_multiplier * tmp;
 
 #if DEBUG_FLIGHTMODEL
     if (log && (log_timer -= dt) <= 0.0f) {
-      auto m_force = rigid_body.transform_direction(lift);
-      auto m_torque = glm::cross(center_of_pressure, lift);
-
       log_timer = 0.2f;
+
+      auto force = rigid_body.transform_direction(lift);
+      auto torque = glm::cross(center_of_pressure, lift);
+
       printf("[%s] aoa = %.2f, cl = %.2f, t = %.2f, p = %.2f\n", name.c_str(), angle_of_attack, lift_coefficient,
-             m_torque.z, rigid_body.angular_velocity.z);
+             torque.z, rigid_body.angular_velocity.z);
     }
 #endif
 
@@ -211,12 +227,12 @@ struct Aircraft {
   }
 
   void update(phi::Seconds dt) {
-#if 0
+#if 1
     float aileron = joystick.x, rudder = joystick.y, elevator = joystick.z;
     elements[1].set_control_input(+aileron);
     elements[2].set_control_input(-aileron);
-    elements[3].set_control_input(-elevator);
-    elements[4].set_control_input(-rudder);
+    elements[4].set_control_input(-elevator);
+    elements[5].set_control_input(-rudder);
 #else
     rigid_body.add_relative_torque(glm::vec3(400000.0f, 100000.0f, 1500000.0f) * joystick);
 #endif
