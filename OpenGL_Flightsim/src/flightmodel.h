@@ -123,9 +123,9 @@ struct Wing : public phi::ForceEffector {
 
   float deflection = 0.0f;
   float control_input = 0.0f;
-  float min_deflection = -10.0f;
-  float max_deflection = +10.0f;
-  float actuator_speed = 90.0f;
+  const float actuator_speed = 90.0f;
+  const float min_deflection = -10.0f;
+  const float max_deflection = +10.0f;
 
 #if DEBUG_FLIGHTMODEL
   bool log = false;
