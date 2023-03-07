@@ -114,7 +114,12 @@ struct Engine : public phi::ForceEffector {
 };
 
 struct Wing : public phi::ForceEffector {
-  const float area{};  // m^2
+  const float area;  // m^2
+  const float wingspan;
+  const float chord;
+  const float aspect_ratio;
+  const float efficiency_factor = 1.0f;
+  
   const Airfoil* airfoil;
   const glm::vec3 normal;
   const glm::vec3 center_of_pressure;
@@ -127,19 +132,17 @@ struct Wing : public phi::ForceEffector {
 
   float lift_multiplier = 1.0f;
   float drag_multiplier = 1.0f;
-  phi::Degrees deflection = 0.0f;
-
-  Wing(const glm::vec3& position, float area, const Airfoil* aero, const glm::vec3& normal = phi::UP)
-      : center_of_pressure(position), area(area), airfoil(aero), normal(normal) {}
+  float deflection = 0.0f;
 
   Wing(const glm::vec3& position, float wingspan, float chord, const Airfoil* aero, const glm::vec3& normal = phi::UP)
-      : center_of_pressure(position), area(chord * wingspan), airfoil(aero), normal(normal) {}
+      : center_of_pressure(position), area(chord * wingspan), chord(chord), wingspan(wingspan), airfoil(aero), normal(normal),
+  aspect_ratio(std::pow(wingspan, 2) / area) {}
 
   void apply_forces(phi::RigidBody& rigid_body, phi::Seconds dt) override {
     glm::vec3 local_velocity = rigid_body.get_point_velocity(center_of_pressure);
     float speed = glm::length(local_velocity);
 
-    if (speed <= 0.0f) return;
+    if (speed <= phi::EPSILON) return;
 
     glm::vec3 wing_normal = normal;
 
@@ -161,13 +164,16 @@ struct Wing : public phi::ForceEffector {
 
     // sample our aerodynamic data
     auto [lift_coefficient, drag_coefficient] = airfoil->sample(angle_of_attack);
+    
+    // induced drag
+    float induced_drag_coefficient = std::pow(lift_coefficient, 2) / (phi::PI * aspect_ratio * efficiency_factor);
 
     // air density depends on altitude
     float air_density = get_air_density(rigid_body.position.y);
 
     float tmp = 0.5f * std::pow(speed, 2) * air_density * area;
     glm::vec3 lift = lift_direction * lift_coefficient * lift_multiplier * tmp;
-    glm::vec3 drag = drag_direction * drag_coefficient * drag_multiplier * tmp;
+    glm::vec3 drag = drag_direction * (drag_coefficient + induced_drag_coefficient) * drag_multiplier * tmp;
 
 #if DEBUG_FLIGHTMODEL
     log_timer -= dt;
