@@ -130,16 +130,16 @@ int main(void) {
   gfx::Renderer renderer(RESOLUTION.x, RESOLUTION.y);
 
   auto grey = make_shared<gfx::Phong>(glm::vec3(0.5f));
-  auto colors = make_shared<gfx::Phong>(make_shared<gfx::opengl::Texture>("assets/textures/colorpalette.png"));
-  gfx::opengl::TextureParams params = {.flip_vertically = true};
-  auto tex = make_shared<gfx::opengl::Texture>("assets/textures/f16_large.jpg", params);
+  auto colors = make_shared<gfx::Phong>(make_shared<gfx::gl::Texture>("assets/textures/colorpalette.png"));
+  gfx::gl::TextureParams params = {.flip_vertically = true};
+  auto tex = make_shared<gfx::gl::Texture>("assets/textures/f16_large.jpg", params);
   auto f16_texture = make_shared<gfx::Phong>(tex);
   auto f16_fuselage = std::make_shared<gfx::Geometry>(fuselage_vertices, gfx::Geometry::POS_NORM_UV);
 
   gfx::Object3D scene;
 
 #if SKYBOX
-  const std::string skybox_path = "assets/textures/skybox/2/";
+  const std::string skybox_path = "assets/textures/skybox/1/";
   gfx::Skybox skybox({
       skybox_path + "right.jpg",
       skybox_path + "left.jpg",
@@ -213,14 +213,14 @@ int main(void) {
 #endif
 
 #if 1
-  float size = 0.3f;
+  float size = 0.1f;
   float projection_distance = 150.0f;
-  gfx::Billboard cross(make_shared<gfx::opengl::Texture>("assets/textures/sprites/cross.png"));
+  gfx::Billboard cross(make_shared<gfx::gl::Texture>("assets/textures/sprites/cross.png"));
   cross.set_position(phi::FORWARD * projection_distance);
   cross.set_scale(glm::vec3(size));
   player.transform.add(&cross);
 
-  gfx::Billboard fpm(make_shared<gfx::opengl::Texture>("assets/textures/sprites/fpm.png"));
+  gfx::Billboard fpm(make_shared<gfx::gl::Texture>("assets/textures/sprites/fpm.png"));
   fpm.set_scale(glm::vec3(size));
   player.transform.add(&fpm);
 #endif

@@ -45,8 +45,8 @@ std::vector<float> load_obj(const std::string path);
 std::shared_ptr<Geometry> make_cube_geometry(float size);
 std::shared_ptr<Geometry> make_plane_geometry(int x_elements, int y_elements, float size);
 
-// opengl primitives
-namespace opengl {
+// gl primitives
+namespace gl {
 
 struct Shader {
   GLuint id;
@@ -127,13 +127,13 @@ struct CubemapTexture : public Texture {
   void bind(GLuint texture) const override;
   void unbind() const override;
 };
-};  // namespace opengl
+};  // namespace gl
 
 struct ShadowMap {
   ShadowMap(unsigned int shadow_width, unsigned int shadow_height);
   GLuint fbo;
-  opengl::Texture depth_map;
-  opengl::Shader shader;
+  gl::Texture depth_map;
+  gl::Shader shader;
   GLuint width, height;
 };
 
@@ -253,14 +253,14 @@ class Geometry {
 
  private:
   unsigned int m_vao, m_vbo;
-  opengl::VertexBuffer vbo;
-  opengl::VertexArrayObject vao;
+  gl::VertexBuffer vbo;
+  gl::VertexArrayObject vao;
   static int get_stride(const VertexLayout& layout);
 };
 
 class Material {
  public:
-  virtual opengl::Shader* get_shader() { return nullptr; }
+  virtual gl::Shader* get_shader() { return nullptr; }
   virtual void bind() {}
 };
 
@@ -268,17 +268,17 @@ template <class Derived>
 class MaterialX : public Material {
  public:
   MaterialX(const std::string& path) {
-    if (shader == nullptr) shader = std::make_shared<opengl::Shader>(path);
+    if (shader == nullptr) shader = std::make_shared<gl::Shader>(path);
   }
-  opengl::Shader* get_shader() { return shader.get(); }
-  static std::shared_ptr<opengl::Shader> shader;
+  gl::Shader* get_shader() { return shader.get(); }
+  static std::shared_ptr<gl::Shader> shader;
 };
 
 class Phong : public MaterialX<Phong> {
  public:
   RGB rgb{};
   float ka, kd, ks, alpha;
-  std::shared_ptr<opengl::Texture> texture = nullptr;
+  std::shared_ptr<gl::Texture> texture = nullptr;
 
   Phong(const glm::vec3& color_, float ka_, float kd_, float ks_, float alpha_)
       : MaterialX<Phong>("shaders/phong"), rgb(color_), ka(ka_), kd(kd_), ks(ks_), alpha(alpha_) {}
@@ -286,7 +286,7 @@ class Phong : public MaterialX<Phong> {
   Phong(const glm::vec3& color_)
       : MaterialX<Phong>("shaders/phong"), rgb(color_), ka(0.3f), kd(1.0f), ks(0.5f), alpha(10.0f) {}
 
-  Phong(std::shared_ptr<opengl::Texture> tex)
+  Phong(std::shared_ptr<gl::Texture> tex)
       : MaterialX<Phong>("shaders/phong"),
         texture(tex),
         rgb(0.0f, 1.0f, 0.0f),
@@ -312,18 +312,17 @@ class ShaderMaterial : public MaterialX<ShaderMaterial> {
 
 class ScreenMaterial : public MaterialX<ScreenMaterial> {
  private:
-  std::shared_ptr<opengl::Texture> texture = nullptr;
+  std::shared_ptr<gl::Texture> texture = nullptr;
 
  public:
-  ScreenMaterial(std::shared_ptr<opengl::Texture> t) : MaterialX<ScreenMaterial>("shaders/screen"), texture(t) {}
+  ScreenMaterial(std::shared_ptr<gl::Texture> t) : MaterialX<ScreenMaterial>("shaders/screen"), texture(t) {}
   void bind() override;
 };
 
 class SkyboxMaterial : public MaterialX<SkyboxMaterial> {
  public:
-  std::shared_ptr<opengl::CubemapTexture> cubemap = nullptr;
-  SkyboxMaterial(std::shared_ptr<opengl::CubemapTexture> map)
-      : MaterialX<SkyboxMaterial>("shaders/skybox"), cubemap(map) {}
+  std::shared_ptr<gl::CubemapTexture> cubemap = nullptr;
+  SkyboxMaterial(std::shared_ptr<gl::CubemapTexture> map) : MaterialX<SkyboxMaterial>("shaders/skybox"), cubemap(map) {}
 
   void bind() override;
 };
@@ -341,16 +340,17 @@ class Mesh : public Object3D {
 
 class Billboard : public Object3D {
  public:
-  Billboard(std::shared_ptr<opengl::Texture> sprite);
+  Billboard(std::shared_ptr<gl::Texture> sprite, glm::vec3 color = glm::vec3(1.0f));
   void draw_self(RenderContext& context) override;
   Object3D& add(Object3D* child) = delete;
 
  private:
-  opengl::Shader shader;
-  std::shared_ptr<opengl::Texture> texture;
-  opengl::VertexArrayObject vao;
-  opengl::VertexBuffer vbo;
-  opengl::ElementBufferObject ebo;
+  glm::vec3 color;
+  gl::Shader shader;
+  std::shared_ptr<gl::Texture> texture;
+  gl::VertexArrayObject vao;
+  gl::VertexBuffer vbo;
+  gl::ElementBufferObject ebo;
 };
 
 class Skybox : public Mesh {
@@ -375,7 +375,7 @@ class Renderer {
     };
 
     auto geometry = std::make_shared<Geometry>(quad_vertices, Geometry::POS_UV);
-    auto texture = std::make_shared<gfx::opengl::Texture>(shadow_map->depth_map.id);
+    auto texture = std::make_shared<gfx::gl::Texture>(shadow_map->depth_map.id);
     auto material = std::make_shared<ScreenMaterial>(texture);
     screen_quad = std::make_shared<Mesh>(geometry, material);
   }

@@ -3,34 +3,11 @@
 #include "gfx.h"
 
 constexpr unsigned int primitive_restart = 0xFFFFU;
-
-void generate_mesh(std::vector<glm::vec3>& vertices, std::vector<unsigned int>& indices, int rows = 3, int columns = 2,
-                   float size = 1.0f) {
-  vertices.clear();
-
-  for (int y = 0; y <= rows; y++) {
-    for (int x = 0; x <= columns; x++) {
-      vertices.push_back({x * size, 0.0f, y * size});
-    }
-  }
-
-  indices.clear();
-
-  for (int r = 0; r < rows; r++) {
-    for (int c = 0; c < columns + 1; c++) {
-      auto i0 = (r + 0) * (columns + 1) + c;
-      indices.push_back(i0);
-
-      auto i1 = (r + 1) * (columns + 1) + c;
-      indices.push_back(i1);
-    }
-    indices.push_back(primitive_restart);  // restart primitive
-  }
-}
+const std::string path = "assets/textures/terrain/1/";
 
 struct Seam {
-  gfx::opengl::VertexBuffer vbo;
-  gfx::opengl::VertexArrayObject vao;
+  gfx::gl::VertexBuffer vbo;
+  gfx::gl::VertexArrayObject vao;
   unsigned int index_count;
 
   Seam(int columns, float size) {
@@ -68,9 +45,9 @@ struct Seam {
 };
 
 struct Block {
-  gfx::opengl::VertexBuffer vbo;
-  gfx::opengl::ElementBufferObject ebo;
-  gfx::opengl::VertexArrayObject vao;
+  gfx::gl::VertexBuffer vbo;
+  gfx::gl::ElementBufferObject ebo;
+  gfx::gl::VertexArrayObject vao;
   unsigned int index_count;
 
   Block(int width, int height, float segment_size) {
@@ -78,7 +55,22 @@ struct Block {
     std::vector<glm::vec3> vertices;
     std::vector<unsigned int> indices;
 
-    generate_mesh(vertices, indices, width, height, segment_size);
+    for (int y = 0; y <= width; y++) {
+      for (int x = 0; x <= height; x++) {
+        vertices.push_back({x * segment_size, 0.0f, y * segment_size});
+      }
+    }
+
+    for (int r = 0; r < width; r++) {
+      for (int c = 0; c < height + 1; c++) {
+        auto i0 = (r + 0) * (height + 1) + c;
+        indices.push_back(i0);
+
+        auto i1 = (r + 1) * (height + 1) + c;
+        indices.push_back(i1);
+      }
+      indices.push_back(primitive_restart);  // restart primitive
+    }
 
     index_count = indices.size();
 
@@ -107,8 +99,6 @@ struct Block {
   }
 };
 
-const std::string path = "assets/textures/terrain/1/";
-
 class Clipmap : public gfx::Object3D {
  public:
   bool wireframe = false;
@@ -129,21 +119,7 @@ class Clipmap : public gfx::Object3D {
         center(2 * segments + 2, 2 * segments + 2, segment_size),
         seam(2 * segments + 2, segment_size * 2) {}
 
-  glm::mat4 transform_matrix(const glm::vec2& position, float scale, float angle = 0) {
-    auto S = glm::scale(glm::mat4(1.0f), glm::vec3(scale));
-    auto T = glm::translate(glm::mat4(1.0f), glm::vec3(position.x, 0.0f, position.y));
-    auto R = glm::rotate(glm::mat4(1.0f), glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
-    return T * R * S;
-  }
-
-  glm::vec2 calc_base(int level, glm::vec2 camera_pos) {
-    float scale = pow(2.0f, level);
-    float next_scale = pow(2.0f, level + 2);
-    float tile_size = segments * segment_size * scale;
-    glm::vec2 snapped = glm::floor(camera_pos / next_scale) * next_scale;
-    glm::vec2 base = snapped - tile_size * 2.0f;
-    return base;
-  }
+  float get_terrain_height(glm::vec2 coords) { return 0.0f; }
 
   void draw_self(gfx::RenderContext& context) override {
 #if 1
@@ -157,13 +133,13 @@ class Clipmap : public gfx::Object3D {
       terrain.bind(4);
 
       shader.bind();
-      shader.uniform("u_CameraPos", context.camera->get_world_position());
-      shader.uniform("u_View", context.camera->get_view_matrix());
-      shader.uniform("u_Projection", context.camera->get_projection_matrix());
       shader.uniform("u_Heightmap", 2);
       shader.uniform("u_Normalmap", 3);
       shader.uniform("u_Texture", 4);
       shader.uniform("u_Background", context.background_color);
+      shader.uniform("u_View", context.camera->get_view_matrix());
+      shader.uniform("u_CameraPos", context.camera->get_world_position());
+      shader.uniform("u_Projection", context.camera->get_projection_matrix());
 
       glEnable(GL_CULL_FACE);
       glEnable(GL_PRIMITIVE_RESTART);
@@ -173,10 +149,10 @@ class Clipmap : public gfx::Object3D {
       int min_level = 1;  // should depend on camera height
 
       for (int l = min_level; l <= levels; l++) {
-        int rows = 5, cols = 5;
-        float border = 0.0f;
-        float scale = pow(2.0f, l);
-        float next_scale = pow(2.0f, l + 2);
+        const int rows = 5, cols = 5;
+        // float border = 0.0f;
+        float scale = std::pow(2.0f, l);
+        float next_scale = std::pow(2.0f, l + 2);
         float scaled_segment_size = segment_size * scale;
         float tile_size = segments * scaled_segment_size;
         glm::vec2 snapped = glm::floor(camera_pos_xy / next_scale) * next_scale;
@@ -187,6 +163,7 @@ class Clipmap : public gfx::Object3D {
         shader.uniform("u_Level", static_cast<float>(l) / levels);
 
 #if 1
+        // don't render lots of detail if we are very high up
         if (tile_size * 5 < height * 2.5) {
           min_level = l + 1;
           continue;
@@ -278,10 +255,10 @@ class Clipmap : public gfx::Object3D {
   }
 
  private:
-  gfx::opengl::Shader shader;
-  gfx::opengl::Texture heightmap;
-  gfx::opengl::Texture normalmap;
-  gfx::opengl::Texture terrain;
+  gfx::gl::Shader shader;
+  gfx::gl::Texture heightmap;
+  gfx::gl::Texture normalmap;
+  gfx::gl::Texture terrain;
 
   Block tile;
   Block center;
@@ -291,8 +268,24 @@ class Clipmap : public gfx::Object3D {
   Block vertical;
   Seam seam;
 
-  unsigned int index_count = 0;
+  unsigned index_count = 0;
   const int levels;
   const int segments;
   const float segment_size;
+
+  glm::vec2 calc_base(int level, glm::vec2 camera_pos) {
+    float scale = std::pow(2.0f, level);
+    float next_scale = std::pow(2.0f, level + 2);
+    float tile_size = segments * segment_size * scale;
+    glm::vec2 snapped = glm::floor(camera_pos / next_scale) * next_scale;
+    glm::vec2 base = snapped - tile_size * 2.0f;
+    return base;
+  }
+
+  glm::mat4 transform_matrix(const glm::vec2& position, float scale, float angle = 0) {
+    auto S = glm::scale(glm::mat4(1.0f), glm::vec3(scale));
+    auto T = glm::translate(glm::mat4(1.0f), glm::vec3(position.x, 0.0f, position.y));
+    auto R = glm::rotate(glm::mat4(1.0f), glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
+    return T * R * S;
+  }
 };

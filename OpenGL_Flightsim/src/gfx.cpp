@@ -17,7 +17,7 @@ std::string load_text_file(const std::string& path) {
 
 namespace gfx {
 
-namespace opengl {
+namespace gl {
 
 Shader::Shader(const std::string& path) : Shader(load_text_file(path + ".vert"), load_text_file(path + ".frag")) {}
 
@@ -222,7 +222,7 @@ void ElementBufferObject::buffer(const void* data, size_t size) {
   bind();
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
 }
-};  // namespace opengl
+};  // namespace gl
 
 Geometry::Geometry(const std::vector<float>& vertices, const VertexLayout& layout)
     : triangle_count(static_cast<int>(vertices.size()) / (get_stride(layout))) {
@@ -287,7 +287,7 @@ void Camera::look_at(const glm::vec3& target) {
 }
 
 template <class Derived>
-std::shared_ptr<opengl::Shader> MaterialX<Derived>::shader = nullptr;
+std::shared_ptr<gl::Shader> MaterialX<Derived>::shader = nullptr;
 
 int Object3D::counter = 0;
 
@@ -458,13 +458,13 @@ void Mesh::draw_self(RenderContext& context) {
   if (context.is_shadow_pass) {
     assert(context.shadow_caster);
 
-    opengl::Shader* shader = &context.shadow_map->shader;
+    gl::Shader* shader = &context.shadow_map->shader;
 
     shader->bind();
     shader->uniform("u_Model", transform);
     shader->uniform("u_LightSpaceMatrix", context.shadow_caster->light_space_matrix());
   } else {
-    opengl::Shader* shader = m_material->get_shader();
+    gl::Shader* shader = m_material->get_shader();
 
     shader->bind();
     shader->uniform("u_Model", transform);
@@ -612,7 +612,7 @@ void Phong::bind() {
     shader->uniform("u_SolidObjectColor", rgb);
   }
 
-  opengl::Shader* shader = get_shader();
+  gl::Shader* shader = get_shader();
   shader->bind();
   shader->uniform("ka", ka);
   shader->uniform("kd", kd);
@@ -621,7 +621,7 @@ void Phong::bind() {
 }
 
 void Basic::bind() {
-  opengl::Shader* shader = get_shader();
+  gl::Shader* shader = get_shader();
   shader->uniform("ka", 0.6f);
   shader->uniform("kd", 0.8f);
   shader->uniform("ks", 0.2f);
@@ -1052,7 +1052,8 @@ std::shared_ptr<Geometry> make_plane_geometry(int x_elements, int y_elements, fl
   return std::make_shared<Geometry>(vertices, Geometry::POS_NORM_UV);
 }
 
-Billboard::Billboard(std::shared_ptr<opengl::Texture> sprite) : texture(sprite), shader("shaders/billboard") {
+Billboard::Billboard(std::shared_ptr<gl::Texture> sprite, glm::vec3 color)
+    : texture(sprite), shader("shaders/billboard"), color(color) {
   float vertices[] = {
       0.5f,  0.5f,  0.0f, 0.0f, 0.0f, 0.5f,  -0.5f, 0.0f, 0.0f, 1.0f,
       -0.5f, -0.5f, 0.0f, 1.0f, 1.0f, -0.5f, 0.5f,  0.0f, 1.0f, 0.0f,
@@ -1089,7 +1090,7 @@ void Billboard::draw_self(RenderContext& context) {
   shader.uniform("u_View", view);
   shader.uniform("u_Projection", camera->get_projection_matrix());
   shader.uniform("u_Texture", 5);
-  shader.uniform("u_UseTexture", true);
+  shader.uniform("u_Color", color);
   shader.uniform("u_Position", get_world_position());
   shader.uniform("u_Scale", get_scale());
   shader.uniform("u_Right", right);
@@ -1112,15 +1113,14 @@ void Billboard::draw_self(RenderContext& context) {
 }
 
 Skybox::Skybox(const std::array<std::string, 6>& faces)
-    : Mesh(make_cube_geometry(10.0f),
-           std::make_shared<SkyboxMaterial>(std::make_shared<opengl::CubemapTexture>(faces))) {}
+    : Mesh(make_cube_geometry(1.0f), std::make_shared<SkyboxMaterial>(std::make_shared<gl::CubemapTexture>(faces))) {}
 
 void Skybox::draw_self(RenderContext& context) {
   if (!context.is_shadow_pass) {
     glDepthMask(GL_FALSE);
 
     m_material->bind();
-    opengl::Shader* shader = m_material->get_shader();
+    gl::Shader* shader = m_material->get_shader();
 
     auto u_View = glm::mat4(glm::mat3(context.camera->get_view_matrix()));
     shader->uniform("u_View", u_View);
@@ -1135,7 +1135,7 @@ void Skybox::draw_self(RenderContext& context) {
 }
 
 void SkyboxMaterial::bind() {
-  opengl::Shader* shader = get_shader();
+  gl::Shader* shader = get_shader();
   int unit = 2;
   cubemap->bind(unit);
   shader->bind();
@@ -1143,7 +1143,7 @@ void SkyboxMaterial::bind() {
 }
 
 void ScreenMaterial::bind() {
-  opengl::Shader* shader = get_shader();
+  gl::Shader* shader = get_shader();
   texture->bind(0);
   shader->bind();
   shader->uniform("u_ShadowMap", 0);
