@@ -10,7 +10,7 @@
 #include "gfx.h"
 #include "phi.h"
 
-#define DEBUG_FLIGHTMODEL 0
+#define DEBUG_FLIGHTMODEL 1
 
 // get temperture in kelvin
 inline float get_air_temperature(float altitude) {
@@ -30,22 +30,14 @@ float get_propellor_thrust(const phi::RigidBody& rb, float engine_horsepower, fl
   float speed = rb.get_speed();
   float engine_power = phi::units::watts(engine_horsepower);
 
-#if 1
   const float a = 1.83f, b = -1.32f;
   float propellor_advance_ratio = speed / ((propellor_rpm / 60.0f) * propellor_diameter);
   float propellor_efficiency = a * propellor_advance_ratio + std::pow(b * propellor_advance_ratio, 3.0f);
-#else
-  float propellor_efficiency = 1.0f;
-#endif
 
-#if 1
   const float C = 0.12f;
   float air_density = get_air_density(rb.position.y);
   float sea_level_air_density = get_air_density(0.0f);
   float power_drop_off_factor = ((air_density / sea_level_air_density) - C) / (1 - C);
-#else
-  float power_drop_off_factor = 1.0f;
-#endif
 
   return ((propellor_efficiency * engine_power) / speed) * power_drop_off_factor;
 }
@@ -96,7 +88,7 @@ struct Airfoil {
 
   std::tuple<float, float> sample(float alpha) const {
     int max_index = static_cast<int>(data.size() - 1);
-    int index = static_cast<int>(phi::utils::scale(alpha, min_alpha, max_alpha, 0.0f, static_cast<float>(max_index)));
+    int index = phi::utils::inverse_lerp(min_alpha, max_alpha, alpha) * max_index;
     index = glm::clamp(index, 0, max_index);
     return {data[index].y, data[index].z};
   }
@@ -127,13 +119,18 @@ struct Wing : public phi::ForceEffector {
 
   float lift_multiplier = 1.0f;
   float drag_multiplier = 1.0f;
-  phi::Degrees deflection = 0.0f;
 
-  Wing(const glm::vec3& position, float area, const Airfoil* aero, const glm::vec3& normal = phi::UP)
-      : center_of_pressure(position), area(area), airfoil(aero), normal(normal) {}
+  float deflection = 0.0f;
+  float control_input = 0.0f;
+  float min_deflection = -10.0f;
+  float max_deflection = 10.0f;
 
   Wing(const glm::vec3& position, float wingspan, float chord, const Airfoil* aero, const glm::vec3& normal = phi::UP)
       : center_of_pressure(position), area(chord * wingspan), airfoil(aero), normal(normal) {}
+
+  void set_control_input(float input) { control_input = glm::clamp(input, -1.0f, 1.0f); }
+
+  void set_deflection_limits(float min, float max) { min_deflection = min, max_deflection = max; }
 
   void apply_forces(phi::RigidBody& rigid_body, phi::Seconds dt) override {
     glm::vec3 local_velocity = rigid_body.get_point_velocity(center_of_pressure);
@@ -143,12 +140,11 @@ struct Wing : public phi::ForceEffector {
 
     glm::vec3 wing_normal = normal;
 
-    if (std::abs(deflection) > phi::EPSILON) {
-      // rotate wing
-      auto axis = glm::normalize(glm::cross(phi::FORWARD, normal));
-      auto rotation = glm::rotate(glm::mat4(1.0f), glm::radians(deflection), axis);
-      wing_normal = glm::vec3(rotation * glm::vec4(normal, 1.0f));
-    }
+    // rotate wing
+    float target_deflection = (control_input >= 0.0f ? max_deflection : min_deflection) * std::abs(control_input);
+    auto axis = glm::normalize(glm::cross(phi::FORWARD, normal));
+    auto rotation = glm::rotate(glm::mat4(1.0f), glm::radians(target_deflection), axis);
+    wing_normal = glm::vec3(rotation * glm::vec4(normal, 1.0f));
 
     // drag acts in the opposite direction of velocity
     glm::vec3 drag_direction = glm::normalize(-local_velocity);
@@ -170,11 +166,13 @@ struct Wing : public phi::ForceEffector {
     glm::vec3 drag = drag_direction * drag_coefficient * drag_multiplier * tmp;
 
 #if DEBUG_FLIGHTMODEL
-    log_timer -= dt;
-    if (log && log_timer <= 0.0f) {
+    if (log && (log_timer -= dt) <= 0.0f) {
+      auto m_force = rigid_body.transform_direction(lift);
+      auto m_torque = glm::cross(center_of_pressure, lift);
+
       log_timer = 0.2f;
-      printf("[%s] aoa = %.2f, cl = %.2f, cd = %.2f\n", name.c_str(), angle_of_attack, lift_coefficient,
-             drag_coefficient);
+      printf("[%s] aoa = %.2f, cl = %.2f, t = %.2f, p = %.2f\n", name.c_str(), angle_of_attack, lift_coefficient,
+             m_torque.z, rigid_body.angular_velocity.z);
     }
 #endif
 
@@ -192,24 +190,33 @@ struct Aircraft {
   Aircraft(float mass, float thrust, glm::mat3 inertia, std::vector<Wing> wings)
       : elements(wings), rigid_body({.mass = mass, .inertia = inertia}), engine(thrust) {
 #if DEBUG_FLIGHTMODEL
-    elements[0].log = true;
+    elements[0].log = false;
     elements[0].name = "lw";
+
+    elements[1].log = false;
+    elements[1].name = "la";
+
+    elements[2].log = false;
+    elements[2].name = "ra";
+
+    elements[3].log = false;
+    elements[3].name = "rw";
 
     elements[4].log = true;
     elements[4].name = "el";
+
+    elements[5].log = false;
+    elements[5].name = "rd";
 #endif
   }
 
   void update(phi::Seconds dt) {
-#if 1
+#if 0
     float aileron = joystick.x, rudder = joystick.y, elevator = joystick.z;
-    float max_elevator_deflection = 10.0f, max_aileron_deflection = 15.0f, max_rudder_deflection = 3.0f;
-    float aileron_deflection = aileron * max_aileron_deflection;
-
-    elements[1].deflection = max_aileron_deflection * aileron;
-    elements[2].deflection = max_aileron_deflection * -aileron;
-    elements[4].deflection = max_elevator_deflection * -elevator;
-    elements[5].deflection = max_rudder_deflection * -rudder;
+    elements[1].set_control_input(+aileron);
+    elements[2].set_control_input(-aileron);
+    elements[3].set_control_input(-elevator);
+    elements[4].set_control_input(-rudder);
 #else
     rigid_body.add_relative_torque(glm::vec3(400000.0f, 100000.0f, 1500000.0f) * joystick);
 #endif

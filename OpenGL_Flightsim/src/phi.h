@@ -248,12 +248,6 @@ class RigidBody {
 
     angular_velocity += inverse_inertia * (m_torque - glm::cross(angular_velocity, inertia * angular_velocity)) * dt;
 
-#if 1
-    // TODO: implement angular drag/damping
-    float angular_drag = 1.0f;
-    angular_velocity -= angular_velocity * angular_drag * dt;
-#endif
-
     orientation += (orientation * glm::quat(0.0f, angular_velocity)) * (0.5f * dt);
     orientation = glm::normalize(orientation);
 
