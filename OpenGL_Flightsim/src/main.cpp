@@ -39,7 +39,7 @@ JK      control thrust
 #define SKYBOX 1
 #define SMOOTH_CAMERA 1
 
-#if 1
+#if 0
 constexpr glm::ivec2 RESOLUTION{640, 480};
 #else
 constexpr glm::ivec2 RESOLUTION{1024, 728};
@@ -55,11 +55,11 @@ struct Joystick {
 
 struct GameObject {
   gfx::Mesh transform;
-  Aircraft aircraft;
+  Airplane airplane;
 
   void update(float dt) {
-    aircraft.update(dt);
-    transform.set_transform(aircraft.rigid_body.position, aircraft.rigid_body.orientation);
+    airplane.update(dt);
+    transform.set_transform(airplane.rigid_body.position, airplane.rigid_body.orientation);
   }
 };
 
@@ -165,13 +165,15 @@ int main(void) {
   const float mass = 10000.0f;
   const float thrust = 50000.0f;
 
+  const float wing_offset = -0.5f;
+  const float tail_offset = -6.6f;
+
   std::vector<phi::inertia::Element> elements = {
-      phi::inertia::cube_element({-0.5f, 0.0f, -2.7f}, {6.96f, 0.10f, 3.50f}, mass * 0.25f),  // left wing
-      phi::inertia::cube_element({-1.0f, 0.0f, -2.0f}, {3.80f, 0.10f, 1.26f}, mass * 0.05f),  // left aileron
-      phi::inertia::cube_element({-1.0f, 0.0f, 2.0f}, {3.80f, 0.10f, 1.26f}, mass * 0.05f),   // right aileron
-      phi::inertia::cube_element({-0.5f, 0.0f, 2.7f}, {6.96f, 0.10f, 3.50f}, mass * 0.25f),   // right wing
-      phi::inertia::cube_element({-6.6f, -0.1f, 0.0f}, {6.54f, 0.10f, 2.70f}, mass * 0.2f),   // elevator
-      phi::inertia::cube_element({-6.6f, 0.0f, 0.0f}, {5.31f, 3.10f, 0.10f}, mass * 0.2f),    // rudder
+      phi::inertia::cube({wing_offset, 0.0f, -2.7f}, {6.96f, 0.10f, 3.50f}, mass * 0.25f),  // left wing
+      phi::inertia::cube({wing_offset, 0.0f, 2.7f}, {6.96f, 0.10f, 3.50f}, mass * 0.25f),   // right wing
+      phi::inertia::cube({tail_offset, -0.1f, 0.0f}, {6.54f, 0.10f, 2.70f}, mass * 0.1f),   // elevator
+      phi::inertia::cube({tail_offset, 0.0f, 0.0f}, {5.31f, 3.10f, 0.10f}, mass * 0.1f),    // rudder
+      phi::inertia::cube({0.0f, 0.0f, 0.0f}, {8.0f, 2.0f, 2.0f}, mass * 0.5f),              // fuselage
   };
 
   auto inertia = phi::inertia::tensor(elements, true);
@@ -181,21 +183,21 @@ int main(void) {
   const Airfoil NACA_64_206(NACA_64_206_data);
 
   std::vector<Wing> wings = {
-      Wing({-0.5f, 0.0f, -2.7f}, 6.96f, 3.50f, &NACA_64_206),           // left wing
-      Wing({-1.0f, 0.0f, -2.0f}, 3.80f, 1.26f, &NACA_0012),             // left aileron
-      Wing({-1.0f, 0.0f, 2.0f}, 3.80f, 1.26f, &NACA_0012),              // right aileron
-      Wing({-0.5f, 0.0f, 2.7f}, 6.96f, 3.50f, &NACA_64_206),            // right wing
-      Wing({-6.6f, -0.1f, 0.0f}, 6.54f, 2.70f, &NACA_0012),             // elevator
-      Wing({-6.6f, 0.0f, 0.0f}, 5.31f, 3.10f, &NACA_0012, phi::RIGHT),  // rudder
+      Wing({wing_offset, 0.0f, -2.7f}, 6.96f, 3.50f, &NACA_64_206),           // left wing
+      Wing({wing_offset - 1.5f, 0.0f, -2.0f}, 3.80f, 1.26f, &NACA_0012),      // left aileron
+      Wing({wing_offset - 1.5f, 0.0f, 2.0f}, 3.80f, 1.26f, &NACA_0012),       // right aileron
+      Wing({wing_offset, 0.0f, 2.7f}, 6.96f, 3.50f, &NACA_64_206),            // right wing
+      Wing({tail_offset, -0.1f, 0.0f}, 6.54f, 2.70f, &NACA_0012),             // elevator
+      Wing({tail_offset, 0.0f, 0.0f}, 5.31f, 3.10f, &NACA_0012, phi::RIGHT),  // rudder
   };
 
   std::vector<GameObject*> objects;
 
   GameObject player = {.transform = gfx::Mesh(f16_fuselage, f16_texture),
-                       .aircraft = Aircraft(mass, thrust, inertia, wings)};
+                       .airplane = Airplane(mass, thrust, inertia, wings)};
 
-  player.aircraft.rigid_body.position = glm::vec3(-7000.0f, 3000.0f, 0.0f);
-  player.aircraft.rigid_body.velocity = glm::vec3(phi::units::meter_per_second(600.0f), 0.0f, 0.0f);
+  player.airplane.rigid_body.position = glm::vec3(-7000.0f, 3000.0f, 0.0f);
+  player.airplane.rigid_body.velocity = glm::vec3(phi::units::meter_per_second(600.0f), 0.0f, 0.0f);
   scene.add(&player.transform);
   objects.push_back(&player);
 
@@ -230,7 +232,7 @@ int main(void) {
 
   gfx::Camera camera(glm::radians(45.0f), (float)RESOLUTION.x / (float)RESOLUTION.y, 1.0f, 150000.0f);
 #if SMOOTH_CAMERA
-  camera.set_position(player.aircraft.rigid_body.position);
+  camera.set_position(player.airplane.rigid_body.position);
   camera.set_rotation({0, glm::radians(-90.0f), 0.0f});
   scene.add(&camera);
 #else
@@ -346,7 +348,7 @@ int main(void) {
     window_flags |= ImGuiWindowFlags_NoMove;
     window_flags |= ImGuiWindowFlags_NoResize;
 
-    auto& rb = player.aircraft.rigid_body;
+    auto& rb = player.airplane.rigid_body;
     float speed = phi::units::kilometer_per_hour(rb.get_speed());
     float ias = phi::units::kilometer_per_hour(get_indicated_air_speed(rb));
 
@@ -361,7 +363,7 @@ int main(void) {
     ImGui::Text("SPD:   %.2f m/s", rb.get_speed());
 #endif
     ImGui::Text("IAS:   %.2f km/h", ias);
-    ImGui::Text("THR:   %d %%", static_cast<int>(player.aircraft.engine.throttle * 100.0f));
+    ImGui::Text("THR:   %d %%", static_cast<int>(player.airplane.engine.throttle * 100.0f));
     ImGui::Text("Mach:  %.2f", get_mach_number(rb));
     ImGui::Text("G:     %.1f", get_g_force(rb));
     ImGui::Text("FPS:   %.2f", fps);
@@ -370,7 +372,7 @@ int main(void) {
 
     get_keyboard_state(joystick, dt);
 
-    auto& player_aircraft = player.aircraft;
+    auto& player_aircraft = player.airplane;
     player_aircraft.joystick = glm::vec3(joystick.aileron, joystick.rudder, joystick.elevator);
     player_aircraft.engine.throttle = joystick.throttle;
 

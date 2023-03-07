@@ -107,21 +107,16 @@ struct Engine : public phi::ForceEffector {
 };
 
 struct Wing : public phi::ForceEffector {
-  const float area;  // m^2
+  const float area;
   const float wingspan;
   const float chord;
   const float aspect_ratio;
-  const float efficiency_factor = 1.0f;
-
   const Airfoil* airfoil;
   const glm::vec3 normal;
   const glm::vec3 center_of_pressure;
-
-#if DEBUG_FLIGHTMODEL
-  bool log = false;
-  float log_timer = 0.0f;
-  std::string name = "None";
-#endif
+  const float incidence;
+  const float efficiency_factor;
+  const bool is_control_surface = true;
 
   float lift_multiplier = 1.0f;
   float drag_multiplier = 1.0f;
@@ -129,34 +124,41 @@ struct Wing : public phi::ForceEffector {
   float deflection = 0.0f;
   float control_input = 0.0f;
   float min_deflection = -10.0f;
-  float max_deflection = 10.0f;
+  float max_deflection = +10.0f;
+  float actuator_speed = 90.0f;
 
-  Wing(const glm::vec3& position, float wingspan, float chord, const Airfoil* aero, const glm::vec3& normal = phi::UP)
+#if DEBUG_FLIGHTMODEL
+  bool log = false;
+  float log_timer = 0.0f;
+  std::string name = "None";
+#endif
+
+  Wing(const glm::vec3& position, float wingspan, float chord, const Airfoil* airfoil,
+       const glm::vec3& normal = phi::UP, float incidence = 0.0f)
       : center_of_pressure(position),
         area(chord * wingspan),
         chord(chord),
         wingspan(wingspan),
-        airfoil(aero),
+        airfoil(airfoil),
         normal(normal),
+        efficiency_factor(1.0f),
+        incidence(incidence),
         aspect_ratio(std::pow(wingspan, 2) / area) {}
 
+  // controls how much the wing is deflected
   void set_control_input(float input) { control_input = glm::clamp(input, -1.0f, 1.0f); }
 
+  // how far the wing can be deflected, degrees
   void set_deflection_limits(float min, float max) { min_deflection = min, max_deflection = max; }
 
+  // compute and apply aerodynamic forces
   void apply_forces(phi::RigidBody& rigid_body, phi::Seconds dt) override {
     glm::vec3 local_velocity = rigid_body.get_point_velocity(center_of_pressure);
     float speed = glm::length(local_velocity);
 
     if (speed <= phi::EPSILON) return;
 
-    glm::vec3 wing_normal = normal;
-
-    // rotate wing
-    float target_deflection = (control_input >= 0.0f ? max_deflection : min_deflection) * std::abs(control_input);
-    auto axis = glm::normalize(glm::cross(phi::FORWARD, normal));
-    auto rotation = glm::rotate(glm::mat4(1.0f), glm::radians(target_deflection), axis);
-    wing_normal = glm::vec3(rotation * glm::vec4(normal, 1.0f));
+    glm::vec3 wing_normal = is_control_surface ? deflect_wing(rigid_body, dt) : normal;
 
     // drag acts in the opposite direction of velocity
     glm::vec3 drag_direction = glm::normalize(-local_velocity);
@@ -195,15 +197,25 @@ struct Wing : public phi::ForceEffector {
     // aerodynamic forces are applied at the center of pressure
     rigid_body.add_force_at_point(lift + drag, center_of_pressure);
   }
+
+  // returns updated wing normal according to control input and deflection
+  glm::vec3 deflect_wing(phi::RigidBody& rigid_body, phi::Seconds dt) {
+    // TODO: actuator speed and deflection limits should depend on speed
+    float target_deflection = (control_input >= 0.0f ? max_deflection : min_deflection) * std::abs(control_input);
+    deflection = phi::utils::move_towards(deflection, target_deflection, actuator_speed * dt);
+    auto axis = glm::normalize(glm::cross(phi::FORWARD, normal));
+    auto rotation = glm::rotate(glm::mat4(1.0f), glm::radians(incidence + deflection), axis);
+    return glm::vec3(rotation * glm::vec4(normal, 1.0f));
+  }
 };
 
-struct Aircraft {
+struct Airplane {
   Engine engine;
   std::vector<Wing> elements;
   phi::RigidBody rigid_body;
   glm::vec3 joystick{};  // roll, yaw, pitch
 
-  Aircraft(float mass, float thrust, glm::mat3 inertia, std::vector<Wing> wings)
+  Airplane(float mass, float thrust, glm::mat3 inertia, std::vector<Wing> wings)
       : elements(wings), rigid_body({.mass = mass, .inertia = inertia}), engine(thrust) {
 #if DEBUG_FLIGHTMODEL
     elements[0].log = false;

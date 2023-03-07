@@ -71,7 +71,7 @@ constexpr glm::mat3 tensor(const glm::vec3& moment_of_inertia) {
   };
 }
 
-constexpr Element cube_element(const glm::vec3& position, const glm::vec3& size, float mass) {
+constexpr Element cube(const glm::vec3& position, const glm::vec3& size, float mass) {
   return {.mass = mass, .position = position, .inertia = cube(size, mass), .offset = position};
 }
 
@@ -119,16 +119,24 @@ constexpr inline T scale(T input, T in_min, T in_max, T out_min, T out_max) {
   return (input - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
-//
 template <typename T>
 constexpr inline T lerp(T a, T b, float t) {
+  t = glm::clamp(t, 0.0f, 1.0f);
   return a + t * (b - a);
 }
 
-//
 template <typename T>
 constexpr inline float inverse_lerp(T a, T b, T v) {
+  v = glm::clamp(v, a, b);
   return (v - a) / (b - a);
+}
+
+template <typename T>
+inline T move_towards(T current, T target, T speed) {
+  if (std::abs(target - current) <= speed) {
+    return target;
+  }
+  return current + glm::sign(target - current) * speed;
 }
 };  // namespace utils
 
