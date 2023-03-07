@@ -125,7 +125,7 @@ int main(void) {
     printf("found %d buttons, %d axis\n", joystick.num_buttons, joystick.num_axis);
   }
 
-  auto fuselage_vertices = gfx::load_obj("assets/models/falcon2.obj");
+  auto fuselage_vertices = gfx::load_obj("assets/models/falcon.obj");
 
   gfx::Renderer renderer(RESOLUTION.x, RESOLUTION.y);
 
@@ -165,28 +165,28 @@ int main(void) {
   const float mass = 10000.0f;
   const float thrust = 50000.0f;
 
-  const float wing_offset = -0.5f;
+  const float wing_offset = -1.0f;
   const float tail_offset = -6.6f;
 
-  std::vector<phi::inertia::Element> elements = {
+  std::vector<phi::inertia::Element> masses = {
       phi::inertia::cube({wing_offset, 0.0f, -2.7f}, {6.96f, 0.10f, 3.50f}, mass * 0.25f),  // left wing
-      phi::inertia::cube({wing_offset, 0.0f, 2.7f}, {6.96f, 0.10f, 3.50f}, mass * 0.25f),   // right wing
+      phi::inertia::cube({wing_offset, 0.0f, +2.7f}, {6.96f, 0.10f, 3.50f}, mass * 0.25f),  // right wing
       phi::inertia::cube({tail_offset, -0.1f, 0.0f}, {6.54f, 0.10f, 2.70f}, mass * 0.1f),   // elevator
       phi::inertia::cube({tail_offset, 0.0f, 0.0f}, {5.31f, 3.10f, 0.10f}, mass * 0.1f),    // rudder
       phi::inertia::cube({0.0f, 0.0f, 0.0f}, {8.0f, 2.0f, 2.0f}, mass * 0.5f),              // fuselage
   };
 
-  auto inertia = phi::inertia::tensor(elements, true);
+  auto inertia = phi::inertia::tensor(masses, true);
 
   const Airfoil NACA_0012(NACA_0012_data);
   const Airfoil NACA_2412(NACA_2412_data);
   const Airfoil NACA_64_206(NACA_64_206_data);
 
   std::vector<Wing> wings = {
-      Wing({wing_offset, 0.0f, -2.7f}, 6.96f, 3.50f, &NACA_64_206),           // left wing
+      Wing({wing_offset, 0.0f, -2.7f}, 6.96f, 2.50f, &NACA_64_206),           // left wing
       Wing({wing_offset - 1.5f, 0.0f, -2.0f}, 3.80f, 1.26f, &NACA_0012),      // left aileron
       Wing({wing_offset - 1.5f, 0.0f, 2.0f}, 3.80f, 1.26f, &NACA_0012),       // right aileron
-      Wing({wing_offset, 0.0f, 2.7f}, 6.96f, 3.50f, &NACA_64_206),            // right wing
+      Wing({wing_offset, 0.0f, +2.7f}, 6.96f, 2.50f, &NACA_64_206),           // right wing
       Wing({tail_offset, -0.1f, 0.0f}, 6.54f, 2.70f, &NACA_0012),             // elevator
       Wing({tail_offset, 0.0f, 0.0f}, 5.31f, 3.10f, &NACA_0012, phi::RIGHT),  // rudder
   };
@@ -201,13 +201,13 @@ int main(void) {
   scene.add(&player.transform);
   objects.push_back(&player);
 
-#define NPC_AIRCRAFT 0
+#define NPC_AIRCRAFT 1
 #if NPC_AIRCRAFT
   GameObject npc = {.transform = gfx::Mesh(f16_fuselage, f16_texture),
-                    .aircraft = Aircraft(mass, thrust, inertia, wings)};
+                    .airplane = Airplane(mass, thrust, inertia, wings)};
 
-  npc.aircraft.rigid_body.position = glm::vec3(-6800.0f, 3020.0f, 50.0f);
-  npc.aircraft.rigid_body.velocity = glm::vec3(phi::units::meter_per_second(600.0f), 0.0f, 0.0f);
+  npc.airplane.rigid_body.position = glm::vec3(-6800.0f, 3020.0f, 50.0f);
+  npc.airplane.rigid_body.velocity = glm::vec3(phi::units::meter_per_second(600.0f), 0.0f, 0.0f);
   scene.add(&npc.transform);
   objects.push_back(&npc);
 #endif
@@ -377,7 +377,7 @@ int main(void) {
     player_aircraft.engine.throttle = joystick.throttle;
 
 #if NPC_AIRCRAFT
-    fly_towards(npc.aircraft, player.aircraft.rigid_body.position);
+    fly_towards(npc.airplane, player.airplane.rigid_body.position);
     // fly_towards(player.aircraft, npc.aircraft.rigid_body.position);
 #endif
 

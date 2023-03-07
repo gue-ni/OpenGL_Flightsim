@@ -82,16 +82,18 @@ struct Airfoil {
   std::vector<glm::vec3> data;  // alpha, cl, cd
 
   Airfoil(const std::vector<glm::vec3>& curve) : data(curve) {
-    min_alpha = curve.front().x;
-    max_alpha = curve.back().x;
+    min_alpha = curve.front().x, max_alpha = curve.back().x;
   }
 
   // get lift coefficent and drag coefficient
   std::tuple<float, float> sample(float alpha) const {
-    int max_index = static_cast<int>(data.size() - 1);
-    int index = phi::utils::inverse_lerp(min_alpha, max_alpha, alpha) * max_index;
-    index = glm::clamp(index, 0, max_index);
-    return {data[index].y, data[index].z};
+    int max_index = data.size() - 1;
+    float t = phi::inverse_lerp(min_alpha, max_alpha, alpha) * max_index;
+    float integer = std::floor(t);
+    float fractional = t - integer;
+    int index = static_cast<int>(integer);
+    auto value = (index < max_index) ? phi::lerp(data[index], data[index + 1], fractional) : data[max_index];
+    return {value.y, value.z};
   }
 };
 
@@ -116,7 +118,6 @@ struct Wing : public phi::ForceEffector {
   const glm::vec3 center_of_pressure;
   const float incidence;
   const float efficiency_factor;
-  const bool is_control_surface = true;
 
   float lift_multiplier = 1.0f;
   float drag_multiplier = 1.0f;
@@ -125,7 +126,9 @@ struct Wing : public phi::ForceEffector {
   float control_input = 0.0f;
   float min_deflection = -10.0f;
   float max_deflection = +10.0f;
-  const float actuator_speed = 90.0f;
+  float max_actuator_speed = 90.0f;
+  float max_actuator_torque = 6000.0f;
+  bool is_control_surface = true;
 
 #if DEBUG_FLIGHTMODEL
   bool log = false;
@@ -158,6 +161,7 @@ struct Wing : public phi::ForceEffector {
 
     if (speed <= phi::EPSILON) return;
 
+    // control surfaces can be rotated
     glm::vec3 wing_normal = is_control_surface ? deflect_wing(rigid_body, dt) : normal;
 
     // drag acts in the opposite direction of velocity
@@ -200,9 +204,15 @@ struct Wing : public phi::ForceEffector {
 
   // returns updated wing normal according to control input and deflection
   glm::vec3 deflect_wing(phi::RigidBody& rigid_body, phi::Seconds dt) {
-    // TODO: actuator speed and deflection limits should depend on speed
-    float target_deflection = (control_input >= 0.0f ? max_deflection : min_deflection) * std::abs(control_input);
-    deflection = phi::utils::move_towards(deflection, target_deflection, actuator_speed * dt);
+    // with increased speed control surfaces become harder to move
+    float torque = std::pow(rigid_body.get_speed(), 2) * area;
+    float compression = glm::degrees(std::asin(max_actuator_torque / torque));
+    compression = glm::clamp(compression, 0.0f, 1.0f);
+
+    float target_deflection =
+        (control_input >= 0.0f ? max_deflection : min_deflection) * compression * std::abs(control_input);
+    deflection = phi::move_towards(deflection, target_deflection, max_actuator_speed * compression * dt);
+
     auto axis = glm::normalize(glm::cross(phi::FORWARD, normal));
     auto rotation = glm::rotate(glm::mat4(1.0f), glm::radians(incidence + deflection), axis);
     return glm::vec3(rotation * glm::vec4(normal, 1.0f));
@@ -211,45 +221,55 @@ struct Wing : public phi::ForceEffector {
 
 struct Airplane {
   Engine engine;
-  std::vector<Wing> elements;
+  std::vector<Wing> wings;
   phi::RigidBody rigid_body;
   glm::vec3 joystick{};  // roll, yaw, pitch
 
-  Airplane(float mass, float thrust, glm::mat3 inertia, std::vector<Wing> wings)
-      : elements(wings), rigid_body({.mass = mass, .inertia = inertia}), engine(thrust) {
+  Airplane(float mass, float thrust, glm::mat3 inertia, std::vector<Wing> elements)
+      : wings(elements), rigid_body({.mass = mass, .inertia = inertia}), engine(thrust) {
 #if DEBUG_FLIGHTMODEL
-    elements[0].log = false;
-    elements[0].name = "lw";
+    wings[0].log = false;
+    wings[0].name = "lw";
 
-    elements[1].log = false;
-    elements[1].name = "la";
+    wings[1].log = false;
+    wings[1].name = "la";
 
-    elements[2].log = false;
-    elements[2].name = "ra";
+    wings[2].log = true;
+    wings[2].name = "ra";
 
-    elements[3].log = false;
-    elements[3].name = "rw";
+    wings[3].log = false;
+    wings[3].name = "rw";
 
-    elements[4].log = true;
-    elements[4].name = "el";
+    wings[4].log = false;
+    wings[4].name = "el";
 
-    elements[5].log = false;
-    elements[5].name = "rd";
+    wings[5].log = false;
+    wings[5].name = "rd";
 #endif
+
+    wings[0].is_control_surface = false;
+    wings[1].set_deflection_limits(-10.0f, 10.0f);
+    wings[2].set_deflection_limits(-10.0f, 10.0f);
+    wings[3].is_control_surface = false;
+    wings[4].set_deflection_limits(-12.0f, 12.0f);
+    wings[5].set_deflection_limits(-5.0f, 5.0f);
+
+    wings[1].max_actuator_torque = 2000.0f;
+    wings[2].max_actuator_torque = 2000.0f;
   }
 
   void update(phi::Seconds dt) {
 #if 1
     float aileron = joystick.x, rudder = joystick.y, elevator = joystick.z;
-    elements[1].set_control_input(+aileron);
-    elements[2].set_control_input(-aileron);
-    elements[4].set_control_input(-elevator);
-    elements[5].set_control_input(-rudder);
+    wings[1].set_control_input(+aileron);
+    wings[2].set_control_input(-aileron);
+    wings[4].set_control_input(-elevator);
+    wings[5].set_control_input(-rudder);
 #else
     rigid_body.add_relative_torque(glm::vec3(400000.0f, 100000.0f, 1500000.0f) * joystick);
 #endif
 
-    for (Wing& wing : elements) {
+    for (Wing& wing : wings) {
       wing.apply_forces(rigid_body, dt);
     }
 

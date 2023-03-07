@@ -34,11 +34,6 @@ constexpr inline T sq(T a) {
   return a * a;
 }
 
-template <typename T>
-constexpr inline T cb(T a) {
-  return a * a * a;
-}
-
 namespace inertia {
 struct Element {
   float mass;
@@ -76,21 +71,21 @@ constexpr Element cube(const glm::vec3& position, const glm::vec3& size, float m
 }
 
 // calculate inertia tensor from list of connected masses
-constexpr glm::mat3 tensor(std::vector<Element>& elements, bool precomputed_offset = false) {
+constexpr glm::mat3 tensor(std::vector<Element>& wings, bool precomputed_offset = false) {
   float Ixx = 0, Iyy = 0, Izz = 0;
   float Ixy = 0, Ixz = 0, Iyz = 0;
 
   float mass = 0;
   glm::vec3 moment(0.0f);
 
-  for (const auto& element : elements) {
+  for (const auto& element : wings) {
     mass += element.mass;
     moment += element.mass * element.position;
   }
 
   const glm::vec3 center_of_gravity = moment / mass;
 
-  for (auto& element : elements) {
+  for (auto& element : wings) {
     glm::vec3 offset;
 
     if (!precomputed_offset) {
@@ -110,8 +105,6 @@ constexpr glm::mat3 tensor(std::vector<Element>& elements, bool precomputed_offs
   return {Ixx, -Ixy, -Ixz, -Ixy, Iyy, -Iyz, -Ixz, -Iyz, Izz};
 }
 };  // namespace inertia
-
-namespace utils {
 
 template <typename T>
 constexpr inline T scale(T input, T in_min, T in_max, T out_min, T out_max) {
@@ -138,7 +131,6 @@ inline T move_towards(T current, T target, T speed) {
   }
   return current + glm::sign(target - current) * speed;
 }
-};  // namespace utils
 
 namespace units {
 constexpr inline float knots(float meter_per_second) { return meter_per_second * 1.94384f; }

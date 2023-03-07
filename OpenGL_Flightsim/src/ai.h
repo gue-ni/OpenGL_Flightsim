@@ -8,22 +8,6 @@
 
 #include "flightmodel.h"
 
-template <typename T>
-struct PID {
-  T p{}, i{}, d{};
-  const T Kp, Ki, Kd;
-
-  PID(T kp, T ki, T kd) : Kp(kp), Ki(ki), Kd(kd) {}
-
-  T calculate(T error, float dt) {
-    float previous_error = p;
-    p = error;
-    i += p * dt;
-    d = (p - previous_error) / dt;
-    return p * Kp + i * Ki + d * Kd;
-  }
-};
-
 glm::vec3 get_intercept_point(const glm::vec3& position, const glm::vec3& velocity, const glm::vec3& target_position,
                               const glm::vec3& target_velocity) {
   auto velocity_delta = target_velocity - velocity;
@@ -45,8 +29,8 @@ void fly_towards(Airplane& airplane, const glm::vec3& target) {
   float m = M_PI / 4.0f;
   float agressive_roll = direction.z;
   float wings_level_roll = rb.right().y;
-  float wings_level_influence = phi::utils::inverse_lerp(0.0f, m, glm::clamp(angle, -m, m));
-  float aileron = phi::utils::lerp(wings_level_roll, agressive_roll, wings_level_influence);
+  float wings_level_influence = phi::inverse_lerp(0.0f, m, glm::clamp(angle, -m, m));
+  float aileron = phi::lerp(wings_level_roll, agressive_roll, wings_level_influence);
 
   joystick = glm::clamp(glm::vec3(aileron, rudder, elevator), glm::vec3(-1.0f), glm::vec3(1.0f));
 }
