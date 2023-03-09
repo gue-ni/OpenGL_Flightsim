@@ -20,7 +20,7 @@ Finally we set 'Linker' -> 'Input' -> 'Additional Dependencies' to include SDL2.
 Install dependencies SDL2, GLEW and OpenGL and build using cmake.
 
 ```
-$ apt install libsdl2-dev libsdl2-image-dev libglew-dev libgle3-dev cmake
+$ apt install libsdl2-dev libsdl2-image-dev libglew-dev libgle3-dev libglm-dev cmake
 $ mkdir build 
 $ cd build
 $ cmake ..
