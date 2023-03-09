@@ -71,14 +71,14 @@ constexpr Element cube(const glm::vec3& position, const glm::vec3& size, float m
 }
 
 // calculate inertia tensor from list of connected masses
-constexpr glm::mat3 tensor(std::vector<Element>& wings, bool precomputed_offset = false) {
+glm::mat3 tensor(std::vector<Element>& wings, bool precomputed_offset = false) {
   float Ixx = 0, Iyy = 0, Izz = 0;
   float Ixy = 0, Ixz = 0, Iyz = 0;
 
   float mass = 0;
   glm::vec3 moment(0.0f);
 
-  for (const auto& element : wings) {
+  for (auto& element : wings) {
     mass += element.mass;
     moment += element.mass * element.position;
   }
