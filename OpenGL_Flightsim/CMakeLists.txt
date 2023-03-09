@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.10)
 
-
 project(OpenGL_Flightsim)
 
 set(CMAKE_CXX_STANDARD 20)
+
+# TODO: fetch sdl2, sdl2_image and required dependencies
 
 find_package(GLEW REQUIRED)
 find_package(SDL2 REQUIRED)
@@ -41,12 +42,16 @@ add_executable(OpenGL_Flightsim-app
 )
 
 target_include_directories(OpenGL_Flightsim-app PUBLIC 
-/usr/include/SDL2/
+    ${SDL2_INCLUDE_DIRS}
 )
 
 target_link_libraries(OpenGL_Flightsim-app
-    SDL2 
+    SDL2::SDL2 
     GLEW 
     GL 
     GLU
 )
+
+
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/assets DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/shaders DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
