@@ -1,8 +1,8 @@
-# OpenGL Flightsim
+# OpenGL Flight Simulator
 
 You can read an article about how it works [here](https://www.jakobmaier.at/posts/flight-simulation/). There is also a compiled demo available.
 
-https://user-images.githubusercontent.com/45669207/219900645-df832175-75a3-4521-bbed-368e9f299200.mp4
+https://user-images.githubusercontent.com/45669207/221434341-9068181d-0ff3-401a-bf34-29b530a92154.mp4
 
 ## Controls
 
@@ -15,3 +15,14 @@ the Visual Studio 2022 project go to the 'Property Pages' for the solution and s
 Finally we set 'Linker' -> 'Input' -> 'Additional Dependencies' to include SDL2.lib, SDL2main.lib, glew32.lib and opengl32.lib. You may also have to set your environement variables to include 'opengl32.dll' and SDL2.dll.
 
 
+## Build instructions (Linux)
+
+Install dependencies SDL2, GLEW and OpenGL and build using cmake.
+
+```
+$ apt install libsdl2-dev libsdl2-image-dev libglew-dev libgle3-dev libglm-dev cmake
+$ mkdir build 
+$ cd build
+$ cmake ..
+$ cmake --build .
+```
