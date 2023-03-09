@@ -34,6 +34,32 @@ constexpr inline T sq(T a) {
   return a * a;
 }
 
+template <typename T>
+constexpr inline T scale(T input, T in_min, T in_max, T out_min, T out_max) {
+  input = glm::clamp(input, in_min, in_max);
+  return (input - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+template <typename T>
+constexpr inline T lerp(T a, T b, float t) {
+  t = glm::clamp(t, 0.0f, 1.0f);
+  return a + t * (b - a);
+}
+
+template <typename T>
+constexpr inline float inverse_lerp(T a, T b, T v) {
+  v = glm::clamp(v, a, b);
+  return (v - a) / (b - a);
+}
+
+template <typename T>
+inline T move_towards(T current, T target, T speed) {
+  if (std::abs(target - current) <= speed) {
+    return target;
+  }
+  return current + glm::sign(target - current) * speed;
+}
+
 namespace inertia {
 struct Element {
   float mass;
@@ -105,32 +131,6 @@ constexpr glm::mat3 tensor(std::vector<Element>& wings, bool precomputed_offset 
   return {Ixx, -Ixy, -Ixz, -Ixy, Iyy, -Iyz, -Ixz, -Iyz, Izz};
 }
 };  // namespace inertia
-
-template <typename T>
-constexpr inline T scale(T input, T in_min, T in_max, T out_min, T out_max) {
-  input = glm::clamp(input, in_min, in_max);
-  return (input - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-}
-
-template <typename T>
-constexpr inline T lerp(T a, T b, float t) {
-  t = glm::clamp(t, 0.0f, 1.0f);
-  return a + t * (b - a);
-}
-
-template <typename T>
-constexpr inline float inverse_lerp(T a, T b, T v) {
-  v = glm::clamp(v, a, b);
-  return (v - a) / (b - a);
-}
-
-template <typename T>
-inline T move_towards(T current, T target, T speed) {
-  if (std::abs(target - current) <= speed) {
-    return target;
-  }
-  return current + glm::sign(target - current) * speed;
-}
 
 namespace units {
 constexpr inline float knots(float meter_per_second) { return meter_per_second * 1.94384f; }
@@ -248,7 +248,6 @@ class RigidBody {
     position += velocity * dt;
 
     angular_velocity += inverse_inertia * (m_torque - glm::cross(angular_velocity, inertia * angular_velocity)) * dt;
-
     orientation += (orientation * glm::quat(0.0f, angular_velocity)) * (0.5f * dt);
     orientation = glm::normalize(orientation);
 

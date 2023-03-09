@@ -38,8 +38,9 @@ JK      control thrust
 #define CLIPMAP 1
 #define SKYBOX 1
 #define SMOOTH_CAMERA 1
+#define NPC_AIRCRAFT 0
 
-#if 0
+#if 1
 constexpr glm::ivec2 RESOLUTION{640, 480};
 #else
 constexpr glm::ivec2 RESOLUTION{1024, 728};
@@ -47,7 +48,7 @@ constexpr glm::ivec2 RESOLUTION{1024, 728};
 
 struct Joystick {
   int num_axis{0}, num_hats{0}, num_buttons{0};
-  float aileron{0.0f}, elevator{0.0f}, rudder{0.0f}, throttle{0.0f};
+  float aileron{0.0f}, elevator{0.0f}, rudder{0.0f}, throttle{0.0f}, trim{0.0f};
 
   // scale from int16 to -1.0, 1.0
   inline static float scale(int16_t value) { return static_cast<float>(value) / static_cast<float>(32767); }
@@ -134,7 +135,7 @@ int main(void) {
   gfx::gl::TextureParams params = {.flip_vertically = true};
   auto tex = make_shared<gfx::gl::Texture>("assets/textures/f16_large.jpg", params);
   auto f16_texture = make_shared<gfx::Phong>(tex);
-  auto f16_fuselage = std::make_shared<gfx::Geometry>(fuselage_vertices, gfx::Geometry::POS_NORM_UV);
+  auto f16_model = std::make_shared<gfx::Geometry>(fuselage_vertices, gfx::Geometry::POS_NORM_UV);
 
   gfx::Object3D scene;
 
@@ -193,7 +194,7 @@ int main(void) {
 
   std::vector<GameObject*> objects;
 
-  GameObject player = {.transform = gfx::Mesh(f16_fuselage, f16_texture),
+  GameObject player = {.transform = gfx::Mesh(f16_model, f16_texture),
                        .airplane = Airplane(mass, thrust, inertia, wings)};
 
   player.airplane.rigid_body.position = glm::vec3(-7000.0f, 3000.0f, 0.0f);
@@ -201,7 +202,6 @@ int main(void) {
   scene.add(&player.transform);
   objects.push_back(&player);
 
-#define NPC_AIRCRAFT 1
 #if NPC_AIRCRAFT
   GameObject npc = {.transform = gfx::Mesh(f16_fuselage, f16_texture),
                     .airplane = Airplane(mass, thrust, inertia, wings)};
@@ -349,23 +349,26 @@ int main(void) {
     window_flags |= ImGuiWindowFlags_NoResize;
 
     auto& rb = player.airplane.rigid_body;
-    float speed = phi::units::kilometer_per_hour(rb.get_speed());
-    float ias = phi::units::kilometer_per_hour(get_indicated_air_speed(rb));
+    float speed = rb.get_speed();
+    float altitude = rb.position.y;
+    float ias = phi::units::kilometer_per_hour(get_indicated_air_speed(speed, altitude));
+    float angle_of_attack = glm::degrees(std::asin(glm::dot(glm::normalize(-rb.get_body_velocity()), phi::UP)));
 
     ImGui::SetNextWindowPos(ImVec2(10, 10));
-    ImGui::SetNextWindowSize(ImVec2(145, 140));
+    ImGui::SetNextWindowSize(ImVec2(145, 150));
     ImGui::SetNextWindowBgAlpha(0.35f);
     ImGui::Begin("Flightsim", nullptr, window_flags);
-    ImGui::Text("ALT:   %.2f m", rb.position.y);
-#if 0
-    ImGui::Text("SPD:   %.2f km/h", speed);
+    ImGui::Text("ALT:   %.2f m", altitude);
+#if 1
+    ImGui::Text("SPD:   %.2f km/h", phi::units::kilometer_per_hour(speed));
 #else
-    ImGui::Text("SPD:   %.2f m/s", rb.get_speed());
+    ImGui::Text("SPD:   %.2f m/s", speed);
 #endif
     ImGui::Text("IAS:   %.2f km/h", ias);
     ImGui::Text("THR:   %d %%", static_cast<int>(player.airplane.engine.throttle * 100.0f));
-    ImGui::Text("Mach:  %.2f", get_mach_number(rb));
+    ImGui::Text("Mach:  %.2f", get_mach_number(speed, altitude));
     ImGui::Text("G:     %.1f", get_g_force(rb));
+    ImGui::Text("AoA:   %.2f", angle_of_attack);
     ImGui::Text("FPS:   %.2f", fps);
     ImGui::End();
 #endif
@@ -375,6 +378,7 @@ int main(void) {
     auto& player_aircraft = player.airplane;
     player_aircraft.joystick = glm::vec3(joystick.aileron, joystick.rudder, joystick.elevator);
     player_aircraft.engine.throttle = joystick.throttle;
+    player_aircraft.trim = joystick.trim;
 
 #if NPC_AIRCRAFT
     fly_towards(npc.airplane, player.airplane.rigid_body.position);
@@ -398,6 +402,8 @@ int main(void) {
       camera.set_position(glm::mix(camera.get_position(), rb.position + rb.up() * 4.5f, dt * 0.035f * rb.get_speed()));
       camera.set_rotation_quaternion(
           glm::mix(camera.get_rotation_quaternion(), camera_transform.get_world_rotation_quaternion(), dt * 5.0f));
+#else
+      camera.set_transform(glm::vec3(0.0f), glm::vec3(0.0f));
 #endif
       cross.visible = fpm.visible = true;
     }
@@ -450,6 +456,13 @@ void get_keyboard_state(Joystick& joystick, phi::Seconds dt) {
     joystick.throttle = glm::clamp(joystick.throttle - tmp, 0.0f, 1.0f);
   } else if (key_states[SDL_SCANCODE_K]) {
     joystick.throttle = glm::clamp(joystick.throttle + tmp, 0.0f, 1.0f);
+  }
+
+  const float increment = 0.002f;
+  if (key_states[SDL_SCANCODE_N]) {
+    joystick.trim = glm::clamp(joystick.trim - increment, -1.0f, 1.0f);
+  } else if (key_states[SDL_SCANCODE_M]) {
+    joystick.trim = glm::clamp(joystick.trim + increment, -1.0f, 1.0f);
   }
 }
 
