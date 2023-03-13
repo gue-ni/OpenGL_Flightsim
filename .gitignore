@@ -1,6 +1,7 @@
 .vs/
 x64/
 x86/
+log/
 Debug/
 Release/
 OpenGL_Flightsim/reference/stuff/

@@ -62,10 +62,13 @@ inline T move_towards(T current, T target, T speed) {
 
 namespace inertia {
 struct Element {
-  float mass;
+  glm::vec3 size;
   glm::vec3 position;  // position in design coordinates
   glm::vec3 inertia;
   glm::vec3 offset;  // offset from center of gravity
+  float mass;
+
+  float volume() const { return size.x * size.y * size.z; }
 };
 
 constexpr glm::vec3 cube(const glm::vec3& size, float mass) {
@@ -93,11 +96,11 @@ constexpr glm::mat3 tensor(const glm::vec3& moment_of_inertia) {
 }
 
 constexpr Element cube(const glm::vec3& position, const glm::vec3& size, float mass) {
-  return {.mass = mass, .position = position, .inertia = cube(size, mass), .offset = position};
+  return { .size = size, .position = position, .inertia = cube(size, mass), .offset = position, .mass = mass};
 }
 
 // calculate inertia tensor from list of connected masses
-constexpr glm::mat3 tensor(std::vector<Element>& wings, bool precomputed_offset = false) {
+constexpr glm::mat3 tensor(std::vector<Element>& wings, bool precomputed_offset = false, glm::vec3 *cg = nullptr) {
   float Ixx = 0, Iyy = 0, Izz = 0;
   float Ixy = 0, Ixz = 0, Iyz = 0;
 
@@ -126,6 +129,11 @@ constexpr glm::mat3 tensor(std::vector<Element>& wings, bool precomputed_offset 
     Ixy += element.mass * (offset.x * offset.y);
     Ixz += element.mass * (offset.x * offset.z);
     Iyz += element.mass * (offset.y * offset.z);
+  }
+
+  if (cg != nullptr)
+  {
+      *cg = center_of_gravity;
   }
 
   return {Ixx, -Ixy, -Ixz, -Ixy, Iyy, -Iyz, -Ixz, -Iyz, Izz};

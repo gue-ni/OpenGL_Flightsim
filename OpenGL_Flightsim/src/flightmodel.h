@@ -11,6 +11,7 @@
 #include "phi.h"
 
 #define DEBUG_FLIGHTMODEL 0
+#define LOG_FLIGHT 1
 
 // get temperture in kelvin
 inline float get_air_temperature(float altitude) {
@@ -77,21 +78,21 @@ float get_mach_number(float speed, float altitude) {
 
 struct Airfoil {
   float min_alpha, max_alpha;
-  std::vector<glm::vec3> data;  // alpha, cl, cd
+  std::vector<glm::vec4> data;  // alpha, cl, cd
 
-  Airfoil(const std::vector<glm::vec3>& curve) : data(curve) {
+  Airfoil(const std::vector<glm::vec4>& curve) : data(curve) {
     min_alpha = curve.front().x, max_alpha = curve.back().x;
   }
 
   // get lift coefficent and drag coefficient
-  std::tuple<float, float> sample(float alpha) const {
+  std::tuple<float, float, float> sample(float alpha) const {
     int max_index = data.size() - 1;
     float t = phi::inverse_lerp(min_alpha, max_alpha, alpha) * max_index;
     float integer = std::floor(t);
     float fractional = t - integer;
     int index = static_cast<int>(integer);
     auto value = (index < max_index) ? phi::lerp(data[index], data[index + 1], fractional) : data[max_index];
-    return {value.y, value.z};
+    return {value.y, value.z, value.w};
   }
 };
 
@@ -134,21 +135,16 @@ struct Wing : public phi::ForceEffector {
   std::string name = "None";
 #endif
 
-  Wing(const glm::vec3& position, float wingspan, float chord, const Airfoil* airfoil,
-       const glm::vec3& normal = phi::UP, float incidence = 0.0f)
-      : center_of_pressure(position),
-        area(chord * wingspan),
-        chord(chord),
-        wingspan(wingspan),
-        airfoil(airfoil),
+  Wing(const Airfoil* airfoil, const glm::vec3& position, float area, float span, const glm::vec3& normal = phi::UP)
+      : airfoil(airfoil),
+        center_of_pressure(position),
+        area(area),
+        chord(area / span),
+        wingspan(span),
         normal(normal),
-        incidence(incidence),
+        incidence(0.0f),
         efficiency_factor(1.0f),
-        aspect_ratio(std::pow(wingspan, 2) / area) {
-#if DEBUG_FLIGHTMODEL
-    printf("wingspan = %.1f, chord = %.1f, area = %.2f, aspect ratio = %.1f\n", wingspan, chord, area, aspect_ratio);
-#endif
-  }
+        aspect_ratio(std::pow(span, 2) / area) {}
 
   // controls how much the wing is deflected
   void set_control_input(float input) { control_input = glm::clamp(input, -1.0f, 1.0f); }
@@ -176,7 +172,7 @@ struct Wing : public phi::ForceEffector {
     float angle_of_attack = glm::degrees(std::asin(glm::dot(drag_direction, wing_normal)));
 
     // sample our aerodynamic data
-    auto [lift_coefficient, drag_coefficient] = airfoil->sample(angle_of_attack);
+    auto [lift_coefficient, drag_coefficient, moment_coefficient] = airfoil->sample(angle_of_attack);
 
     // induced drag
     float induced_drag_coefficient = std::pow(lift_coefficient, 2) / (phi::PI * aspect_ratio * efficiency_factor);
@@ -208,17 +204,17 @@ struct Wing : public phi::ForceEffector {
 
   // returns updated wing normal according to control input and deflection
   glm::vec3 deflect_wing(phi::RigidBody& rigid_body, phi::Seconds dt) {
+#if 0
     // with increased speed control surfaces become harder to move
     float torque = std::pow(rigid_body.get_speed(), 2) * area;
     float compression = glm::degrees(std::asin(max_actuator_torque / torque));
     compression = glm::clamp(compression, 0.0f, 1.0f);
 
-#if 1
     float target_deflection =
         (control_input >= 0.0f ? max_deflection : min_deflection) * compression * std::abs(control_input);
     deflection = phi::move_towards(deflection, target_deflection, max_actuator_speed * compression * dt);
 #else
-    deflection = (control_input >= 0.0f ? max_deflection : min_deflection) * compression * std::abs(control_input);
+    deflection = (control_input >= 0.0f ? max_deflection : min_deflection) * std::abs(control_input);
 #endif
 
     auto axis = glm::normalize(glm::cross(phi::FORWARD, normal));
@@ -233,6 +229,13 @@ struct Airplane {
   phi::RigidBody rigid_body;
   glm::vec3 joystick{};  // roll, yaw, pitch
   float trim = 0.0f;
+
+#if LOG_FLIGHT
+  float log_timer = 0.0f;
+  float log_intervall = 0.1f;
+  float flight_time = 0.0f;
+  std::ofstream log_file;
+#endif
 
   Airplane(float mass, float thrust, glm::mat3 inertia, std::vector<Wing> elements)
       : wings(elements), rigid_body({.mass = mass, .inertia = inertia}), engine(thrust) {
@@ -255,40 +258,55 @@ struct Airplane {
     wings[5].log = false;
     wings[5].name = "rd";
 #endif
+#if LOG_FLIGHT
+    std::time_t now = std::time(nullptr);
+    log_file.open("log/flight_log_" + std::to_string(now) + ".csv");
+    log_file
+        << "flight_time,altitude,speed,ias,aoa,roll_rate,yaw_rate,pitch_rate,roll,yaw,pitch,aileron,rudder,elevator,\n";
+#endif
 
     // main wings
     wings[0].is_control_surface = false;
     wings[3].is_control_surface = false;
-    
-    // ailerons
-    wings[1].set_deflection_limits(-10.0f, 10.0f);
-    wings[2].set_deflection_limits(-10.0f, 10.0f);
-    wings[1].max_actuator_torque = 2000.0f;
-    wings[2].max_actuator_torque = 2000.0f;
-
-    // elevator
-    wings[4].set_deflection_limits(-15.0f, 15.0f);
-    wings[4].lift_multiplier = 0.2f;
-    wings[4].max_actuator_torque = 8000.0f;
-
-    // rudder
-    wings[5].set_deflection_limits(-5.0f, 5.0f);
   }
 
   void update(phi::Seconds dt) {
-#if 1
     float aileron = joystick.x, rudder = joystick.y, elevator = joystick.z;
+
     wings[1].set_control_input(+aileron);
     wings[2].set_control_input(-aileron);
     wings[4].set_control_input(-elevator);
     wings[5].set_control_input(-rudder);
+    wings[4].incidence = trim * 10.0f;
 
-    wings[4].incidence = trim * 5.0f;
-    //printf("trim = %.2f, incidence = %.2f\n", trim, wings[4].incidence);
+#if LOG_FLIGHT
+    flight_time += dt;
+    if ((log_timer -= dt) <= 0.0f) {
+      log_timer = log_intervall;
+      auto av = glm::degrees(rigid_body.angular_velocity);
+      auto euler = glm::degrees(glm::eulerAngles(glm::normalize(rigid_body.orientation)));
 
-#else
-    rigid_body.add_relative_torque(glm::vec3(400000.0f, 100000.0f, 1500000.0f) * joystick);
+      log_file 
+          << flight_time << "," 
+          << get_altitude() << "," 
+          << get_speed() << "," 
+          << get_ias() << "," 
+          << get_aoa() << "," 
+          << av.x << "," // deg/s
+          << av.y << "," 
+          << av.z << "," 
+          << euler.x << "," // deg
+          << euler.y << "," 
+          << euler.z << ","
+          << wings[1].incidence << "," // aileron
+          << wings[5].incidence << "," // rudder
+          << wings[4].incidence << "," // elevator
+          << std::endl;
+    }
 #endif
+
+
+
 
     for (Wing& wing : wings) {
       wing.apply_forces(rigid_body, dt);
@@ -297,5 +315,15 @@ struct Airplane {
     engine.apply_forces(rigid_body, dt);
 
     rigid_body.update(dt);
+  }
+
+  float get_altitude() const { return rigid_body.position.y; }
+  float get_speed() const { return rigid_body.get_speed(); }
+  float get_ias() const { return get_indicated_air_speed(get_speed(), get_altitude()); }
+  float get_g() const { return get_g_force(rigid_body); }
+  float get_mach() const { return get_mach_number(get_speed(), get_altitude()); }
+  float get_aoa() const {
+    auto drag_direction = -rigid_body.get_body_velocity();
+    return glm::degrees(std::asin(glm::dot(glm::normalize(drag_direction), phi::UP)));
   }
 };
