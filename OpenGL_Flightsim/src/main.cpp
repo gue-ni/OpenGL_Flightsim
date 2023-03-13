@@ -165,8 +165,8 @@ int main(void) {
 
   const float mass = 1000.0f;
 
-  //const float thrust = get_propellor_thrust(speed, altitude, 160.0f, 2600.0f, 1.93f);
-  const float thrust = 5000.0f;
+  const float thrust = get_propellor_thrust(speed, altitude, 160.0f, 2600.0f, 1.93f);
+  //const float thrust = 5000.0f;
 
   float main_wing_span = 11.00f;
   float main_wing_area = 16.17f;
@@ -373,7 +373,7 @@ int main(void) {
     window_flags |= ImGuiWindowFlags_NoResize;
 
     ImGui::SetNextWindowPos(ImVec2(10, 10));
-    ImGui::SetNextWindowSize(ImVec2(145, 180));
+    ImGui::SetNextWindowSize(ImVec2(145, 160));
     ImGui::SetNextWindowBgAlpha(0.35f);
     ImGui::Begin("Flightsim", nullptr, window_flags);
     ImGui::Text("ALT:   %.2f m", player.airplane.get_altitude());
