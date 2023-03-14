@@ -126,7 +126,6 @@ int main(void) {
     printf("found %d buttons, %d axis\n", joystick.num_buttons, joystick.num_axis);
   }
 
-
   gfx::Renderer renderer(RESOLUTION.x, RESOLUTION.y);
 
   gfx::gl::TextureParams params = {.flip_vertically = true};
@@ -160,22 +159,25 @@ int main(void) {
   Clipmap clipmap;
   scene.add(&clipmap);
 #endif
-  const float speed = 200.0f;
+  constexpr float speed = phi::units::meter_per_second(200.0f);
   const float altitude = 3000.0f;
 
   const float mass = 1000.0f;
 
-  const float thrust = get_propellor_thrust(speed, altitude, 160.0f, 2600.0f, 1.93f);
-  //const float thrust = 5000.0f;
+  const float rpm = 2400.0f;
+  const float horsepower = 160.0f;
+  const float prop_diameter = 1.9f;
 
-  float main_wing_span = 11.00f;
-  float main_wing_area = 16.17f;
+  const float thrust = get_propellor_thrust(speed, altitude, horsepower, rpm, prop_diameter);
+
+  const float main_wing_span = 11.00f;
+  const float main_wing_area = 16.17f;
   const float aileron_area = 1.70f;
   const float horizontal_tail_area = 2.0f;
   const float horizontal_tail_span = 2.0f;
-  const float vertical_tail_area = 2.04f;
-  const float vertical_tail_span = 1.04f;
   const float elevator_area = 1.35f;
+  const float vertical_tail_area = 2.04f;  // modified
+  const float vertical_tail_span = 1.04f;
 
   const float wing_offset = -0.2f;
   const float tail_offset = -6.6f;
@@ -208,21 +210,21 @@ int main(void) {
   const Airfoil NACA_2412(NACA_2412_data_2);
 
   std::vector<Wing> wings = {
-      Wing(&NACA_2412, {wing_offset, 0.0f, -2.7f}, main_wing_area/2, main_wing_span/2),
-      Wing(&NACA_0012, {wing_offset - 1.5f, 0.0f, -2.0f}, aileron_area, 1.26f ),      // left aileron
-      Wing(&NACA_0012, {wing_offset - 1.5f, 0.0f, 2.0f}, aileron_area, 1.26f),       // right aileron
-      Wing(&NACA_2412, {wing_offset, 0.0f, +2.7f}, main_wing_area/2, main_wing_span/2),
-      Wing(&NACA_0012, {tail_offset, -0.1f, 0.0f}, horizontal_tail_area + elevator_area, horizontal_tail_span),             // elevator
+      Wing(&NACA_2412, {wing_offset, 0.0f, -2.7f}, main_wing_area / 2, main_wing_span / 2),
+      Wing(&NACA_0012, {wing_offset - 1.5f, 0.0f, -2.0f}, aileron_area, 1.26f),  // left aileron
+      Wing(&NACA_0012, {wing_offset - 1.5f, 0.0f, 2.0f}, aileron_area, 1.26f),   // right aileron
+      Wing(&NACA_2412, {wing_offset, 0.0f, +2.7f}, main_wing_area / 2, main_wing_span / 2),
+      Wing(&NACA_0012, {tail_offset, -0.1f, 0.0f}, horizontal_tail_area + elevator_area,
+           horizontal_tail_span),                                                                       // elevator
       Wing(&NACA_0012, {tail_offset, 0.0f, 0.0f}, vertical_tail_area, vertical_tail_span, phi::RIGHT),  // rudder
   };
 
   std::vector<GameObject*> objects;
 
-  GameObject player = {.transform = gfx::Mesh(model, texture),
-                       .airplane = Airplane(mass, thrust, inertia, wings)};
+  GameObject player = {.transform = gfx::Mesh(model, texture), .airplane = Airplane(mass, thrust, inertia, wings)};
 
   player.airplane.rigid_body.position = glm::vec3(-7000.0f, altitude, 0.0f);
-  player.airplane.rigid_body.velocity = glm::vec3(phi::units::meter_per_second(speed), 0.0f, 0.0f);
+  player.airplane.rigid_body.velocity = glm::vec3(speed, 0.0f, 0.0f);
   scene.add(&player.transform);
   objects.push_back(&player);
 
@@ -230,7 +232,7 @@ int main(void) {
   GameObject npc = {.transform = gfx::Mesh(f16_model, f16_texture), .airplane = Airplane(mass, thrust, inertia, wings)};
 
   npc.airplane.rigid_body.position = glm::vec3(-6800.0f, 3020.0f, 50.0f);
-  npc.airplane.rigid_body.velocity = glm::vec3(phi::units::meter_per_second(600.0f), 0.0f, 0.0f);
+  npc.airplane.rigid_body.velocity = glm::vec3(speed, 0.0f, 0.0f);
   scene.add(&npc.transform);
   objects.push_back(&npc);
 #endif
@@ -260,6 +262,13 @@ int main(void) {
   scene.add(&camera);
 #else
   camera_transform.add(&camera);
+#endif
+
+#if 1
+  printf("alt = %.1f m, air_density = %.3f kg/m^3\n", 0.0f, get_air_density(0.0f));
+  printf("alt = %.1f m, air_density = %.3f kg/m^3\n", 1000.0f, get_air_density(1000.0f));
+  printf("alt = %.1f m, air_density = %.3f kg/m^3\n", 3000.0f, get_air_density(3000.0f));
+
 #endif
 
   gfx::OrbitController controller(30.0f);

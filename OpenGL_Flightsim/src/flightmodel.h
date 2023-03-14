@@ -10,7 +10,6 @@
 #include "gfx.h"
 #include "phi.h"
 
-#define DEBUG_FLIGHTMODEL 0
 #define LOG_FLIGHT 1
 
 // get temperture in kelvin
@@ -26,23 +25,24 @@ float get_air_density(float altitude) {
   return 0.00348f * (pressure / temperature);
 }
 
-float get_propellor_thrust(float speed, float altitude, float engine_horsepower, float propellor_rpm,
-                           float propellor_diameter) {
-  float engine_power = phi::units::watts(engine_horsepower);
-#if 0
-  const float a = 1.83f, b = -1.32f;
-  float propellor_advance_ratio = speed / ((propellor_rpm / 60.0f) * propellor_diameter);
-  float propellor_efficiency = a * propellor_advance_ratio + std::pow(b * propellor_advance_ratio, 3.0f);
-#else
-  float propellor_efficiency = 1.0f;
-#endif
+float get_propellor_thrust(float speed, float altitude, float horsepower, float rpm, float diameter) {
+  float engine_power = phi::units::watts(horsepower);
 
-  const float C = 0.12f;
+  const float a = 1.83f, b = -1.32f;  // efficiency curve fit coefficients
+  float turnover_rate = rpm / 60.0f;
+  float propellor_advance_ratio = speed / (turnover_rate * diameter);
+  float propellor_efficiency = a * propellor_advance_ratio + b * std::pow(propellor_advance_ratio, 3);
+  assert(0.0f <= propellor_efficiency && propellor_efficiency <= 1.0f);
+
+  const float c = 0.12f;  // mechanical power loss factor
   float air_density = get_air_density(altitude);
   float sea_level_air_density = get_air_density(0.0f);
-  float power_drop_off_factor = ((air_density / sea_level_air_density) - C) / (1 - C);
+  float power_drop_off_factor = ((air_density / sea_level_air_density) - c) / (1 - c);
+  assert(0.0f <= power_drop_off_factor && power_drop_off_factor <= 1.0f);
 
-  return ((propellor_efficiency * engine_power) / speed) * power_drop_off_factor;
+  float thrust = ((propellor_efficiency * engine_power) / speed) * power_drop_off_factor;
+  assert(0.0f < thrust);
+  return thrust;
 }
 
 // https://aerotoolbox.com/airspeed-conversions/
@@ -99,8 +99,8 @@ struct Airfoil {
 };
 
 struct Engine : public phi::ForceEffector {
+  float thrust;
   float throttle = 0.25f;
-  float thrust = 10000.0f;
 
   Engine(float thrust) : thrust(thrust) {}
 
@@ -130,12 +130,6 @@ struct Wing : public phi::ForceEffector {
   float max_actuator_speed = 90.0f;
   float max_actuator_torque = 6000.0f;
   bool is_control_surface = true;
-
-#if DEBUG_FLIGHTMODEL
-  bool log = false;
-  float log_timer = 0.0f;
-  std::string name = "None";
-#endif
 
   Wing(const Airfoil* airfoil, const glm::vec3& position, float area, float span, const glm::vec3& normal = phi::UP)
       : airfoil(airfoil),
@@ -171,14 +165,14 @@ struct Wing : public phi::ForceEffector {
     // angle between chord line and air flow
     float angle_of_attack = glm::degrees(std::asin(glm::dot(drag_direction, wing_normal)));
 
-    // sample aerodynamic coefficients 
+    // sample aerodynamic coefficients
     auto [lift_coeff, drag_coeff, moment_coeff] = airfoil->sample(angle_of_attack);
 
     // induced drag
     float induced_drag_coeff = std::pow(lift_coeff, 2) / (phi::PI * aspect_ratio * efficiency_factor);
 
     // air density depends on altitude
-    float air_density = get_air_density(0.0f); // something is not right here, so let's assume sea level
+    float air_density = get_air_density(0.0f);  // something is not right here, so let's assume sea level
 
     float dynamic_pressure = 0.5f * std::pow(speed, 2) * air_density * area;
     glm::vec3 lift = lift_direction * lift_coeff * lift_multiplier * dynamic_pressure;
@@ -259,22 +253,9 @@ struct Airplane {
       auto av = glm::degrees(rigid_body.angular_velocity);
       auto euler = glm::degrees(glm::eulerAngles(glm::normalize(rigid_body.orientation)));
 
-      log_file 
-          << flight_time << "," 
-          << get_altitude() << "," 
-          << get_speed() << "," 
-          << get_ias() << "," 
-          << get_aoa() << "," 
-          << av.x << "," // deg/s
-          << av.y << "," 
-          << av.z << "," 
-          << euler.x << "," // deg
-          << euler.y << "," 
-          << euler.z << ","
-          << wings[AILERON_L].incidence << "," // aileron
-          << wings[RUDDER].incidence << "," // rudder
-          << wings[ELEVATOR].incidence << "," // elevator
-          << std::endl;
+      log_file << flight_time << "," << get_altitude() << "," << get_speed() << "," << get_ias() << "," << get_aoa()
+               << "," << av.x << "," << av.y << "," << av.z << "," << euler.x << "," << euler.y << "," << euler.z << ","
+               << aileron << "," << rudder << "," << elevator << "," << std::endl;
     }
 #endif
 
