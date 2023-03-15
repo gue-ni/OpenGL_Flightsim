@@ -12,12 +12,14 @@
 
 #define RUN_COLLISION_UNITTESTS 0
 
-namespace collisions {
+namespace collisions
+{
 
 constexpr float EPSILON = 1e-8f;
 
 template <typename T>
-constexpr inline T sq(T x) {
+constexpr inline T sq(T x)
+{
   return x * x;
 }
 
@@ -48,7 +50,8 @@ struct Ray : public Collider {
 };
 
 // test collision between a ray and a sphere
-bool test_collision(const Ray& r, const Sphere& s, float* t) {
+bool test_collision(const Ray& r, const Sphere& s, float* t)
+{
   // page 178
   assert(std::abs(glm::length(r.direction) - 1.0f) < EPSILON);
 
@@ -67,12 +70,14 @@ bool test_collision(const Ray& r, const Sphere& s, float* t) {
 }
 
 // test collision between two spheres
-bool test_collision(const Sphere& s0, const Sphere& s1) {
+bool test_collision(const Sphere& s0, const Sphere& s1)
+{
   return glm::length(s0.center - s1.center) < (s0.radius + s1.radius);
 }
 
 // test collision between two axis aligned bounding boxes
-bool test_collision(const AABB& a, const AABB& b) {
+bool test_collision(const AABB& a, const AABB& b)
+{
   auto a_min = a.min(), a_max = a.max();
   auto b_min = b.min(), b_max = b.max();
   return ((a_max.x < b_min.x || a_min.x > b_max.x) && (a_max.y < b_min.y || a_min.y > b_max.y) &&
@@ -81,7 +86,8 @@ bool test_collision(const AABB& a, const AABB& b) {
 
 // test collision of two moving spheres
 bool test_moving_collision(const Sphere& s0, const glm::vec3& velocity0, const Sphere& s1, const glm::vec3& velocity1,
-                           float* t) {
+                           float* t)
+{
   // Christer_Ericson-Real-Time_Collision_Detection.pdf#page=264
 #if 0
     auto direction = s1.center - s0.center;

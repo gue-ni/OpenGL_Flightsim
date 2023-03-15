@@ -10,7 +10,8 @@ struct Seam {
   gfx::gl::VertexArrayObject vao;
   unsigned int index_count;
 
-  Seam(int columns, float size) {
+  Seam(int columns, float size)
+  {
     int rows = 1;
     index_count = columns;
 
@@ -36,7 +37,8 @@ struct Seam {
 
   void unbind() { vao.unbind(); }
 
-  void draw() {
+  void draw()
+  {
     bind();
     // glDrawElements(GL_TRIANGLE_STRIP, index_count, GL_UNSIGNED_INT, 0);
     glDrawArrays(GL_TRIANGLES, 0, 3 * index_count);
@@ -50,7 +52,8 @@ struct Block {
   gfx::gl::VertexArrayObject vao;
   unsigned int index_count;
 
-  Block(int width, int height, float segment_size) {
+  Block(int width, int height, float segment_size)
+  {
 #if 1
     std::vector<glm::vec3> vertices;
     std::vector<unsigned int> indices;
@@ -92,14 +95,16 @@ struct Block {
 
   void unbind() { vao.unbind(); }
 
-  void draw() {
+  void draw()
+  {
     bind();
     glDrawElements(GL_TRIANGLE_STRIP, index_count, GL_UNSIGNED_INT, 0);
     unbind();
   }
 };
 
-class Clipmap : public gfx::Object3D {
+class Clipmap : public gfx::Object3D
+{
  public:
   bool wireframe = false;
 
@@ -117,11 +122,14 @@ class Clipmap : public gfx::Object3D {
         horizontal(2 * segments + 2, 1, segment_size),
         vertical(1, 2 * segments + 2, segment_size),
         center(2 * segments + 2, 2 * segments + 2, segment_size),
-        seam(2 * segments + 2, segment_size * 2) {}
+        seam(2 * segments + 2, segment_size * 2)
+  {
+  }
 
   float get_terrain_height(glm::vec2 coords) { return 0.0f; }
 
-  void draw_self(gfx::RenderContext& context) override {
+  void draw_self(gfx::RenderContext& context) override
+  {
 #if 1
     if (!context.is_shadow_pass) {
       auto camera_pos = context.camera->get_world_position();
@@ -273,7 +281,8 @@ class Clipmap : public gfx::Object3D {
   const int segments;
   const float segment_size;
 
-  glm::vec2 calc_base(int level, glm::vec2 camera_pos) {
+  glm::vec2 calc_base(int level, glm::vec2 camera_pos)
+  {
     float scale = std::pow(2.0f, level);
     float next_scale = std::pow(2.0f, level + 2);
     float tile_size = segments * segment_size * scale;
@@ -282,7 +291,8 @@ class Clipmap : public gfx::Object3D {
     return base;
   }
 
-  glm::mat4 transform_matrix(const glm::vec2& position, float scale, float angle = 0) {
+  glm::mat4 transform_matrix(const glm::vec2& position, float scale, float angle = 0)
+  {
     auto S = glm::scale(glm::mat4(1.0f), glm::vec3(scale));
     auto T = glm::translate(glm::mat4(1.0f), glm::vec3(position.x, 0.0f, position.y));
     auto R = glm::rotate(glm::mat4(1.0f), glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));

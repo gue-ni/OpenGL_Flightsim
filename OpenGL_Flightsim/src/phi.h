@@ -6,16 +6,17 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
-namespace phi {
+namespace phi
+{
 
 typedef float Seconds;
 typedef float Radians;
 typedef float Degrees;
 
 // constants
-constexpr float EARTH_GRAVITY = 9.80665f;  // gravity of earth, m/s^2
+constexpr float EARTH_GRAVITY = 9.80665f;
 constexpr float EPSILON = 1e-8f;
-constexpr float PI = 3.1415926535f;
+constexpr float PI = 3.14159265358979323846264338327950288f;
 
 // directions in body space
 constexpr glm::vec3 UP = {0.0f, 1.0f, 0.0f};
@@ -30,37 +31,43 @@ constexpr glm::vec3 Y_AXIS = {0.0f, 1.0f, 0.0f};
 constexpr glm::vec3 Z_AXIS = {0.0f, 0.0f, 1.0f};
 
 template <typename T>
-constexpr inline T sq(T a) {
+constexpr inline T sq(T a)
+{
   return a * a;
 }
 
 template <typename T>
-constexpr inline T scale(T input, T in_min, T in_max, T out_min, T out_max) {
+constexpr inline T scale(T input, T in_min, T in_max, T out_min, T out_max)
+{
   input = glm::clamp(input, in_min, in_max);
   return (input - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
 template <typename T>
-constexpr inline T lerp(T a, T b, float t) {
+constexpr inline T lerp(T a, T b, float t)
+{
   t = glm::clamp(t, 0.0f, 1.0f);
   return a + t * (b - a);
 }
 
 template <typename T>
-constexpr inline float inverse_lerp(T a, T b, T v) {
+constexpr inline float inverse_lerp(T a, T b, T v)
+{
   v = glm::clamp(v, a, b);
   return (v - a) / (b - a);
 }
 
 template <typename T>
-inline T move_towards(T current, T target, T speed) {
+inline T move_towards(T current, T target, T speed)
+{
   if (std::abs(target - current) <= speed) {
     return target;
   }
   return current + glm::sign(target - current) * speed;
 }
 
-namespace inertia {
+namespace inertia
+{
 struct Element {
   glm::vec3 size;
   glm::vec3 position;  // position in design coordinates
@@ -71,7 +78,8 @@ struct Element {
   float volume() const { return size.x * size.y * size.z; }
 };
 
-constexpr glm::vec3 cube(const glm::vec3& size, float mass) {
+constexpr glm::vec3 cube(const glm::vec3& size, float mass)
+{
   const float C = (1.0f / 12.0f) * mass;
   glm::vec3 I(0.0f);
   I.x = C * (sq(size.y) + sq(size.z));
@@ -80,7 +88,8 @@ constexpr glm::vec3 cube(const glm::vec3& size, float mass) {
   return I;
 }
 
-constexpr glm::vec3 cylinder(float radius, float length, float mass) {
+constexpr glm::vec3 cylinder(float radius, float length, float mass)
+{
   const float C = (1.0f / 12.0f) * mass;
   glm::vec3 I(0.0f);
   I.x = (0.5f) * mass * sq(radius);
@@ -89,32 +98,35 @@ constexpr glm::vec3 cylinder(float radius, float length, float mass) {
 }
 
 // inertia tensor
-constexpr glm::mat3 tensor(const glm::vec3& moment_of_inertia) {
+constexpr glm::mat3 tensor(const glm::vec3& moment_of_inertia)
+{
   return {
       moment_of_inertia.x, 0.0f, 0.0f, 0.0f, moment_of_inertia.y, 0.0f, 0.0f, 0.0f, moment_of_inertia.z,
   };
 }
 
-constexpr Element cube(const glm::vec3& position, const glm::vec3& size, float mass) {
-  return { .size = size, .position = position, .inertia = cube(size, mass), .offset = position, .mass = mass};
+constexpr Element cube(const glm::vec3& position, const glm::vec3& size, float mass)
+{
+  return {.size = size, .position = position, .inertia = cube(size, mass), .offset = position, .mass = mass};
 }
 
 // calculate inertia tensor from list of connected masses
-constexpr glm::mat3 tensor(std::vector<Element>& wings, bool precomputed_offset = false, glm::vec3 *cg = nullptr) {
+constexpr glm::mat3 tensor(std::vector<Element>& surfaces, bool precomputed_offset = false, glm::vec3* cg = nullptr)
+{
   float Ixx = 0, Iyy = 0, Izz = 0;
   float Ixy = 0, Ixz = 0, Iyz = 0;
 
   float mass = 0;
   glm::vec3 moment(0.0f);
 
-  for (const auto& element : wings) {
+  for (const auto& element : surfaces) {
     mass += element.mass;
     moment += element.mass * element.position;
   }
 
   const glm::vec3 center_of_gravity = moment / mass;
 
-  for (auto& element : wings) {
+  for (auto& element : surfaces) {
     glm::vec3 offset;
 
     if (!precomputed_offset) {
@@ -131,16 +143,16 @@ constexpr glm::mat3 tensor(std::vector<Element>& wings, bool precomputed_offset 
     Iyz += element.mass * (offset.y * offset.z);
   }
 
-  if (cg != nullptr)
-  {
-      *cg = center_of_gravity;
+  if (cg != nullptr) {
+    *cg = center_of_gravity;
   }
 
   return {Ixx, -Ixy, -Ixz, -Ixy, Iyy, -Iyz, -Ixz, -Iyz, Izz};
 }
 };  // namespace inertia
 
-namespace units {
+namespace units
+{
 constexpr inline float knots(float meter_per_second) { return meter_per_second * 1.94384f; }
 
 constexpr inline float meter_per_second(float kilometer_per_hour) { return kilometer_per_hour / 3.6f; }
@@ -162,7 +174,8 @@ struct RigidBodyParams {
   bool apply_gravity = true;
 };
 
-class RigidBody {
+class RigidBody
+{
  private:
   glm::vec3 m_force{};   // force vector in world space
   glm::vec3 m_torque{};  // torque vector in body space
@@ -188,10 +201,13 @@ class RigidBody {
         orientation(params.orientation),
         apply_gravity(params.apply_gravity),
         angular_velocity(params.angular_velocity),
-        inverse_inertia(glm::inverse(params.inertia)) {}
+        inverse_inertia(glm::inverse(params.inertia))
+  {
+  }
 
   // get velocity of point in body space
-  inline glm::vec3 get_point_velocity(const glm::vec3& point) const {
+  inline glm::vec3 get_point_velocity(const glm::vec3& point) const
+  {
     return inverse_transform_direction(velocity) + glm::cross(angular_velocity, point);
   }
 
@@ -199,7 +215,8 @@ class RigidBody {
   inline glm::vec3 get_body_velocity() const { return inverse_transform_direction(velocity); }
 
   // force and point vectors are in body space
-  inline void add_force_at_point(const glm::vec3& force, const glm::vec3& point) {
+  inline void add_force_at_point(const glm::vec3& force, const glm::vec3& point)
+  {
     m_force += transform_direction(force);
     m_torque += glm::cross(point, force);
   }
@@ -208,7 +225,8 @@ class RigidBody {
   inline glm::vec3 transform_direction(const glm::vec3& direction) const { return orientation * direction; }
 
   // transform direction from world space to body space
-  inline glm::vec3 inverse_transform_direction(const glm::vec3& direction) const {
+  inline glm::vec3 inverse_transform_direction(const glm::vec3& direction) const
+  {
     return glm::inverse(orientation) * direction;
   }
 
@@ -245,7 +263,8 @@ class RigidBody {
   // get right direction in world space
   inline glm::vec3 right() const { return transform_direction(phi::RIGHT); }
 
-  void update(Seconds dt) {
+  void update(Seconds dt)
+  {
     if (!active) return;
 
     glm::vec3 acceleration = m_force / mass;

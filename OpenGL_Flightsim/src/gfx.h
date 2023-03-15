@@ -17,7 +17,8 @@
 #include <unordered_map>
 #include <vector>
 
-namespace gfx {
+namespace gfx
+{
 
 constexpr float PI = 3.14159265359f;
 
@@ -31,11 +32,13 @@ class Skybox;
 class Material;
 class Geometry;
 
-constexpr RGB rgb(int r, int g, int b) {
+constexpr RGB rgb(int r, int g, int b)
+{
   return RGB(static_cast<float>(r), static_cast<float>(g), static_cast<float>(b)) / 255.0f;
 }
 
-constexpr RGB rgb(uint32_t hex) {
+constexpr RGB rgb(uint32_t hex)
+{
   assert(hex <= 0xffffffU);
   return RGB{static_cast<float>((hex & 0xff0000U) >> 16) / 255.0f, static_cast<float>((hex & 0x00ff00U) >> 8) / 255.0f,
              static_cast<float>((hex & 0x0000ffU) >> 0) / 255.0f};
@@ -46,7 +49,8 @@ std::shared_ptr<Geometry> make_cube_geometry(float size);
 std::shared_ptr<Geometry> make_plane_geometry(int x_elements, int y_elements, float size);
 
 // gl primitives
-namespace gl {
+namespace gl
+{
 
 struct Shader {
   GLuint id;
@@ -73,7 +77,8 @@ struct VertexBuffer {
   void buffer(const void* data, size_t size);
 
   template <typename T>
-  void buffer(const std::vector<T>& data) {
+  void buffer(const std::vector<T>& data)
+  {
     buffer(&data[0], sizeof(data[0]) * data.size());
   }
 };
@@ -95,7 +100,8 @@ struct ElementBufferObject {
   void buffer(const void* data, size_t size);
 
   template <typename T>
-  void buffer(const std::vector<T>& data) {
+  void buffer(const std::vector<T>& data)
+  {
     buffer(&data[0], sizeof(data[0]) * data.size());
   }
 };
@@ -147,12 +153,15 @@ struct RenderContext {
   glm::vec3 background_color;
 };
 
-class Object3D {
+class Object3D
+{
  public:
   enum Type { OBJECT3D, LIGHT, CAMERA };
 
   Object3D()
-      : id(counter++), parent(nullptr), transform(1.0), m_position(0.0f), m_rotation(glm::vec3(0.0f)), m_scale(1.0f) {}
+      : id(counter++), parent(nullptr), transform(1.0), m_position(0.0f), m_rotation(glm::vec3(0.0f)), m_scale(1.0f)
+  {
+  }
 
   const int id;
   static int counter;
@@ -200,10 +209,13 @@ class Object3D {
   glm::quat m_rotation;
 };
 
-class Camera : public Object3D {
+class Camera : public Object3D
+{
  public:
   Camera(float fov, float aspect, float near, float far)
-      : m_projection(glm::perspective(fov, aspect, near, far)), m_up(0.0f, 1.0f, 0.0f), m_front(0.0f, 0.0f, 1.0f) {}
+      : m_projection(glm::perspective(fov, aspect, near, far)), m_up(0.0f, 1.0f, 0.0f), m_front(0.0f, 0.0f, 1.0f)
+  {
+  }
 
   Object3D::Type get_type() const override;
   glm::mat4 get_view_matrix() const;
@@ -215,7 +227,8 @@ class Camera : public Object3D {
   glm::vec3 m_up, m_front;
 };
 
-class Light : public Object3D {
+class Light : public Object3D
+{
  public:
   enum LightType {
     POINT = 0,
@@ -235,7 +248,8 @@ class Light : public Object3D {
   glm::vec3 rgb;
 };
 
-class Geometry {
+class Geometry
+{
  public:
   enum VertexLayout {
     POS,         // pos
@@ -258,33 +272,41 @@ class Geometry {
   static int get_stride(const VertexLayout& layout);
 };
 
-class Material {
+class Material
+{
  public:
   virtual gl::Shader* get_shader() { return nullptr; }
   virtual void bind() {}
 };
 
 template <class Derived>
-class MaterialX : public Material {
+class MaterialX : public Material
+{
  public:
-  MaterialX(const std::string& path) {
+  MaterialX(const std::string& path)
+  {
     if (shader == nullptr) shader = std::make_shared<gl::Shader>(path);
   }
   gl::Shader* get_shader() { return shader.get(); }
   static std::shared_ptr<gl::Shader> shader;
 };
 
-class Phong : public MaterialX<Phong> {
+class Phong : public MaterialX<Phong>
+{
  public:
   RGB rgb{};
   float ka, kd, ks, alpha;
   std::shared_ptr<gl::Texture> texture = nullptr;
 
   Phong(const glm::vec3& color_, float ka_, float kd_, float ks_, float alpha_)
-      : MaterialX<Phong>("shaders/phong"), rgb(color_), ka(ka_), kd(kd_), ks(ks_), alpha(alpha_) {}
+      : MaterialX<Phong>("shaders/phong"), rgb(color_), ka(ka_), kd(kd_), ks(ks_), alpha(alpha_)
+  {
+  }
 
   Phong(const glm::vec3& color_)
-      : MaterialX<Phong>("shaders/phong"), rgb(color_), ka(0.3f), kd(1.0f), ks(0.5f), alpha(10.0f) {}
+      : MaterialX<Phong>("shaders/phong"), rgb(color_), ka(0.3f), kd(1.0f), ks(0.5f), alpha(10.0f)
+  {
+  }
 
   Phong(std::shared_ptr<gl::Texture> tex)
       : MaterialX<Phong>("shaders/phong"),
@@ -293,24 +315,29 @@ class Phong : public MaterialX<Phong> {
         ka(0.3f),
         kd(1.0f),
         ks(0.5f),
-        alpha(20.0f) {}
+        alpha(20.0f)
+  {
+  }
 
   void bind() override;
 };
 
-class Basic : public MaterialX<Basic> {
+class Basic : public MaterialX<Basic>
+{
  public:
   glm::vec3 rgb;
   Basic(const glm::vec3& color_) : MaterialX<Basic>("shaders/basic"), rgb(color_) {}
   void bind();
 };
 
-class ShaderMaterial : public MaterialX<ShaderMaterial> {
+class ShaderMaterial : public MaterialX<ShaderMaterial>
+{
  public:
   ShaderMaterial(const std::string& path) : MaterialX<ShaderMaterial>(path) {}
 };
 
-class ScreenMaterial : public MaterialX<ScreenMaterial> {
+class ScreenMaterial : public MaterialX<ScreenMaterial>
+{
  private:
   std::shared_ptr<gl::Texture> texture = nullptr;
 
@@ -319,7 +346,8 @@ class ScreenMaterial : public MaterialX<ScreenMaterial> {
   void bind() override;
 };
 
-class SkyboxMaterial : public MaterialX<SkyboxMaterial> {
+class SkyboxMaterial : public MaterialX<SkyboxMaterial>
+{
  public:
   std::shared_ptr<gl::CubemapTexture> cubemap = nullptr;
   SkyboxMaterial(std::shared_ptr<gl::CubemapTexture> map) : MaterialX<SkyboxMaterial>("shaders/skybox"), cubemap(map) {}
@@ -327,10 +355,13 @@ class SkyboxMaterial : public MaterialX<SkyboxMaterial> {
   void bind() override;
 };
 
-class Mesh : public Object3D {
+class Mesh : public Object3D
+{
  public:
   Mesh(std::shared_ptr<Geometry> geometry, std::shared_ptr<Material> material)
-      : m_geometry(geometry), m_material(material) {}
+      : m_geometry(geometry), m_material(material)
+  {
+  }
   void draw_self(RenderContext& context) override;
 
  protected:
@@ -338,7 +369,8 @@ class Mesh : public Object3D {
   std::shared_ptr<Material> m_material;
 };
 
-class Billboard : public Object3D {
+class Billboard : public Object3D
+{
  public:
   Billboard(std::shared_ptr<gl::Texture> sprite, glm::vec3 color = glm::vec3(1.0f));
   void draw_self(RenderContext& context) override;
@@ -353,17 +385,20 @@ class Billboard : public Object3D {
   gl::ElementBufferObject ebo;
 };
 
-class Skybox : public Mesh {
+class Skybox : public Mesh
+{
  public:
   Skybox(const std::array<std::string, 6>& faces);
   void draw_self(RenderContext& context) override;
   Object3D& add(Object3D* child) = delete;
 };
 
-class Renderer {
+class Renderer
+{
  public:
   Renderer(unsigned int width, unsigned int height)
-      : shadow_map(new ShadowMap(1024, 1024)), m_width(width), m_height(height), background(rgb(222, 253, 255)) {
+      : shadow_map(new ShadowMap(1024, 1024)), m_width(width), m_height(height), background(rgb(222, 253, 255))
+  {
     const std::vector<float> quad_vertices = {
         -1.0f, 1.0f,  0.0f, 0.0f, 1.0f,  // top left
         -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,  // bottom left
@@ -380,7 +415,8 @@ class Renderer {
     screen_quad = std::make_shared<Mesh>(geometry, material);
   }
 
-  ~Renderer() {
+  ~Renderer()
+  {
     if (shadow_map) delete shadow_map;
   }
 
@@ -393,7 +429,8 @@ class Renderer {
   std::shared_ptr<Mesh> screen_quad;
 };
 
-class FirstPersonController {
+class FirstPersonController
+{
  public:
   enum Direction {
     FORWARD,
@@ -409,7 +446,8 @@ class FirstPersonController {
         m_front(0.0f, 0.0f, -1.0f),
         m_up(0.0f, 1.0f, 0.0f),
         m_velocity(0.0f),
-        m_direction(0.0f) {
+        m_direction(0.0f)
+  {
     move_mouse(0.0f, 0.0f);
   }
 
@@ -423,7 +461,8 @@ class FirstPersonController {
   glm::vec3 m_front, m_up, m_velocity, m_direction;
 };
 
-class OrbitController {
+class OrbitController
+{
  public:
   OrbitController(float radius) : radius(radius) {}
 

@@ -58,7 +58,8 @@ struct GameObject {
   gfx::Mesh transform;
   Airplane airplane;
 
-  void update(float dt) {
+  void update(float dt)
+  {
     airplane.update(dt);
     transform.set_transform(airplane.rigid_body.position, airplane.rigid_body.orientation);
   }
@@ -68,7 +69,8 @@ void get_keyboard_state(Joystick& joystick, phi::Seconds dt);
 void solve_constraints(phi::RigidBody& rigid_body);
 void apply_to_object3d(const phi::RigidBody& rigid_body, gfx::Object3D& object);
 
-int main(void) {
+int main(void)
+{
 #if RUN_COLLISION_UNITTESTS
   collisions::run_unit_tests();
 #endif
@@ -173,8 +175,8 @@ int main(void) {
   const float main_wing_span = 11.00f;
   const float main_wing_area = 16.17f;
   const float aileron_area = 1.70f;
-  const float horizontal_tail_area = 2.0f;
-  const float horizontal_tail_span = 2.0f;
+  const float h_tail_area = 2.0f;
+  const float h_tail_span = 2.0f;
   const float elevator_area = 1.35f;
   const float vertical_tail_area = 2.04f;  // modified
   const float vertical_tail_span = 1.04f;
@@ -209,19 +211,19 @@ int main(void) {
   const Airfoil NACA_0012(NACA_0012_data_2);
   const Airfoil NACA_2412(NACA_2412_data_2);
 
-  std::vector<Wing> wings = {
-      Wing(&NACA_2412, {wing_offset, 0.0f, -2.7f}, main_wing_area / 2, main_wing_span / 2),
-      Wing(&NACA_0012, {wing_offset - 1.5f, 0.0f, -2.0f}, aileron_area, 1.26f),  // left aileron
-      Wing(&NACA_0012, {wing_offset - 1.5f, 0.0f, 2.0f}, aileron_area, 1.26f),   // right aileron
-      Wing(&NACA_2412, {wing_offset, 0.0f, +2.7f}, main_wing_area / 2, main_wing_span / 2),
-      Wing(&NACA_0012, {tail_offset, -0.1f, 0.0f}, horizontal_tail_area + elevator_area,
-           horizontal_tail_span),                                                                       // elevator
-      Wing(&NACA_0012, {tail_offset, 0.0f, 0.0f}, vertical_tail_area, vertical_tail_span, phi::RIGHT),  // rudder
+  std::vector<AerodynamicSurface> surfaces = {
+      AerodynamicSurface(&NACA_2412, {wing_offset, 0.0f, -2.7f}, main_wing_area / 2, main_wing_span / 2),
+      AerodynamicSurface(&NACA_0012, {wing_offset - 1.5f, 0.0f, -2.0f}, aileron_area, 1.26f),  // left aileron
+      AerodynamicSurface(&NACA_0012, {wing_offset - 1.5f, 0.0f, 2.0f}, aileron_area, 1.26f),   // right aileron
+      AerodynamicSurface(&NACA_2412, {wing_offset, 0.0f, +2.7f}, main_wing_area / 2, main_wing_span / 2),
+      AerodynamicSurface(&NACA_0012, {tail_offset, -0.1f, 0.0f}, h_tail_area + elevator_area, h_tail_span),  // elevator
+      AerodynamicSurface(&NACA_0012, {tail_offset, 0.0f, 0.0f}, vertical_tail_area, vertical_tail_span,
+                         phi::RIGHT),  // rudder
   };
 
   std::vector<GameObject*> objects;
 
-  GameObject player = {.transform = gfx::Mesh(model, texture), .airplane = Airplane(mass, thrust, inertia, wings)};
+  GameObject player = {.transform = gfx::Mesh(model, texture), .airplane = Airplane(mass, thrust, inertia, surfaces)};
 
   player.airplane.rigid_body.position = glm::vec3(-7000.0f, altitude, 0.0f);
   player.airplane.rigid_body.velocity = glm::vec3(speed, 0.0f, 0.0f);
@@ -361,7 +363,6 @@ int main(void) {
         case SDL_MOUSEWHEEL: {
           if (event.wheel.y > 0) {
             controller.radius *= 1.1f;
-
           } else if (event.wheel.y < 0) {
             controller.radius *= 0.9f;
           }
@@ -445,11 +446,13 @@ int main(void) {
 
 inline float move(float value, float factor, float dt) { return glm::clamp(value - factor * dt, -1.0f, 1.0f); }
 
-inline float center(float value, float factor, float dt) {
+inline float center(float value, float factor, float dt)
+{
   return (value >= 0) ? glm::clamp(value - factor * dt, 0.0f, 1.0f) : glm::clamp(value + factor * dt, -1.0f, 0.0f);
 }
 
-void get_keyboard_state(Joystick& joystick, phi::Seconds dt) {
+void get_keyboard_state(Joystick& joystick, phi::Seconds dt)
+{
   const glm::vec3 factor = {3.0f, 0.5f, 1.0f};  // roll, yaw, pitch
   const uint8_t* key_states = SDL_GetKeyboardState(NULL);
 
@@ -493,11 +496,13 @@ void get_keyboard_state(Joystick& joystick, phi::Seconds dt) {
   }
 }
 
-void apply_to_object3d(const phi::RigidBody& rigid_body, gfx::Object3D& object3d) {
+void apply_to_object3d(const phi::RigidBody& rigid_body, gfx::Object3D& object3d)
+{
   object3d.set_transform(rigid_body.position, rigid_body.orientation);
 }
 
-void solve_constraints(phi::RigidBody& rigid_body) {
+void solve_constraints(phi::RigidBody& rigid_body)
+{
   if (rigid_body.position.y <= 0) {
     rigid_body.position.y = 0, rigid_body.velocity.y = 0;
   }

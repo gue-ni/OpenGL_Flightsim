@@ -9,14 +9,16 @@
 #include "flightmodel.h"
 
 glm::vec3 get_intercept_point(const glm::vec3& position, const glm::vec3& velocity, const glm::vec3& target_position,
-                              const glm::vec3& target_velocity) {
+                              const glm::vec3& target_velocity)
+{
   auto velocity_delta = target_velocity - velocity;
   auto position_delta = target_position - position;
   auto time_to_intercept = glm::length(position_delta) / glm::length(velocity_delta);
   return target_position + target_velocity * time_to_intercept;
 }
 
-void fly_towards(Airplane& airplane, const glm::vec3& target) {
+void fly_towards(Airplane& airplane, const glm::vec3& target)
+{
   auto& rb = airplane.rigid_body;
   auto& joystick = airplane.joystick;
   auto position = rb.position;
@@ -36,7 +38,8 @@ void fly_towards(Airplane& airplane, const glm::vec3& target) {
 }
 
 #if 1
-void fly_towards(Airplane& airplane, const Airplane& target) {
+void fly_towards(Airplane& airplane, const Airplane& target)
+{
   auto point = get_intercept_point(airplane.rigid_body.position, airplane.rigid_body.velocity,
                                    target.rigid_body.position, target.rigid_body.velocity);
 

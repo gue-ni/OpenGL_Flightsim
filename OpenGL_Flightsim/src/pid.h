@@ -2,7 +2,8 @@
 
 #include <glm/vec2.hpp>
 
-class PID {
+class PID
+{
   float integral = 0.0f;
   bool initialized = false;
   float previous_value = 0.0f, previous_error = 0.0f;
@@ -15,9 +16,12 @@ class PID {
 
  public:
   PID(float kp, float ki, float kd, bool use_value = true)
-      : proportional_gain(kp), integral_gain(ki), derivative_gain(kd), use_value(use_value) {}
+      : proportional_gain(kp), integral_gain(ki), derivative_gain(kd), use_value(use_value)
+  {
+  }
 
-  float calculate(float current_value, float target_value, float dt) {
+  float calculate(float current_value, float target_value, float dt)
+  {
     float error = target_value - current_value;
     float P = error * proportional_gain;
 
