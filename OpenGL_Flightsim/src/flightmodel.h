@@ -232,11 +232,12 @@ class AerodynamicSurface : public phi::ForceEffector
 #define RUDDER 5
 
 struct Airplane {
-  Engine engine;
-  std::vector<AerodynamicSurface> surfaces;
-  phi::RigidBody rigid_body;
-  glm::vec3 joystick{};  // roll, yaw, pitch
   float trim = 0.0f;
+  glm::vec3 joystick{};  // roll, yaw, pitch
+
+  Engine engine;
+  phi::RigidBody rigid_body;
+  std::vector<AerodynamicSurface> surfaces;
 
 #if LOG_FLIGHT
   float log_timer = 0.0f;

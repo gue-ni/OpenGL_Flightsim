@@ -18,6 +18,7 @@
 #include "flightmodel.h"
 #include "gfx.h"
 #include "phi.h"
+#include "pid.h"
 
 using std::cout;
 using std::endl;
@@ -37,7 +38,7 @@ JK      control thrust
 
 #define CLIPMAP 1
 #define SKYBOX 1
-#define SMOOTH_CAMERA 0
+#define SMOOTH_CAMERA 1
 #define NPC_AIRCRAFT 0
 
 #if 1
@@ -111,20 +112,18 @@ int main(void)
   ImGui_ImplOpenGL3_Init();
 
   Joystick joystick;
-  SDL_Joystick* sdl_joystick = nullptr;
 
-  int num_joysticks;
-  if ((num_joysticks = SDL_NumJoysticks()) < 0) {
-    std::cout << "no joystick found\n";
-    exit(-1);
-  } else {
+  PID pitch_control_pid(1.0f, 0.0f, 0.0f);
+
+  int num_joysticks = SDL_NumJoysticks();
+  bool joystick_control = num_joysticks > 0;
+  if (joystick_control) {
     std::cout << "found " << num_joysticks << " joysticks\n";
     SDL_JoystickEventState(SDL_ENABLE);
-    sdl_joystick = SDL_JoystickOpen(0);
-    joystick.num_buttons = SDL_JoystickNumButtons(sdl_joystick);
+    SDL_Joystick* sdl_joystick = SDL_JoystickOpen(0);
     joystick.num_axis = SDL_JoystickNumAxes(sdl_joystick);
     joystick.num_hats = SDL_JoystickNumHats(sdl_joystick);
-
+    joystick.num_buttons = SDL_JoystickNumButtons(sdl_joystick);
     printf("found %d buttons, %d axis\n", joystick.num_buttons, joystick.num_axis);
   }
 
@@ -178,8 +177,8 @@ int main(void)
   const float h_tail_area = 2.0f;
   const float h_tail_span = 2.0f;
   const float elevator_area = 1.35f;
-  const float vertical_tail_area = 2.04f;  // modified
-  const float vertical_tail_span = 1.04f;
+  const float vertical_tail_area = 5.04f;  // modified
+  const float vertical_tail_span = 2.04f;
 
   const float wing_offset = -0.2f;
   const float tail_offset = -6.6f;
@@ -213,8 +212,8 @@ int main(void)
 
   std::vector<AerodynamicSurface> surfaces = {
       AerodynamicSurface(&NACA_2412, {wing_offset, 0.0f, -2.7f}, main_wing_area / 2, main_wing_span / 2),
-      AerodynamicSurface(&NACA_0012, {wing_offset - 1.5f, 0.0f, -2.0f}, aileron_area, 1.26f),  // left aileron
-      AerodynamicSurface(&NACA_0012, {wing_offset - 1.5f, 0.0f, 2.0f}, aileron_area, 1.26f),   // right aileron
+      AerodynamicSurface(&NACA_0012, {wing_offset - 1.5f, 0.0f, -5.0f}, aileron_area, 1.26f),  // left aileron
+      AerodynamicSurface(&NACA_0012, {wing_offset - 1.5f, 0.0f, +5.0f}, aileron_area, 1.26f),  // right aileron
       AerodynamicSurface(&NACA_2412, {wing_offset, 0.0f, +2.7f}, main_wing_area / 2, main_wing_span / 2),
       AerodynamicSurface(&NACA_0012, {tail_offset, -0.1f, 0.0f}, h_tail_area + elevator_area, h_tail_span),  // elevator
       AerodynamicSurface(&NACA_0012, {tail_offset, 0.0f, 0.0f}, vertical_tail_area, vertical_tail_span,
@@ -264,13 +263,6 @@ int main(void)
   scene.add(&camera);
 #else
   camera_transform.add(&camera);
-#endif
-
-#if 1
-  printf("alt = %.1f m, air_density = %.3f kg/m^3\n", 0.0f, get_air_density(0.0f));
-  printf("alt = %.1f m, air_density = %.3f kg/m^3\n", 1000.0f, get_air_density(1000.0f));
-  printf("alt = %.1f m, air_density = %.3f kg/m^3\n", 3000.0f, get_air_density(3000.0f));
-
 #endif
 
   gfx::OrbitController controller(30.0f);
@@ -398,7 +390,21 @@ int main(void)
     ImGui::Text("G:     %.1f", player.airplane.get_g());
     ImGui::Text("AoA:   %.2f", player.airplane.get_aoa());
     ImGui::Text("Trim:  %.2f", player.airplane.trim);
-    ImGui::Text("Time:  %.1f", flight_time);
+    ImGui::End();
+#endif
+
+#if 1
+    auto angular_velocity = glm::degrees(player.airplane.rigid_body.angular_velocity);
+    auto orientation = glm::degrees(glm::eulerAngles(glm::normalize(player.airplane.rigid_body.orientation)));
+
+    ImVec2 size(140, 140);
+    ImGui::SetNextWindowPos(ImVec2(RESOLUTION.x - size.y - 10.0f, RESOLUTION.y - size.y - 10.0f));
+    ImGui::SetNextWindowSize(size);
+    ImGui::SetNextWindowBgAlpha(0.35f);
+    ImGui::Begin("Debug", nullptr, window_flags);
+    ImGui::Text("Time:        %.1f", flight_time);
+    ImGui::Text("Pitch Rate:  %.1f", angular_velocity.z);
+    ImGui::Text("Pitch:       %.1f", orientation.z);
     ImGui::End();
 #endif
 
@@ -406,6 +412,12 @@ int main(void)
 
     auto& player_aircraft = player.airplane;
     player_aircraft.joystick = glm::vec3(joystick.aileron, joystick.rudder, joystick.elevator);
+    if (!joystick_control) {
+      float max_av = 45.0f;  // deg/s
+      float target_av = max_av * joystick.elevator;
+      float current_av = glm::degrees(player_aircraft.rigid_body.angular_velocity.z);
+      player_aircraft.joystick.z = pitch_control_pid.calculate(current_av, target_av, dt);
+    }
     player_aircraft.engine.throttle = joystick.throttle;
     player_aircraft.trim = joystick.trim;
 
@@ -480,19 +492,19 @@ void get_keyboard_state(Joystick& joystick, phi::Seconds dt)
     joystick.rudder = center(joystick.rudder, factor.z, dt);
   }
 
-  const float tmp = 0.002f;
+  const float throttle_speed = 0.002f;
 
   if (key_states[SDL_SCANCODE_J]) {
-    joystick.throttle = glm::clamp(joystick.throttle - tmp, 0.0f, 1.0f);
+    joystick.throttle = glm::clamp(joystick.throttle - throttle_speed, 0.0f, 1.0f);
   } else if (key_states[SDL_SCANCODE_K]) {
-    joystick.throttle = glm::clamp(joystick.throttle + tmp, 0.0f, 1.0f);
+    joystick.throttle = glm::clamp(joystick.throttle + throttle_speed, 0.0f, 1.0f);
   }
 
-  const float increment = 0.002f;
+  const float trim_speed = 0.002f;
   if (key_states[SDL_SCANCODE_N]) {
-    joystick.trim = glm::clamp(joystick.trim - increment, -1.0f, 1.0f);
+    joystick.trim = glm::clamp(joystick.trim - trim_speed, -1.0f, 1.0f);
   } else if (key_states[SDL_SCANCODE_M]) {
-    joystick.trim = glm::clamp(joystick.trim + increment, -1.0f, 1.0f);
+    joystick.trim = glm::clamp(joystick.trim + trim_speed, -1.0f, 1.0f);
   }
 }
 
