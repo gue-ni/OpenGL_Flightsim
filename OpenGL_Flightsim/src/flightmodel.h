@@ -10,7 +10,7 @@
 #include "gfx.h"
 #include "phi.h"
 
-#define LOG_FLIGHT 1
+#define LOG_FLIGHT 0
 
 // get temperture in kelvin
 inline float get_air_temperature(float altitude)
@@ -218,11 +218,11 @@ struct Airplane {
   {
     float aileron = joystick.x, rudder = joystick.y, elevator = joystick.z;
 
-    get_left_aileron().set_control_input(+aileron);
-    get_right_aileron().set_control_input(-aileron);
-    get_elevator().set_control_input(-elevator);
-    get_elevator().incidence = trim * 10.0f;
-    get_rudder().set_control_input(-rudder);
+    surfaces[1].set_control_input(+aileron);
+    surfaces[2].set_control_input(-aileron);
+    surfaces[4].set_control_input(-elevator);
+    surfaces[4].incidence = trim * 10.0f;
+    surfaces[5].set_control_input(-rudder);
 
 #if LOG_FLIGHT
     flight_time += dt;
@@ -306,8 +306,4 @@ struct Airplane {
     return std::sqrt(2 * dynamic_pressure / sea_level_air_density);
   }
 
-  Wing& get_left_aileron() { return surfaces[1]; }
-  Wing& get_right_aileron() { return surfaces[2]; }
-  Wing& get_elevator() { return surfaces[4]; }
-  Wing& get_rudder() { return surfaces[5]; }
 };
