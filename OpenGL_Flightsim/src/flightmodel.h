@@ -12,9 +12,14 @@
 
 #define LOG_FLIGHT 0
 
+//  International Standard Atmosphere (ISA)
+namespace isa
+{
+
 // get temperture in kelvin
 inline float get_air_temperature(float altitude)
 {
+  assert(0.0f <= altitude && altitude <= 11000.0f);
   return 288.15f - 0.0065f * altitude;  // kelvin
 }
 
@@ -26,6 +31,9 @@ float get_air_density(float altitude)
   float pressure = 101325.0f * std::pow(1 - 0.0065f * (altitude / 288.15f), 5.25f);
   return 0.00348f * (pressure / temperature);
 }
+
+const float sea_level_air_density = get_air_density(0.0f);
+};  // namespace isa
 
 struct Airfoil {
   float min_alpha, max_alpha;
@@ -70,9 +78,8 @@ struct Engine : public phi::ForceEffector {
     assert(0.0f <= propellor_efficiency && propellor_efficiency <= 1.0f);
 
     const float c = 0.12f;  // mechanical power loss factor
-    float air_density = get_air_density(altitude);
-    float sea_level_air_density = get_air_density(0.0f);
-    float power_drop_off_factor = ((air_density / sea_level_air_density) - c) / (1 - c);
+    float air_density = isa::get_air_density(altitude);
+    float power_drop_off_factor = ((air_density / isa::sea_level_air_density) - c) / (1 - c);
     assert(0.0f <= power_drop_off_factor && power_drop_off_factor <= 1.0f);
 
     float thrust = ((propellor_efficiency * engine_power) / speed) * power_drop_off_factor;
@@ -151,7 +158,7 @@ class Wing : public phi::ForceEffector
     float induced_drag_coeff = std::pow(lift_coeff, 2) / (phi::PI * aspect_ratio * efficiency_factor);
 
     // air density depends on altitude
-    float air_density = get_air_density(0.0f);  // something is not right here, so let's assume sea level
+    float air_density = isa::get_air_density(0.0f);  // something is not right here, so let's assume sea level
 
     float dynamic_pressure = 0.5f * std::pow(speed, 2) * air_density * area;
     glm::vec3 lift = lift_direction * lift_coeff * lift_multiplier * dynamic_pressure;
@@ -286,7 +293,7 @@ struct Airplane {
 
   float get_mach() const
   {
-    float temperature = get_air_temperature(get_altitude());
+    float temperature = isa::get_air_temperature(get_altitude());
     float speed_of_sound = std::sqrt(1.402f * 286.f * temperature);
     return get_speed() / speed_of_sound;
   }
@@ -300,10 +307,8 @@ struct Airplane {
   float get_ias() const
   {
     // See: https://aerotoolbox.com/airspeed-conversions/
-    float air_density = get_air_density(get_altitude());
-    float sea_level_air_density = get_air_density(0.0f);
+    float air_density = isa::get_air_density(get_altitude());
     float dynamic_pressure = 0.5f * std::pow(get_speed(), 2) * air_density;  // bernoulli's equation
-    return std::sqrt(2 * dynamic_pressure / sea_level_air_density);
+    return std::sqrt(2 * dynamic_pressure / isa::sea_level_air_density);
   }
-
 };
