@@ -33,7 +33,6 @@ float getHeight(vec2 uv)
     }
 
     float height = texture(u_Heightmap, uv).r;
-    float coarser = textureLod(u_Heightmap, uv, 1).r;
 
     float scale = 3000;
     float shift = 0;

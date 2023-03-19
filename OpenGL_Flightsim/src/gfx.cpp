@@ -329,7 +329,7 @@ glm::vec3 Object3D::get_position() const { return m_position; }
 
 glm::vec3 Object3D::get_rotation() const { return glm::eulerAngles(m_rotation); }
 
-glm::quat Object3D::get_rotation_quaternion() const { return m_rotation; }
+glm::quat Object3D::get_rotation_quat() const { return m_rotation; }
 
 glm::vec3 Object3D::get_scale() const { return m_scale; }
 
@@ -355,7 +355,7 @@ void Object3D::set_transform(const Object3D& transform)
 void Object3D::set_transform(const glm::vec3& position, const glm::quat& rotation)
 {
   set_position(position);
-  set_rotation_quaternion(rotation);
+  set_rotation_quat(rotation);
 }
 
 void Object3D::set_rotation(const glm::vec3& rot)
@@ -366,13 +366,13 @@ void Object3D::set_rotation(const glm::vec3& rot)
 
 void Object3D::rotate_by(const glm::vec3& rot) { set_rotation(get_rotation() + rot); }
 
-void Object3D::set_rotation_quaternion(const glm::quat& quat) { m_rotation = quat; }
+void Object3D::set_rotation_quat(const glm::quat& quat) { m_rotation = quat; }
 
 glm::mat4 Object3D::get_local_transform() const
 {
-  auto S = glm::scale(glm::mat4(1.0f), m_scale);
   auto T = glm::translate(glm::mat4(1.0f), m_position);
   auto R = glm::toMat4(m_rotation);
+  auto S = glm::scale(glm::mat4(1.0f), m_scale);
   return T * R * S;
 }
 
@@ -393,13 +393,13 @@ void Object3D::override_transform(const glm::mat4& matrix)
   // TODO: relcalculate position, rotation etc
 }
 
-void Object3D::update_world_matrix(bool dirtyParent)
+void Object3D::update_world_matrix(bool dirty_parent)
 {
-  bool dirty = m_dirty_dof || dirtyParent;
+  bool dirty = m_dirty_dof || dirty_parent;
 
   if (dirty && !m_dirty_transform) {
     if (parent)
-      transform = parent->transform * get_local_transform();
+      transform = get_parent_transform() * get_local_transform();
     else
       transform = get_local_transform();
   }
@@ -411,6 +411,29 @@ void Object3D::update_world_matrix(bool dirtyParent)
   m_dirty_dof = m_dirty_transform = false;
 }
 
+glm::mat4 Object3D::get_parent_transform() const
+{
+  assert(parent != nullptr);
+
+  if (transform_flags == (OBJ3D_TRANSFORM | OBJ3D_ROTATE | OBJ3D_SCALE)) {
+    return parent->transform;
+  }
+
+  glm::mat4 parent_transform(1.0f);
+
+  if (transform_flags & OBJ3D_TRANSFORM) {
+    parent_transform *= glm::translate(glm::mat4(1.0f), parent->get_world_position());
+  }
+  if (transform_flags & OBJ3D_ROTATE) {
+    parent_transform *= glm::toMat4(parent->get_world_rotation_quat());
+  }
+  if (transform_flags & OBJ3D_SCALE) {
+    parent_transform *= glm::scale(glm::mat4(1.0f), parent->get_scale());
+  }
+
+  return parent_transform;
+}
+
 Object3D& Object3D::add(Object3D* child)
 {
   child->parent = this;
@@ -418,12 +441,12 @@ Object3D& Object3D::add(Object3D* child)
   return (*this);
 }
 
-glm::quat Object3D::get_world_rotation_quaternion() const
+glm::quat Object3D::get_world_rotation_quat() const
 {
   if (parent == nullptr)
-    return get_rotation_quaternion();
+    return get_rotation_quat();
   else
-    return parent->get_world_rotation_quaternion() * m_rotation;
+    return parent->get_world_rotation_quat() * m_rotation;
 }
 
 glm::vec3 Object3D::get_world_position() const { return glm::vec3(transform * glm::vec4(glm::vec3(0.0f), 1.0f)); }
@@ -741,16 +764,10 @@ std::shared_ptr<Geometry> make_cube_geometry(float size)
 {
   float s = size / 2;
 
+  // clang-format off
   std::vector<float> vertices = {
       // left
-      -s,
-      -s,
-      -s,
-      0.0f,
-      0.0f,
-      -1.0f,
-      0.0f,
-      0.0f,
+      -s, -s, -s, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,
       s,
       -s,
       -s,
@@ -1043,7 +1060,7 @@ std::shared_ptr<Geometry> make_cube_geometry(float size)
       0.0f,
 
   };
-
+  // clang-format on
   return std::make_shared<Geometry>(vertices, Geometry::POS_NORM_UV);
 }
 

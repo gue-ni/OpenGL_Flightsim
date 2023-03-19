@@ -14,9 +14,9 @@ typedef float Radians;
 typedef float Degrees;
 
 // constants
-constexpr float EARTH_GRAVITY = 9.80665f;
 constexpr float EPSILON = 1e-8f;
-constexpr float PI = 3.14159265358979323846264338327950288f;
+constexpr float EARTH_GRAVITY = 9.80665f;
+constexpr float PI = 3.141592653589793f;
 
 // directions in body space
 constexpr glm::vec3 UP = {0.0f, 1.0f, 0.0f};

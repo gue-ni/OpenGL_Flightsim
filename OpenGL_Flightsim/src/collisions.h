@@ -10,9 +10,7 @@
 #include <glm/vec3.hpp>
 #include <tuple>
 
-#define RUN_COLLISION_UNITTESTS 0
-
-namespace collisions
+namespace col
 {
 
 constexpr float EPSILON = 1e-8f;
@@ -32,9 +30,7 @@ struct Collider {
 // axis aligned bounding box
 struct AABB : public Collider {
   glm::vec3 center, size;
-
   glm::vec3 min() const { return center - size / 2.0f; }
-
   glm::vec3 max() const { return center + size / 2.0f; }
 };
 
@@ -42,17 +38,35 @@ struct AABB : public Collider {
 struct Sphere : public Collider {
   glm::vec3 center;
   float radius;
+  Sphere(const glm::vec3& center, float radius) : center(center), radius(radius) {}
 };
 
 // ray = origin + direction * t
 struct Ray : public Collider {
   glm::vec3 origin, direction;
+  Ray(const glm::vec3& origin, const glm::vec3& direction) : origin(origin), direction(direction) {}
+};
+
+struct Heightmap {
+  const char* heightmap_data;
+  float scale = 3000.0f, shift = 0.0f, magnification = 1.0f;
+
+  float get_height(const glm::vec2& coords) const
+  {
+    auto uv_coord = glm::clamp(coords / magnification, glm::vec2(-1.0f), glm::vec2(1.0f));
+    float sampled_value = 0.0f;
+
+    // TODO: map uv to [0, 1]
+    // TODO: sample and interpolate height values
+
+    return scale * sampled_value + shift;
+  }
 };
 
 // test collision between a ray and a sphere
 bool test_collision(const Ray& r, const Sphere& s, float* t)
 {
-  // page 178
+  // Christer_Ericson-Real-Time_Collision_Detection.pdf#page=178
   assert(std::abs(glm::length(r.direction) - 1.0f) < EPSILON);
 
   auto m = r.origin - s.center;
@@ -72,7 +86,9 @@ bool test_collision(const Ray& r, const Sphere& s, float* t)
 // test collision between two spheres
 bool test_collision(const Sphere& s0, const Sphere& s1)
 {
-  return glm::length(s0.center - s1.center) < (s0.radius + s1.radius);
+  float distance = glm::length(s0.center - s1.center);
+  float radius_sum = s0.radius + s1.radius;
+  return distance < radius_sum;
 }
 
 // test collision between two axis aligned bounding boxes
@@ -84,9 +100,15 @@ bool test_collision(const AABB& a, const AABB& b)
           (a_max.z < b_min.z || a_min.z > b_max.z));
 }
 
+bool test_collision(const Heightmap& heightmap, const glm::vec3& point)
+{
+  float height = heightmap.get_height({point.x, point.z});
+  return point.y <= height;
+}
+
 // test collision of two moving spheres
 bool test_moving_collision(const Sphere& s0, const glm::vec3& velocity0, const Sphere& s1, const glm::vec3& velocity1,
-                           float* t)
+                           float* t = nullptr)
 {
   // Christer_Ericson-Real-Time_Collision_Detection.pdf#page=264
 #if 0
@@ -119,17 +141,22 @@ bool test_moving_collision(const Sphere& s0, const glm::vec3& velocity0, const S
     *t = (-b - std::sqrt(d)) / a;
     return true;
 #else
-  // page 226
+  // Christer_Ericson-Real-Time_Collision_Detection.pdf#page=226
+  float tmp_t = 0.0f;
   auto v = velocity0 - velocity1;
   auto vlen = glm::length(v);
 
-  Ray ray = {.origin = s0.center, .direction = v / vlen};
-  Sphere sphere = {.center = s1.center, .radius = s0.radius + s1.radius};
+  Ray ray(s0.center, v / vlen);
+  Sphere sphere(s1.center, s0.radius + s1.radius);
 
-  if (test_collision(ray, sphere, t))
-    return *t <= vlen;
-  else
+  if (test_collision(ray, sphere, &tmp_t)) {
+    if (t != nullptr) {
+      *t = tmp_t;
+    }
+    return tmp_t <= vlen;
+  } else {
     return false;
+  }
 #endif
 }
-};  // namespace collisions
+};  // namespace col
