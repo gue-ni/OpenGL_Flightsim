@@ -31,8 +31,9 @@ jobs:
       with:
         name: flightsim
         path: |
-          OpenGL_Flightsim/OpenGL_Flightsim/build/flightsim
-          OpenGL_Flightsim/OpenGL_Flightsim/build/assets
-          OpenGL_Flightsim/OpenGL_Flightsim/build/shaders
+          ${{runner.workspace}}/OpenGL_Flightsim/OpenGL_Flightsim/build/assets/*
+          ${{runner.workspace}}/OpenGL_Flightsim/OpenGL_Flightsim/build/shaders/*
+          ${{runner.workspace}}/OpenGL_Flightsim/OpenGL_Flightsim/build/flightsim
+
           
           
