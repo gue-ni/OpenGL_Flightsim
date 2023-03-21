@@ -15,7 +15,6 @@
 //  International Standard Atmosphere (ISA)
 namespace isa
 {
-
 // get temperture in kelvin
 inline float get_air_temperature(float altitude)
 {

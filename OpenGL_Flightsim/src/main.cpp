@@ -39,7 +39,8 @@ JK      control thrust
 #define CLIPMAP 1
 #define SKYBOX 1
 #define SMOOTH_CAMERA 1
-#define NPC_AIRCRAFT 1
+#define NPC_AIRCRAFT 0
+#define SHOW_MASS_ELEMENTS 1
 
 #if 0
 constexpr glm::ivec2 RESOLUTION{640, 480};
@@ -52,7 +53,11 @@ struct Joystick {
   float aileron{0.0f}, elevator{0.0f}, rudder{0.0f}, throttle{0.0f}, trim{0.0f};
 
   // scale from int16 to -1.0, 1.0
-  inline static float scale(int16_t value) { return static_cast<float>(value) / static_cast<float>(32767); }
+  inline static float scale(int16_t value)
+  {
+    constexpr int16_t max_value = std::numeric_limits<int16_t>::max();
+    return static_cast<float>(value) / static_cast<float>(max_value);
+  }
 };
 
 struct GameObject {
@@ -74,10 +79,6 @@ void apply_to_object3d(const phi::RigidBody& rigid_body, gfx::Object3D& object);
 
 int main(void)
 {
-#if RUN_COLLISION_UNITTESTS
-  collisions::run_unit_tests();
-#endif
-
   SDL_Init(SDL_INIT_EVERYTHING);
 
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
@@ -115,6 +116,7 @@ int main(void)
 
   Joystick joystick;
 
+  // use pid for keyboard control
   PID pitch_control_pid(1.0f, 0.0f, 0.0f);
 
   int num_joysticks = SDL_NumJoysticks();
@@ -162,68 +164,104 @@ int main(void)
   Clipmap clipmap;
   scene.add(&clipmap);
 #endif
-  constexpr float speed = phi::units::meter_per_second(200.0f);
-  const float altitude = 3000.0f;
 
+  // airplane mass
   const float mass = 1000.0f;
 
+  // engine
   const float rpm = 2400.0f;
   const float horsepower = 160.0f;
   const float prop_diameter = 1.9f;
 
-  const float main_wing_span = 11.00f;
-  const float main_wing_area = 16.17f;
+  // main wing
+  const float total_wing_area = 16.17f;
+  const float total_wing_span = 11.00f;
+  const float main_wing_span = total_wing_span / 2;
+  const float main_wing_area = total_wing_area / 2;
   const float main_wing_chord = main_wing_area / main_wing_span;
+
+  // aileron
   const float aileron_area = 1.70f;
-  const float h_tail_area = 2.0f;
-  const float h_tail_span = 2.0f;
+  const float aileron_span = 1.26f;
+  const auto aileron_offset = glm::vec3(-main_wing_chord * 0.75f, 0.0f, 0.0f);
+
+  // horizontal tail
   const float elevator_area = 1.35f;
-  const float v_tail_area = 5.04f;  // modified
+  const float h_tail_area = 2.0f + elevator_area;
+  const float h_tail_span = 2.0f;
+  const float h_tail_chord = h_tail_area / h_tail_span;
+
+  // vertical tail
+  const float v_tail_area = 2.04f;  // modified
   const float v_tail_span = 2.04f;
+  const float v_tail_chord = v_tail_area / v_tail_span;
 
   const float wing_offset = -0.2f;
   const float tail_offset = -4.6f;
 
-  std::vector<phi::inertia::Element> masses = {
-      phi::inertia::cube({wing_offset, 0.5f, -2.7f}, {main_wing_chord, 0.10f, main_wing_span / 2},
-                         mass * 0.25f),  // left wing
-      phi::inertia::cube({wing_offset, 0.5f, +2.7f}, {main_wing_chord, 0.10f, main_wing_area / 2},
-                         mass * 0.25f),  // right wing
-      phi::inertia::cube({tail_offset, -0.1f, 0.0f}, {h_tail_area / h_tail_span, 0.10f, h_tail_span},
-                         mass * 0.1f),  // elevator
-      phi::inertia::cube({tail_offset, 0.0f, 0.0f}, {v_tail_area / v_tail_span, v_tail_span, 0.10f},
-                         mass * 0.1f),                                          // rudder
-      phi::inertia::cube({0.0f, 0.0f, 0.0f}, {8.0f, 2.0f, 1.0f}, mass * 0.5f),  // fuselage
+  std::cout << "aileron_offset = " << aileron_offset << std::endl;
+
+  // design coordinates go from the back forwards
+  std::vector<phi::inertia::Element> mass_elements = {
+#if 1
+    {.size = {main_wing_chord, 0.10f, main_wing_span}, .position = {5.0f, 0.5f, -2.7f}},  // left wing
+    {.size = {main_wing_chord, 0.10f, main_wing_span}, .position = {5.0f, 0.5f, +2.7f}},  // right wing
+    {.size = {h_tail_chord, 0.10f, h_tail_span}, .position = {0.0f, 0.0f, 0.0f}},         // horizontal tail
+    {.size = {v_tail_chord, v_tail_span, 0.1f}, .position = {0.0f, 1.0f, 0.0f}},          // vertical tail
+    {.size = {5.0f, 1.0f, 1.0f}, .position = {6.5f, 0.0f, 0.0f}},                         // fuselage
+#else
+    phi::inertia::cube({wing_offset, 0.5f, -2.7f}, {main_wing_chord, 0.10f, main_wing_span}),  // left wing
+    phi::inertia::cube({wing_offset, 0.5f, +2.7f}, {main_wing_chord, 0.10f, main_wing_area}),  // right wing
+    phi::inertia::cube({tail_offset, -0.1f, 0.0f}, {h_tail_chord, 0.10f, h_tail_span}),        // elevator
+    phi::inertia::cube({tail_offset, 0.0f, 0.0f}, {v_tail_chord, v_tail_span, 0.10f}),         // rudder
+    phi::inertia::cube({0.0f, 0.0f, 0.0f}, {8.0f, 2.0f, 1.0f}),                                // fuselage
+#endif
   };
 
-  // assume uniform density
-  float total_volume = 0.0f;
-  for (const auto& element : masses) {
-    total_volume += element.volume();
-  }
-
-  for (auto& element : masses) {
-    element.mass = (element.volume() / total_volume) * mass;
-  }
-
+  // individual element mass is proportional to volume
   glm::vec3 center_of_gravity;
-  auto inertia = phi::inertia::tensor(masses, false, &center_of_gravity);
-
+  phi::inertia::compute_uniform_mass(mass_elements, mass);
   std::cout << "cg = " << center_of_gravity << std::endl;
+
+  // compute inertia tensor
+  auto inertia = phi::inertia::tensor(mass_elements, false, &center_of_gravity);
+  std::cout << "inertia = " << inertia << std::endl;
+
+  for (int i = 0; i < mass_elements.size(); i++) {
+    auto& m = mass_elements[i];
+    std::cout << "[Mass] m = " << m.mass << ", o = " << m.offset << ", p = " << m.position << std::endl;
+  }
+
+  assert(mass_elements[0].offset.x < 0.0f);  // wing must be behind cg
+
+#if 0
+  auto l_wing_pos = glm::vec3{wing_offset, 0.0f, -2.7f};
+  auto r_wing_pos = glm::vec3{wing_offset, 0.0f, +2.7f};
+  auto h_tail_pos = glm::vec3{tail_offset, -0.1f, 0.0f};
+  auto v_tail_pos = glm::vec3{tail_offset, 0.5f, 0.0f};
+#else
+  auto l_wing_pos = mass_elements[0].offset;
+  auto r_wing_pos = mass_elements[1].offset;
+  auto h_tail_pos = mass_elements[2].offset;
+  auto v_tail_pos = mass_elements[3].offset;
+#endif
 
   const Airfoil NACA_0012(NACA_0012_data_2);
   const Airfoil NACA_2412(NACA_2412_data_2);
 
   std::vector<Wing> surfaces = {
-      Wing(&NACA_2412, {wing_offset, 0.0f, -2.7f}, main_wing_area / 2, main_wing_span / 2),
-      Wing(&NACA_0012, {wing_offset - 1.5f, 0.0f, -5.0f}, aileron_area, 1.26f),  // left aileron
-      Wing(&NACA_0012, {wing_offset - 1.5f, 0.0f, +5.0f}, aileron_area, 1.26f),  // right aileron
-      Wing(&NACA_2412, {wing_offset, 0.0f, +2.7f}, main_wing_area / 2, main_wing_span / 2),
-      Wing(&NACA_0012, {tail_offset, -0.1f, 0.0f}, h_tail_area + elevator_area, h_tail_span),  // elevator
-      Wing(&NACA_0012, {tail_offset, 0.0f, 0.0f}, v_tail_area, v_tail_span, phi::RIGHT),       // rudder
+      Wing(&NACA_2412, l_wing_pos, main_wing_area, main_wing_span),               // left wing
+      Wing(&NACA_0012, l_wing_pos - aileron_offset, aileron_area, aileron_span),  // left aileron
+      Wing(&NACA_0012, r_wing_pos - aileron_offset, aileron_area, aileron_span),  // right aileron
+      Wing(&NACA_2412, r_wing_pos, main_wing_area, main_wing_span),               // right wing
+      Wing(&NACA_0012, h_tail_pos, h_tail_area, h_tail_span),                     // horizontal tail
+      Wing(&NACA_0012, v_tail_pos, v_tail_area, v_tail_span, phi::RIGHT),         // vertical tail
   };
 
   std::vector<GameObject*> objects;
+
+  constexpr float speed = phi::units::meter_per_second(200.0f /* km/h */);
+  const float altitude = 3000.0f;
 
   GameObject player = {.transform = gfx::Mesh(model, texture),
                        .airplane = Airplane(mass, Engine(horsepower, rpm, prop_diameter), inertia, surfaces),
@@ -234,17 +272,16 @@ int main(void)
   scene.add(&player.transform);
   objects.push_back(&player);
 
-#if 1
+#if SHOW_MASS_ELEMENTS
   auto red_texture = make_shared<gfx::Phong>(glm::vec3(1.0f, 0.0f, 0.0f));
 
-  for (int i = 0; i < masses.size() && i <= 2; i++) {
-    auto& mass = masses[i];
+  for (int i = 0; i < mass_elements.size(); i++) {
+    auto& mass = mass_elements[i];
     auto element = new gfx::Mesh(gfx::make_cube_geometry(1.0f), red_texture);
     element->set_position(mass.offset);
     element->set_scale(mass.size);
     player.transform.add(element);
   }
-
 #endif
 
 #if NPC_AIRCRAFT

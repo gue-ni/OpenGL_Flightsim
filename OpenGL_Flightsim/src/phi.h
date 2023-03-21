@@ -105,13 +105,26 @@ constexpr glm::mat3 tensor(const glm::vec3& moment_of_inertia)
   };
 }
 
-constexpr Element cube(const glm::vec3& position, const glm::vec3& size, float mass)
+constexpr Element cube(const glm::vec3& position, const glm::vec3& size, float mass = 1.0f)
 {
   return {.size = size, .position = position, .inertia = cube(size, mass), .offset = position, .mass = mass};
 }
 
-// calculate inertia tensor from list of connected masses
-constexpr glm::mat3 tensor(std::vector<Element>& surfaces, bool precomputed_offset = false, glm::vec3* cg = nullptr)
+// distribute mass among elements depending on element volume
+constexpr void compute_uniform_mass(std::vector<Element>& elements, float mass)
+{
+  float total_volume = 0.0f;
+  for (const auto& element : elements) {
+    total_volume += element.volume();
+  }
+
+  for (auto& element : elements) {
+    element.mass = (element.volume() / total_volume) * mass;
+  }
+}
+
+// calculate inertia tensor for a collection of connected masses
+constexpr glm::mat3 tensor(std::vector<Element>& elements, bool precomputed_offset = false, glm::vec3* cg = nullptr)
 {
   float Ixx = 0, Iyy = 0, Izz = 0;
   float Ixy = 0, Ixz = 0, Iyz = 0;
@@ -119,21 +132,19 @@ constexpr glm::mat3 tensor(std::vector<Element>& surfaces, bool precomputed_offs
   float mass = 0;
   glm::vec3 moment(0.0f);
 
-  for (const auto& element : surfaces) {
+  for (const auto& element : elements) {
     mass += element.mass;
     moment += element.mass * element.position;
   }
 
-  const glm::vec3 center_of_gravity = moment / mass;
+  const auto center_of_gravity = moment / mass;
 
-  for (auto& element : surfaces) {
-    glm::vec3 offset;
-
+  for (auto& element : elements) {
     if (!precomputed_offset) {
       element.offset = element.position - center_of_gravity;
     }
 
-    offset = element.offset;
+    const auto offset = element.offset;
 
     Ixx += element.inertia.x + element.mass * (sq(offset.y) + sq(offset.z));
     Iyy += element.inertia.y + element.mass * (sq(offset.z) + sq(offset.x));
