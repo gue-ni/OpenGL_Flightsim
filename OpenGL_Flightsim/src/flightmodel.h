@@ -259,7 +259,7 @@ struct Airplane {
     // main wings
     wings[0].is_control_surface = false;
     wings[3].is_control_surface = false;
-    
+
     // ailerons
     wings[1].set_deflection_limits(-10.0f, 10.0f);
     wings[2].set_deflection_limits(-10.0f, 10.0f);
@@ -284,7 +284,7 @@ struct Airplane {
     wings[5].set_control_input(-rudder);
 
     wings[4].incidence = trim * 5.0f;
-    //printf("trim = %.2f, incidence = %.2f\n", trim, wings[4].incidence);
+    // printf("trim = %.2f, incidence = %.2f\n", trim, wings[4].incidence);
 
 #else
     rigid_body.add_relative_torque(glm::vec3(400000.0f, 100000.0f, 1500000.0f) * joystick);
