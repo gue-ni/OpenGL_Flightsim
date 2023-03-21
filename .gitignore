@@ -5,6 +5,7 @@ Debug/
 Release/
 OpenGL_Flightsim/reference/stuff/
 OpenGL_Flightsim/tools/
+OpenGL_Flightsim/build/
 
 *.ini
 *.user
