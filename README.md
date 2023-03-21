@@ -8,6 +8,8 @@ https://user-images.githubusercontent.com/45669207/221434341-9068181d-0ff3-401a-
 
 The demo supports input with a keyboard and a joystick. With a keyboard, use WASD to control pitch and roll and F and K to increase and decrease thrust. E and Q control the rudder. You can use P to pause and O to toggle the camera.
 
+Joystick controls are available as well.
+
 ## Build instructions (Windows)
 
 To build this project we need [glm](https://github.com/g-truc/glm), [SDL2](https://www.libsdl.org/) and [GLEW](https://glew.sourceforge.net/). Download these libraries and put them in some location you can find again. As you will see, I put them in 'libraries'. After opening
