@@ -97,12 +97,7 @@ constexpr Element cube(const glm::vec3& position, const glm::vec3& size, float m
 }
 
 // calculate inertia tensor from list of connected masses
-#ifdef __linux__
-// TODO fix this
 glm::mat3 tensor(std::vector<Element>& wings, bool precomputed_offset = false) {
-#else 
-constexpr glm::mat3 tensor(std::vector<Element>& wings, bool precomputed_offset = false) {
-#endif  
   float Ixx = 0, Iyy = 0, Izz = 0;
   float Ixy = 0, Ixz = 0, Iyz = 0;
 
@@ -117,13 +112,11 @@ constexpr glm::mat3 tensor(std::vector<Element>& wings, bool precomputed_offset 
   const glm::vec3 center_of_gravity = moment / mass;
 
   for (auto& element : wings) {
-    glm::vec3 offset;
-
     if (!precomputed_offset) {
       element.offset = element.position - center_of_gravity;
     }
 
-    offset = element.offset;
+    const auto offset = element.offset;
 
     Ixx += element.inertia.x + element.mass * (sq(offset.y) + sq(offset.z));
     Iyy += element.inertia.y + element.mass * (sq(offset.z) + sq(offset.x));

@@ -1,0 +1,28 @@
+name: cmake build
+
+on: [push, pull_request]
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install dependencies
+      run: sudo apt update && sudo apt install libglm-dev libsdl2-dev libsdl2-image-dev libglew-dev libgle3-dev 
+    - name: Create Build Environment
+      working-directory: ${{runner.workspace}}/OpenGL_Flightsim/OpenGL_Flightsim
+      run: cmake -E make_directory ${{runner.workspace}}/OpenGL_Flightsim/OpenGL_Flightsim/build
+
+    - name: Configure CMake
+      shell: bash
+      working-directory: ${{runner.workspace}}/OpenGL_Flightsim/OpenGL_Flightsim/build
+      run: cmake ${{runner.workspace}}/OpenGL_Flightsim/OpenGL_Flightsim -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+
+    - name: Build
+      working-directory: ${{runner.workspace}}/OpenGL_Flightsim/OpenGL_Flightsim/build
+      shell: bash
+      run: cmake --build . --config $BUILD_TYPE

@@ -4,54 +4,51 @@ project(OpenGL_Flightsim)
 
 set(CMAKE_CXX_STANDARD 20)
 
-# TODO: fetch sdl2, sdl2_image and required dependencies
-
 find_package(GLEW REQUIRED)
 find_package(SDL2 REQUIRED)
 
-add_executable(OpenGL_Flightsim-app 
+add_executable(flightsim
     # Source files
-    src/ai.h
-    src/clipmap.h
-    src/collisions.h
-    src/data.h
-    src/flightmodel.h
-    src/gfx.cpp
-    src/gfx.h
-    src/main.cpp
-    src/phi.h
-    src/pid.h
-    lib/stb_image.h  
-    lib/tiny_obj_loader.h
-    lib/imgui/imconfig.h
-    lib/imgui/imgui_demo.cpp
-    lib/imgui/imgui.cpp
-    lib/imgui/imgui_draw.cpp
-    lib/imgui/imgui.h
-    lib/imgui/imgui_impl_opengl3.cpp
-    lib/imgui/imgui_impl_opengl3.h
-    lib/imgui/imgui_impl_opengl3_loader.h
-    lib/imgui/imgui_impl_sdl2.cpp
-    lib/imgui/imgui_impl_sdl2.h
-    lib/imgui/imgui_internal.h
-    lib/imgui/imgui_tables.cpp
-    lib/imgui/imgui_widgets.cpp
-    lib/imgui/imstb_rectpack.h
-    lib/imgui/imstb_textedit.h
-    lib/imgui/imstb_truetype.h
+    OpenGL_Flightsim/src/ai.h
+    OpenGL_Flightsim/src/clipmap.h
+    OpenGL_Flightsim/src/collisions.h
+    OpenGL_Flightsim/src/data.h
+    OpenGL_Flightsim/src/flightmodel.h
+    OpenGL_Flightsim/src/gfx.cpp
+    OpenGL_Flightsim/src/gfx.h
+    OpenGL_Flightsim/src/main.cpp
+    OpenGL_Flightsim/src/phi.h
+    OpenGL_Flightsim/src/pid.h
+    OpenGL_Flightsim/lib/stb_image.h
+    OpenGL_Flightsim/lib/tiny_obj_loader.h
+    OpenGL_Flightsim/lib/imgui/imconfig.h
+    OpenGL_Flightsim/lib/imgui/imgui_demo.cpp
+    OpenGL_Flightsim/lib/imgui/imgui.cpp
+    OpenGL_Flightsim/lib/imgui/imgui_draw.cpp
+    OpenGL_Flightsim/lib/imgui/imgui.h
+    OpenGL_Flightsim/lib/imgui/imgui_impl_opengl3.cpp
+    OpenGL_Flightsim/lib/imgui/imgui_impl_opengl3.h
+    OpenGL_Flightsim/lib/imgui/imgui_impl_opengl3_loader.h
+    OpenGL_Flightsim/lib/imgui/imgui_impl_sdl2.cpp
+    OpenGL_Flightsim/lib/imgui/imgui_impl_sdl2.h
+    OpenGL_Flightsim/lib/imgui/imgui_internal.h
+    OpenGL_Flightsim/lib/imgui/imgui_tables.cpp
+    OpenGL_Flightsim/lib/imgui/imgui_widgets.cpp
+    OpenGL_Flightsim/lib/imgui/imstb_rectpack.h
+    OpenGL_Flightsim/lib/imgui/imstb_textedit.h
+    OpenGL_Flightsim/lib/imgui/imstb_truetype.h
 )
 
-target_include_directories(OpenGL_Flightsim-app PUBLIC 
+target_include_directories(flightsim PUBLIC
     ${SDL2_INCLUDE_DIRS}
 )
 
-target_link_libraries(OpenGL_Flightsim-app
-    SDL2::SDL2 
-    GLEW 
-    GL 
+target_link_libraries(flightsim
+    SDL2
+    GLEW
+    GL
     GLU
 )
 
-
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/assets DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/shaders DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/OpenGL_Flightsim/assets DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/OpenGL_Flightsim/shaders DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
