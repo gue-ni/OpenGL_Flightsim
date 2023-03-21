@@ -26,3 +26,13 @@ jobs:
       working-directory: ${{runner.workspace}}/OpenGL_Flightsim/OpenGL_Flightsim/build
       shell: bash
       run: cmake --build . --config $BUILD_TYPE
+      
+    - uses: actions/upload-artifact@v3
+      with:
+        name: flightsim
+        path: |
+          OpenGL_Flightsim/OpenGL_Flightsim/build/flightsim
+          OpenGL_Flightsim/OpenGL_Flightsim/build/assets
+          OpenGL_Flightsim/OpenGL_Flightsim/build/shaders
+          
+          
