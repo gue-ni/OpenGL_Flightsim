@@ -39,7 +39,7 @@ JK      control thrust
 #define CLIPMAP 1
 #define SKYBOX 1
 #define SMOOTH_CAMERA 1
-#define NPC_AIRCRAFT 0
+#define NPC_AIRCRAFT 1
 #define SHOW_MASS_ELEMENTS 0
 
 #if 0
@@ -136,7 +136,7 @@ int main(void)
   gfx::gl::TextureParams params = {.flip_vertically = true};
   auto tex = make_shared<gfx::gl::Texture>("assets/textures/f16_large.jpg", params);
   auto texture = make_shared<gfx::Phong>(tex);
-  //auto obj = gfx::load_obj("assets/models/cessna/fuselage.obj");
+  // auto obj = gfx::load_obj("assets/models/cessna/fuselage.obj");
   auto obj = gfx::load_obj("assets/models/skyhawk.obj");
   auto model = std::make_shared<gfx::Geometry>(obj, gfx::Geometry::POS_NORM_UV);
 
@@ -290,8 +290,8 @@ int main(void)
                     .airplane = Airplane(mass, Engine(horsepower, rpm, prop_diameter), inertia, surfaces),
                     .collider = col::Sphere({0.0f, 0.0f, 0.0f}, 5.0f)};
 
-  npc.airplane.rigid_body.position = glm::vec3(-6990.0f, altitude, 10.0f);
-  npc.airplane.rigid_body.velocity = glm::vec3(speed, 0.0f, 0.0f);
+  npc.airplane.position = glm::vec3(-6990.0f, altitude, 10.0f);
+  npc.airplane.velocity = glm::vec3(speed, 0.0f, 0.0f);
   scene.add(&npc.transform);
   objects.push_back(&npc);
 
@@ -492,8 +492,8 @@ int main(void)
     player.airplane.trim = joystick.trim;
 
 #if NPC_AIRCRAFT
-    target_marker.visible = glm::length(camera.get_world_position() - npc.airplane.rigid_body.position) > 500.0f;
-    fly_towards(npc.airplane, player.airplane.rigid_body.position);
+    target_marker.visible = glm::length(camera.get_world_position() - npc.airplane.position) > 500.0f;
+    fly_towards(npc.airplane, player.airplane.position);
 #endif
 
     if (!paused) {
@@ -508,16 +508,9 @@ int main(void)
           auto& b = objects[j];
           if (col::test_collision(a->collider, b->collider)) {
             std::cout << "collision!\n";
-            //auto collision_normal = glm::normalize(a->airplane.rigid_body.position - b->airplane.rigid_body.position);
-            //phi::linear_collision_response(&a->airplane.rigid_body, &b->airplane.rigid_body, collision_normal, 0.5f);
+            auto collision_normal = glm::normalize(a->airplane.position - b->airplane.position);
+            phi::linear_collision_response(&a->airplane, &b->airplane, collision_normal, 0.5f);
           }
-
-#if 0
-          if (col::test_moving_collision(a->collider, a->airplane.rigid_body.velocity, b->collider,
-                                         b->airplane.rigid_body.velocity)) {
-            std::cout << "moving collision!\n";
-          }
-#endif
         }
       }
     }

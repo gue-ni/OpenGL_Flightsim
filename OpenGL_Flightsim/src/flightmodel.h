@@ -195,7 +195,6 @@ struct Airplane : public phi::RigidBody {
   glm::vec3 joystick{};  // roll, yaw, pitch
 
   Engine engine;
-  //phi::RigidBody rigid_body;
   std::vector<Wing> surfaces;
 
 #if LOG_FLIGHT
