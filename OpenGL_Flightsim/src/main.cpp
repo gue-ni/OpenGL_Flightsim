@@ -40,7 +40,7 @@ JK      control thrust
 #define SKYBOX 1
 #define SMOOTH_CAMERA 1
 #define NPC_AIRCRAFT 0
-#define SHOW_MASS_ELEMENTS 1
+#define SHOW_MASS_ELEMENTS 0
 
 #if 0
 constexpr glm::ivec2 RESOLUTION{640, 480};
@@ -67,9 +67,9 @@ struct GameObject {
 
   void update(float dt)
   {
-    airplane.update(dt);
-    transform.set_transform(airplane.rigid_body.position, airplane.rigid_body.orientation);
-    collider.center = airplane.rigid_body.position;
+    airplane.update_flightmodel(dt);
+    transform.set_transform(airplane.position, airplane.orientation);
+    collider.center = airplane.position;
   }
 };
 
@@ -136,7 +136,8 @@ int main(void)
   gfx::gl::TextureParams params = {.flip_vertically = true};
   auto tex = make_shared<gfx::gl::Texture>("assets/textures/f16_large.jpg", params);
   auto texture = make_shared<gfx::Phong>(tex);
-  auto obj = gfx::load_obj("assets/models/cessna/fuselage.obj");
+  //auto obj = gfx::load_obj("assets/models/cessna/fuselage.obj");
+  auto obj = gfx::load_obj("assets/models/skyhawk.obj");
   auto model = std::make_shared<gfx::Geometry>(obj, gfx::Geometry::POS_NORM_UV);
 
   gfx::Object3D scene;
@@ -267,8 +268,8 @@ int main(void)
                        .airplane = Airplane(mass, Engine(horsepower, rpm, prop_diameter), inertia, surfaces),
                        .collider = col::Sphere({0.0f, 0.0f, 0.0f}, 5.0f)};
 
-  player.airplane.rigid_body.position = glm::vec3(-7000.0f, altitude, 0.0f);
-  player.airplane.rigid_body.velocity = glm::vec3(speed, 0.0f, 0.0f);
+  player.airplane.position = glm::vec3(-7000.0f, altitude, 0.0f);
+  player.airplane.velocity = glm::vec3(speed, 0.0f, 0.0f);
   scene.add(&player.transform);
   objects.push_back(&player);
 
@@ -323,7 +324,7 @@ int main(void)
 
   gfx::Camera camera(glm::radians(45.0f), (float)RESOLUTION.x / (float)RESOLUTION.y, 1.0f, 150000.0f);
 #if SMOOTH_CAMERA
-  camera.set_position(player.airplane.rigid_body.position);
+  camera.set_position(player.airplane.position);
   camera.set_rotation({0, glm::radians(-90.0f), 0.0f});
   scene.add(&camera);
 #else
@@ -484,7 +485,7 @@ int main(void)
     if (!joystick_control) {
       float max_av = 45.0f;  // deg/s
       float target_av = max_av * joystick.elevator;
-      float current_av = glm::degrees(player.airplane.rigid_body.angular_velocity.z);
+      float current_av = glm::degrees(player.airplane.angular_velocity.z);
       player.airplane.joystick.z = pitch_control_pid.calculate(current_av, target_av, dt);
     }
     player.airplane.engine.throttle = joystick.throttle;
@@ -507,6 +508,8 @@ int main(void)
           auto& b = objects[j];
           if (col::test_collision(a->collider, b->collider)) {
             std::cout << "collision!\n";
+            //auto collision_normal = glm::normalize(a->airplane.rigid_body.position - b->airplane.rigid_body.position);
+            //phi::linear_collision_response(&a->airplane.rigid_body, &b->airplane.rigid_body, collision_normal, 0.5f);
           }
 
 #if 0
@@ -519,14 +522,14 @@ int main(void)
       }
     }
 
-    fpm.set_position(glm::normalize(player.airplane.rigid_body.get_body_velocity()) * projection_distance);
+    fpm.set_position(glm::normalize(player.airplane.get_body_velocity()) * projection_distance);
 
     if (orbit) {
-      controller.update(camera, player.airplane.rigid_body.position, dt);
+      controller.update(camera, player.airplane.position, dt);
       cross.visible = fpm.visible = false;
     } else if (!paused) {
 #if SMOOTH_CAMERA
-      auto& rb = player.airplane.rigid_body;
+      auto& rb = player.airplane;
       camera.set_position(glm::mix(camera.get_position(), rb.position + rb.up() * 4.5f, dt * 0.035f * rb.get_speed()));
       camera.set_rotation_quat(
           glm::mix(camera.get_rotation_quat(), camera_transform.get_world_rotation_quat(), dt * 5.0f));

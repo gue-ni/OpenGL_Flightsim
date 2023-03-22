@@ -30,6 +30,7 @@ constexpr glm::vec3 X_AXIS = {1.0f, 0.0f, 0.0f};
 constexpr glm::vec3 Y_AXIS = {0.0f, 1.0f, 0.0f};
 constexpr glm::vec3 Z_AXIS = {0.0f, 0.0f, 1.0f};
 
+// utility functions
 template <typename T>
 constexpr inline T sq(T a)
 {
@@ -66,6 +67,7 @@ inline T move_towards(T current, T target, T speed)
   return current + glm::sign(target - current) * speed;
 }
 
+// inertia tensor calculations
 namespace inertia
 {
 struct Element {
@@ -162,6 +164,7 @@ constexpr glm::mat3 tensor(std::vector<Element>& elements, bool precomputed_offs
 }
 };  // namespace inertia
 
+// unit conversions
 namespace units
 {
 constexpr inline float knots(float meter_per_second) { return meter_per_second * 1.94384f; }
@@ -244,11 +247,17 @@ class RigidBody
   // set inertia tensor
   inline void set_inertia(const glm::mat3& tensor) { inertia = tensor, inverse_inertia = glm::inverse(tensor); }
 
+  // linear impulse in world space
+  inline void add_impulse(const glm::vec3& impulse) { velocity += impulse / mass; }
+
+  // linear impulse in body space
+  inline void add_relative_impulse(const glm::vec3& impulse) { velocity += transform_direction(impulse) / mass; }
+
   // force vector in world space
   inline void add_force(const glm::vec3& force) { m_force += force; }
 
   // force vector in body space
-  inline void add_relative_force(const glm::vec3& force) { m_force += orientation * force; }
+  inline void add_relative_force(const glm::vec3& force) { m_force += transform_direction(force); }
 
   // torque vector in world space
   inline void add_torque(const glm::vec3& torque) { m_torque += inverse_transform_direction(torque); }
@@ -294,7 +303,24 @@ class RigidBody
   }
 };
 
-struct ForceEffector {
-  virtual void apply_forces(phi::RigidBody& rigid_body, phi::Seconds dt) = 0;
+struct ForceGenerator {
+  virtual void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) = 0;
 };
+
+// no angular effects, collision_normal goes from a to b
+// restitution_coeff:  0 = perfectly inelastic, 1 = perfectly elastic
+void linear_collision_response(phi::RigidBody* a, phi::RigidBody* b, const glm::vec3& collision_normal,
+                               float restitution_coeff = 0.5f)
+{
+  assert(0.0f <= restitution_coeff && restitution_coeff <= 1.0f);
+
+  auto relative_velocity = a->velocity - b->velocity;
+
+  float impulse = (-(1 + restitution_coeff) * glm::dot(relative_velocity, collision_normal)) /
+                  (glm::dot(collision_normal, collision_normal) * (1 / a->mass + 1 / b->mass));
+
+  a->add_impulse(impulse * +collision_normal);
+  b->add_impulse(impulse * -collision_normal);
+}
+
 };  // namespace phi

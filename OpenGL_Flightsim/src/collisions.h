@@ -27,6 +27,11 @@ struct Collider {
   CollisionCallback* on_collision = nullptr;
 };
 
+struct Contact {
+  Collider *a, *b;  // the objects in contact
+  float restitution_coeff;
+};
+
 // axis aligned bounding box
 struct AABB : public Collider {
   glm::vec3 center, size;
