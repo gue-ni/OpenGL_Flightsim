@@ -6,7 +6,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "../lib/stb_image.h"
 
-std::string load_text_file(const std::string& path) {
+std::string load_text_file(const std::string& path)
+{
   std::fstream file(path);
   if (!file.is_open()) return std::string();
 
@@ -15,13 +16,16 @@ std::string load_text_file(const std::string& path) {
   return buffer.str();
 }
 
-namespace gfx {
+namespace gfx
+{
 
-namespace gl {
+namespace gl
+{
 
 Shader::Shader(const std::string& path) : Shader(load_text_file(path + ".vert"), load_text_file(path + ".frag")) {}
 
-Shader::Shader(const std::string& vertShader, const std::string& fragShader) {
+Shader::Shader(const std::string& vertShader, const std::string& fragShader)
+{
   // std::cout << "create Shader\n";
   const char* vertexShaderSource = vertShader.c_str();
   const char* fragmentShaderSource = fragShader.c_str();
@@ -72,29 +76,41 @@ void Shader::unbind() const { glUseProgram(0); }
 
 void Shader::uniform(const std::string& name, int value) { glUniform1i(glGetUniformLocation(id, name.c_str()), value); }
 
-void Shader::uniform(const std::string& name, unsigned int value) {
+void Shader::uniform(const std::string& name, unsigned int value)
+{
   glUniform1ui(glGetUniformLocation(id, name.c_str()), value);
 }
 
-void Shader::uniform(const std::string& name, float value) {
+void Shader::uniform(const std::string& name, float value)
+{
   glUniform1f(glGetUniformLocation(id, name.c_str()), value);
 }
 
-void Shader::uniform(const std::string& name, const glm::vec3& value) {
+void Shader::uniform(const std::string& name, const glm::vec3& value)
+{
   glUniform3fv(glGetUniformLocation(id, name.c_str()), 1, &value[0]);
 }
 
-void Shader::uniform(const std::string& name, const glm::vec4& value) {
+void Shader::uniform(const std::string& name, const glm::vec4& value)
+{
   glUniform4fv(glGetUniformLocation(id, name.c_str()), 1, &value[0]);
 }
 
-void Shader::uniform(const std::string& name, const glm::mat4& value) {
+void Shader::uniform(const std::string& name, const glm::mat4& value)
+{
   glUniformMatrix4fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE, &value[0][0]);
 }
 
 Texture::Texture(const std::string& path) : Texture(path, {}) {}
 
-Texture::Texture(const std::string& path, const TextureParams& params) {
+unsigned char* Texture::load_image(const std::string path, int *width, int *height, int* channels, bool flip)
+{
+  stbi_set_flip_vertically_on_load(flip);
+  return stbi_load(path.c_str(), width, height, channels, 0);
+}
+
+Texture::Texture(const std::string& path, const TextureParams& params)
+{
   glGenTextures(1, &id);
   glBindTexture(GL_TEXTURE_2D, id);
 
@@ -107,8 +123,8 @@ Texture::Texture(const std::string& path, const TextureParams& params) {
   // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
   int width, height, channels;
-  stbi_set_flip_vertically_on_load(params.flip_vertically);
-  unsigned char* data = stbi_load(path.c_str(), &width, &height, &channels, 0);
+  //stbi_set_flip_vertically_on_load(params.flip_vertically);
+  unsigned char* data = load_image(path, &width, &height, &channels, params.flip_vertically);
 
   // printf("channels = %d\n", channels);
 
@@ -127,14 +143,16 @@ Texture::Texture(const std::string& path, const TextureParams& params) {
 
 Texture::~Texture() { glDeleteTextures(1, &id); }
 
-void Texture::bind(GLuint texture) const {
+void Texture::bind(GLuint texture) const
+{
   glActiveTexture(GL_TEXTURE0 + texture);
   glBindTexture(GL_TEXTURE_2D, id);
 }
 
 void Texture::unbind() const { glBindTexture(GL_TEXTURE_2D, 0); }
 
-GLint Texture::get_format(int channels) {
+GLint Texture::get_format(int channels)
+{
   GLint format{};
 
   switch (channels) {
@@ -158,7 +176,8 @@ GLint Texture::get_format(int channels) {
 
 void Texture::set_parameteri(GLenum target, GLenum pname, GLint param) { glTexParameteri(target, pname, param); }
 
-CubemapTexture::CubemapTexture(const std::array<std::string, 6>& paths, bool flip_vertically) {
+CubemapTexture::CubemapTexture(const std::array<std::string, 6>& paths, bool flip_vertically)
+{
   glGenTextures(1, &id);
   glBindTexture(GL_TEXTURE_CUBE_MAP, id);
 
@@ -182,7 +201,8 @@ CubemapTexture::CubemapTexture(const std::array<std::string, 6>& paths, bool fli
   glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 }
 
-void CubemapTexture::bind(GLuint texture) const {
+void CubemapTexture::bind(GLuint texture) const
+{
   glActiveTexture(GL_TEXTURE0 + texture);
   glBindTexture(GL_TEXTURE_CUBE_MAP, id);
 }
@@ -197,7 +217,8 @@ void VertexBuffer::bind() const { glBindBuffer(GL_ARRAY_BUFFER, id); }
 
 void VertexBuffer::unbind() const { glBindBuffer(GL_ARRAY_BUFFER, 0); }
 
-void VertexBuffer::buffer(const void* data, size_t size) {
+void VertexBuffer::buffer(const void* data, size_t size)
+{
   bind();
   glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
 }
@@ -218,14 +239,16 @@ void ElementBufferObject::bind() const { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, i
 
 void ElementBufferObject::unbind() const { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); }
 
-void ElementBufferObject::buffer(const void* data, size_t size) {
+void ElementBufferObject::buffer(const void* data, size_t size)
+{
   bind();
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
 }
 };  // namespace gl
 
 Geometry::Geometry(const std::vector<float>& vertices, const VertexLayout& layout)
-    : triangle_count(static_cast<int>(vertices.size()) / (get_stride(layout))) {
+    : triangle_count(static_cast<int>(vertices.size()) / (get_stride(layout)))
+{
   const int stride = get_stride(layout);
 
   vao.bind();
@@ -262,7 +285,8 @@ void Geometry::bind() { vao.bind(); }
 
 void Geometry::unbind() { vao.unbind(); }
 
-int Geometry::get_stride(const VertexLayout& layout) {
+int Geometry::get_stride(const VertexLayout& layout)
+{
   switch (layout) {
     case POS:
       return 3;
@@ -282,7 +306,8 @@ glm::mat4 Camera::get_view_matrix() const { return glm::inverse(transform); }
 
 glm::mat4 Camera::get_projection_matrix() const { return m_projection; }
 
-void Camera::look_at(const glm::vec3& target) {
+void Camera::look_at(const glm::vec3& target)
+{
   override_transform(glm::inverse(glm::lookAt(m_position, target, m_up)));
 }
 
@@ -291,7 +316,8 @@ std::shared_ptr<gl::Shader> MaterialX<Derived>::shader = nullptr;
 
 int Object3D::counter = 0;
 
-void Object3D::draw(RenderContext& context) {
+void Object3D::draw(RenderContext& context)
+{
   if (visible) {
     draw_self(context);
   }
@@ -300,7 +326,8 @@ void Object3D::draw(RenderContext& context) {
 
 void Object3D::draw_self(RenderContext& context) {}
 
-void Object3D::draw_children(RenderContext& context) {
+void Object3D::draw_children(RenderContext& context)
+{
   for (auto child : children) child->draw(context);
 }
 
@@ -308,48 +335,55 @@ glm::vec3 Object3D::get_position() const { return m_position; }
 
 glm::vec3 Object3D::get_rotation() const { return glm::eulerAngles(m_rotation); }
 
-glm::quat Object3D::get_rotation_quaternion() const { return m_rotation; }
+glm::quat Object3D::get_rotation_quat() const { return m_rotation; }
 
 glm::vec3 Object3D::get_scale() const { return m_scale; }
 
-void Object3D::set_scale(const glm::vec3& scale) {
+void Object3D::set_scale(const glm::vec3& scale)
+{
   m_scale = scale;
   m_dirty_dof = true;
 }
 
-void Object3D::set_position(const glm::vec3& pos) {
+void Object3D::set_position(const glm::vec3& pos)
+{
   m_position = pos;
   m_dirty_dof = true;
 }
 
-void Object3D::set_transform(const Object3D& transform) {
+void Object3D::set_transform(const Object3D& transform)
+{
   set_scale(transform.get_scale());
   set_position(transform.get_position());
   set_rotation(transform.get_rotation());
 }
 
-void Object3D::set_transform(const glm::vec3& position, const glm::quat& rotation) {
+void Object3D::set_transform(const glm::vec3& position, const glm::quat& rotation)
+{
   set_position(position);
-  set_rotation_quaternion(rotation);
+  set_rotation_quat(rotation);
 }
 
-void Object3D::set_rotation(const glm::vec3& rot) {
+void Object3D::set_rotation(const glm::vec3& rot)
+{
   m_rotation = glm::quat(rot);
   m_dirty_dof = true;
 }
 
 void Object3D::rotate_by(const glm::vec3& rot) { set_rotation(get_rotation() + rot); }
 
-void Object3D::set_rotation_quaternion(const glm::quat& quat) { m_rotation = quat; }
+void Object3D::set_rotation_quat(const glm::quat& quat) { m_rotation = quat; }
 
-glm::mat4 Object3D::get_local_transform() const {
-  auto S = glm::scale(glm::mat4(1.0f), m_scale);
+glm::mat4 Object3D::get_local_transform() const
+{
   auto T = glm::translate(glm::mat4(1.0f), m_position);
   auto R = glm::toMat4(m_rotation);
+  auto S = glm::scale(glm::mat4(1.0f), m_scale);
   return T * R * S;
 }
 
-void Object3D::traverse(const std::function<bool(Object3D*)>& func) {
+void Object3D::traverse(const std::function<bool(Object3D*)>& func)
+{
   if (func(this)) {
     for (const auto& child : children) {
       child->traverse(func);
@@ -357,19 +391,21 @@ void Object3D::traverse(const std::function<bool(Object3D*)>& func) {
   }
 }
 
-void Object3D::override_transform(const glm::mat4& matrix) {
+void Object3D::override_transform(const glm::mat4& matrix)
+{
   m_dirty_transform = true;
   m_dirty_dof = true;
   transform = matrix;
   // TODO: relcalculate position, rotation etc
 }
 
-void Object3D::update_world_matrix(bool dirtyParent) {
-  bool dirty = m_dirty_dof || dirtyParent;
+void Object3D::update_world_matrix(bool dirty_parent)
+{
+  bool dirty = m_dirty_dof || dirty_parent;
 
   if (dirty && !m_dirty_transform) {
     if (parent)
-      transform = parent->transform * get_local_transform();
+      transform = get_parent_transform() * get_local_transform();
     else
       transform = get_local_transform();
   }
@@ -381,17 +417,42 @@ void Object3D::update_world_matrix(bool dirtyParent) {
   m_dirty_dof = m_dirty_transform = false;
 }
 
-Object3D& Object3D::add(Object3D* child) {
+glm::mat4 Object3D::get_parent_transform() const
+{
+  assert(parent != nullptr);
+
+  if (transform_flags == (OBJ3D_TRANSFORM | OBJ3D_ROTATE | OBJ3D_SCALE)) {
+    return parent->transform;
+  }
+
+  glm::mat4 parent_transform(1.0f);
+
+  if (transform_flags & OBJ3D_TRANSFORM) {
+    parent_transform *= glm::translate(glm::mat4(1.0f), parent->get_world_position());
+  }
+  if (transform_flags & OBJ3D_ROTATE) {
+    parent_transform *= glm::toMat4(parent->get_world_rotation_quat());
+  }
+  if (transform_flags & OBJ3D_SCALE) {
+    parent_transform *= glm::scale(glm::mat4(1.0f), parent->get_scale());
+  }
+
+  return parent_transform;
+}
+
+Object3D& Object3D::add(Object3D* child)
+{
   child->parent = this;
   children.push_back(child);
   return (*this);
 }
 
-glm::quat Object3D::get_world_rotation_quaternion() const {
+glm::quat Object3D::get_world_rotation_quat() const
+{
   if (parent == nullptr)
-    return get_rotation_quaternion();
+    return get_rotation_quat();
   else
-    return parent->get_world_rotation_quaternion() * m_rotation;
+    return parent->get_world_rotation_quat() * m_rotation;
 }
 
 glm::vec3 Object3D::get_world_position() const { return glm::vec3(transform * glm::vec4(glm::vec3(0.0f), 1.0f)); }
@@ -400,7 +461,8 @@ Object3D::Type Object3D::get_type() const { return Type::OBJECT3D; }
 
 Object3D::Type Light::get_type() const { return Object3D::Type::LIGHT; }
 
-glm::mat4 Light::light_space_matrix() {
+glm::mat4 Light::light_space_matrix()
+{
   float near_plane = 0.1f, far_plane = 10.0f, m = 10.0f;
   auto wp = get_world_position();
   glm::mat4 light_view = glm::lookAt(wp, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -408,7 +470,8 @@ glm::mat4 Light::light_space_matrix() {
   return light_projection * light_view;
 }
 
-void Renderer::render(Camera& camera, Object3D& scene) {
+void Renderer::render(Camera& camera, Object3D& scene)
+{
   scene.update_world_matrix(false);
 
   RenderContext context;
@@ -452,7 +515,8 @@ void Renderer::render(Camera& camera, Object3D& scene) {
 #endif
 }
 
-void Mesh::draw_self(RenderContext& context) {
+void Mesh::draw_self(RenderContext& context)
+{
   glm::mat4 lightSpaceMatrix(1.0f);
 
   if (context.is_shadow_pass) {
@@ -504,7 +568,8 @@ void Mesh::draw_self(RenderContext& context) {
 }
 
 ShadowMap::ShadowMap(unsigned int shadow_width, unsigned int shadow_height)
-    : width(shadow_width), height(shadow_height), shader("shaders/depth") {
+    : width(shadow_width), height(shadow_height), shader("shaders/depth")
+{
   // glGenTextures(1, &depth_map_texture_id);
   glBindTexture(GL_TEXTURE_2D, depth_map.id);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadow_width, shadow_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT,
@@ -528,14 +593,16 @@ ShadowMap::ShadowMap(unsigned int shadow_width, unsigned int shadow_height)
   }
 }
 
-void FirstPersonController::update(Object3D& target, float dt) {
+void FirstPersonController::update(Object3D& target, float dt)
+{
   const auto pos = target.get_position();
   target.set_position(pos + m_velocity * dt);
   target.override_transform(glm::inverse(glm::lookAt(pos, pos + m_front, m_up)));
   m_velocity = glm::vec3(0.0f);
 }
 
-void FirstPersonController::move_mouse(float x, float y) {
+void FirstPersonController::move_mouse(float x, float y)
+{
   glm::vec2 offset(x, y);
 
   const float sensitivity = 0.1f;
@@ -554,7 +621,8 @@ void FirstPersonController::move_mouse(float x, float y) {
   m_front = glm::normalize(front);
 }
 
-void FirstPersonController::move(const Direction& direction) {
+void FirstPersonController::move(const Direction& direction)
+{
   switch (direction) {
     case FORWARD: {
       m_velocity += (m_speed * m_front);
@@ -577,7 +645,8 @@ void FirstPersonController::move(const Direction& direction) {
   }
 }
 
-void OrbitController::update(Object3D& target, const glm::vec3& center, float dt) {
+void OrbitController::update(Object3D& target, const glm::vec3& center, float dt)
+{
   glm::vec3 front;
   front.x = cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
   front.y = sin(glm::radians(m_pitch));
@@ -589,7 +658,8 @@ void OrbitController::update(Object3D& target, const glm::vec3& center, float dt
   target.override_transform(glm::inverse(glm::lookAt(pos, pos - front, glm::vec3(0, 1, 0))));
 }
 
-void OrbitController::move_mouse(float x, float y) {
+void OrbitController::move_mouse(float x, float y)
+{
   glm::vec2 offset(x, y);
 
   const float sensitivity = 0.1f;
@@ -601,7 +671,8 @@ void OrbitController::move_mouse(float x, float y) {
   m_pitch = glm::clamp(m_pitch, -89.0f, 89.0f);
 }
 
-void Phong::bind() {
+void Phong::bind()
+{
   if (texture != nullptr) {
     int texture_unit = 1;
     texture->bind(texture_unit);
@@ -620,7 +691,8 @@ void Phong::bind() {
   shader->uniform("alpha", alpha);
 }
 
-void Basic::bind() {
+void Basic::bind()
+{
   gl::Shader* shader = get_shader();
   shader->uniform("ka", 0.6f);
   shader->uniform("kd", 0.8f);
@@ -630,7 +702,8 @@ void Basic::bind() {
   shader->uniform("u_SolidObjectColor", rgb);
 }
 
-std::vector<float> load_obj(const std::string path) {
+std::vector<float> load_obj(const std::string path)
+{
   std::vector<float> vertices;
 
   std::istringstream source(load_text_file(path));
@@ -693,333 +766,87 @@ std::vector<float> load_obj(const std::string path) {
   return vertices;
 }
 
-std::shared_ptr<Geometry> make_cube_geometry(float size) {
+std::shared_ptr<Geometry> make_cube_geometry(float size)
+{
   float s = size / 2;
 
+  // clang-format off
   std::vector<float> vertices = {
       // left
-      -s,
-      -s,
-      -s,
-      0.0f,
-      0.0f,
-      -1.0f,
-      0.0f,
-      0.0f,
-      s,
-      -s,
-      -s,
-      0.0f,
-      0.0f,
-      -1.0f,
-      1.0f,
-      0.0f,
-      s,
-      s,
-      -s,
-      0.0f,
-      0.0f,
-      -1.0f,
-      1.0f,
-      1.0f,
-      s,
-      s,
-      -s,
-      0.0f,
-      0.0f,
-      -1.0f,
-      1.0f,
-      1.0f,
-      -s,
-      s,
-      -s,
-      0.0f,
-      0.0f,
-      -1.0f,
-      0.0f,
-      1.0f,
-      -s,
-      -s,
-      -s,
-      0.0f,
-      0.0f,
-      -1.0f,
-      0.0f,
-      0.0f,
+      -s, -s, -s, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,
+      s, -s, -s, 0.0f, 0.0f,-1.0f,1.0f,0.0f,
+      s,s,-s,0.0f,0.0f,-1.0f,1.0f,1.0f,
+      s,s,-s,0.0f,0.0f,-1.0f,1.0f,1.0f,
+      -s,s,-s,0.0f,0.0f,-1.0f,0.0f,1.0f,
+      -s,-s,-s,0.0f,0.0f,-1.0f,0.0f,0.0f,
 
       // right
-      -s,
-      -s,
-      s,
-      0.0f,
-      0.0f,
-      1.0f,
-      0.0f,
-      0.0f,
-      s,
-      -s,
-      s,
-      0.0f,
-      0.0f,
-      1.0f,
-      1.0f,
-      0.0f,
-      s,
-      s,
-      s,
-      0.0f,
-      0.0f,
-      1.0f,
-      1.0f,
-      1.0f,
-      s,
-      s,
-      s,
-      0.0f,
-      0.0f,
-      1.0f,
-      1.0f,
-      1.0f,
-      -s,
-      s,
-      s,
-      0.0f,
-      0.0f,
-      1.0f,
-      0.0f,
-      1.0f,
-      -s,
-      -s,
-      s,
-      0.0f,
-      0.0f,
-      1.0f,
-      0.0f,
-      0.0f,
+      -s,-s,s,0.0f,0.0f,1.0f,0.0f,0.0f,
+      s,-s,s,0.0f,0.0f,1.0f,1.0f,0.0f,
+      s,s,s,0.0f,0.0f,1.0f,1.0f,1.0f,
+      s,s,s,0.0f,0.0f,1.0f,1.0f,1.0f,
+      -s,s,s,0.0f,0.0f,1.0f,0.0f,1.0f,
+      -s,-s,s,0.0f,0.0f,1.0f,0.0f,0.0f,
 
       // backward
-      -s,
-      s,
-      s,
-      -1.0f,
-      0.0f,
-      0.0f,
-      0.0f,
-      0.0f,
-      -s,
-      s,
-      -s,
-      -1.0f,
-      0.0f,
-      0.0f,
-      1.0f,
-      0.0f,
-      -s,
-      -s,
-      -s,
-      -1.0f,
-      0.0f,
-      0.0f,
-      1.0f,
-      1.0f,
-      -s,
-      -s,
-      -s,
-      -1.0f,
-      0.0f,
-      0.0f,
-      1.0f,
-      1.0f,
-      -s,
-      -s,
-      s,
-      -1.0f,
-      0.0f,
-      0.0f,
-      0.0f,
-      1.0f,
-      -s,
-      s,
-      s,
-      -1.0f,
-      0.0f,
-      0.0f,
-      0.0f,
-      0.0f,
+      -s,s,s,-1.0f,0.0f,0.0f,0.0f,0.0f,
+      -s,s,-s,-1.0f,0.0f,0.0f,1.0f,0.0f,
+      -s,-s,-s,-1.0f,0.0f,0.0f,1.0f,1.0f,
+      -s,-s,-s,-1.0f,0.0f,0.0f,1.0f,1.0f,
+      -s,-s,s,-1.0f,0.0f,0.0f,0.0f,1.0f,
+      -s,s,s,-1.0f,0.0f,0.0f,0.0f,0.0f,
 
       // forward
-      s,
-      s,
-      s,
-      1.0f,
-      0.0f,
-      0.0f,
-      0.0f,
-      0.0f,
-      s,
-      s,
-      -s,
-      1.0f,
-      0.0f,
-      0.0f,
-      1.0f,
-      0.0f,
-      s,
-      -s,
-      -s,
-      1.0f,
-      0.0f,
-      0.0f,
-      1.0f,
-      1.0f,
-      s,
-      -s,
-      -s,
-      1.0f,
-      0.0f,
-      0.0f,
-      1.0f,
-      1.0f,
-      s,
-      -s,
-      s,
-      1.0f,
-      0.0f,
-      0.0f,
-      0.0f,
-      1.0f,
-      s,
-      s,
-      s,
-      1.0f,
-      0.0f,
-      0.0f,
-      0.0f,
-      0.0f,
+      s,s,s,1.0f,0.0f,0.0f,0.0f,0.0f,
+      s,s,-s,1.0f,0.0f,0.0f,1.0f,0.0f,
+      s,-s,-s,1.0f,0.0f,0.0f,1.0f,1.0f,
+      s,-s,-s,1.0f,0.0f,0.0f,1.0f,1.0f,
+      s,-s,s,1.0f,0.0f,0.0f,0.0f,1.0f,
+      s,s,s,1.0f,0.0f,0.0f,0.0f,0.0f,
 
       // down
-      -s,
-      -s,
-      -s,
-      0.0f,
-      -1.0f,
-      0.0f,
-      0.0f,
-      0.0f,
-      s,
-      -s,
-      -s,
-      0.0f,
-      -1.0f,
-      0.0f,
-      1.0f,
-      0.0f,
-      s,
-      -s,
-      s,
-      0.0f,
-      -1.0f,
-      0.0f,
-      1.0f,
-      1.0f,
-      s,
-      -s,
-      s,
-      0.0f,
-      -1.0f,
-      0.0f,
-      1.0f,
-      1.0f,
-      -s,
-      -s,
-      s,
-      0.0f,
-      -1.0f,
-      0.0f,
-      0.0f,
-      1.0f,
-      -s,
-      -s,
-      -s,
-      0.0f,
-      -1.0f,
-      0.0f,
-      0.0f,
-      0.0f,
+      -s,-s,-s,0.0f,-1.0f,0.0f,0.0f,0.0f,
+      s,-s,-s,0.0f,-1.0f,0.0f,1.0f,0.0f,
+      s,-s,s,0.0f,-1.0f,0.0f,1.0f,1.0f,
+      s,-s,s,0.0f,-1.0f,0.0f,1.0f,1.0f,
+      -s,-s,s,0.0f,-1.0f,0.0f,0.0f,1.0f,
+      -s,-s,-s,0.0f,-1.0f,0.0f,0.0f,0.0f,
 
       // up
-      -s,
-      s,
-      -s,
-      0.0f,
-      1.0f,
-      0.0f,
-      0.0f,
-      0.0f,
-      s,
-      s,
-      -s,
-      0.0f,
-      1.0f,
-      0.0f,
-      1.0f,
-      0.0f,
-      s,
-      s,
-      s,
-      0.0f,
-      1.0f,
-      0.0f,
-      1.0f,
-      1.0f,
-      s,
-      s,
-      s,
-      0.0f,
-      1.0f,
-      0.0f,
-      1.0f,
-      1.0f,
-      -s,
-      s,
-      s,
-      0.0f,
-      1.0f,
-      0.0f,
-      0.0f,
-      1.0f,
-      -s,
-      s,
-      -s,
-      0.0f,
-      1.0f,
-      0.0f,
-      0.0f,
-      0.0f,
+      -s,s,-s,0.0f,1.0f,0.0f,0.0f,0.0f,
+      s,s,-s,0.0f,1.0f,0.0f,1.0f,0.0f,
+      s,s,s,0.0f,1.0f,0.0f,1.0f,1.0f,
+      s,s,s,0.0f,1.0f,0.0f,1.0f,1.0f,
+      -s,s,s,0.0f,1.0f,0.0f,0.0f,1.0f,
+      -s,s,-s,0.0f,1.0f,0.0f,0.0f,0.0f,
 
   };
-
+  // clang-format on
   return std::make_shared<Geometry>(vertices, Geometry::POS_NORM_UV);
 }
 
-void push_back(std::vector<float>& vector, const glm::vec3& v) {
+void push_back(std::vector<float>& vector, const glm::vec3& v)
+{
   vector.push_back(v.x);
   vector.push_back(v.y);
   vector.push_back(v.z);
 }
 
-void push_back(std::vector<float>& vector, const glm::vec2& v) {
+void push_back(std::vector<float>& vector, const glm::vec2& v)
+{
   vector.push_back(v.x);
   vector.push_back(v.y);
 }
 
-void push_back(std::vector<float>& vector, const glm::vec3& pos, const glm::vec3& normal, const glm::vec2& uv) {
+void push_back(std::vector<float>& vector, const glm::vec3& pos, const glm::vec3& normal, const glm::vec2& uv)
+{
   push_back(vector, pos);
   push_back(vector, normal);
   push_back(vector, uv);
 }
 
-std::shared_ptr<Geometry> make_plane_geometry(int x_elements, int y_elements, float size) {
+std::shared_ptr<Geometry> make_plane_geometry(int x_elements, int y_elements, float size)
+{
   // TODO
   const float width = size, height = size;
 
@@ -1053,11 +880,18 @@ std::shared_ptr<Geometry> make_plane_geometry(int x_elements, int y_elements, fl
 }
 
 Billboard::Billboard(std::shared_ptr<gl::Texture> sprite, glm::vec3 color)
-    : texture(sprite), shader("shaders/billboard"), color(color) {
+    : texture(sprite), shader("shaders/billboard"), color(color)
+{
+  // clang-format off
   float vertices[] = {
-      0.5f,  0.5f,  0.0f, 0.0f, 0.0f, 0.5f,  -0.5f, 0.0f, 0.0f, 1.0f,
-      -0.5f, -0.5f, 0.0f, 1.0f, 1.0f, -0.5f, 0.5f,  0.0f, 1.0f, 0.0f,
+      0.5f,  0.5f,  0.0f, 
+      0.0f, 0.0f, 0.5f,  
+      -0.5f, 0.0f, 0.0f, 
+      1.0f,-0.5f, -0.5f, 
+      0.0f, 1.0f, 1.0f, 
+      -0.5f, 0.5f,  0.0f, 1.0f, 0.0f,
   };
+  // clang-format on
 
   unsigned int indices[] = {
       0, 1, 3,  // first Triangle
@@ -1077,7 +911,8 @@ Billboard::Billboard(std::shared_ptr<gl::Texture> sprite, glm::vec3 color)
   vao.unbind();
 }
 
-void Billboard::draw_self(RenderContext& context) {
+void Billboard::draw_self(RenderContext& context)
+{
   if (context.is_shadow_pass) return;
 
   auto camera = context.camera;
@@ -1113,9 +948,12 @@ void Billboard::draw_self(RenderContext& context) {
 }
 
 Skybox::Skybox(const std::array<std::string, 6>& faces)
-    : Mesh(make_cube_geometry(1.0f), std::make_shared<SkyboxMaterial>(std::make_shared<gl::CubemapTexture>(faces))) {}
+    : Mesh(make_cube_geometry(1.0f), std::make_shared<SkyboxMaterial>(std::make_shared<gl::CubemapTexture>(faces)))
+{
+}
 
-void Skybox::draw_self(RenderContext& context) {
+void Skybox::draw_self(RenderContext& context)
+{
   if (!context.is_shadow_pass) {
     glDepthMask(GL_FALSE);
 
@@ -1134,7 +972,8 @@ void Skybox::draw_self(RenderContext& context) {
   }
 }
 
-void SkyboxMaterial::bind() {
+void SkyboxMaterial::bind()
+{
   gl::Shader* shader = get_shader();
   int unit = 2;
   cubemap->bind(unit);
@@ -1142,7 +981,8 @@ void SkyboxMaterial::bind() {
   shader->uniform("u_Skybox", unit);
 }
 
-void ScreenMaterial::bind() {
+void ScreenMaterial::bind()
+{
   gl::Shader* shader = get_shader();
   texture->bind(0);
   shader->bind();

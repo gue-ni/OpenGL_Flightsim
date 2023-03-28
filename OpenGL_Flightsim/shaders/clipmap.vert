@@ -33,7 +33,6 @@ float getHeight(vec2 uv)
     }
 
     float height = texture(u_Heightmap, uv).r;
-    float coarser = textureLod(u_Heightmap, uv, 1).r;
 
     float scale = 3000;
     float shift = 0;
@@ -64,13 +63,9 @@ void main()
 
     Normal = getNormal(TexCoord);
 
-	Color = vec3(1.0, u_Level, 0.0);
+	  Color = vec3(1.0, u_Level, 0.0);
 
     gl_Position = u_Projection * u_View * vec4(FragPos, 1.0);
-
-    //float distanceFromCam = clamp(gl_Position.w, -0.1, 1000);
-    //float positionResolution = 128;
-	//gl_Position.xy = round(gl_Position.xy * (positionResolution / distanceFromCam)) / (positionResolution / distanceFromCam);
 }
 
 
