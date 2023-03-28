@@ -103,6 +103,12 @@ void Shader::uniform(const std::string& name, const glm::mat4& value)
 
 Texture::Texture(const std::string& path) : Texture(path, {}) {}
 
+unsigned char* Texture::load_image(const std::string path, int *width, int *height, int* channels, bool flip)
+{
+  stbi_set_flip_vertically_on_load(flip);
+  return stbi_load(path.c_str(), width, height, channels, 0);
+}
+
 Texture::Texture(const std::string& path, const TextureParams& params)
 {
   glGenTextures(1, &id);
@@ -117,8 +123,8 @@ Texture::Texture(const std::string& path, const TextureParams& params)
   // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
   int width, height, channels;
-  stbi_set_flip_vertically_on_load(params.flip_vertically);
-  unsigned char* data = stbi_load(path.c_str(), &width, &height, &channels, 0);
+  //stbi_set_flip_vertically_on_load(params.flip_vertically);
+  unsigned char* data = load_image(path, &width, &height, &channels, params.flip_vertically);
 
   // printf("channels = %d\n", channels);
 

@@ -39,7 +39,7 @@ JK      control thrust
 #define CLIPMAP 1
 #define SKYBOX 1
 #define SMOOTH_CAMERA 1
-#define NPC_AIRCRAFT 1
+#define NPC_AIRCRAFT 0
 #define SHOW_MASS_ELEMENTS 0
 
 #if 0
@@ -136,8 +136,8 @@ int main(void)
   gfx::gl::TextureParams params = {.flip_vertically = true};
   auto tex = make_shared<gfx::gl::Texture>("assets/textures/f16_large.jpg", params);
   auto texture = make_shared<gfx::Phong>(tex);
-  // auto obj = gfx::load_obj("assets/models/cessna/fuselage.obj");
-  auto obj = gfx::load_obj("assets/models/skyhawk.obj");
+  auto obj = gfx::load_obj("assets/models/falcon.obj");
+  //auto obj = gfx::load_obj("assets/models/skyhawk.obj");
   auto model = std::make_shared<gfx::Geometry>(obj, gfx::Geometry::POS_NORM_UV);
 
   gfx::Object3D scene;
@@ -165,6 +165,12 @@ int main(void)
   Clipmap clipmap;
   scene.add(&clipmap);
 #endif
+
+  std::vector<GameObject*> objects;
+
+#if 0
+  constexpr float speed = phi::units::meter_per_second(200.0f /* km/h */);
+  constexpr float altitude = 800.0f;
 
   // airplane mass
   const float mass = 1000.0f;
@@ -204,7 +210,7 @@ int main(void)
 
   // design coordinates go from the back forwards
   std::vector<phi::inertia::Element> mass_elements = {
-#if 1
+#if 0
     {.size = {main_wing_chord, 0.10f, main_wing_span}, .position = {5.0f, 0.5f, -2.7f}},  // left wing
     {.size = {main_wing_chord, 0.10f, main_wing_span}, .position = {5.0f, 0.5f, +2.7f}},  // right wing
     {.size = {h_tail_chord, 0.10f, h_tail_span}, .position = {0.0f, 0.0f, 0.0f}},         // horizontal tail
@@ -225,15 +231,13 @@ int main(void)
   std::cout << "cg = " << center_of_gravity << std::endl;
 
   // compute inertia tensor
-  auto inertia = phi::inertia::tensor(mass_elements, false, &center_of_gravity);
+  auto inertia = phi::inertia::tensor(mass_elements, true, &center_of_gravity);
   std::cout << "inertia = " << inertia << std::endl;
 
   for (int i = 0; i < mass_elements.size(); i++) {
     auto& m = mass_elements[i];
     std::cout << "[Mass] m = " << m.mass << ", o = " << m.offset << ", p = " << m.position << std::endl;
   }
-
-  assert(mass_elements[0].offset.x < 0.0f);  // wing must be behind cg
 
 #if 0
   auto l_wing_pos = glm::vec3{wing_offset, 0.0f, -2.7f};
@@ -247,10 +251,10 @@ int main(void)
   auto v_tail_pos = mass_elements[3].offset;
 #endif
 
-  const Airfoil NACA_0012(NACA_0012_data_2);
-  const Airfoil NACA_2412(NACA_2412_data_2);
+  const Airfoil NACA_0012(NACA_0012_data);
+  const Airfoil NACA_2412(NACA_2412_data);
 
-  std::vector<Wing> surfaces = {
+  std::vector<Wing> wings = {
       Wing(&NACA_2412, l_wing_pos, main_wing_area, main_wing_span),               // left wing
       Wing(&NACA_0012, l_wing_pos - aileron_offset, aileron_area, aileron_span),  // left aileron
       Wing(&NACA_0012, r_wing_pos - aileron_offset, aileron_area, aileron_span),  // right aileron
@@ -259,13 +263,51 @@ int main(void)
       Wing(&NACA_0012, v_tail_pos, v_tail_area, v_tail_span, phi::RIGHT),         // vertical tail
   };
 
-  std::vector<GameObject*> objects;
 
-  constexpr float speed = phi::units::meter_per_second(200.0f /* km/h */);
-  const float altitude = 3000.0f;
+
+  auto engine = new PropellorEngine(horsepower, rpm, prop_diameter);
+
+#else
+  /* ====== begin working config ======= */
+  constexpr float altitude = 3000.0f;
+  constexpr float speed = phi::units::meter_per_second(500.0f /* km/h */);
+
+  const float mass = 10000.0f;
+  const float thrust = 50000.0f;
+
+  const float wing_offset = -1.0f;
+  const float tail_offset = -6.6f;
+
+  std::vector<phi::inertia::Element> masses = {
+      phi::inertia::cube({wing_offset, 0.0f, -2.7f}, {6.96f, 0.10f, 3.50f}, mass * 0.25f),  // left wing
+      phi::inertia::cube({wing_offset, 0.0f, +2.7f}, {6.96f, 0.10f, 3.50f}, mass * 0.25f),  // right wing
+      phi::inertia::cube({tail_offset, -0.1f, 0.0f}, {6.54f, 0.10f, 2.70f}, mass * 0.1f),   // elevator
+      phi::inertia::cube({tail_offset, 0.0f, 0.0f}, {5.31f, 3.10f, 0.10f}, mass * 0.1f),    // rudder
+      phi::inertia::cube({0.0f, 0.0f, 0.0f}, {8.0f, 2.0f, 2.0f}, mass * 0.5f),              // fuselage
+  };
+
+  auto inertia = phi::inertia::tensor(masses, true);
+
+  const Airfoil NACA_0012(NACA_0012_data);
+  const Airfoil NACA_2412(NACA_2412_data);
+  const Airfoil NACA_64_206(NACA_64_206_data);
+
+  std::vector<Wing> wings = {
+      Wing({wing_offset, 0.0f, -2.7f}, 6.96f, 2.50f, &NACA_2412),           // left wing
+      Wing({wing_offset - 1.5f, 0.0f, -2.0f}, 3.80f, 1.26f, &NACA_0012),      // left aileron
+      Wing({wing_offset - 1.5f, 0.0f, 2.0f}, 3.80f, 1.26f, &NACA_0012),       // right aileron
+      Wing({wing_offset, 0.0f, +2.7f}, 6.96f, 2.50f, &NACA_2412),           // right wing
+      Wing({tail_offset, -0.1f, 0.0f}, 6.54f, 2.70f, &NACA_0012),             // elevator
+      Wing({tail_offset, 0.0f, 0.0f}, 5.31f, 3.10f, &NACA_0012, phi::RIGHT),  // rudder
+  };
+
+  auto engine = new SimpleEngine(thrust);
+
+  /* ====== end working config ======= */
+#endif
 
   GameObject player = {.transform = gfx::Mesh(model, texture),
-                       .airplane = Airplane(mass, Engine(horsepower, rpm, prop_diameter), inertia, surfaces),
+                       .airplane = Airplane(mass, engine, inertia, wings),
                        .collider = col::Sphere({0.0f, 0.0f, 0.0f}, 5.0f)};
 
   player.airplane.position = glm::vec3(-7000.0f, altitude, 0.0f);
@@ -332,6 +374,14 @@ int main(void)
 #endif
 
   gfx::OrbitController controller(30.0f);
+
+#if 1
+  int width, height, channels;
+  const std::string heightmap_path = "assets/textures/terrain/1/heightmap.png";
+  uint8_t* data = gfx::gl::Texture::load_image(heightmap_path, &width, &height, &channels, 0);
+  col::Heightmap terrain_collider(data, width, height, channels);
+
+#endif
 
   SDL_Event event;
   bool quit = false, paused = false, orbit = false;
@@ -452,7 +502,7 @@ int main(void)
     ImGui::Text("SPD:   %.1f m/s", player.airplane.get_speed());
     ImGui::Text("IAS:   %.1f m/s", player.airplane.get_ias());
 #endif
-    ImGui::Text("THR:   %d %%", static_cast<int>(player.airplane.engine.throttle * 100.0f));
+    ImGui::Text("THR:   %d %%", static_cast<int>(player.airplane.engine->throttle * 100.0f));
     ImGui::Text("G:     %.1f", player.airplane.get_g());
     ImGui::Text("AoA:   %.2f", player.airplane.get_aoa());
     ImGui::Text("Trim:  %.2f", player.airplane.trim);
@@ -488,7 +538,7 @@ int main(void)
       float current_av = glm::degrees(player.airplane.angular_velocity.z);
       player.airplane.joystick.z = pitch_control_pid.calculate(current_av, target_av, dt);
     }
-    player.airplane.engine.throttle = joystick.throttle;
+    player.airplane.engine->throttle = joystick.throttle;
     player.airplane.trim = joystick.trim;
 
 #if NPC_AIRCRAFT
@@ -503,8 +553,14 @@ int main(void)
 
       // naive, but works for small numbers of objects
       for (int i = 0; i < objects.size(); i++) {
+        auto& a = objects[i];
+#if 1
+        if (col::test_collision(terrain_collider, a->airplane.position)) {
+          printf("[%.1f] terrain collision!\n", flight_time);
+        }
+#endif
+
         for (int j = i + 1; j < objects.size(); j++) {
-          auto& a = objects[i];
           auto& b = objects[j];
           if (col::test_collision(a->collider, b->collider)) {
             std::cout << "collision!\n";

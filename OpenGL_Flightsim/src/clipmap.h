@@ -124,6 +124,7 @@ class Clipmap : public gfx::Object3D
         center(2 * segments + 2, 2 * segments + 2, segment_size),
         seam(2 * segments + 2, segment_size * 2)
   {
+
   }
 
   float get_terrain_height(glm::vec2 coords) { return 0.0f; }

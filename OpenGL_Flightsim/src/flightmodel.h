@@ -36,15 +36,15 @@ const float sea_level_air_density = get_air_density(0.0f);
 
 struct Airfoil {
   float min_alpha, max_alpha;
-  std::vector<glm::vec4> data;  // alpha, cl, cd
+  std::vector<glm::vec3> data;  // alpha, cl, cd
 
-  Airfoil(const std::vector<glm::vec4>& curve) : data(curve)
+  Airfoil(const std::vector<glm::vec3>& curve) : data(curve)
   {
     min_alpha = curve.front().x, max_alpha = curve.back().x;
   }
 
   // lift_coeff, drag_coeff, moment_coeff
-  std::tuple<float, float, float> sample(float alpha) const
+  std::tuple<float, float> sample(float alpha) const
   {
     int max_index = data.size() - 1;
     float t = phi::inverse_lerp(min_alpha, max_alpha, alpha) * max_index;
@@ -52,19 +52,23 @@ struct Airfoil {
     float fractional = t - integer;
     int index = static_cast<int>(integer);
     auto value = (index < max_index) ? phi::lerp(data[index], data[index + 1], fractional) : data[max_index];
-    return {value.y, value.z, value.w};
+    return {value.y, value.z};
   }
 };
 
-struct Engine : public phi::ForceGenerator {
+struct BaseEngine : public phi::ForceGenerator {
   float throttle = 0.25f;
+  void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) override {}
+};
+
+struct PropellorEngine : public BaseEngine {
   float horsepower, rpm, propellor_diameter;
 
-  Engine(float horsepower, float rpm, float diameter) : horsepower(horsepower), rpm(rpm), propellor_diameter(diameter)
+  PropellorEngine(float horsepower, float rpm, float diameter) : horsepower(horsepower), rpm(rpm), propellor_diameter(diameter)
   {
   }
 
-  void apply_forces(phi::RigidBody *rigid_body, phi::Seconds dt) override
+  void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) override
   {
     float speed = rigid_body->get_speed();
     float altitude = rigid_body->position.y;
@@ -84,6 +88,16 @@ struct Engine : public phi::ForceGenerator {
     float thrust = ((propellor_efficiency * engine_power) / speed) * power_drop_off_factor;
     assert(0.0f < thrust);
     rigid_body->add_relative_force({thrust * throttle, 0.0f, 0.0f});
+  }
+};
+
+struct SimpleEngine : public BaseEngine {
+  const float thrust;
+  SimpleEngine(float thrust) : thrust(thrust) {}
+
+  void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) override
+  {
+    rigid_body->add_relative_force({throttle * thrust, 0.0f, 0.0f});
   }
 };
 
@@ -124,6 +138,17 @@ class Wing : public phi::ForceGenerator
   {
   }
 
+  Wing(const glm::vec3& position, float span, float chord, const Airfoil* airfoil, const glm::vec3& normal = phi::UP)
+      : airfoil(airfoil),
+        center_of_pressure(position),
+        area(span * chord),
+        chord(chord),
+        wingspan(span),
+        normal(normal),
+        aspect_ratio(std::pow(span, 2) / area)
+  {
+  }
+
   // controls how much the wing is deflected
   void set_control_input(float input) { control_input = glm::clamp(input, -1.0f, 1.0f); }
 
@@ -131,7 +156,7 @@ class Wing : public phi::ForceGenerator
   void set_deflection_limits(float min, float max) { min_deflection = min, max_deflection = max; }
 
   // compute and apply aerodynamic forces
-  void apply_forces(phi::RigidBody *rigid_body, phi::Seconds dt) override
+  void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) override
   {
     glm::vec3 local_velocity = rigid_body->get_point_velocity(center_of_pressure);
     float speed = glm::length(local_velocity);
@@ -151,7 +176,7 @@ class Wing : public phi::ForceGenerator
     float angle_of_attack = glm::degrees(std::asin(glm::dot(drag_direction, wing_normal)));
 
     // sample aerodynamic coefficients
-    auto [lift_coeff, drag_coeff, moment_coeff] = airfoil->sample(angle_of_attack);
+    auto [lift_coeff, drag_coeff] = airfoil->sample(angle_of_attack);
 
     // induced drag
     float induced_drag_coeff = std::pow(lift_coeff, 2) / (phi::PI * aspect_ratio * efficiency_factor);
@@ -168,7 +193,7 @@ class Wing : public phi::ForceGenerator
   }
 
   // returns updated wing normal according to control input and deflection
-  glm::vec3 deflect_wing(phi::RigidBody *rigid_body, phi::Seconds dt)
+  glm::vec3 deflect_wing(phi::RigidBody* rigid_body, phi::Seconds dt)
   {
 #if 0
     // with increased speed control surfaces become harder to move
@@ -194,7 +219,7 @@ struct Airplane : public phi::RigidBody {
   float trim = 0.0f;
   glm::vec3 joystick{};  // roll, yaw, pitch
 
-  Engine engine;
+  BaseEngine* engine;
   std::vector<Wing> surfaces;
 
 #if LOG_FLIGHT
@@ -204,8 +229,8 @@ struct Airplane : public phi::RigidBody {
   std::ofstream log_file;
 #endif
 
-  Airplane(float mass, const Engine& engine, glm::mat3 inertia, std::vector<Wing> elements)
-      :  phi::RigidBody({.mass = mass, .inertia = inertia}), surfaces(elements), engine(engine)
+  Airplane(float mass, BaseEngine* engine, glm::mat3 inertia, std::vector<Wing> elements)
+      : phi::RigidBody({.mass = mass, .inertia = inertia}), surfaces(elements), engine(engine)
   {
 #if LOG_FLIGHT
     std::time_t now = std::time(nullptr);
@@ -261,11 +286,10 @@ struct Airplane : public phi::RigidBody {
       wing.apply_forces(this, dt);
     }
 
-    engine.apply_forces(this, dt);
+    engine->apply_forces(this, dt);
 
     update(dt);
   }
-
 
   float get_altitude() const { return position.y; }
 

@@ -144,6 +144,8 @@ constexpr glm::mat3 tensor(std::vector<Element>& elements, bool precomputed_offs
   for (auto& element : elements) {
     if (!precomputed_offset) {
       element.offset = element.position - center_of_gravity;
+    } else {
+      element.offset = element.position;
     }
 
     const auto offset = element.offset;

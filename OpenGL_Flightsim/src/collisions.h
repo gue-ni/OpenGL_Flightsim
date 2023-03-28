@@ -10,6 +10,8 @@
 #include <glm/vec3.hpp>
 #include <tuple>
 
+#include "phi.h"
+
 namespace col
 {
 
@@ -53,18 +55,40 @@ struct Ray : public Collider {
 };
 
 struct Heightmap {
-  const char* heightmap_data;
-  float scale = 3000.0f, shift = 0.0f, magnification = 1.0f;
+  const uint8_t* data;
+  const int width, height, channels;
+  const float scale = 3000.0f, shift = 0.0f;
 
-  float get_height(const glm::vec2& coords) const
+  float magnification = 25000.0f;
+
+  Heightmap(const uint8_t* data, int width, int height, int channels)
+      : data(data), width(width), height(height), channels(channels)
   {
-    auto uv_coord = glm::clamp(coords / magnification, glm::vec2(-1.0f), glm::vec2(1.0f));
-    float sampled_value = 0.0f;
+  }
 
-    // TODO: map uv to [0, 1]
-    // TODO: sample and interpolate height values
+  glm::vec3 sample(const glm::vec2& coord) const
+  {
+    assert(0.0f <= coord.x && coord.x <= 1.0f);
+    assert(0.0f <= coord.y && coord.y <= 1.0f);
 
-    return scale * sampled_value + shift;
+    int x = static_cast<int>(width * coord.x);
+    int y = static_cast<int>(height * coord.y);
+
+    int index = (y * width + x) * channels;
+
+    auto color = glm::vec3{static_cast<float>(data[index + 0]), static_cast<float>(data[index + 1]),
+                           static_cast<float>(data[index + 2])};
+    color /= 255.0f;
+    return color;
+  }
+
+  float get_height(const glm::vec2& coord) const
+  {
+    glm::vec2 tmp = glm::clamp(coord / magnification, glm::vec2(-1.0f), glm::vec2(1.0f));
+    auto uv = phi::scale(tmp, glm::vec2(-1.0f), glm::vec2(1.0f), glm::vec2(0.0f), glm::vec2(1.0f));
+    float value = sample(uv).r;
+    float height = scale * value + shift;
+    return height;
   }
 };
 
@@ -107,8 +131,7 @@ bool test_collision(const AABB& a, const AABB& b)
 
 bool test_collision(const Heightmap& heightmap, const glm::vec3& point)
 {
-  float height = heightmap.get_height({point.x, point.z});
-  return point.y <= height;
+  return point.y <= heightmap.get_height({point.x, point.z});
 }
 
 // test collision of two moving spheres

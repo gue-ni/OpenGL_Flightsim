@@ -126,6 +126,8 @@ struct Texture {
   virtual void unbind() const;
   GLint get_format(int channels);
   void set_parameteri(GLenum target, GLenum pname, GLint param);
+
+  static unsigned char* load_image(const std::string path, int *width, int *height, int* channels, bool flip);
 };
 
 struct CubemapTexture : public Texture {
