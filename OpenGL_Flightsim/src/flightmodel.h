@@ -19,14 +19,14 @@ namespace isa
 inline float get_air_temperature(float altitude)
 {
   assert(0.0f <= altitude && altitude <= 11000.0f);
-  return 288.15f - 0.0065f * altitude;  // kelvin
+  return 288.15f - 0.0065f * altitude;
 }
 
 // only accurate for altitudes < 11km
 float get_air_density(float altitude)
 {
   assert(0.0f <= altitude && altitude <= 11000.0f);
-  float temperature = get_air_temperature(altitude);  // kelvin
+  float temperature = get_air_temperature(altitude);
   float pressure = 101325.0f * std::pow(1 - 0.0065f * (altitude / 288.15f), 5.25f);
   return 0.00348f * (pressure / temperature);
 }
@@ -55,12 +55,12 @@ struct Airfoil {
   }
 };
 
-struct BaseEngine : public phi::ForceGenerator {
+struct Engine : public phi::ForceGenerator {
   float throttle = 0.25f;
   void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) override {}
 };
 
-struct SimpleEngine : public BaseEngine {
+struct SimpleEngine : public Engine {
   const float thrust;
   SimpleEngine(float thrust) : thrust(thrust) {}
 
@@ -70,7 +70,7 @@ struct SimpleEngine : public BaseEngine {
   }
 };
 
-struct PropellorEngine : public BaseEngine {
+struct PropellorEngine : public Engine {
   float horsepower, rpm, propellor_diameter;
 
   PropellorEngine(float horsepower, float rpm, float diameter)
@@ -217,8 +217,7 @@ class Wing : public phi::ForceGenerator
 
 struct Airplane : public phi::RigidBody {
   glm::vec4 joystick{};  // roll, yaw, pitch, elevator trim
-
-  BaseEngine* engine;
+  Engine* engine;
   std::vector<Wing> surfaces;
 
 #if LOG_FLIGHT
@@ -228,7 +227,7 @@ struct Airplane : public phi::RigidBody {
   std::ofstream log_file;
 #endif
 
-  Airplane(float mass, BaseEngine* engine, glm::mat3 inertia, std::vector<Wing> elements)
+  Airplane(float mass, Engine* engine, glm::mat3 inertia, std::vector<Wing> elements)
       : phi::RigidBody({.mass = mass, .inertia = inertia}), surfaces(elements), engine(engine)
   {
 #if LOG_FLIGHT
