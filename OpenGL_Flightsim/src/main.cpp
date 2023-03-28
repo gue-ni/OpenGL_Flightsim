@@ -41,6 +41,7 @@ JK      control thrust
 #define SMOOTH_CAMERA 1
 #define NPC_AIRCRAFT 0
 #define SHOW_MASS_ELEMENTS 0
+#define USE_PID 1
 
 /* select flightmodel */
 #define FAST_JET 0
@@ -538,12 +539,14 @@ int main(void)
     get_keyboard_state(joystick, dt);
 
     player.airplane.joystick = glm::vec4(joystick.aileron, joystick.rudder, joystick.elevator, joystick.trim);
+#if USE_PID
     if (!joystick_control) {
       float max_av = 45.0f;  // deg/s
       float target_av = max_av * joystick.elevator;
       float current_av = glm::degrees(player.airplane.angular_velocity.z);
       player.airplane.joystick.z = pitch_control_pid.calculate(current_av, target_av, dt);
     }
+#endif
     player.airplane.engine->throttle = joystick.throttle;
 
 #if NPC_AIRCRAFT
