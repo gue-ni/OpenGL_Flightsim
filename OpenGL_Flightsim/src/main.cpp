@@ -387,8 +387,11 @@ int main(void)
   SDL_Event event;
   bool quit = false, paused = false, orbit = false;
   uint64_t last = 0, now = SDL_GetPerformanceCounter();
-  phi::Seconds dt, timer = 0, log_timer = 0, flight_time = 0.0f;
+  phi::Seconds dt, timer = 0, log_timer = 0, flight_time = 0.0f, hud_timer = 0.0f;
   float fps = 0.0f;
+
+  float alt{}, spd{}, ias{}, aoa{}, gee{};
+  int thr{};
 
   while (!quit) {
     // delta time in seconds
@@ -483,37 +486,39 @@ int main(void)
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
-#if 0
-    ImGui::ShowDemoWindow();
-#else
+
     ImGuiWindowFlags window_flags = 0;
     window_flags |= ImGuiWindowFlags_NoTitleBar;
     window_flags |= ImGuiWindowFlags_NoMove;
     window_flags |= ImGuiWindowFlags_NoResize;
 
+    if ((hud_timer += dt) > 0.1f) {
+      hud_timer = 0.0f;
+      alt = player.airplane.get_altitude();
+      spd = phi::units::kilometer_per_hour(player.airplane.get_speed());
+      ias = phi::units::kilometer_per_hour(player.airplane.get_ias());
+      thr = static_cast<int>(player.airplane.engine->throttle * 100.0f);
+      gee = player.airplane.get_g();
+      aoa = player.airplane.get_aoa();
+    }
+
     ImGui::SetNextWindowPos(ImVec2(10, 10));
     ImGui::SetNextWindowSize(ImVec2(145, 160));
     ImGui::SetNextWindowBgAlpha(0.35f);
     ImGui::Begin("Flightsim", nullptr, window_flags);
-    ImGui::Text("ALT:   %.1f m", player.airplane.get_altitude());
-#if 1
-    ImGui::Text("SPD:   %.1f km/h", phi::units::kilometer_per_hour(player.airplane.get_speed()));
-    ImGui::Text("IAS:   %.1f km/h", phi::units::kilometer_per_hour(player.airplane.get_ias()));
-#else
-    ImGui::Text("SPD:   %.1f m/s", player.airplane.get_speed());
-    ImGui::Text("IAS:   %.1f m/s", player.airplane.get_ias());
-#endif
-    ImGui::Text("THR:   %d %%", static_cast<int>(player.airplane.engine->throttle * 100.0f));
-    ImGui::Text("G:     %.1f", player.airplane.get_g());
-    ImGui::Text("AoA:   %.2f", player.airplane.get_aoa());
+    ImGui::Text("ALT:   %.1f m", alt);
+    ImGui::Text("SPD:   %.1f km/h", spd);
+    ImGui::Text("IAS:   %.1f km/h", ias);
+    ImGui::Text("THR:   %d %%", thr);
+    ImGui::Text("G:     %.1f", gee);
+    ImGui::Text("AoA:   %.2f", aoa);
     ImGui::Text("Trim:  %.2f", player.airplane.joystick.w);
     ImGui::Text("FPS:   %.1f", fps);
     ImGui::End();
-#endif
 
 #if 0
-    auto angular_velocity = glm::degrees(player.airplane.rigid_body.angular_velocity);
-    auto orientation = glm::degrees(glm::eulerAngles(glm::normalize(player.airplane.rigid_body.orientation)));
+    auto angular_velocity = glm::degrees(player.airplane.angular_velocity);
+    auto orientation = glm::degrees(glm::eulerAngles(glm::normalize(player.airplane.orientation)));
 
     ImVec2 size(140, 140);
     ImGui::SetNextWindowPos(ImVec2(RESOLUTION.x - size.y - 10.0f, RESOLUTION.y - size.y - 10.0f));
@@ -563,7 +568,7 @@ int main(void)
         for (int j = i + 1; j < objects.size(); j++) {
           auto& b = objects[j];
           if (col::test_collision(a->collider, b->collider)) {
-            std::cout << "collision!\n";
+            printf("[%.1f] collision!\n", flight_time);
             auto collision_normal = glm::normalize(a->airplane.position - b->airplane.position);
             phi::linear_collision_response(&a->airplane, &b->airplane, collision_normal, 0.5f);
           }
