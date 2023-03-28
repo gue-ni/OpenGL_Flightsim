@@ -100,7 +100,7 @@ constexpr glm::vec3 cylinder(float radius, float length, float mass)
 }
 
 // inertia tensor
-constexpr glm::mat3 tensor(const glm::vec3& moment_of_inertia)
+glm::mat3 tensor(const glm::vec3& moment_of_inertia)
 {
   return {
       moment_of_inertia.x, 0.0f, 0.0f, 0.0f, moment_of_inertia.y, 0.0f, 0.0f, 0.0f, moment_of_inertia.z,
@@ -113,7 +113,7 @@ constexpr Element cube(const glm::vec3& position, const glm::vec3& size, float m
 }
 
 // distribute mass among elements depending on element volume
-constexpr void compute_uniform_mass(std::vector<Element>& elements, float mass)
+ void compute_uniform_mass(std::vector<Element>& elements, float mass)
 {
   float total_volume = 0.0f;
   for (const auto& element : elements) {
@@ -126,7 +126,7 @@ constexpr void compute_uniform_mass(std::vector<Element>& elements, float mass)
 }
 
 // calculate inertia tensor for a collection of connected masses
-constexpr glm::mat3 tensor(std::vector<Element>& elements, bool precomputed_offset = false, glm::vec3* cg = nullptr)
+glm::mat3 tensor(std::vector<Element>& elements, bool precomputed_offset = false, glm::vec3* cg = nullptr)
 {
   float Ixx = 0, Iyy = 0, Izz = 0;
   float Ixy = 0, Ixz = 0, Iyz = 0;

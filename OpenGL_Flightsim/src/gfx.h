@@ -128,7 +128,7 @@ struct Texture {
   GLint get_format(int channels);
   void set_parameteri(GLenum target, GLenum pname, GLint param);
 
-  static unsigned char* load_image(const std::string path, int *width, int *height, int* channels, bool flip);
+  static unsigned char* load_image(const std::string path, int* width, int* height, int* channels, bool flip);
 };
 
 struct CubemapTexture : public Texture {
@@ -157,8 +157,8 @@ struct RenderContext {
 };
 
 #define OBJ3D_TRANSFORM 1U << 0U
-#define OBJ3D_ROTATE    1U << 1U
-#define OBJ3D_SCALE     1U << 2U
+#define OBJ3D_ROTATE 1U << 1U
+#define OBJ3D_SCALE 1U << 2U
 
 class Object3D
 {
