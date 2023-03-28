@@ -113,7 +113,7 @@ constexpr Element cube(const glm::vec3& position, const glm::vec3& size, float m
 }
 
 // distribute mass among elements depending on element volume
- void compute_uniform_mass(std::vector<Element>& elements, float mass)
+void compute_uniform_mass(std::vector<Element>& elements, float mass)
 {
   float total_volume = 0.0f;
   for (const auto& element : elements) {
