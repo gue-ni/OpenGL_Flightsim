@@ -28,20 +28,19 @@ void fly_towards(Airplane& airplane, const glm::vec3& target)
   float rudder = direction.z;
   float elevator = direction.y * 5.0f;
 
-  float m = M_PI / 4.0f;
+  float m = phi::PI / 4.0f;
   float agressive_roll = direction.z;
   float wings_level_roll = rb.right().y;
   float wings_level_influence = phi::inverse_lerp(0.0f, m, glm::clamp(angle, -m, m));
   float aileron = phi::lerp(wings_level_roll, agressive_roll, wings_level_influence);
 
-  joystick = glm::clamp(glm::vec3(aileron, rudder, elevator), glm::vec3(-1.0f), glm::vec3(1.0f));
+  joystick = glm::clamp(glm::vec4(aileron, rudder, elevator, 0.0f), glm::vec4(-1.0f), glm::vec4(1.0f));
 }
 
 #if 1
 void fly_towards(Airplane& airplane, const Airplane& target)
 {
-  auto point = get_intercept_point(airplane.position, airplane.velocity,
-                                   target.position, target.velocity);
+  auto point = get_intercept_point(airplane.position, airplane.velocity, target.position, target.velocity);
 
   fly_towards(airplane, point);
 }

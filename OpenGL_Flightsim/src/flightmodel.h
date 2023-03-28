@@ -34,14 +34,13 @@ float get_air_density(float altitude)
 const float sea_level_air_density = get_air_density(0.0f);
 };  // namespace isa
 
+typedef glm::vec3 AeroData;  // AoA, Cl, Cd
+
 struct Airfoil {
   float min_alpha, max_alpha;
-  std::vector<glm::vec3> data;  // alpha, cl, cd
+  std::vector<AeroData> data;
 
-  Airfoil(const std::vector<glm::vec3>& curve) : data(curve)
-  {
-    min_alpha = curve.front().x, max_alpha = curve.back().x;
-  }
+  Airfoil(const std::vector<AeroData>& curve) : data(curve) { min_alpha = curve.front().x, max_alpha = curve.back().x; }
 
   // lift_coeff, drag_coeff, moment_coeff
   std::tuple<float, float> sample(float alpha) const
@@ -61,10 +60,21 @@ struct BaseEngine : public phi::ForceGenerator {
   void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) override {}
 };
 
+struct SimpleEngine : public BaseEngine {
+  const float thrust;
+  SimpleEngine(float thrust) : thrust(thrust) {}
+
+  void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) override
+  {
+    rigid_body->add_relative_force({throttle * thrust, 0.0f, 0.0f});
+  }
+};
+
 struct PropellorEngine : public BaseEngine {
   float horsepower, rpm, propellor_diameter;
 
-  PropellorEngine(float horsepower, float rpm, float diameter) : horsepower(horsepower), rpm(rpm), propellor_diameter(diameter)
+  PropellorEngine(float horsepower, float rpm, float diameter)
+      : horsepower(horsepower), rpm(rpm), propellor_diameter(diameter)
   {
   }
 
@@ -88,16 +98,6 @@ struct PropellorEngine : public BaseEngine {
     float thrust = ((propellor_efficiency * engine_power) / speed) * power_drop_off_factor;
     assert(0.0f < thrust);
     rigid_body->add_relative_force({thrust * throttle, 0.0f, 0.0f});
-  }
-};
-
-struct SimpleEngine : public BaseEngine {
-  const float thrust;
-  SimpleEngine(float thrust) : thrust(thrust) {}
-
-  void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) override
-  {
-    rigid_body->add_relative_force({throttle * thrust, 0.0f, 0.0f});
   }
 };
 
@@ -216,8 +216,7 @@ class Wing : public phi::ForceGenerator
 };
 
 struct Airplane : public phi::RigidBody {
-  float trim = 0.0f;
-  glm::vec3 joystick{};  // roll, yaw, pitch
+  glm::vec4 joystick{};  // roll, yaw, pitch, elevator trim
 
   BaseEngine* engine;
   std::vector<Wing> surfaces;
@@ -246,7 +245,7 @@ struct Airplane : public phi::RigidBody {
 
   void update_flightmodel(phi::Seconds dt)
   {
-    float aileron = joystick.x, rudder = joystick.y, elevator = joystick.z;
+    float aileron = joystick.x, rudder = joystick.y, elevator = joystick.z, trim = joystick.w;
 
     surfaces[1].set_control_input(+aileron);
     surfaces[2].set_control_input(-aileron);

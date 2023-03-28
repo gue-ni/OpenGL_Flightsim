@@ -42,6 +42,11 @@ JK      control thrust
 #define NPC_AIRCRAFT 0
 #define SHOW_MASS_ELEMENTS 0
 
+/* select flightmodel */
+#define FAST_JET 0
+#define CESSNA 1
+#define FLIGHTMODEL FAST_JET
+
 #if 0
 constexpr glm::ivec2 RESOLUTION{640, 480};
 #else
@@ -137,7 +142,6 @@ int main(void)
   auto tex = make_shared<gfx::gl::Texture>("assets/textures/f16_large.jpg", params);
   auto texture = make_shared<gfx::Phong>(tex);
   auto obj = gfx::load_obj("assets/models/falcon.obj");
-  //auto obj = gfx::load_obj("assets/models/skyhawk.obj");
   auto model = std::make_shared<gfx::Geometry>(obj, gfx::Geometry::POS_NORM_UV);
 
   gfx::Object3D scene;
@@ -168,7 +172,7 @@ int main(void)
 
   std::vector<GameObject*> objects;
 
-#if 0
+#if (FLIGHTMODEL == CESSNA)
   constexpr float speed = phi::units::meter_per_second(200.0f /* km/h */);
   constexpr float altitude = 800.0f;
 
@@ -231,7 +235,7 @@ int main(void)
   std::cout << "cg = " << center_of_gravity << std::endl;
 
   // compute inertia tensor
-  auto inertia = phi::inertia::tensor(mass_elements, true, &center_of_gravity);
+  const auto inertia = phi::inertia::tensor(mass_elements, true, &center_of_gravity);
   std::cout << "inertia = " << inertia << std::endl;
 
   for (int i = 0; i < mass_elements.size(); i++) {
@@ -263,12 +267,9 @@ int main(void)
       Wing(&NACA_0012, v_tail_pos, v_tail_area, v_tail_span, phi::RIGHT),         // vertical tail
   };
 
-
-
   auto engine = new PropellorEngine(horsepower, rpm, prop_diameter);
 
-#else
-  /* ====== begin working config ======= */
+#elif (FLIGHTMODEL == FAST_JET)
   constexpr float altitude = 3000.0f;
   constexpr float speed = phi::units::meter_per_second(500.0f /* km/h */);
 
@@ -286,24 +287,24 @@ int main(void)
       phi::inertia::cube({0.0f, 0.0f, 0.0f}, {8.0f, 2.0f, 2.0f}, mass * 0.5f),              // fuselage
   };
 
-  auto inertia = phi::inertia::tensor(masses, true);
+  const auto inertia = phi::inertia::tensor(masses, true);
 
   const Airfoil NACA_0012(NACA_0012_data);
   const Airfoil NACA_2412(NACA_2412_data);
   const Airfoil NACA_64_206(NACA_64_206_data);
 
   std::vector<Wing> wings = {
-      Wing({wing_offset, 0.0f, -2.7f}, 6.96f, 2.50f, &NACA_2412),           // left wing
+      Wing({wing_offset, 0.0f, -2.7f}, 6.96f, 2.50f, &NACA_2412),             // left wing
       Wing({wing_offset - 1.5f, 0.0f, -2.0f}, 3.80f, 1.26f, &NACA_0012),      // left aileron
       Wing({wing_offset - 1.5f, 0.0f, 2.0f}, 3.80f, 1.26f, &NACA_0012),       // right aileron
-      Wing({wing_offset, 0.0f, +2.7f}, 6.96f, 2.50f, &NACA_2412),           // right wing
+      Wing({wing_offset, 0.0f, +2.7f}, 6.96f, 2.50f, &NACA_2412),             // right wing
       Wing({tail_offset, -0.1f, 0.0f}, 6.54f, 2.70f, &NACA_0012),             // elevator
       Wing({tail_offset, 0.0f, 0.0f}, 5.31f, 3.10f, &NACA_0012, phi::RIGHT),  // rudder
   };
 
   auto engine = new SimpleEngine(thrust);
-
-  /* ====== end working config ======= */
+#else
+#error FLIGHTMODEL not defined
 #endif
 
   GameObject player = {.transform = gfx::Mesh(model, texture),
@@ -329,7 +330,7 @@ int main(void)
 
 #if NPC_AIRCRAFT
   GameObject npc = {.transform = gfx::Mesh(model, texture),
-                    .airplane = Airplane(mass, Engine(horsepower, rpm, prop_diameter), inertia, surfaces),
+                    .airplane = Airplane(mass, engine, inertia, wings),
                     .collider = col::Sphere({0.0f, 0.0f, 0.0f}, 5.0f)};
 
   npc.airplane.position = glm::vec3(-6990.0f, altitude, 10.0f);
@@ -505,7 +506,7 @@ int main(void)
     ImGui::Text("THR:   %d %%", static_cast<int>(player.airplane.engine->throttle * 100.0f));
     ImGui::Text("G:     %.1f", player.airplane.get_g());
     ImGui::Text("AoA:   %.2f", player.airplane.get_aoa());
-    ImGui::Text("Trim:  %.2f", player.airplane.trim);
+    ImGui::Text("Trim:  %.2f", player.airplane.joystick.w);
     ImGui::Text("FPS:   %.1f", fps);
     ImGui::End();
 #endif
@@ -531,7 +532,7 @@ int main(void)
 
     get_keyboard_state(joystick, dt);
 
-    player.airplane.joystick = glm::vec3(joystick.aileron, joystick.rudder, joystick.elevator);
+    player.airplane.joystick = glm::vec4(joystick.aileron, joystick.rudder, joystick.elevator, joystick.trim);
     if (!joystick_control) {
       float max_av = 45.0f;  // deg/s
       float target_av = max_av * joystick.elevator;
@@ -539,7 +540,6 @@ int main(void)
       player.airplane.joystick.z = pitch_control_pid.calculate(current_av, target_av, dt);
     }
     player.airplane.engine->throttle = joystick.throttle;
-    player.airplane.trim = joystick.trim;
 
 #if NPC_AIRCRAFT
     target_marker.visible = glm::length(camera.get_world_position() - npc.airplane.position) > 500.0f;
