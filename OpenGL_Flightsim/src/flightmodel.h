@@ -240,6 +240,9 @@ struct Airplane : public phi::RigidBody {
     // main wings
     surfaces[0].is_control_surface = false;
     surfaces[3].is_control_surface = false;
+
+    surfaces[1].set_deflection_limits(-15.0f, 15.0f);
+    surfaces[2].set_deflection_limits(-15.0f, 15.0f);
   }
 
   void update_flightmodel(phi::Seconds dt)
