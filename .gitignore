@@ -2,6 +2,7 @@
 x64/
 x86/
 log/
+lib/
 Debug/
 Release/
 OpenGL_Flightsim/reference/stuff/
@@ -13,6 +14,5 @@ OpenGL_Flightsim/build/
 *.ncb
 *.txt
 *.zip
-.github/workflows/msbuild.yml
 OpenGL_Flightsim/assets/models/skyhawk.mtl
 OpenGL_Flightsim/assets/models/skyhawk.obj

@@ -17,5 +17,7 @@ copy %GLEW% %ReleaseDir%
   git rev-parse HEAD
 ) > %ReleaseDir%/VERSION
 
+del flightsim.zip
+
 :: compress 
 tar.exe --exclude *.pdb -acvf flightsim.zip -C %ReleaseDir% *
