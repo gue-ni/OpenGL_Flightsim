@@ -7,12 +7,12 @@ Release/
 OpenGL_Flightsim/reference/stuff/
 OpenGL_Flightsim/tools/
 OpenGL_Flightsim/build/
-
 *.ini
 *.user
 *.suo
 *.ncb
 *.txt
+*.zip
 .github/workflows/msbuild.yml
 OpenGL_Flightsim/assets/models/skyhawk.mtl
 OpenGL_Flightsim/assets/models/skyhawk.obj

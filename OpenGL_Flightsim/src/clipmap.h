@@ -159,8 +159,8 @@ class Clipmap : public gfx::Object3D
       for (int l = min_level; l <= levels; l++) {
         const int rows = 5, cols = 5;
         // float border = 0.0f;
-        float scale = std::pow(2.0f, l);
-        float next_scale = std::pow(2.0f, l + 2);
+        float scale = std::powf(2.0f, l);
+        float next_scale = std::powf(2.0f, l + 2);
         float scaled_segment_size = segment_size * scale;
         float tile_size = segments * scaled_segment_size;
         glm::vec2 snapped = glm::floor(camera_pos_xy / next_scale) * next_scale;
