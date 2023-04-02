@@ -87,7 +87,7 @@ struct PropellorEngine : public Engine {
     const float a = 1.83f, b = -1.32f;  // efficiency curve fit coefficients
     float turnover_rate = rpm / 60.0f;
     float propellor_advance_ratio = speed / (turnover_rate * propellor_diameter);
-    float propellor_efficiency = a * propellor_advance_ratio + b * std::powf(propellor_advance_ratio, 3);
+    float propellor_efficiency = a * propellor_advance_ratio + b * std::pow(propellor_advance_ratio, 3);
     assert(0.0f <= propellor_efficiency && propellor_efficiency <= 1.0f);
 
     const float c = 0.12f;  // mechanical power loss factor
@@ -134,7 +134,7 @@ class Wing : public phi::ForceGenerator
         chord(area / span),
         wingspan(span),
         normal(normal),
-        aspect_ratio(std::powf(span, 2) / area)
+        aspect_ratio(std::pow(span, 2) / area)
   {
   }
 
@@ -145,7 +145,7 @@ class Wing : public phi::ForceGenerator
         chord(chord),
         wingspan(span),
         normal(normal),
-        aspect_ratio(std::powf(span, 2) / area)
+        aspect_ratio(std::pow(span, 2) / area)
   {
   }
 
@@ -179,12 +179,12 @@ class Wing : public phi::ForceGenerator
     auto [lift_coeff, drag_coeff] = airfoil->sample(angle_of_attack);
 
     // induced drag
-    float induced_drag_coeff = std::powf(lift_coeff, 2) / (phi::PI * aspect_ratio * efficiency_factor);
+    float induced_drag_coeff = std::pow(lift_coeff, 2) / (phi::PI * aspect_ratio * efficiency_factor);
 
     // air density depends on altitude
     float air_density = isa::get_air_density(0.0f);  // something is not right here, so let's assume sea level
 
-    float dynamic_pressure = 0.5f * std::powf(speed, 2) * air_density * area;
+    float dynamic_pressure = 0.5f * std::pow(speed, 2) * air_density * area;
     glm::vec3 lift = lift_direction * lift_coeff * lift_multiplier * dynamic_pressure;
     glm::vec3 drag = drag_direction * (drag_coeff + induced_drag_coeff) * drag_multiplier * dynamic_pressure;
 
@@ -329,7 +329,7 @@ struct Airplane : public phi::RigidBody {
   {
     // See: https://aerotoolbox.com/airspeed-conversions/
     float air_density = isa::get_air_density(get_altitude());
-    float dynamic_pressure = 0.5f * std::powf(get_speed(), 2) * air_density;  // bernoulli's equation
+    float dynamic_pressure = 0.5f * std::pow(get_speed(), 2) * air_density;  // bernoulli's equation
     return std::sqrt(2 * dynamic_pressure / isa::sea_level_air_density);
   }
 };
