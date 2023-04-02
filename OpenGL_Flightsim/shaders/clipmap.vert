@@ -18,7 +18,7 @@ out vec3 Normal;
 out vec3 FragPos;
 out vec2 TexCoord;
 
-out int Factor;
+flat out int Factor;
 
 float scale(float input_val, float in_min, float in_max, float out_min, float out_max)
 {
