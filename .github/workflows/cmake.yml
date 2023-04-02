@@ -29,7 +29,7 @@ jobs:
       
     - uses: actions/upload-artifact@v3
       with:
-        name: flightsim
+        name: flightsim-linux
         path: |
           ${{runner.workspace}}/OpenGL_Flightsim/OpenGL_Flightsim/build/assets/*
           ${{runner.workspace}}/OpenGL_Flightsim/OpenGL_Flightsim/build/shaders/*
