@@ -141,7 +141,9 @@ xcopy /y /i /s $(ProjectDir)shaders  $(OutDir)shaders</Command>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /y /i /s $(ProjectDir)assets  $(OutDir)assets
-xcopy /y /i /s $(ProjectDir)shaders  $(OutDir)shaders</Command>
+xcopy /y /i /s $(ProjectDir)shaders  $(OutDir)shaders
+xcopy /y /i /s $(ProjectDir)..\lib\SDL2-2.26.4\lib\x64\*.dll $(OutDir)
+xcopy /y /i /s $(ProjectDir)..\lib\glew-2.2.0\bin\Release\x64\*.dll $(OutDir)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
