@@ -34,15 +34,17 @@ float get_air_density(float altitude)
 const float sea_level_air_density = get_air_density(0.0f);
 };  // namespace isa
 
-typedef glm::vec3 AeroData;  // AoA, Cl, Cd
+// AoA, Cl, Cd
+typedef glm::vec3 AeroData;
 
+// aerodynamic data sampler
 struct Airfoil {
   float min_alpha, max_alpha;
   std::vector<AeroData> data;
 
   Airfoil(const std::vector<AeroData>& curve) : data(curve) { min_alpha = curve.front().x, max_alpha = curve.back().x; }
 
-  // lift_coeff, drag_coeff, moment_coeff
+  // lift_coeff, drag_coeff
   std::tuple<float, float> sample(float alpha) const
   {
     int max_index = static_cast<int>(data.size() - 1);
@@ -55,11 +57,13 @@ struct Airfoil {
   }
 };
 
+// base engine
 struct Engine : public phi::ForceGenerator {
   float throttle = 0.25f;
   void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) override {}
 };
 
+// simple jet-like engine
 struct SimpleEngine : public Engine {
   const float thrust;
   SimpleEngine(float thrust) : thrust(thrust) {}
@@ -70,6 +74,7 @@ struct SimpleEngine : public Engine {
   }
 };
 
+// does not yet implement engine torque
 struct PropellorEngine : public Engine {
   float horsepower, rpm, propellor_diameter;
 
@@ -101,6 +106,7 @@ struct PropellorEngine : public Engine {
   }
 };
 
+// not only a wing, can be any kind of aerodynamic surface
 class Wing : public phi::ForceGenerator
 {
  private:
@@ -215,6 +221,7 @@ class Wing : public phi::ForceGenerator
   }
 };
 
+// simple flightmodel
 struct Airplane : public phi::RigidBody {
   glm::vec4 joystick{};  // roll, yaw, pitch, elevator trim
   Engine* engine;
@@ -312,6 +319,7 @@ struct Airplane : public phi::RigidBody {
     return g_force;
   }
 
+  // mach number
   float get_mach() const
   {
     float temperature = isa::get_air_temperature(get_altitude());
@@ -319,12 +327,14 @@ struct Airplane : public phi::RigidBody {
     return get_speed() / speed_of_sound;
   }
 
+  // angle of attack
   float get_aoa() const
   {
     auto velocity = get_body_velocity();
     return glm::degrees(std::asin(glm::dot(glm::normalize(-velocity), phi::UP)));
   }
 
+  // indicated air speed
   float get_ias() const
   {
     // See: https://aerotoolbox.com/airspeed-conversions/
