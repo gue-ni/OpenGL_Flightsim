@@ -73,7 +73,7 @@ struct GameObject {
 
   void update(float dt)
   {
-    airplane.update_flightmodel(dt);
+    airplane.update(dt);
     transform.set_transform(airplane.position, airplane.orientation);
     collider.center = airplane.position;
   }
@@ -81,7 +81,7 @@ struct GameObject {
 
 void get_keyboard_state(Joystick& joystick, phi::Seconds dt);
 void solve_constraints(phi::RigidBody& rigid_body);
-void apply_to_object3d(const phi::RigidBody& rigid_body, gfx::Object3D& object);
+void apply_to_object3d(const phi::RigidBody& rigid_body, gfx::Object3D* object);
 
 int main(void)
 {
@@ -101,6 +101,10 @@ int main(void)
   if (GLEW_OK != glewInit()) return -1;
 
   std::cout << glGetString(GL_VERSION) << std::endl;
+  std::cout << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
+  std::cout << glGetString(GL_VENDOR) << std::endl;
+  std::cout << glGetString(GL_RENDERER) << std::endl;
+
   std::cout << USAGE << std::endl;
 
   IMGUI_CHECKVERSION();
@@ -309,7 +313,7 @@ int main(void)
 #endif
 
   GameObject player = {.transform = gfx::Mesh(model, texture),
-                       .airplane = Airplane(mass, engine, inertia, wings),
+                       .airplane = Airplane(mass, inertia, wings, engine),
                        .collider = col::Sphere({0.0f, 0.0f, 0.0f}, 5.0f)};
 
   player.airplane.position = glm::vec3(-7000.0f, altitude, 0.0f);
@@ -331,7 +335,7 @@ int main(void)
 
 #if NPC_AIRCRAFT
   GameObject npc = {.transform = gfx::Mesh(model, texture),
-                    .airplane = Airplane(mass, engine, inertia, wings),
+                    .airplane = Airplane(mass, inertia, wings, engine),
                     .collider = col::Sphere({0.0f, 0.0f, 0.0f}, 5.0f)};
 
   npc.airplane.position = glm::vec3(-6990.0f, altitude, 10.0f);
@@ -540,7 +544,7 @@ int main(void)
 
     player.airplane.joystick = glm::vec4(joystick.aileron, joystick.rudder, joystick.elevator, joystick.trim);
 #if USE_PID
-    if (!joystick_control) {
+    {
       float max_av = 45.0f;  // deg/s
       float target_av = max_av * joystick.elevator;
       float current_av = glm::degrees(player.airplane.angular_velocity.z);
@@ -629,7 +633,7 @@ void get_keyboard_state(Joystick& joystick, phi::Seconds dt)
   } else if (key_states[SDL_SCANCODE_S] || key_states[SDL_SCANCODE_DOWN]) {
     joystick.elevator = move(joystick.elevator, -factor.z, dt);
   } else if (joystick.num_axis <= 0) {
-    joystick.elevator = center(joystick.elevator, factor.z, dt);
+    joystick.elevator = center(joystick.elevator, factor.z * 3.0f, dt);
   }
 
   if (key_states[SDL_SCANCODE_E]) {
@@ -656,9 +660,9 @@ void get_keyboard_state(Joystick& joystick, phi::Seconds dt)
   }
 }
 
-void apply_to_object3d(const phi::RigidBody& rigid_body, gfx::Object3D& object3d)
+void apply_to_object3d(const phi::RigidBody& rigid_body, gfx::Object3D* object3d)
 {
-  object3d.set_transform(rigid_body.position, rigid_body.orientation);
+  object3d->set_transform(rigid_body.position, rigid_body.orientation);
 }
 
 void solve_constraints(phi::RigidBody& rigid_body)

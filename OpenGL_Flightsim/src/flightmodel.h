@@ -234,7 +234,7 @@ struct Airplane : public phi::RigidBody {
   std::ofstream log_file;
 #endif
 
-  Airplane(float mass, Engine* engine, glm::mat3 inertia, std::vector<Wing> elements)
+  Airplane(float mass, const glm::mat3& inertia, std::vector<Wing> elements, Engine* engine)
       : phi::RigidBody({.mass = mass, .inertia = inertia}), surfaces(elements), engine(engine)
   {
 #if LOG_FLIGHT
@@ -250,9 +250,10 @@ struct Airplane : public phi::RigidBody {
 
     surfaces[1].set_deflection_limits(-15.0f, 15.0f);
     surfaces[2].set_deflection_limits(-15.0f, 15.0f);
+    surfaces[5].set_deflection_limits(-5.0f, 5.0f);
   }
 
-  void update_flightmodel(phi::Seconds dt)
+  void update(phi::Seconds dt) override
   {
     float aileron = joystick.x, rudder = joystick.y, elevator = joystick.z, trim = joystick.w;
 
@@ -296,11 +297,12 @@ struct Airplane : public phi::RigidBody {
 
     engine->apply_forces(this, dt);
 
-    update(dt);
+    phi::RigidBody::update(dt);
   }
 
   float get_altitude() const { return position.y; }
 
+  // pitch g force
   float get_g() const
   {
     auto velocity = get_body_velocity();

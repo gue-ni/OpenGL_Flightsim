@@ -285,7 +285,7 @@ class RigidBody
   // get right direction in world space
   inline glm::vec3 right() const { return transform_direction(phi::RIGHT); }
 
-  void update(Seconds dt)
+  virtual void update(Seconds dt)
   {
     if (!active) return;
 
