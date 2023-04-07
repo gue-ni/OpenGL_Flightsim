@@ -15,14 +15,6 @@
 namespace col
 {
 
-constexpr float EPSILON = 1e-8f;
-
-template <typename T>
-constexpr inline T sq(T x)
-{
-  return x * x;
-}
-
 typedef void CollisionCallback(const glm::vec3& point, const glm::vec3& normal);
 
 struct Collider {
@@ -96,15 +88,15 @@ struct Heightmap {
 bool test_collision(const Ray& r, const Sphere& s, float* t)
 {
   // Christer_Ericson-Real-Time_Collision_Detection.pdf#page=178
-  assert(std::abs(glm::length(r.direction) - 1.0f) < EPSILON);
+  assert(std::abs(glm::length(r.direction) - 1.0f) < phi::EPSILON);
 
   auto m = r.origin - s.center;
   auto b = glm::dot(m, r.direction);
-  auto c = glm::dot(m, m) - sq(s.radius);
+  auto c = glm::dot(m, m) - phi::sq(s.radius);
 
   if (c > 0.0f && b > 0.0f) return false;
 
-  auto discr = sq(b) - c;
+  auto discr = phi::sq(b) - c;
 
   if (discr < 0.0f) return false;
 
@@ -113,11 +105,19 @@ bool test_collision(const Ray& r, const Sphere& s, float* t)
 }
 
 // test collision between two spheres
-bool test_collision(const Sphere& s0, const Sphere& s1)
+bool test_collision(const Sphere& s0, const Sphere& s1, phi::CollisionInfo* info)
 {
   float distance = glm::length(s0.center - s1.center);
   float radius_sum = s0.radius + s1.radius;
-  return distance < radius_sum;
+
+  if (distance < radius_sum) {
+    info->normal = glm::normalize(s1.center - s0.center);
+    info->penetration = radius_sum - distance;
+    info->point = s0.center + s0.radius * info->normal;
+    return true;
+  } else {
+    return false;
+  }
 }
 
 // test collision between two axis aligned bounding boxes

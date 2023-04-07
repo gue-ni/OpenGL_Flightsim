@@ -39,7 +39,7 @@ JK      control thrust
 #define CLIPMAP 1
 #define SKYBOX 1
 #define SMOOTH_CAMERA 1
-#define NPC_AIRCRAFT 0
+#define NPC_AIRCRAFT 1
 #define SHOW_MASS_ELEMENTS 0
 #define USE_PID 1
 
@@ -48,7 +48,7 @@ JK      control thrust
 #define CESSNA 1
 #define FLIGHTMODEL FAST_JET
 
-#if 0
+#if 1
 constexpr glm::ivec2 RESOLUTION{640, 480};
 #else
 constexpr glm::ivec2 RESOLUTION{1024, 728};
@@ -314,7 +314,7 @@ int main(void)
 
   GameObject player = {.transform = gfx::Mesh(model, texture),
                        .airplane = Airplane(mass, inertia, wings, engine),
-                       .collider = col::Sphere({0.0f, 0.0f, 0.0f}, 5.0f)};
+                       .collider = col::Sphere({0.0f, 0.0f, 0.0f}, 15.0f)};
 
   player.airplane.position = glm::vec3(-7000.0f, altitude, 0.0f);
   player.airplane.velocity = glm::vec3(speed, 0.0f, 0.0f);
@@ -336,7 +336,7 @@ int main(void)
 #if NPC_AIRCRAFT
   GameObject npc = {.transform = gfx::Mesh(model, texture),
                     .airplane = Airplane(mass, inertia, wings, engine),
-                    .collider = col::Sphere({0.0f, 0.0f, 0.0f}, 5.0f)};
+                    .collider = col::Sphere({0.0f, 0.0f, 0.0f}, 15.0f)};
 
   npc.airplane.position = glm::vec3(-6990.0f, altitude, 10.0f);
   npc.airplane.velocity = glm::vec3(speed, 0.0f, 0.0f);
@@ -502,7 +502,7 @@ int main(void)
       alt = player.airplane.get_altitude();
       spd = phi::units::kilometer_per_hour(player.airplane.get_speed());
       ias = phi::units::kilometer_per_hour(player.airplane.get_ias());
-      thr = static_cast<int>(player.airplane.engine->throttle * 100.0f);
+      thr = player.airplane.engine->throttle;
       gee = player.airplane.get_g();
       aoa = player.airplane.get_aoa();
     }
@@ -514,7 +514,7 @@ int main(void)
     ImGui::Text("ALT:   %.1f m", alt);
     ImGui::Text("SPD:   %.1f km/h", spd);
     ImGui::Text("IAS:   %.1f km/h", ias);
-    ImGui::Text("THR:   %d %%", thr);
+    ImGui::Text("THR:   %.1f %%", player.airplane.engine->throttle * 100.0f);
     ImGui::Text("G:     %.1f", gee);
     ImGui::Text("AoA:   %.2f", aoa);
     ImGui::Text("Trim:  %.2f", player.airplane.joystick.w);
@@ -555,7 +555,7 @@ int main(void)
 
 #if NPC_AIRCRAFT
     target_marker.visible = glm::length(camera.get_world_position() - npc.airplane.position) > 500.0f;
-    fly_towards(npc.airplane, player.airplane.position);
+    // fly_towards(npc.airplane, player.airplane.position);
 #endif
 
     if (!paused) {
@@ -574,10 +574,12 @@ int main(void)
 
         for (int j = i + 1; j < objects.size(); j++) {
           auto& b = objects[j];
-          if (col::test_collision(a->collider, b->collider)) {
-            printf("[%.1f] collision!\n", flight_time);
-            auto collision_normal = glm::normalize(b->airplane.position - a->airplane.position);
-            phi::linear_collision_response(&a->airplane, &b->airplane, {.normal = collision_normal}, 0.5f);
+
+          phi::CollisionInfo collision{};
+
+          if (col::test_collision(a->collider, b->collider, &collision)) {
+            printf("[%.1f] collision!, p = %f\n", flight_time, collision.penetration);
+            phi::RigidBody::impulse_collision_response(&a->airplane, &b->airplane, collision);
           }
         }
       }
