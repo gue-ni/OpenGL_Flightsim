@@ -576,8 +576,8 @@ int main(void)
           auto& b = objects[j];
           if (col::test_collision(a->collider, b->collider)) {
             printf("[%.1f] collision!\n", flight_time);
-            auto collision_normal = glm::normalize(a->airplane.position - b->airplane.position);
-            phi::linear_collision_response(&a->airplane, &b->airplane, collision_normal, 0.5f);
+            auto collision_normal = glm::normalize(b->airplane.position - a->airplane.position);
+            phi::linear_collision_response(&a->airplane, &b->airplane, {.normal = collision_normal}, 0.5f);
           }
         }
       }

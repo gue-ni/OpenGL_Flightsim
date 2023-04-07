@@ -230,6 +230,8 @@ class RigidBody
   // get velocity in body space
   inline glm::vec3 get_body_velocity() const { return inverse_transform_direction(velocity); }
 
+  inline float get_inverse_mass() const { return 1.0f / mass; };
+
   // force and point vectors are in body space
   inline void add_force_at_point(const glm::vec3& force, const glm::vec3& point)
   {
@@ -250,10 +252,19 @@ class RigidBody
   inline void set_inertia(const glm::mat3& tensor) { inertia = tensor, inverse_inertia = glm::inverse(tensor); }
 
   // linear impulse in world space
-  inline void add_impulse(const glm::vec3& impulse) { velocity += impulse / mass; }
+  inline void add_linear_impulse(const glm::vec3& impulse) { velocity += impulse / mass; }
 
   // linear impulse in body space
   inline void add_relative_impulse(const glm::vec3& impulse) { velocity += transform_direction(impulse) / mass; }
+
+  // angular impulse in world space
+  inline void add_angular_impulse(const glm::vec3& impulse)
+  {
+    angular_velocity += inverse_transform_direction(impulse) * inverse_inertia;
+  }
+
+  // angular impulse in body space
+  inline void add_relative_angular_impulse(const glm::vec3& impulse) { angular_velocity += impulse * inverse_inertia; }
 
   // force vector in world space
   inline void add_force(const glm::vec3& force) { m_force += force; }
@@ -309,20 +320,69 @@ struct ForceGenerator {
   virtual void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) = 0;
 };
 
+struct CollisionInfo {
+  glm::vec3 point;
+  glm::vec3 normal;
+  float penetration;
+};
+
 // no angular effects, collision_normal goes from a to b
 // restitution_coeff:  0 = perfectly inelastic, 1 = perfectly elastic
-void linear_collision_response(phi::RigidBody* a, phi::RigidBody* b, const glm::vec3& collision_normal,
-                               float restitution_coeff = 0.5f)
+void linear_collision_response(phi::RigidBody* a, phi::RigidBody* b, const CollisionInfo collision,
+                               float restitution = 0.66f)
 {
-  assert(0.0f <= restitution_coeff && restitution_coeff <= 1.0f);
+  assert(0.0f <= restitution && restitution <= 1.0f);
 
-  auto relative_velocity = a->velocity - b->velocity;
+  auto relative_velocity = b->velocity - a->velocity;
+  float total_inverse_mass = a->get_inverse_mass() + b->get_inverse_mass();
+  float impulse_force = glm::dot(relative_velocity, collision.normal);
 
-  float impulse = (-(1 + restitution_coeff) * glm::dot(relative_velocity, collision_normal)) /
-                  (glm::dot(collision_normal, collision_normal) * (1 / a->mass + 1 / b->mass));
+  float j = (-(1 + restitution) * impulse_force) / (glm::dot(collision.normal, collision.normal) * total_inverse_mass);
 
-  a->add_impulse(impulse * +collision_normal);
-  b->add_impulse(impulse * -collision_normal);
+  auto impulse = j * collision.normal;
+
+  a->add_linear_impulse(-impulse);
+  b->add_linear_impulse(+impulse);
+}
+
+void impulse_collision_response(phi::RigidBody* a, phi::RigidBody* b, const CollisionInfo& collision,
+                                float restitution = 0.66f)
+{
+  assert(0.0f <= restitution && restitution <= 1.0f);
+
+  float total_inverse_mass = a->get_inverse_mass() + b->get_inverse_mass();
+
+  // move objects so they are no longer colliding. heavier object gets moved less
+  a->position -= collision.normal * collision.penetration * (a->get_inverse_mass() / total_inverse_mass);
+  b->position -= collision.normal * collision.penetration * (b->get_inverse_mass() / total_inverse_mass);
+
+  // location of collision point relative to rigidbody
+  auto a_relative = collision.point - a->position;
+  auto b_relative = collision.point - b->position;
+
+  // get velocity at this point
+  auto a_velocity = a->get_point_velocity(a_relative);
+  auto b_velocity = b->get_point_velocity(b_relative);
+
+  auto relative_velocity = b_velocity - a_velocity;
+  float impulse_force = glm::dot(relative_velocity, collision.normal);
+
+  auto a_inertia = glm::cross(a->inertia * glm::cross(a_relative, collision.normal), a_relative);
+  auto b_inertia = glm::cross(b->inertia * glm::cross(b_relative, collision.normal), b_relative);
+
+  float angular_effect = glm::dot(a_inertia + b_inertia, collision.normal);
+
+  // magnitude of impulse
+  float j = (-(1 + restitution) * impulse_force) / (total_inverse_mass + angular_effect);
+
+  auto impulse = j * collision.normal;
+
+  a->add_linear_impulse(-impulse);
+  b->add_linear_impulse(+impulse);
+
+  // apply angular impulse at position
+  a->add_angular_impulse(glm::cross(a_relative, -impulse));
+  b->add_angular_impulse(glm::cross(b_relative, +impulse));
 }
 
 };  // namespace phi
