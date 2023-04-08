@@ -12,7 +12,7 @@
 #include <vector>
 
 // RigidBody::update() can be marked virtual
-#if 1
+#if 0
 #define RB_VIRTUAL_UPDATE
 #else
 #define RB_VIRTUAL_UPDATE virtual
