@@ -353,15 +353,11 @@ class RigidBody
   // no angular effects
   // restitution:  0 = perfectly inelastic, 1 = perfectly elastic
   static void linear_impulse_collision_response(RigidBody* a, RigidBody* b, const CollisionInfo& collision,
-                                                float restitution = 0.66f)
+                                                float restitution_coeff = 0.66f)
   {
-    assert(0.0f < collision.penetration);
-    assert(0.0f <= restitution && restitution <= 1.0f);
-
     float total_inverse_mass = a->get_inverse_mass() + b->get_inverse_mass();
 
-    // move objects so they are no longer colliding. heavier object gets moved
-    // less
+    // move objects so they are no longer colliding. heavier object gets moved less
     a->position -= collision.normal * collision.penetration * (a->get_inverse_mass() / total_inverse_mass);
     b->position += collision.normal * collision.penetration * (b->get_inverse_mass() / total_inverse_mass);
 
@@ -371,7 +367,7 @@ class RigidBody
     float impulse_force = glm::dot(relative_velocity, collision.normal);
 
     // magnitude of impulse
-    float j = (-(1 + restitution) * impulse_force) / (total_inverse_mass);
+    float j = (-(1 + restitution_coeff) * impulse_force) / (total_inverse_mass);
 
     auto impulse = j * collision.normal;
 
@@ -385,11 +381,8 @@ class RigidBody
   // simple impulse collision response
   // restitution:  0 = perfectly inelastic, 1 = perfectly elastic
   static void impulse_collision_response(RigidBody* a, RigidBody* b, const CollisionInfo& collision,
-                                         float restitution = 0.66f)
+                                         float restitution_coeff = 0.66f)
   {
-    assert(0.0f < collision.penetration);
-    assert(0.0f <= restitution && restitution <= 1.0f);
-
     float total_inverse_mass = a->get_inverse_mass() + b->get_inverse_mass();
 
     // move objects so they are no longer colliding. heavier object gets moved less
@@ -405,24 +398,33 @@ class RigidBody
     auto a_velocity = a->get_point_velocity(a_relative);
     auto b_velocity = b->get_point_velocity(b_relative);
 
-    auto relative_velocity = b_velocity - a_velocity;
+    // relative velocity in world space
+    auto relative_velocity = b->transform_direction(b_velocity) - a->transform_direction(a_velocity);
 #else
     auto relative_velocity = b->velocity - a->velocity;
 #endif
 
-    // force is highest in head on collision
+    // force is highest in a head on collision
     float impulse_force = glm::dot(relative_velocity, collision.normal);
 
 #if ANGULAR_EFFECTS
     auto a_inertia = glm::cross(a->inertia * glm::cross(a_relative, collision.normal), a_relative);
     auto b_inertia = glm::cross(b->inertia * glm::cross(b_relative, collision.normal), b_relative);
-    float angular_effect = glm::dot(a_inertia + b_inertia, collision.normal);
+    float angular_effect_1 = glm::dot(a_inertia + b_inertia, collision.normal);
+
+    float angular_effect_2 =
+        glm::dot(collision.normal, glm::cross((glm::cross(a_relative, collision.normal) / a->inertia), a_relative)) +
+        glm::dot(collision.normal, glm::cross((glm::cross(b_relative, collision.normal) / b->inertia), b_relative));
 #else
-    float angular_effect = 0.0f;
+    float angular_effect_1 = 0.0f;
 #endif
 
+    // TODO: find correct implementation
+    printf("a_1 = %f, a_2 = %f\n", angular_effect_1, angular_effect_2);
+    assert(std::abs(angular_effect_1 - angular_effect_2) < phi::EPSILON);
+
     // magnitude of impulse
-    float j = (-(1 + restitution) * impulse_force) / (total_inverse_mass + angular_effect);
+    float j = (-(1 + restitution_coeff) * impulse_force) / (total_inverse_mass + angular_effect_1);
 
     auto impulse = j * collision.normal;
 
@@ -431,7 +433,6 @@ class RigidBody
     b->add_linear_impulse(+impulse);
 
 #if ANGULAR_EFFECTS
-    // TODO: is this now in body space or world space
     // apply angular impulse at position
     a->add_angular_impulse(glm::cross(a_relative, -impulse));
     b->add_angular_impulse(glm::cross(b_relative, +impulse));

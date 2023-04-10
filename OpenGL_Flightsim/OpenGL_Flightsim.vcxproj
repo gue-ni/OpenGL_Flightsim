@@ -177,7 +177,7 @@ xcopy /y /i /s $(ProjectDir)..\lib\glew-2.2.0\bin\Release\x64\*.dll $(OutDir)</C
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ai.h" />
-    <ClInclude Include="src\collisions.h" />
+    <ClInclude Include="src\collider.h" />
     <ClInclude Include="src\data.h" />
     <ClInclude Include="src\clipmap.h" />
     <ClInclude Include="src\flightmodel.h" />

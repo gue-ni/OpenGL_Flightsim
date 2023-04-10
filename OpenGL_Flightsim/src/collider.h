@@ -3,12 +3,7 @@
 */
 #pragma once
 
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/euler_angles.hpp>
-#include <glm/gtx/vector_angle.hpp>
-#include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
-#include <tuple>
 
 #include "phi.h"
 
@@ -37,12 +32,14 @@ struct AABB : public Collider {
 struct Sphere : public Collider {
   glm::vec3 center;
   float radius;
+  Sphere() : Sphere(glm::vec3(0.0f), 1.0f) {}
   Sphere(const glm::vec3& center, float radius) : center(center), radius(radius) {}
 };
 
 // ray = origin + direction * t
 struct Ray : public Collider {
   glm::vec3 origin, direction;
+  Ray() : Ray(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f)) {}
   Ray(const glm::vec3& origin, const glm::vec3& direction) : origin(origin), direction(direction) {}
 };
 
@@ -105,15 +102,15 @@ bool test_collision(const Ray& r, const Sphere& s, float* t)
 }
 
 // test collision between two spheres
-bool test_collision(const Sphere& s0, const Sphere& s1, phi::CollisionInfo* info)
+bool test_collision(const Sphere& a, const Sphere& b, phi::CollisionInfo* info)
 {
-  float distance = glm::length(s0.center - s1.center);
-  float radius_sum = s0.radius + s1.radius;
+  float distance = glm::length(a.center - b.center);
+  float radius_sum = a.radius + b.radius;
 
   if (distance < radius_sum) {
-    info->normal = glm::normalize(s1.center - s0.center);
+    info->normal = glm::normalize(b.center - a.center);
     info->penetration = radius_sum - distance;
-    info->point = s0.center + s0.radius * info->normal;
+    info->point = a.center + a.radius * info->normal;
     return true;
   } else {
     return false;

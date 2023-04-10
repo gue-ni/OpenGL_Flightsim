@@ -14,7 +14,7 @@
 #include "../lib/imgui/imgui_impl_sdl2.h"
 #include "ai.h"
 #include "clipmap.h"
-#include "collisions.h"
+#include "collider.h"
 #include "flightmodel.h"
 #include "gfx.h"
 #include "phi.h"
@@ -48,7 +48,7 @@ JK      control thrust
 #define CESSNA 1
 #define FLIGHTMODEL FAST_JET
 
-#if 1
+#if 0
 constexpr glm::ivec2 RESOLUTION{640, 480};
 #else
 constexpr glm::ivec2 RESOLUTION{1024, 728};
