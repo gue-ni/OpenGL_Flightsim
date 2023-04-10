@@ -11,7 +11,7 @@ add_executable(flightsim
     # Source files
     src/ai.h
     src/clipmap.h
-    src/collisions.h
+    src/collider.h
     src/data.h
     src/flightmodel.h
     src/gfx.cpp
