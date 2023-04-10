@@ -36,11 +36,11 @@ struct Sphere : public Collider {
   Sphere(const glm::vec3& center, float radius) : center(center), radius(radius) {}
 };
 
-// ray = origin + direction * t
 struct Ray : public Collider {
   glm::vec3 origin, direction;
   Ray() : Ray(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f)) {}
   Ray(const glm::vec3& origin, const glm::vec3& direction) : origin(origin), direction(direction) {}
+  inline glm::vec3 point_at(float t) const { return origin + direction * t; }
 };
 
 struct Heightmap {
@@ -85,8 +85,6 @@ struct Heightmap {
 bool test_collision(const Ray& r, const Sphere& s, float* t)
 {
   // Christer_Ericson-Real-Time_Collision_Detection.pdf#page=178
-  assert(std::abs(glm::length(r.direction) - 1.0f) < phi::EPSILON);
-
   auto m = r.origin - s.center;
   auto b = glm::dot(m, r.direction);
   auto c = glm::dot(m, m) - phi::sq(s.radius);

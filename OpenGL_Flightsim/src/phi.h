@@ -80,7 +80,7 @@ inline T move_towards(T current, T target, T speed)
 }
 
 // inertia tensor calculations
-// https://en.wikipedia.org/wiki/List_of_moments_of_inertia
+// formulas according to https://en.wikipedia.org/wiki/List_of_moments_of_inertia
 namespace inertia
 {
 struct Element {
@@ -122,13 +122,14 @@ constexpr glm::mat3 tensor(const glm::vec3& moment_of_inertia)
   };
 }
 
-constexpr Element cube(const glm::vec3& position, const glm::vec3& size, float mass = 1.0f)
+// helper function for the creation of a cuboid mass element
+constexpr Element cube(const glm::vec3& position, const glm::vec3& size, float mass)
 {
   return {size, position, cuboid(size, mass), position, mass};
 }
 
 // distribute mass among elements depending on element volume
-void compute_uniform_mass(std::vector<Element>& elements, float mass)
+void compute_uniform_mass(std::vector<Element>& elements, float total_mass)
 {
   float total_volume = 0.0f;
   for (const auto& element : elements) {
@@ -136,7 +137,7 @@ void compute_uniform_mass(std::vector<Element>& elements, float mass)
   }
 
   for (auto& element : elements) {
-    element.mass = (element.volume() / total_volume) * mass;
+    element.mass = (element.volume() / total_volume) * total_mass;
   }
 }
 
@@ -204,6 +205,7 @@ struct CollisionInfo {
 // default rigid body is a sphere with radius 1m and a mass of 10kg
 constexpr float DEFAULT_RB_MASS = 10.0f;
 constexpr glm::mat3 DEFAULT_RB_INERTIA = inertia::tensor(inertia::sphere(1.0f, DEFAULT_RB_MASS));
+constexpr glm::quat DEFAULT_RB_ORIENTATION = glm::quat{0.0f, 0.0f, 0.0f, 1.0f};
 
 struct RigidBodyParams {
   float mass = DEFAULT_RB_MASS;
@@ -211,7 +213,7 @@ struct RigidBodyParams {
   glm::vec3 position{};
   glm::vec3 velocity{};
   glm::vec3 angular_velocity{};
-  glm::quat orientation = glm::quat(glm::vec3(0.0f));
+  glm::quat orientation = DEFAULT_RB_ORIENTATION;
   bool apply_gravity = true;
 };
 
@@ -376,8 +378,6 @@ class RigidBody
     b->add_linear_impulse(+impulse);
   }
 
-#define ANGULAR_EFFECTS 1
-
   // simple impulse collision response
   // restitution:  0 = perfectly inelastic, 1 = perfectly elastic
   static void impulse_collision_response(RigidBody* a, RigidBody* b, const CollisionInfo& collision,
@@ -389,7 +389,6 @@ class RigidBody
     a->position -= collision.normal * collision.penetration * (a->get_inverse_mass() / total_inverse_mass);
     b->position += collision.normal * collision.penetration * (b->get_inverse_mass() / total_inverse_mass);
 
-#if ANGULAR_EFFECTS
     // location of collision point relative to rigidbody
     auto a_relative = collision.point - a->position;
     auto b_relative = collision.point - b->position;
@@ -400,14 +399,10 @@ class RigidBody
 
     // relative velocity in world space
     auto relative_velocity = b->transform_direction(b_velocity) - a->transform_direction(a_velocity);
-#else
-    auto relative_velocity = b->velocity - a->velocity;
-#endif
 
     // force is highest in a head on collision
     float impulse_force = glm::dot(relative_velocity, collision.normal);
 
-#if ANGULAR_EFFECTS
     auto a_inertia = glm::cross(a->inertia * glm::cross(a_relative, collision.normal), a_relative);
     auto b_inertia = glm::cross(b->inertia * glm::cross(b_relative, collision.normal), b_relative);
     float angular_effect_1 = glm::dot(a_inertia + b_inertia, collision.normal);
@@ -415,9 +410,6 @@ class RigidBody
     float angular_effect_2 =
         glm::dot(collision.normal, glm::cross((glm::cross(a_relative, collision.normal) / a->inertia), a_relative)) +
         glm::dot(collision.normal, glm::cross((glm::cross(b_relative, collision.normal) / b->inertia), b_relative));
-#else
-    float angular_effect_1 = 0.0f;
-#endif
 
     // TODO: find correct implementation
     printf("a_1 = %f, a_2 = %f\n", angular_effect_1, angular_effect_2);
@@ -432,11 +424,9 @@ class RigidBody
     a->add_linear_impulse(-impulse);
     b->add_linear_impulse(+impulse);
 
-#if ANGULAR_EFFECTS
     // apply angular impulse at position
     a->add_angular_impulse(glm::cross(a_relative, -impulse));
     b->add_angular_impulse(glm::cross(b_relative, +impulse));
-#endif
   }
 };
 
