@@ -39,7 +39,7 @@ JK      control thrust
 #define CLIPMAP 1
 #define SKYBOX 1
 #define SMOOTH_CAMERA 1
-#define NPC_AIRCRAFT 1
+#define NPC_AIRCRAFT 0
 #define SHOW_MASS_ELEMENTS 0
 #define USE_PID 1
 
@@ -174,6 +174,12 @@ int main(void)
   Clipmap clipmap;
   scene.add(&clipmap);
 #endif
+#if 1
+  int width, height, channels;
+  const std::string heightmap_path = "assets/textures/terrain/1/heightmap.png";
+  uint8_t* data = gfx::gl::Texture::load_image(heightmap_path, &width, &height, &channels, 0);
+  col::Heightmap terrain_collider(data, width, height, channels);
+#endif
 
   std::vector<GameObject*> objects;
 
@@ -275,8 +281,15 @@ int main(void)
   auto engine = new PropellorEngine(horsepower, rpm, prop_diameter);
 
 #elif (FLIGHTMODEL == FAST_JET)
-  constexpr float altitude = 3000.0f;
+
+  glm::vec3 position = glm::vec3(-7000.0f, 0, 0.0f);
+
+  // constexpr float altitude = 700.0f;
+  float altitude = terrain_collider.get_height(glm::vec2{position.x, position.z}) + 0.0f;
+  position.y = altitude;
+
   constexpr float speed = phi::units::meter_per_second(500.0f /* km/h */);
+  // constexpr float speed = 0.0f;
 
   const float mass = 10000.0f;
   const float thrust = 50000.0f;
@@ -316,7 +329,7 @@ int main(void)
                        .airplane = Airplane(mass, inertia, wings, engine),
                        .collider = col::Sphere({0.0f, 0.0f, 0.0f}, 15.0f)};
 
-  player.airplane.position = glm::vec3(-7000.0f, altitude, 0.0f);
+  player.airplane.position = position;
   player.airplane.velocity = glm::vec3(speed, 0.0f, 0.0f);
   scene.add(&player.transform);
   objects.push_back(&player);
@@ -380,14 +393,6 @@ int main(void)
 #endif
 
   gfx::OrbitController controller(30.0f);
-
-#if 1
-  int width, height, channels;
-  const std::string heightmap_path = "assets/textures/terrain/1/heightmap.png";
-  uint8_t* data = gfx::gl::Texture::load_image(heightmap_path, &width, &height, &channels, 0);
-  col::Heightmap terrain_collider(data, width, height, channels);
-
-#endif
 
   SDL_Event event;
   bool quit = false, paused = false, orbit = false;
@@ -567,8 +572,26 @@ int main(void)
       for (int i = 0; i < objects.size(); i++) {
         auto& a = objects[i];
 #if 1
-        if (col::test_collision(terrain_collider, a->airplane.position)) {
-          printf("[%.1f] terrain collision!\n", flight_time);
+        float terrain_height;
+        float gear_height = 2.0f;
+        if (col::test_collision(terrain_collider, a->airplane.position - glm::vec3(0.0f, gear_height, 0.0f),
+                                &terrain_height)) {
+          // printf("[%.1f] terrain collision!, %f\n", flight_time, terrain_height);
+
+          if (a->airplane.velocity.y < 0.0f) {
+            auto euler = glm::eulerAngles(a->airplane.orientation);
+            euler.x = 0;                        // roll
+            euler.z = std::max(0.0f, euler.z);  // pitch, allow pitching up
+            a->airplane.orientation = glm::quat(euler);
+          }
+
+          a->airplane.is_landed = true;
+          a->airplane.velocity.y = std::max(0.0f, a->airplane.velocity.y);
+          // a->airplane.angular_velocity.z = std::max(0.0f, a->airplane.angular_velocity.z);
+          a->airplane.position.y = terrain_height + gear_height;
+
+        } else {
+          a->airplane.is_landed = false;
         }
 #endif
 

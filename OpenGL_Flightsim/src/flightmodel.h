@@ -226,6 +226,7 @@ struct Airplane : public phi::RigidBody {
   glm::vec4 joystick{};  // roll, yaw, pitch, elevator trim
   Engine* engine;
   std::vector<Wing> surfaces;
+  bool is_landed = false;
 
 #if LOG_FLIGHT
   float log_timer = 0.0f;
@@ -293,6 +294,23 @@ struct Airplane : public phi::RigidBody {
 
     for (auto& wing : surfaces) {
       wing.apply_forces(this, dt);
+    }
+
+    if (is_landed) {
+      // calculate friction with ground
+      // TODO: reduce friction, is far too much right now
+      auto direction = glm::normalize(velocity);
+      const float static_friction_coeff = 0.2f;
+      const float kinetic_friction_coeff = 0.05f;
+
+      float weight = mass * phi::EARTH_GRAVITY;
+
+      float static_friction = static_friction_coeff * weight;
+      float kinetic_friction = kinetic_friction_coeff * weight * get_speed();
+
+      float friction = static_friction + kinetic_friction;
+
+      add_force(-direction * friction);
     }
 
     engine->apply_forces(this, dt);

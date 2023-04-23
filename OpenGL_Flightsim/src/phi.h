@@ -202,8 +202,8 @@ struct CollisionInfo {
   float penetration;
 };
 
-// default rigid body is a sphere with radius 1m and a mass of 10kg
-constexpr float DEFAULT_RB_MASS = 10.0f;
+// default rigid body is a sphere with radius 1 meter and a mass of 100 kg
+constexpr float DEFAULT_RB_MASS = 100.0f;
 constexpr glm::mat3 DEFAULT_RB_INERTIA = inertia::tensor(inertia::sphere(1.0f, DEFAULT_RB_MASS));
 constexpr glm::quat DEFAULT_RB_ORIENTATION = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
 
@@ -228,8 +228,7 @@ class RigidBody
   glm::vec3 position{};                    // position in world space
   glm::quat orientation{};                 // orientation in world space
   glm::vec3 velocity{};                    // velocity in world space
-  glm::vec3 angular_velocity{};            // angular velocity in object space, x
-                                           // represents rotation around x axis
+  glm::vec3 angular_velocity{};            // angular velocity in object space, (x = roll, y = yaw, z = pitch)
   glm::mat3 inertia{}, inverse_inertia{};  // inertia tensor
   bool apply_gravity = true;
   bool active = true;
@@ -263,6 +262,7 @@ class RigidBody
   // get velocity in body space
   inline glm::vec3 get_body_velocity() const { return inverse_transform_direction(velocity); }
 
+  // self explantory
   inline float get_inverse_mass() const { return 1.0f / mass; };
 
   // force and point vectors are in body space

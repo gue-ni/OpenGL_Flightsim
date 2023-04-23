@@ -124,9 +124,10 @@ bool test_collision(const AABB& a, const AABB& b)
           (a_max.z < b_min.z || a_min.z > b_max.z));
 }
 
-bool test_collision(const Heightmap& heightmap, const glm::vec3& point)
+bool test_collision(const Heightmap& heightmap, const glm::vec3& point, float* height)
 {
-  return point.y <= heightmap.get_height({point.x, point.z});
+  *height = heightmap.get_height({point.x, point.z});
+  return point.y <= *height;
 }
 
 // test collision of two moving spheres
