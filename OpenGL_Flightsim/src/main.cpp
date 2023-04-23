@@ -338,7 +338,7 @@ int main(void)
                     .airplane = Airplane(mass, inertia, wings, engine),
                     .collider = col::Sphere({0.0f, 0.0f, 0.0f}, 15.0f)};
 
-  npc.airplane.position = glm::vec3(-6990.0f, altitude, 10.0f);
+  npc.airplane.position = glm::vec3(-6950.0f, altitude, 10.0f);
   npc.airplane.velocity = glm::vec3(speed, 0.0f, 0.0f);
   scene.add(&npc.transform);
   objects.push_back(&npc);

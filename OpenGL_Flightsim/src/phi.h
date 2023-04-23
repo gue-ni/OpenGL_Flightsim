@@ -205,7 +205,7 @@ struct CollisionInfo {
 // default rigid body is a sphere with radius 1m and a mass of 10kg
 constexpr float DEFAULT_RB_MASS = 10.0f;
 constexpr glm::mat3 DEFAULT_RB_INERTIA = inertia::tensor(inertia::sphere(1.0f, DEFAULT_RB_MASS));
-constexpr glm::quat DEFAULT_RB_ORIENTATION = glm::quat{0.0f, 0.0f, 0.0f, 1.0f};
+constexpr glm::quat DEFAULT_RB_ORIENTATION = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
 
 struct RigidBodyParams {
   float mass = DEFAULT_RB_MASS;
