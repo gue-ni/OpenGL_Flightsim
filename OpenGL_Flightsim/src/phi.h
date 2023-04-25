@@ -324,6 +324,9 @@ class RigidBody
  
   // get speed
   inline float get_speed() const { return glm::length(velocity); }
+  
+  // get euler angles in degrees
+  inline glm::vec3 get_euler_angles() const { return glm::eulerAngles(orientation); }
 
   // get torque in body space
   inline glm::vec3 get_torque() const { return m_torque; }
