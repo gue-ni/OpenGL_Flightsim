@@ -117,9 +117,13 @@ constexpr glm::vec3 cylinder(float radius, float length, float mass)
 // inertia tensor from moment of inertia
 constexpr glm::mat3 tensor(const glm::vec3& moment_of_inertia)
 {
+  // clang-format off
   return {
-      moment_of_inertia.x, 0.0f, 0.0f, 0.0f, moment_of_inertia.y, 0.0f, 0.0f, 0.0f, moment_of_inertia.z,
+      moment_of_inertia.x, 0.0f, 0.0f, 
+      0.0f, moment_of_inertia.y, 0.0f, 
+      0.0f, 0.0f, moment_of_inertia.z,
   };
+  // clang-format on
 }
 
 // helper function for the creation of a cuboid mass element
@@ -178,7 +182,13 @@ glm::mat3 tensor(std::vector<Element>& elements, bool precomputed_offset = false
     *cg = center_of_gravity;
   }
 
-  return {Ixx, -Ixy, -Ixz, -Ixy, Iyy, -Iyz, -Ixz, -Iyz, Izz};
+  // clang-format off
+  return {
+      Ixx, -Ixy, -Ixz, 
+      -Ixy, Iyy, -Iyz, 
+      -Ixz, -Iyz, Izz
+  };
+  // clang-format on
 }
 };  // namespace inertia
 
