@@ -3,7 +3,7 @@
 #include "gfx.h"
 
 constexpr unsigned int primitive_restart = 0xFFFFU;
-const std::string path = "assets/textures/terrain/1/";
+const std::string path                   = "assets/textures/terrain/1/";
 
 struct Seam {
   gfx::gl::VertexBuffer vbo;
@@ -12,7 +12,7 @@ struct Seam {
 
   Seam(int columns, float size)
   {
-    int rows = 1;
+    int rows    = 1;
     index_count = columns;
 
     std::vector<glm::vec3> vertices;
@@ -132,8 +132,8 @@ class Clipmap : public gfx::Object3D
   {
 #if 1
     if (!context.is_shadow_pass) {
-      auto camera_pos = context.camera->get_world_position();
-      float height = camera_pos.y;
+      auto camera_pos    = context.camera->get_world_position();
+      float height       = camera_pos.y;
       auto camera_pos_xy = glm::vec2(camera_pos.x, camera_pos.z);
 
       heightmap.bind(2);
@@ -159,12 +159,12 @@ class Clipmap : public gfx::Object3D
       for (int l = min_level; l <= levels; l++) {
         const int rows = 5, cols = 5;
         // float border = 0.0f;
-        float scale = std::pow(2.0f, l);
-        float next_scale = std::pow(2.0f, l + 2);
+        float scale               = std::pow(2.0f, l);
+        float next_scale          = std::pow(2.0f, l + 2);
         float scaled_segment_size = segment_size * scale;
-        float tile_size = segments * scaled_segment_size;
-        glm::vec2 snapped = glm::floor(camera_pos_xy / next_scale) * next_scale;
-        auto base = calc_base(l, camera_pos_xy);
+        float tile_size           = segments * scaled_segment_size;
+        glm::vec2 snapped         = glm::floor(camera_pos_xy / next_scale) * next_scale;
+        auto base                 = calc_base(l, camera_pos_xy);
 
         shader.uniform("u_Scale", scale);
         shader.uniform("u_SegmentSize", scaled_segment_size);
@@ -183,7 +183,7 @@ class Clipmap : public gfx::Object3D
           center.draw();
         } else {
           auto prev_base = calc_base(l - 1, camera_pos_xy);
-          auto diff = glm::abs(base - prev_base);
+          auto diff      = glm::abs(base - prev_base);
 
           auto l_offset = glm::vec2(tile_size, tile_size);
           if (diff.x == tile_size) {
@@ -283,11 +283,11 @@ class Clipmap : public gfx::Object3D
 
   glm::vec2 calc_base(int level, glm::vec2 camera_pos)
   {
-    float scale = std::pow(2.0f, level);
-    float next_scale = std::pow(2.0f, level + 2);
-    float tile_size = segments * segment_size * scale;
+    float scale       = std::pow(2.0f, level);
+    float next_scale  = std::pow(2.0f, level + 2);
+    float tile_size   = segments * segment_size * scale;
     glm::vec2 snapped = glm::floor(camera_pos / next_scale) * next_scale;
-    glm::vec2 base = snapped - tile_size * 2.0f;
+    glm::vec2 base    = snapped - tile_size * 2.0f;
     return base;
   }
 

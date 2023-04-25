@@ -27,7 +27,7 @@ float get_air_density(float altitude)
 {
   assert(0.0f <= altitude && altitude <= 11000.0f);
   float temperature = get_air_temperature(altitude);
-  float pressure = 101325.0f * std::pow(1 - 0.0065f * (altitude / 288.15f), 5.25f);
+  float pressure    = 101325.0f * std::pow(1 - 0.0065f * (altitude / 288.15f), 5.25f);
   return 0.00348f * (pressure / temperature);
 }
 
@@ -47,12 +47,12 @@ struct Airfoil {
   // lift_coeff, drag_coeff
   std::tuple<float, float> sample(float alpha) const
   {
-    int max_index = static_cast<int>(data.size() - 1);
-    float t = phi::inverse_lerp(min_alpha, max_alpha, alpha) * max_index;
-    float integer = std::floor(t);
+    int max_index    = static_cast<int>(data.size() - 1);
+    float t          = phi::inverse_lerp(min_alpha, max_alpha, alpha) * max_index;
+    float integer    = std::floor(t);
     float fractional = t - integer;
-    int index = static_cast<int>(integer);
-    auto value = (index < max_index) ? phi::lerp(data[index], data[index + 1], fractional) : data[max_index];
+    int index        = static_cast<int>(integer);
+    auto value       = (index < max_index) ? phi::lerp(data[index], data[index + 1], fractional) : data[max_index];
     return {value.y, value.z};
   }
 };
@@ -85,18 +85,18 @@ struct PropellorEngine : public Engine {
 
   void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) override
   {
-    float speed = rigid_body->get_speed();
-    float altitude = rigid_body->position.y;
+    float speed        = rigid_body->get_speed();
+    float altitude     = rigid_body->position.y;
     float engine_power = phi::units::watts(horsepower);
 
     const float a = 1.83f, b = -1.32f;  // efficiency curve fit coefficients
-    float turnover_rate = rpm / 60.0f;
+    float turnover_rate           = rpm / 60.0f;
     float propellor_advance_ratio = speed / (turnover_rate * propellor_diameter);
-    float propellor_efficiency = a * propellor_advance_ratio + b * std::pow(propellor_advance_ratio, 3);
+    float propellor_efficiency    = a * propellor_advance_ratio + b * std::pow(propellor_advance_ratio, 3);
     assert(0.0f <= propellor_efficiency && propellor_efficiency <= 1.0f);
 
-    const float c = 0.12f;  // mechanical power loss factor
-    float air_density = isa::get_air_density(altitude);
+    const float c               = 0.12f;  // mechanical power loss factor
+    float air_density           = isa::get_air_density(altitude);
     float power_drop_off_factor = ((air_density / isa::sea_level_air_density) - c) / (1 - c);
     assert(0.0f <= power_drop_off_factor && power_drop_off_factor <= 1.0f);
 
@@ -118,19 +118,19 @@ class Wing : public phi::ForceGenerator
   const glm::vec3 normal;
   const glm::vec3 center_of_pressure;
 
-  float lift_multiplier = 1.0f;
-  float drag_multiplier = 1.0f;
+  float lift_multiplier   = 1.0f;
+  float drag_multiplier   = 1.0f;
   float efficiency_factor = 1.0f;
 
-  float deflection = 0.0f;
-  float control_input = 0.0f;
-  float min_deflection = -10.0f;
-  float max_deflection = +10.0f;
-  float max_actuator_speed = 90.0f;
+  float deflection          = 0.0f;
+  float control_input       = 0.0f;
+  float min_deflection      = -10.0f;
+  float max_deflection      = +10.0f;
+  float max_actuator_speed  = 90.0f;
   float max_actuator_torque = 6000.0f;
 
  public:
-  float incidence = 0.0f;
+  float incidence         = 0.0f;
   bool is_control_surface = true;
 
   Wing(const Airfoil* airfoil, const glm::vec3& position, float area, float span, const glm::vec3& normal = phi::UP)
@@ -165,7 +165,7 @@ class Wing : public phi::ForceGenerator
   void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) override
   {
     glm::vec3 local_velocity = rigid_body->get_point_velocity(center_of_pressure);
-    float speed = glm::length(local_velocity);
+    float speed              = glm::length(local_velocity);
 
     if (speed <= phi::EPSILON) return;
 
@@ -191,8 +191,8 @@ class Wing : public phi::ForceGenerator
     float air_density = isa::get_air_density(0.0f);  // something is not right here, so let's assume sea level
 
     float dynamic_pressure = 0.5f * std::pow(speed, 2) * air_density * area;
-    glm::vec3 lift = lift_direction * lift_coeff * lift_multiplier * dynamic_pressure;
-    glm::vec3 drag = drag_direction * (drag_coeff + induced_drag_coeff) * drag_multiplier * dynamic_pressure;
+    glm::vec3 lift         = lift_direction * lift_coeff * lift_multiplier * dynamic_pressure;
+    glm::vec3 drag         = drag_direction * (drag_coeff + induced_drag_coeff) * drag_multiplier * dynamic_pressure;
 
     // aerodynamic forces are applied at the center of pressure
     rigid_body->add_force_at_point(lift + drag, center_of_pressure);
@@ -215,7 +215,7 @@ class Wing : public phi::ForceGenerator
     deflection = (control_input >= 0.0f ? max_deflection : min_deflection) * std::abs(control_input);
 #endif
 
-    auto axis = glm::normalize(glm::cross(phi::FORWARD, normal));
+    auto axis     = glm::normalize(glm::cross(phi::FORWARD, normal));
     auto rotation = glm::rotate(glm::mat4(1.0f), glm::radians(incidence + deflection), axis);
     return glm::vec3(rotation * glm::vec4(normal, 1.0f));
   }
@@ -229,9 +229,9 @@ struct Airplane : public phi::RigidBody {
   bool is_landed = false;
 
 #if LOG_FLIGHT
-  float log_timer = 0.0f;
+  float log_timer     = 0.0f;
   float log_intervall = 0.1f;
-  float flight_time = 0.0f;
+  float flight_time   = 0.0f;
   std::ofstream log_file;
 #endif
 
@@ -267,8 +267,8 @@ struct Airplane : public phi::RigidBody {
 #if LOG_FLIGHT
     flight_time += dt;
     if ((log_timer -= dt) <= 0.0f) {
-      log_timer = log_intervall;
-      auto av = glm::degrees(rigid_body.angular_velocity);
+      log_timer  = log_intervall;
+      auto av    = glm::degrees(rigid_body.angular_velocity);
       auto euler = glm::degrees(glm::eulerAngles(glm::normalize(rigid_body.orientation)));
 
       /* clang-format off */
@@ -299,7 +299,7 @@ struct Airplane : public phi::RigidBody {
     if (is_landed) {
       // std::cout << "contact\n";
       // calculate friction with ground
-      const float static_friction_coeff = 0.2f;
+      const float static_friction_coeff  = 0.2f;
       const float kinetic_friction_coeff = 0.55f;
       if (get_speed() > phi::EPSILON) {
         add_friction(phi::UP, glm::normalize(velocity), kinetic_friction_coeff);
@@ -337,7 +337,7 @@ struct Airplane : public phi::RigidBody {
   // mach number
   float get_mach() const
   {
-    float temperature = isa::get_air_temperature(get_altitude());
+    float temperature    = isa::get_air_temperature(get_altitude());
     float speed_of_sound = std::sqrt(1.402f * 286.f * temperature);
     return get_speed() / speed_of_sound;
   }
@@ -353,7 +353,7 @@ struct Airplane : public phi::RigidBody {
   float get_ias() const
   {
     // See: https://aerotoolbox.com/airspeed-conversions/
-    float air_density = isa::get_air_density(get_altitude());
+    float air_density      = isa::get_air_density(get_altitude());
     float dynamic_pressure = 0.5f * std::pow(get_speed(), 2) * air_density;  // bernoulli's equation
     return std::sqrt(2 * dynamic_pressure / isa::sea_level_air_density);
   }

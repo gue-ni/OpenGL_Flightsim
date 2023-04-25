@@ -74,9 +74,9 @@ struct Heightmap {
   float get_height(const glm::vec2& coord) const
   {
     glm::vec2 tmp = glm::clamp(coord / magnification, glm::vec2(-1.0f), glm::vec2(1.0f));
-    auto uv = phi::scale(tmp, glm::vec2(-1.0f), glm::vec2(1.0f), glm::vec2(0.0f), glm::vec2(1.0f));
-    float value = sample(uv).r;
-    float height = scale * value + shift;
+    auto uv       = phi::scale(tmp, glm::vec2(-1.0f), glm::vec2(1.0f), glm::vec2(0.0f), glm::vec2(1.0f));
+    float value   = sample(uv).r;
+    float height  = scale * value + shift;
     return height;
   }
 };
@@ -102,13 +102,13 @@ bool test_collision(const Ray& r, const Sphere& s, float* t)
 // test collision between two spheres
 bool test_collision(const Sphere& a, const Sphere& b, phi::CollisionInfo* info)
 {
-  float distance = glm::length(a.center - b.center);
+  float distance   = glm::length(a.center - b.center);
   float radius_sum = a.radius + b.radius;
 
   if (distance < radius_sum) {
-    info->normal = glm::normalize(b.center - a.center);
+    info->normal      = glm::normalize(b.center - a.center);
     info->penetration = radius_sum - distance;
-    info->point = a.center + a.radius * info->normal;
+    info->point       = a.center + a.radius * info->normal;
     return true;
   } else {
     return false;
@@ -167,8 +167,8 @@ bool test_moving_collision(const Sphere& s0, const glm::vec3& velocity0, const S
 #else
   // Christer_Ericson-Real-Time_Collision_Detection.pdf#page=226
   float tmp_t = 0.0f;
-  auto v = velocity0 - velocity1;
-  auto vlen = glm::length(v);
+  auto v      = velocity0 - velocity1;
+  auto vlen   = glm::length(v);
 
   Ray ray(s0.center, v / vlen);
   Sphere sphere(s1.center, s0.radius + s1.radius);

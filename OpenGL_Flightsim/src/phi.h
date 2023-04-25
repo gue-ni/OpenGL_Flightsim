@@ -24,21 +24,21 @@ namespace phi
 typedef float Seconds;
 
 // constants
-constexpr float EPSILON = 1e-8f;
+constexpr float EPSILON       = 1e-8f;
 constexpr float EARTH_GRAVITY = 9.80665f;
-constexpr float PI = 3.141592653589793f;
+constexpr float PI            = 3.141592653589793f;
 
 // directions in body space
 constexpr glm::vec3 X_AXIS = {1.0f, 0.0f, 0.0f};
 constexpr glm::vec3 Y_AXIS = {0.0f, 1.0f, 0.0f};
 constexpr glm::vec3 Z_AXIS = {0.0f, 0.0f, 1.0f};
 
-constexpr glm::vec3 FORWARD = X_AXIS;
-constexpr glm::vec3 UP = Y_AXIS;
-constexpr glm::vec3 RIGHT = Z_AXIS;
-constexpr glm::vec3 BACKWARD = -FORWARD;
-constexpr glm::vec3 DOWN = -UP;
-constexpr glm::vec3 LEFT = -RIGHT;
+constexpr glm::vec3 FORWARD  = X_AXIS;
+constexpr glm::vec3 UP       = Y_AXIS;
+constexpr glm::vec3 RIGHT    = Z_AXIS;
+constexpr glm::vec3 BACKWARD = -X_AXIS;
+constexpr glm::vec3 DOWN     = -Y_AXIS;
+constexpr glm::vec3 LEFT     = -Z_AXIS;
 
 // utility functions
 template <typename T>
@@ -212,18 +212,18 @@ struct CollisionInfo {
 };
 
 // default rigid body is a sphere with radius 1 meter and a mass of 100 kg
-constexpr float DEFAULT_RB_MASS = 100.0f;
-constexpr glm::mat3 DEFAULT_RB_INERTIA = inertia::tensor(inertia::sphere(1.0f, DEFAULT_RB_MASS));
+constexpr float DEFAULT_RB_MASS            = 100.0f;
+constexpr glm::mat3 DEFAULT_RB_INERTIA     = inertia::tensor(inertia::sphere(1.0f, DEFAULT_RB_MASS));
 constexpr glm::quat DEFAULT_RB_ORIENTATION = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
 
 struct RigidBodyParams {
-  float mass = DEFAULT_RB_MASS;
+  float mass        = DEFAULT_RB_MASS;
   glm::mat3 inertia = DEFAULT_RB_INERTIA;
   glm::vec3 position{};
   glm::vec3 velocity{};
   glm::vec3 angular_velocity{};
   glm::quat orientation = DEFAULT_RB_ORIENTATION;
-  bool apply_gravity = true;
+  bool apply_gravity    = true;
 };
 
 class RigidBody
@@ -240,7 +240,7 @@ class RigidBody
   glm::vec3 angular_velocity{};            // angular velocity in object space, (x = roll, y = yaw, z = pitch)
   glm::mat3 inertia{}, inverse_inertia{};  // inertia tensor
   bool apply_gravity = true;
-  bool active = true;
+  bool active        = true;
 
   RigidBody() : RigidBody({DEFAULT_RB_MASS, DEFAULT_RB_INERTIA}) {}
 
@@ -328,7 +328,7 @@ class RigidBody
   {
     // https://en.wikipedia.org/wiki/Normal_force
     // https://en.wikipedia.org/wiki/Friction
-    float weight = mass * EARTH_GRAVITY;
+    float weight      = mass * EARTH_GRAVITY;
     auto normal_force = weight * std::max(glm::dot(normal, UP), 0.0f);
     return -sliding_direction * normal_force * friction_coeff;
   }
@@ -424,8 +424,8 @@ class RigidBody
     // force is highest in a head on collision
     float impulse_force = glm::dot(relative_velocity, collision.normal);
 
-    auto a_inertia = glm::cross(a->inertia * glm::cross(a_relative, collision.normal), a_relative);
-    auto b_inertia = glm::cross(b->inertia * glm::cross(b_relative, collision.normal), b_relative);
+    auto a_inertia         = glm::cross(a->inertia * glm::cross(a_relative, collision.normal), a_relative);
+    auto b_inertia         = glm::cross(b->inertia * glm::cross(b_relative, collision.normal), b_relative);
     float angular_effect_1 = glm::dot(a_inertia + b_inertia, collision.normal);
 
     float angular_effect_2 =
