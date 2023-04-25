@@ -297,20 +297,15 @@ struct Airplane : public phi::RigidBody {
     }
 
     if (is_landed) {
+      // std::cout << "contact\n";
       // calculate friction with ground
-      // TODO: reduce friction, is far too much right now
-      auto direction = glm::normalize(velocity);
       const float static_friction_coeff = 0.2f;
-      const float kinetic_friction_coeff = 0.05f;
-
-      float weight = mass * phi::EARTH_GRAVITY;
-
-      float static_friction = static_friction_coeff * weight;
-      float kinetic_friction = kinetic_friction_coeff * weight * get_speed();
-
-      float friction = static_friction + kinetic_friction;
-
-      add_force(-direction * friction);
+      const float kinetic_friction_coeff = 0.55f;
+      if (get_speed() > phi::EPSILON) {
+        add_friction(phi::UP, glm::normalize(velocity), kinetic_friction_coeff);
+      }
+    } else {
+      // std::cout << "no contact\n";
     }
 
     engine->apply_forces(this, dt);

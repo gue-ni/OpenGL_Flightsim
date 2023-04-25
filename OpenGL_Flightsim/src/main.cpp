@@ -80,7 +80,6 @@ struct GameObject {
 };
 
 void get_keyboard_state(Joystick& joystick, phi::Seconds dt);
-void solve_constraints(phi::RigidBody& rigid_body);
 void apply_to_object3d(const phi::RigidBody& rigid_body, gfx::Object3D* object);
 
 int main(void)
@@ -285,7 +284,7 @@ int main(void)
   glm::vec3 position = glm::vec3(-7000.0f, 0, 0.0f);
 
   // constexpr float altitude = 700.0f;
-  float altitude = terrain_collider.get_height(glm::vec2{position.x, position.z}) + 0.0f;
+  float altitude = terrain_collider.get_height(glm::vec2{position.x, position.z}) + 100.0f;
   position.y = altitude;
 
   constexpr float speed = phi::units::meter_per_second(500.0f /* km/h */);
@@ -526,9 +525,9 @@ int main(void)
     ImGui::Text("FPS:   %.1f", fps);
     ImGui::End();
 
-#if 0
+#if 1
     auto angular_velocity = glm::degrees(player.airplane.angular_velocity);
-    auto orientation = glm::degrees(glm::eulerAngles(glm::normalize(player.airplane.orientation)));
+    auto orientation = glm::degrees(player.airplane.get_euler_angles());
 
     ImVec2 size(140, 140);
     ImGui::SetNextWindowPos(ImVec2(RESOLUTION.x - size.y - 10.0f, RESOLUTION.y - size.y - 10.0f));
@@ -579,7 +578,7 @@ int main(void)
           // printf("[%.1f] terrain collision!, %f\n", flight_time, terrain_height);
 
           if (a->airplane.velocity.y < 0.0f) {
-            auto euler = glm::eulerAngles(a->airplane.orientation);
+            auto euler = a->airplane.get_euler_angles();
             euler.x = 0;                        // roll
             euler.z = std::max(0.0f, euler.z);  // pitch, allow pitching up
             a->airplane.orientation = glm::quat(euler);
@@ -587,7 +586,6 @@ int main(void)
 
           a->airplane.is_landed = true;
           a->airplane.velocity.y = std::max(0.0f, a->airplane.velocity.y);
-          // a->airplane.angular_velocity.z = std::max(0.0f, a->airplane.angular_velocity.z);
           a->airplane.position.y = terrain_height + gear_height;
 
         } else {
@@ -688,11 +686,4 @@ void get_keyboard_state(Joystick& joystick, phi::Seconds dt)
 void apply_to_object3d(const phi::RigidBody& rigid_body, gfx::Object3D* object3d)
 {
   object3d->set_transform(rigid_body.position, rigid_body.orientation);
-}
-
-void solve_constraints(phi::RigidBody& rigid_body)
-{
-  if (rigid_body.position.y <= 0) {
-    rigid_body.position.y = 0, rigid_body.velocity.y = 0;
-  }
 }

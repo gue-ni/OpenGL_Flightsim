@@ -29,16 +29,16 @@ constexpr float EARTH_GRAVITY = 9.80665f;
 constexpr float PI = 3.141592653589793f;
 
 // directions in body space
-constexpr glm::vec3 UP = {0.0f, 1.0f, 0.0f};
-constexpr glm::vec3 DOWN = {0.0f, -1.0f, 0.0f};
-constexpr glm::vec3 RIGHT = {0.0f, 0.0f, 1.0f};
-constexpr glm::vec3 LEFT = {0.0f, 0.0f, -1.0f};
-constexpr glm::vec3 FORWARD = {1.0f, 0.0f, 0.0f};
-constexpr glm::vec3 BACKWARD = {-1.0f, 0.0f, 0.0f};
-
 constexpr glm::vec3 X_AXIS = {1.0f, 0.0f, 0.0f};
 constexpr glm::vec3 Y_AXIS = {0.0f, 1.0f, 0.0f};
 constexpr glm::vec3 Z_AXIS = {0.0f, 0.0f, 1.0f};
+
+constexpr glm::vec3 FORWARD = X_AXIS;
+constexpr glm::vec3 UP = Y_AXIS;
+constexpr glm::vec3 RIGHT = Z_AXIS;
+constexpr glm::vec3 BACKWARD = -FORWARD;
+constexpr glm::vec3 DOWN = -UP;
+constexpr glm::vec3 LEFT = -RIGHT;
 
 // utility functions
 template <typename T>
@@ -112,6 +112,12 @@ constexpr glm::vec3 cylinder(float radius, float length, float mass)
   return I;
 }
 
+// helper function for the creation of a cuboid mass element
+constexpr Element cube(const glm::vec3& position, const glm::vec3& size, float mass)
+{
+  return {size, position, cuboid(size, mass), position, mass};
+}
+
 // inertia tensor from moment of inertia
 constexpr glm::mat3 tensor(const glm::vec3& moment_of_inertia)
 {
@@ -122,12 +128,6 @@ constexpr glm::mat3 tensor(const glm::vec3& moment_of_inertia)
       0.0f, 0.0f, moment_of_inertia.z,
   };
   // clang-format on
-}
-
-// helper function for the creation of a cuboid mass element
-constexpr Element cube(const glm::vec3& position, const glm::vec3& size, float mass)
-{
-  return {size, position, cuboid(size, mass), position, mass};
 }
 
 // distribute mass among elements depending on element volume
@@ -188,6 +188,7 @@ glm::mat3 tensor(std::vector<Element>& elements, bool precomputed_offset = false
   };
   // clang-format on
 }
+
 };  // namespace inertia
 
 // unit conversions
@@ -321,11 +322,21 @@ class RigidBody
 
   // torque vector in body space
   inline void add_relative_torque(const glm::vec3& torque) { m_torque += torque; }
- 
+
+  // add terrain friction
+  glm::vec3 add_friction(const glm::vec3& normal, const glm::vec3& sliding_direction, float friction_coeff)
+  {
+    // https://en.wikipedia.org/wiki/Normal_force
+    // https://en.wikipedia.org/wiki/Friction
+    float weight = mass * EARTH_GRAVITY;
+    auto normal_force = weight * std::max(glm::dot(normal, UP), 0.0f);
+    return -sliding_direction * normal_force * friction_coeff;
+  }
+
   // get speed
   inline float get_speed() const { return glm::length(velocity); }
-  
-  // get euler angles in degrees
+
+  // get euler angles in radians
   inline glm::vec3 get_euler_angles() const { return glm::eulerAngles(orientation); }
 
   // get torque in body space
@@ -334,13 +345,13 @@ class RigidBody
   // get torque in world space
   inline glm::vec3 get_force() const { return m_force; }
 
-  // get forward direction in world space
+  // get rigidbody forward direction in world space
   inline glm::vec3 forward() const { return transform_direction(phi::FORWARD); }
 
-  // get up direction in world space
+  // get rigidbody up direction in world space
   inline glm::vec3 up() const { return transform_direction(phi::UP); }
 
-  // get right direction in world space
+  // get rigidbody right direction in world space
   inline glm::vec3 right() const { return transform_direction(phi::RIGHT); }
 
   // integrate RigidBody
@@ -362,19 +373,9 @@ class RigidBody
     // reset accumulators
     m_force = glm::vec3(0.0f), m_torque = glm::vec3(0.0f);
   }
-    
-  // 
-  static glm::vec3 calculate_friction(const glm::vec3& normal, const glm::vec3& force_direction, float friction_coeff) 
-  {
-    // https://en.wikipedia.org/wiki/Normal_force
-    // https://en.wikipedia.org/wiki/Friction      
-    float weight = mass * EARTH_GRAVITY;
-    auto normal_force = weight * std::max(glm::dot(normal, UP), 0.0f);
-    return -force_direction * normal_force * friction_coeff;
-  }
 
-  // no angular effects
-  // restitution:  0 = perfectly inelastic, 1 = perfectly elastic
+  // restitution_coeff:  0 = perfectly inelastic, 1 = perfectly elastic
+  // impulse collision response without angular effects
   static void linear_impulse_collision_response(RigidBody* a, RigidBody* b, const CollisionInfo& collision,
                                                 float restitution_coeff = 0.66f)
   {
@@ -399,8 +400,7 @@ class RigidBody
     b->add_linear_impulse(+impulse);
   }
 
-  // simple impulse collision response
-  // restitution:  0 = perfectly inelastic, 1 = perfectly elastic
+  // impulse collision response
   static void impulse_collision_response(RigidBody* a, RigidBody* b, const CollisionInfo& collision,
                                          float restitution_coeff = 0.66f)
   {
