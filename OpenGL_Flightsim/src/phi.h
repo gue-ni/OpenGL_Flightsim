@@ -325,20 +325,13 @@ class RigidBody
   inline void add_relative_torque(const glm::vec3& torque) { m_torque += torque; }
   
   // TODO:
-  inline void add_friction(const glm::vec3& normal, float static_friction_coeff, float kinetic_friction_coeff) 
+  static glm::vec3 calc_friction(const glm::vec3& normal, const glm::vec3& force_direction, float friction_coeff) 
   {
     // https://en.wikipedia.org/wiki/Normal_force
-    // https://en.wikipedia.org/wiki/Friction
-    
-    assert(static_friction_coeff > kinetic_friction_coeff);
-    
-    if (get_speed() > EPSILON)
-    {
-      float weight = mass * EARTH_GRAVITY;
-      auto normal_force = weight * std::max(glm::dot(normal, UP), 0.0f);
-      auto sliding_direction = glm::normalize(velocity);
-      add_force(-sliding_direction * normal_force * kinetic_friction_coeff);
-    }    
+    // https://en.wikipedia.org/wiki/Friction      
+    float weight = mass * EARTH_GRAVITY;
+    auto normal_force = weight * std::max(glm::dot(normal, UP), 0.0f);
+    return -force_direction * normal_force * friction_coeff;
   }
 
   // get speed
