@@ -323,17 +323,7 @@ class RigidBody
 
   // torque vector in body space
   inline void add_relative_torque(const glm::vec3& torque) { m_torque += torque; }
-  
-  // TODO:
-  static glm::vec3 calc_friction(const glm::vec3& normal, const glm::vec3& force_direction, float friction_coeff) 
-  {
-    // https://en.wikipedia.org/wiki/Normal_force
-    // https://en.wikipedia.org/wiki/Friction      
-    float weight = mass * EARTH_GRAVITY;
-    auto normal_force = weight * std::max(glm::dot(normal, UP), 0.0f);
-    return -force_direction * normal_force * friction_coeff;
-  }
-
+ 
   // get speed
   inline float get_speed() const { return glm::length(velocity); }
 
@@ -370,6 +360,16 @@ class RigidBody
 
     // reset accumulators
     m_force = glm::vec3(0.0f), m_torque = glm::vec3(0.0f);
+  }
+    
+  // 
+  static glm::vec3 calculate_friction(const glm::vec3& normal, const glm::vec3& force_direction, float friction_coeff) 
+  {
+    // https://en.wikipedia.org/wiki/Normal_force
+    // https://en.wikipedia.org/wiki/Friction      
+    float weight = mass * EARTH_GRAVITY;
+    auto normal_force = weight * std::max(glm::dot(normal, UP), 0.0f);
+    return -force_direction * normal_force * friction_coeff;
   }
 
   // no angular effects
