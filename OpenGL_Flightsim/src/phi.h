@@ -335,7 +335,7 @@ class RigidBody
     if (get_speed() > EPSILON)
     {
       float weight = mass * EARTH_GRAVITY;
-      auto normal_force = weight * glm::dot(normal, UP);
+      auto normal_force = weight * std::max(glm::dot(normal, UP), 0.0f);
       auto sliding_direction = glm::normalize(velocity);
       add_force(-sliding_direction * normal_force * kinetic_friction_coeff);
     }    
