@@ -22,8 +22,6 @@ namespace phi
 {
 
 typedef float Seconds;
-typedef float Radians;
-typedef float Degrees;
 
 // constants
 constexpr float EPSILON = 1e-8f;
