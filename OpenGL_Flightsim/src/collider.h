@@ -7,7 +7,7 @@
 
 #include "phi.h"
 
-namespace col
+namespace collider
 {
 
 typedef void CollisionCallback(const glm::vec3& point, const glm::vec3& normal);
@@ -183,4 +183,4 @@ bool test_moving_collision(const Sphere& s0, const glm::vec3& velocity0, const S
   }
 #endif
 }
-};  // namespace col
+};  // namespace collider

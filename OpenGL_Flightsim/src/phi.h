@@ -1,6 +1,8 @@
 /*
     copyright (c) 2023 jakob maier
     'phi.h' is a simple, header-only rigidbody physics library.
+
+    All units are SI, y is up and x is forward.
 */
 #pragma once
 
@@ -81,6 +83,7 @@ inline T move_towards(T current, T target, T speed)
 // formulas according to https://en.wikipedia.org/wiki/List_of_moments_of_inertia
 namespace inertia
 {
+// mass element used for inertia tensor calculation
 struct Element {
   glm::vec3 size;
   glm::vec3 position;  // position in design coordinates
@@ -97,12 +100,14 @@ constexpr glm::vec3 sphere(float radius, float mass) { return glm::vec3((2.0f / 
 // cube with side length 'size'
 constexpr glm::vec3 cube(float size, float mass) { return glm::vec3((1.0f / 6.0f) * mass * sq(size)); }
 
+// cuboid with side length 'size'
 constexpr glm::vec3 cuboid(const glm::vec3& size, float mass)
 {
   const float C = (1.0f / 12.0f) * mass;
   return glm::vec3(sq(size.y) + sq(size.z), sq(size.x) + sq(size.z), sq(size.x) + sq(size.y)) * C;
 }
 
+// cylinder oriented along the x direction
 constexpr glm::vec3 cylinder(float radius, float length, float mass)
 {
   const float C = (1.0f / 12.0f) * mass;
@@ -130,7 +135,7 @@ constexpr glm::mat3 tensor(const glm::vec3& moment_of_inertia)
   // clang-format on
 }
 
-// distribute mass among elements depending on element volume
+// distribute mass among elements depending on element volume, to be called before passing elements to tensor()
 void compute_uniform_mass(std::vector<Element>& elements, float total_mass)
 {
   float total_volume = 0.0f;
@@ -203,6 +208,10 @@ constexpr inline float kilometer_per_hour(float meter_per_second) { return meter
 constexpr inline float kelvin(float celsius) { return celsius - 273.15f; }
 
 constexpr inline float watts(float horsepower) { return horsepower * 745.7f; }
+
+constexpr inline float mile_to_kilometre(float mile) { return mile * 1.609f; }
+
+constexpr inline float feet_to_meter(float feet) { return feet * 0.3048f; }
 };  // namespace units
 
 struct CollisionInfo {

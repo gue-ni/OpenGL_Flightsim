@@ -69,7 +69,7 @@ struct Joystick {
 struct GameObject {
   gfx::Mesh transform;
   Airplane airplane;
-  col::Sphere collider;
+  collider::Sphere collider;
 
   void update(float dt)
   {
@@ -177,7 +177,7 @@ int main(void)
   int width, height, channels;
   const std::string heightmap_path = "assets/textures/terrain/1/heightmap.png";
   uint8_t* data                    = gfx::gl::Texture::load_image(heightmap_path, &width, &height, &channels, 0);
-  col::Heightmap terrain_collider(data, width, height, channels);
+  collider::Heightmap terrain_collider(data, width, height, channels);
 #endif
 
   std::vector<GameObject*> objects;
@@ -326,7 +326,7 @@ int main(void)
 
   GameObject player = {.transform = gfx::Mesh(model, texture),
                        .airplane  = Airplane(mass, inertia, wings, engine),
-                       .collider  = col::Sphere({0.0f, 0.0f, 0.0f}, 15.0f)};
+                       .collider  = collider::Sphere({0.0f, 0.0f, 0.0f}, 15.0f)};
 
   player.airplane.position = position;
   player.airplane.velocity = glm::vec3(speed, 0.0f, 0.0f);
@@ -573,8 +573,8 @@ int main(void)
 #if 1
         float terrain_height;
         float gear_height = 2.0f;
-        if (col::test_collision(terrain_collider, a->airplane.position - glm::vec3(0.0f, gear_height, 0.0f),
-                                &terrain_height)) {
+        if (collider::test_collision(terrain_collider, a->airplane.position - glm::vec3(0.0f, gear_height, 0.0f),
+                                     &terrain_height)) {
           // printf("[%.1f] terrain collision!, %f\n", flight_time, terrain_height);
 
           if (a->airplane.velocity.y < 0.0f) {
@@ -598,7 +598,7 @@ int main(void)
 
           phi::CollisionInfo collision{};
 
-          if (col::test_collision(a->collider, b->collider, &collision)) {
+          if (collider::test_collision(a->collider, b->collider, &collision)) {
             printf("[%.1f] collision!, p = %f\n", flight_time, collision.penetration);
             phi::RigidBody::impulse_collision_response(&a->airplane, &b->airplane, collision);
           }

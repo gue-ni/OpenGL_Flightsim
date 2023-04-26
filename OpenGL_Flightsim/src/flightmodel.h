@@ -296,9 +296,11 @@ struct Airplane : public phi::RigidBody {
       wing.apply_forces(this, dt);
     }
 
+    engine->apply_forces(this, dt);
+
+    // calculate friction with ground
     if (is_landed) {
       // std::cout << "contact\n";
-      // calculate friction with ground
       const float static_friction_coeff  = 0.2f;
       const float kinetic_friction_coeff = 0.55f;
       if (get_speed() > phi::EPSILON) {
@@ -307,8 +309,6 @@ struct Airplane : public phi::RigidBody {
     } else {
       // std::cout << "no contact\n";
     }
-
-    engine->apply_forces(this, dt);
 
     phi::RigidBody::update(dt);
   }
