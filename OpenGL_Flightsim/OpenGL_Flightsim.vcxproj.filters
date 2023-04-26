@@ -81,7 +81,7 @@
     <ClInclude Include="src\data.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\collisions.h">
+    <ClInclude Include="src\collider.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="lib\imgui\imgui.h">

@@ -1,3 +1,7 @@
+/*
+    copyright (c) 2023 jakob maier
+    'phi.h' is a simple, header-only rigidbody physics library.
+*/
 #pragma once
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -5,30 +9,36 @@
 #include <glm/gtx/vector_angle.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
+#include <vector>
+
+// RigidBody::update() can be marked virtual
+#if 0
+#define RB_VIRTUAL_UPDATE
+#else
+#define RB_VIRTUAL_UPDATE virtual
+#endif
 
 namespace phi
 {
 
 typedef float Seconds;
-typedef float Radians;
-typedef float Degrees;
 
 // constants
-constexpr float EPSILON = 1e-8f;
+constexpr float EPSILON       = 1e-8f;
 constexpr float EARTH_GRAVITY = 9.80665f;
-constexpr float PI = 3.141592653589793f;
+constexpr float PI            = 3.141592653589793f;
 
 // directions in body space
-constexpr glm::vec3 UP = {0.0f, 1.0f, 0.0f};
-constexpr glm::vec3 DOWN = {0.0f, -1.0f, 0.0f};
-constexpr glm::vec3 RIGHT = {0.0f, 0.0f, 1.0f};
-constexpr glm::vec3 LEFT = {0.0f, 0.0f, -1.0f};
-constexpr glm::vec3 FORWARD = {1.0f, 0.0f, 0.0f};
-constexpr glm::vec3 BACKWARD = {-1.0f, 0.0f, 0.0f};
-
 constexpr glm::vec3 X_AXIS = {1.0f, 0.0f, 0.0f};
 constexpr glm::vec3 Y_AXIS = {0.0f, 1.0f, 0.0f};
 constexpr glm::vec3 Z_AXIS = {0.0f, 0.0f, 1.0f};
+
+constexpr glm::vec3 FORWARD  = X_AXIS;
+constexpr glm::vec3 UP       = Y_AXIS;
+constexpr glm::vec3 RIGHT    = Z_AXIS;
+constexpr glm::vec3 BACKWARD = -X_AXIS;
+constexpr glm::vec3 DOWN     = -Y_AXIS;
+constexpr glm::vec3 LEFT     = -Z_AXIS;
 
 // utility functions
 template <typename T>
@@ -68,6 +78,7 @@ inline T move_towards(T current, T target, T speed)
 }
 
 // inertia tensor calculations
+// formulas according to https://en.wikipedia.org/wiki/List_of_moments_of_inertia
 namespace inertia
 {
 struct Element {
@@ -80,14 +91,16 @@ struct Element {
   float volume() const { return size.x * size.y * size.z; }
 };
 
-constexpr glm::vec3 cube(const glm::vec3& size, float mass)
+// solid sphere
+constexpr glm::vec3 sphere(float radius, float mass) { return glm::vec3((2.0f / 5.0f) * mass * sq(radius)); }
+
+// cube with side length 'size'
+constexpr glm::vec3 cube(float size, float mass) { return glm::vec3((1.0f / 6.0f) * mass * sq(size)); }
+
+constexpr glm::vec3 cuboid(const glm::vec3& size, float mass)
 {
   const float C = (1.0f / 12.0f) * mass;
-  glm::vec3 I(0.0f);
-  I.x = C * (sq(size.y) + sq(size.z));
-  I.y = C * (sq(size.x) + sq(size.z));
-  I.z = C * (sq(size.x) + sq(size.y));
-  return I;
+  return glm::vec3(sq(size.y) + sq(size.z), sq(size.x) + sq(size.z), sq(size.x) + sq(size.y)) * C;
 }
 
 constexpr glm::vec3 cylinder(float radius, float length, float mass)
@@ -99,21 +112,26 @@ constexpr glm::vec3 cylinder(float radius, float length, float mass)
   return I;
 }
 
-// inertia tensor
-glm::mat3 tensor(const glm::vec3& moment_of_inertia)
+// helper function for the creation of a cuboid mass element
+constexpr Element cube(const glm::vec3& position, const glm::vec3& size, float mass)
 {
-  return {
-      moment_of_inertia.x, 0.0f, 0.0f, 0.0f, moment_of_inertia.y, 0.0f, 0.0f, 0.0f, moment_of_inertia.z,
-  };
+  return {size, position, cuboid(size, mass), position, mass};
 }
 
-constexpr Element cube(const glm::vec3& position, const glm::vec3& size, float mass = 1.0f)
+// inertia tensor from moment of inertia
+constexpr glm::mat3 tensor(const glm::vec3& moment_of_inertia)
 {
-  return {.size = size, .position = position, .inertia = cube(size, mass), .offset = position, .mass = mass};
+  // clang-format off
+  return {
+      moment_of_inertia.x, 0.0f, 0.0f, 
+      0.0f, moment_of_inertia.y, 0.0f, 
+      0.0f, 0.0f, moment_of_inertia.z,
+  };
+  // clang-format on
 }
 
 // distribute mass among elements depending on element volume
-void compute_uniform_mass(std::vector<Element>& elements, float mass)
+void compute_uniform_mass(std::vector<Element>& elements, float total_mass)
 {
   float total_volume = 0.0f;
   for (const auto& element : elements) {
@@ -121,7 +139,7 @@ void compute_uniform_mass(std::vector<Element>& elements, float mass)
   }
 
   for (auto& element : elements) {
-    element.mass = (element.volume() / total_volume) * mass;
+    element.mass = (element.volume() / total_volume) * total_mass;
   }
 }
 
@@ -162,8 +180,15 @@ glm::mat3 tensor(std::vector<Element>& elements, bool precomputed_offset = false
     *cg = center_of_gravity;
   }
 
-  return {Ixx, -Ixy, -Ixz, -Ixy, Iyy, -Iyz, -Ixz, -Iyz, Izz};
+  // clang-format off
+  return {
+      Ixx, -Ixy, -Ixz, 
+      -Ixy, Iyy, -Iyz, 
+      -Ixz, -Iyz, Izz
+  };
+  // clang-format on
 }
+
 };  // namespace inertia
 
 // unit conversions
@@ -180,14 +205,25 @@ constexpr inline float kelvin(float celsius) { return celsius - 273.15f; }
 constexpr inline float watts(float horsepower) { return horsepower * 745.7f; }
 };  // namespace units
 
+struct CollisionInfo {
+  glm::vec3 point;
+  glm::vec3 normal;
+  float penetration;
+};
+
+// default rigid body is a sphere with radius 1 meter and a mass of 100 kg
+constexpr float DEFAULT_RB_MASS            = 100.0f;
+constexpr glm::mat3 DEFAULT_RB_INERTIA     = inertia::tensor(inertia::sphere(1.0f, DEFAULT_RB_MASS));
+constexpr glm::quat DEFAULT_RB_ORIENTATION = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+
 struct RigidBodyParams {
-  float mass = 1.0f;
-  glm::mat3 inertia{};
+  float mass        = DEFAULT_RB_MASS;
+  glm::mat3 inertia = DEFAULT_RB_INERTIA;
   glm::vec3 position{};
   glm::vec3 velocity{};
   glm::vec3 angular_velocity{};
-  glm::quat orientation = glm::quat(glm::vec3(0.0f));
-  bool apply_gravity = true;
+  glm::quat orientation = DEFAULT_RB_ORIENTATION;
+  bool apply_gravity    = true;
 };
 
 class RigidBody
@@ -201,13 +237,12 @@ class RigidBody
   glm::vec3 position{};                    // position in world space
   glm::quat orientation{};                 // orientation in world space
   glm::vec3 velocity{};                    // velocity in world space
-  glm::vec3 angular_velocity{};            // angular velocity in object space, x
-                                           // represents rotation around x axis
+  glm::vec3 angular_velocity{};            // angular velocity in object space, (x = roll, y = yaw, z = pitch)
   glm::mat3 inertia{}, inverse_inertia{};  // inertia tensor
   bool apply_gravity = true;
-  bool active = true;
+  bool active        = true;
 
-  RigidBody() : RigidBody({.mass = 1.0f, .inertia = inertia::tensor(inertia::cube(glm::vec3(1.0f), 1.0f))}) {}
+  RigidBody() : RigidBody({DEFAULT_RB_MASS, DEFAULT_RB_INERTIA}) {}
 
   RigidBody(const RigidBodyParams& params)
       : mass(params.mass),
@@ -221,14 +256,23 @@ class RigidBody
   {
   }
 
-  // get velocity of point in body space
+  // get angular velocity of relative point in body space
+  inline glm::vec3 get_point_angular_velocity(const glm::vec3& point) const
+  {
+    return glm::cross(angular_velocity, point);
+  }
+
+  // get velocity of relative point in body space
   inline glm::vec3 get_point_velocity(const glm::vec3& point) const
   {
-    return inverse_transform_direction(velocity) + glm::cross(angular_velocity, point);
+    return inverse_transform_direction(velocity) + get_point_angular_velocity(point);
   }
 
   // get velocity in body space
   inline glm::vec3 get_body_velocity() const { return inverse_transform_direction(velocity); }
+
+  // self explantory
+  inline float get_inverse_mass() const { return 1.0f / mass; };
 
   // force and point vectors are in body space
   inline void add_force_at_point(const glm::vec3& force, const glm::vec3& point)
@@ -249,11 +293,23 @@ class RigidBody
   // set inertia tensor
   inline void set_inertia(const glm::mat3& tensor) { inertia = tensor, inverse_inertia = glm::inverse(tensor); }
 
+  // set moment of inertia
+  inline void set_inertia(const glm::vec3& moment) { set_inertia(inertia::tensor(moment)); }
+
   // linear impulse in world space
-  inline void add_impulse(const glm::vec3& impulse) { velocity += impulse / mass; }
+  inline void add_linear_impulse(const glm::vec3& impulse) { velocity += impulse / mass; }
 
   // linear impulse in body space
-  inline void add_relative_impulse(const glm::vec3& impulse) { velocity += transform_direction(impulse) / mass; }
+  inline void add_relative_linear_impulse(const glm::vec3& impulse) { velocity += transform_direction(impulse) / mass; }
+
+  // angular impulse in world space
+  inline void add_angular_impulse(const glm::vec3& impulse)
+  {
+    angular_velocity += inverse_transform_direction(impulse) * inverse_inertia;
+  }
+
+  // angular impulse in body space
+  inline void add_relative_angular_impulse(const glm::vec3& impulse) { angular_velocity += impulse * inverse_inertia; }
 
   // force vector in world space
   inline void add_force(const glm::vec3& force) { m_force += force; }
@@ -267,8 +323,21 @@ class RigidBody
   // torque vector in body space
   inline void add_relative_torque(const glm::vec3& torque) { m_torque += torque; }
 
+  // add terrain friction
+  glm::vec3 add_friction(const glm::vec3& normal, const glm::vec3& sliding_direction, float friction_coeff)
+  {
+    // https://en.wikipedia.org/wiki/Normal_force
+    // https://en.wikipedia.org/wiki/Friction
+    float weight      = mass * EARTH_GRAVITY;
+    auto normal_force = weight * std::max(glm::dot(normal, UP), 0.0f);
+    return -sliding_direction * normal_force * friction_coeff;
+  }
+
   // get speed
   inline float get_speed() const { return glm::length(velocity); }
+
+  // get euler angles in radians
+  inline glm::vec3 get_euler_angles() const { return glm::eulerAngles(orientation); }
 
   // get torque in body space
   inline glm::vec3 get_torque() const { return m_torque; }
@@ -276,16 +345,17 @@ class RigidBody
   // get torque in world space
   inline glm::vec3 get_force() const { return m_force; }
 
-  // get forward direction in world space
+  // get rigidbody forward direction in world space
   inline glm::vec3 forward() const { return transform_direction(phi::FORWARD); }
 
-  // get up direction in world space
+  // get rigidbody up direction in world space
   inline glm::vec3 up() const { return transform_direction(phi::UP); }
 
-  // get right direction in world space
+  // get rigidbody right direction in world space
   inline glm::vec3 right() const { return transform_direction(phi::RIGHT); }
 
-  void update(Seconds dt)
+  // integrate RigidBody
+  RB_VIRTUAL_UPDATE void update(Seconds dt)
   {
     if (!active) return;
 
@@ -303,26 +373,86 @@ class RigidBody
     // reset accumulators
     m_force = glm::vec3(0.0f), m_torque = glm::vec3(0.0f);
   }
+
+  // restitution_coeff:  0 = perfectly inelastic, 1 = perfectly elastic
+  // impulse collision response without angular effects
+  static void linear_impulse_collision_response(RigidBody* a, RigidBody* b, const CollisionInfo& collision,
+                                                float restitution_coeff = 0.66f)
+  {
+    float total_inverse_mass = a->get_inverse_mass() + b->get_inverse_mass();
+
+    // move objects so they are no longer colliding. heavier object gets moved less
+    a->position -= collision.normal * collision.penetration * (a->get_inverse_mass() / total_inverse_mass);
+    b->position += collision.normal * collision.penetration * (b->get_inverse_mass() / total_inverse_mass);
+
+    auto relative_velocity = b->velocity - a->velocity;
+
+    // force is highest in head on collision
+    float impulse_force = glm::dot(relative_velocity, collision.normal);
+
+    // magnitude of impulse
+    float j = (-(1 + restitution_coeff) * impulse_force) / (total_inverse_mass);
+
+    auto impulse = j * collision.normal;
+
+    // apply linear impulse
+    a->add_linear_impulse(-impulse);
+    b->add_linear_impulse(+impulse);
+  }
+
+  // impulse collision response
+  static void impulse_collision_response(RigidBody* a, RigidBody* b, const CollisionInfo& collision,
+                                         float restitution_coeff = 0.66f)
+  {
+    float total_inverse_mass = a->get_inverse_mass() + b->get_inverse_mass();
+
+    // move objects so they are no longer colliding. heavier object gets moved less
+    a->position -= collision.normal * collision.penetration * (a->get_inverse_mass() / total_inverse_mass);
+    b->position += collision.normal * collision.penetration * (b->get_inverse_mass() / total_inverse_mass);
+
+    // location of collision point relative to rigidbody
+    auto a_relative = collision.point - a->position;
+    auto b_relative = collision.point - b->position;
+
+    // get velocity at this point (body space)
+    auto a_velocity = a->get_point_velocity(a_relative);
+    auto b_velocity = b->get_point_velocity(b_relative);
+
+    // relative velocity in world space
+    auto relative_velocity = b->transform_direction(b_velocity) - a->transform_direction(a_velocity);
+
+    // force is highest in a head on collision
+    float impulse_force = glm::dot(relative_velocity, collision.normal);
+
+    auto a_inertia         = glm::cross(a->inertia * glm::cross(a_relative, collision.normal), a_relative);
+    auto b_inertia         = glm::cross(b->inertia * glm::cross(b_relative, collision.normal), b_relative);
+    float angular_effect_1 = glm::dot(a_inertia + b_inertia, collision.normal);
+
+    float angular_effect_2 =
+        glm::dot(collision.normal, glm::cross((glm::cross(a_relative, collision.normal) / a->inertia), a_relative)) +
+        glm::dot(collision.normal, glm::cross((glm::cross(b_relative, collision.normal) / b->inertia), b_relative));
+
+    // TODO: find correct implementation
+    printf("a_1 = %f, a_2 = %f\n", angular_effect_1, angular_effect_2);
+    assert(std::abs(angular_effect_1 - angular_effect_2) < phi::EPSILON);
+
+    // magnitude of impulse
+    float j = (-(1 + restitution_coeff) * impulse_force) / (total_inverse_mass + angular_effect_1);
+
+    auto impulse = j * collision.normal;
+
+    // apply linear impulse
+    a->add_linear_impulse(-impulse);
+    b->add_linear_impulse(+impulse);
+
+    // apply angular impulse at position
+    a->add_angular_impulse(glm::cross(a_relative, -impulse));
+    b->add_angular_impulse(glm::cross(b_relative, +impulse));
+  }
 };
 
 struct ForceGenerator {
   virtual void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) = 0;
 };
-
-// no angular effects, collision_normal goes from a to b
-// restitution_coeff:  0 = perfectly inelastic, 1 = perfectly elastic
-void linear_collision_response(phi::RigidBody* a, phi::RigidBody* b, const glm::vec3& collision_normal,
-                               float restitution_coeff = 0.5f)
-{
-  assert(0.0f <= restitution_coeff && restitution_coeff <= 1.0f);
-
-  auto relative_velocity = a->velocity - b->velocity;
-
-  float impulse = (-(1 + restitution_coeff) * glm::dot(relative_velocity, collision_normal)) /
-                  (glm::dot(collision_normal, collision_normal) * (1 / a->mass + 1 / b->mass));
-
-  a->add_impulse(impulse * +collision_normal);
-  b->add_impulse(impulse * -collision_normal);
-}
 
 };  // namespace phi
