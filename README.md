@@ -2,6 +2,7 @@
 
 ![Clang Format](https://github.com/gue-ni/OpenGL_Flightsim/actions/workflows/clang-format.yml/badge.svg)
 ![Linux CMake Build](https://github.com/gue-ni/OpenGL_Flightsim/actions/workflows/cmake.yml/badge.svg)
+![Linux CMake Build](https://github.com/gue-ni/OpenGL_Flightsim/actions/workflows/msbuild.yml/badge.svg)
 
 You can read an article about how it works [here](https://www.jakobmaier.at/posts/flight-simulation/). A windows release is available [here](https://github.com/gue-ni/OpenGL_Flightsim/releases/), a linux build can be found at the latest cmake.yml run [here](https://github.com/gue-ni/OpenGL_Flightsim/actions).
 
