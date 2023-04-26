@@ -118,7 +118,7 @@ constexpr glm::vec3 cylinder(float radius, float length, float mass)
 }
 
 // helper function for the creation of a cuboid mass element
-constexpr Element cube(const glm::vec3& position, const glm::vec3& size, float mass)
+constexpr Element cube(const glm::vec3& position, const glm::vec3& size, float mass = 0.0f)
 {
   return {size, position, cuboid(size, mass), position, mass};
 }

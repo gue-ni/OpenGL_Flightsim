@@ -182,9 +182,11 @@ int main(void)
 
   std::vector<GameObject*> objects;
 
+  glm::vec3 position = glm::vec3(-7000.0f, 0, 0.0f);
+  position.y         = terrain_collider.get_height(glm::vec2{position.x, position.z}) + 1000.0f;
+
 #if (FLIGHTMODEL == CESSNA)
-  constexpr float speed    = phi::units::meter_per_second(200.0f /* km/h */);
-  constexpr float altitude = 800.0f;
+  constexpr float speed = phi::units::meter_per_second(200.0f /* km/h */);
 
   // airplane mass
   const float mass = 1000.0f;
@@ -281,14 +283,7 @@ int main(void)
 
 #elif (FLIGHTMODEL == FAST_JET)
 
-  glm::vec3 position = glm::vec3(-7000.0f, 0, 0.0f);
-
-  // constexpr float altitude = 700.0f;
-  float altitude = terrain_collider.get_height(glm::vec2{position.x, position.z}) + 100.0f;
-  position.y     = altitude;
-
   constexpr float speed = phi::units::meter_per_second(500.0f /* km/h */);
-  // constexpr float speed = 0.0f;
 
   const float mass   = 10000.0f;
   const float thrust = 50000.0f;
@@ -348,9 +343,9 @@ int main(void)
 #if NPC_AIRCRAFT
   GameObject npc = {.transform = gfx::Mesh(model, texture),
                     .airplane  = Airplane(mass, inertia, wings, engine),
-                    .collider  = col::Sphere({0.0f, 0.0f, 0.0f}, 15.0f)};
+                    .collider  = collider::Sphere({0.0f, 0.0f, 0.0f}, 15.0f)};
 
-  npc.airplane.position = glm::vec3(-6950.0f, altitude, 10.0f);
+  npc.airplane.position = position - glm::vec3(-100.0f, 0.0f, 10.0f);
   npc.airplane.velocity = glm::vec3(speed, 0.0f, 0.0f);
   scene.add(&npc.transform);
   objects.push_back(&npc);
