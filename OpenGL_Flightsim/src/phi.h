@@ -2,7 +2,7 @@
     copyright (c) 2023 jakob maier
     'phi.h' is a simple, header-only rigidbody physics library.
 
-    All units are SI, y is up and x is forward.
+    All units are SI, x is forward, y is up and z is right.
 */
 #pragma once
 
@@ -11,6 +11,7 @@
 #include <glm/gtx/vector_angle.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
+#include <numeric>
 #include <vector>
 
 // RigidBody::update() can be marked virtual
