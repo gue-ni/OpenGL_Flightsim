@@ -1,4 +1,6 @@
 /*
+  Version: v0.1
+
   'phi.h' is a simple, header-only 3D rigidbody physics library based
   on 'Physics for Game Developers, 2nd Edition' by David Bourg and Bryan Bywalec.
 
@@ -28,11 +30,7 @@
 */
 #pragma once
 
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/euler_angles.hpp>
-#include <glm/gtx/vector_angle.hpp>
-#include <glm/mat4x4.hpp>
-#include <glm/vec3.hpp>
+#include <glm/glm.hpp>
 #include <numeric>
 #include <vector>
 
@@ -288,7 +286,7 @@ class RigidBody
   // get velocity of relative point in body space
   inline glm::vec3 get_point_velocity(const glm::vec3& point) const
   {
-    return inverse_transform_direction(velocity) + glm::cross(angular_velocity, point);
+    return get_body_velocity() + glm::cross(angular_velocity, point);
   }
 
   // get velocity in body space

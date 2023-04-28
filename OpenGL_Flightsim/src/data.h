@@ -1,6 +1,6 @@
 #pragma once
 
-#include <glm/vec3.hpp>
+#include <glm/glm.hpp>
 #include <vector>
 
 // NACA 0012 (n0012-il) Xfoil prediction polar at RE=1,000,000 Ncrit=9

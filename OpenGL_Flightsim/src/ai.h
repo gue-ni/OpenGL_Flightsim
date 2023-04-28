@@ -1,10 +1,7 @@
 #pragma once
 
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/euler_angles.hpp>
+#include <glm/glm.hpp>
 #include <glm/gtx/vector_angle.hpp>
-#include <glm/mat4x4.hpp>
-#include <glm/vec3.hpp>
 
 #include "flightmodel.h"
 
