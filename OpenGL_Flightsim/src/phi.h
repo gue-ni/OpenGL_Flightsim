@@ -1,30 +1,30 @@
 /*
-'phi.h' is a simple, header-only 3D rigidbody physics library based 
-on 'Physics for Game Developers, 2nd Edition' by  David Bourg and Bryan Bywalec.
+  'phi.h' is a simple, header-only 3D rigidbody physics library based
+  on 'Physics for Game Developers, 2nd Edition' by David Bourg and Bryan Bywalec.
 
-All units are SI, x is forward, y is up and z is right.
-    
-MIT License
+  All units are SI, x is forward, y is up and z is right.
 
-Copyright (c) 2023 jakob maier
+  MIT License
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+  Copyright (c) 2023 jakob maier
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
 */
 #pragma once
 
@@ -262,11 +262,11 @@ class RigidBody
   glm::vec3 m_torque{};  // torque vector in body space
 
  public:
-  float mass;                              // rigidbody mass in kg
-  glm::vec3 position{};                    // position in world space
+  float mass;                              // rigidbody mass, kg
+  glm::vec3 position{};                    // position in world space, m
   glm::quat orientation{};                 // orientation in world space
-  glm::vec3 velocity{};                    // velocity in world space
-  glm::vec3 angular_velocity{};            // angular velocity in object space, (x = roll, y = yaw, z = pitch)
+  glm::vec3 velocity{};                    // velocity in world space, m/s
+  glm::vec3 angular_velocity{};            // angular velocity in object space, (x = roll, y = yaw, z = pitch), rad/s
   glm::mat3 inertia{}, inverse_inertia{};  // inertia tensor
   bool apply_gravity = true;
   bool active        = true;
@@ -285,16 +285,10 @@ class RigidBody
   {
   }
 
-  // get angular velocity of relative point in body space
-  inline glm::vec3 get_point_angular_velocity(const glm::vec3& point) const
-  {
-    return glm::cross(angular_velocity, point);
-  }
-
   // get velocity of relative point in body space
   inline glm::vec3 get_point_velocity(const glm::vec3& point) const
   {
-    return inverse_transform_direction(velocity) + get_point_angular_velocity(point);
+    return inverse_transform_direction(velocity) + glm::cross(angular_velocity, point);
   }
 
   // get velocity in body space
