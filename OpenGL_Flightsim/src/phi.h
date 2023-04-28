@@ -138,8 +138,8 @@ constexpr glm::mat3 tensor(const glm::vec3& moment_of_inertia)
 // distribute mass among elements depending on element volume, to be called before passing elements to tensor()
 void compute_uniform_mass(std::vector<Element>& elements, float total_mass)
 {
-  auto f = [](float s, auto& e){ return s + e.volume(); };
-  float total_volume = std::accumulate(elements.begin(), elements.end(), 0.0f, f);    
+  auto f             = [](float s, auto& e) { return s + e.volume(); };
+  float total_volume = std::accumulate(elements.begin(), elements.end(), 0.0f, f);
 
   for (auto& element : elements) {
     element.mass = (element.volume() / total_volume) * total_mass;
