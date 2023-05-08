@@ -233,19 +233,52 @@ constexpr inline float mile_to_kilometre(float mile) { return mile * 1.609f; }
 constexpr inline float feet_to_meter(float feet) { return feet * 0.3048f; }
 };  // namespace units
 
-namespace collision {
-  std::vector<CollisionInfo> narrowphase() 
-  {
-     return {};
-  } 
-};
-
 struct CollisionInfo {
   glm::vec3 point;
   glm::vec3 normal;
   float penetration;
   RigidBody *rb1, *rb2;
 };
+
+namespace collision 
+{
+
+struct Collider 
+{};
+
+struct Ray 
+{ 
+  glm::vec3 origin, direction;
+};
+
+struct Plane : public Collider 
+{
+  glm::vec3 origin, normal;
+};
+
+struct Sphere : public Collider 
+{
+  glm::vec3 origin;
+  float radius;
+};
+
+struct OBB : public Collider
+{};
+
+
+std::vector<CollisionInfo> narrowphase(std::vector<phi::RigidBody>& objects, phi::Seconds dt) 
+{
+  std::vector<CollisionInfo> results:
+  for(int i = 0; i < objects.size(); i++) 
+  {
+    for(int j = i + 1; j < objects.size(); j++)
+    {
+    } 
+  } 
+  return results;
+} 
+};
+
 
 // default rigid body is a sphere with radius 1 meter and a mass of 100 kg
 constexpr float DEFAULT_RB_MASS            = 100.0f;
@@ -277,6 +310,7 @@ class RigidBody
   glm::mat3 inertia{}, inverse_inertia{};  // inertia tensor
   bool apply_gravity = true;
   bool active        = true;
+  collision::Collider* collider = nullptr;
 
   RigidBody() : RigidBody({DEFAULT_RB_MASS, DEFAULT_RB_INERTIA}) {}
 
