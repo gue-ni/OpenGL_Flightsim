@@ -45,6 +45,7 @@ namespace phi
 {
 
 typedef float Seconds;
+class RigidBody;
 
 // constants
 constexpr float EPSILON       = 1e-8f;
@@ -232,10 +233,18 @@ constexpr inline float mile_to_kilometre(float mile) { return mile * 1.609f; }
 constexpr inline float feet_to_meter(float feet) { return feet * 0.3048f; }
 };  // namespace units
 
+namespace collision {
+  std::vector<CollisionInfo> narrowphase() 
+  {
+     return {};
+  } 
+};
+
 struct CollisionInfo {
   glm::vec3 point;
   glm::vec3 normal;
   float penetration;
+  RigidBody *rb1, *rb2;
 };
 
 // default rigid body is a sphere with radius 1 meter and a mass of 100 kg
@@ -475,5 +484,11 @@ class RigidBody
 struct ForceGenerator {
   virtual void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) = 0;
 };
+
+void step_physics(std::vector<phi::RigidBody>& objects, phi::Seconds dt) 
+{
+  // update
+  // collisions
+} 
 
 };  // namespace phi
