@@ -434,6 +434,11 @@ class RigidBody
     orientation += (orientation * glm::quat(0.0f, angular_velocity)) * (0.5f * dt);
     orientation = glm::normalize(orientation);
 
+    if(collider != nullptr) {
+      // update collider position and rotation 
+      collider.set_transform(this);
+    } 
+
     // reset accumulators
     m_force = glm::vec3(0.0f), m_torque = glm::vec3(0.0f);
   }
@@ -522,7 +527,13 @@ struct ForceGenerator {
 void step_physics(std::vector<phi::RigidBody>& objects, phi::Seconds dt) 
 {
   // update
-  // collisions
+  for(auto& rb : objects) 
+  {
+    rb.update(dt);
+  } 
+  
+  // collision detection
+  // collision resolution 
 } 
 
 };  // namespace phi
