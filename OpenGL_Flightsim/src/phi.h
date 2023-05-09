@@ -289,7 +289,9 @@ std::vector<CollisionInfo> narrowphase(std::vector<RB>& objects, phi::Seconds dt
 void resolve(std::vector<CollisionInfo>& collisions) 
 {
   for(auto& collision : collisions) 
-  {} 
+  {
+    // TODO
+  } 
 } 
 
 };
@@ -451,7 +453,7 @@ class RigidBody
 
     if(collider != nullptr) {
       // update collider position and rotation 
-      collider.set_transform(this);
+      //collider.set_transform(this);
     } 
 
     // reset accumulators
@@ -549,12 +551,12 @@ void step_physics(std::vector<RB>& objects, phi::Seconds dt)
   } 
   
   // collision detection
-  auto collisions = collisions::narrowphase(objects);
+  auto collisions = collision::narrowphase(objects, dt);
   
   // collision resolution 
   if(collisions.size() > 0)
   {
-    collisions::resolve(collisions);
+    collision::resolve(collisions);
   } 
   
 } 
