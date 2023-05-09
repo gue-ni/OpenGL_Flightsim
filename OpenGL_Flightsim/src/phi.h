@@ -263,20 +263,35 @@ struct Sphere : public Collider
 };
 
 struct OBB : public Collider
-{};
-
-
-std::vector<CollisionInfo> narrowphase(std::vector<phi::RigidBody>& objects, phi::Seconds dt) 
 {
-  std::vector<CollisionInfo> results:
+  glm::vec3 size;
+};
+
+template <typename RB>
+std::vector<CollisionInfo> narrowphase(std::vector<RB>& objects, phi::Seconds dt) 
+{
+  std::vector<CollisionInfo> collisions;
+  
   for(int i = 0; i < objects.size(); i++) 
   {
     for(int j = i + 1; j < objects.size(); j++)
     {
+      if(objects[i].collider && objects[j].collider)
+      {
+        // test for collison
+      } 
     } 
-  } 
-  return results;
+  }
+  
+  return collisions;
 } 
+
+void resolve(std::vector<CollisionInfo>& collisions) 
+{
+  for(auto& collision : collisions) 
+  {} 
+} 
+
 };
 
 
@@ -524,16 +539,24 @@ struct ForceGenerator {
   virtual void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) = 0;
 };
 
-void step_physics(std::vector<phi::RigidBody>& objects, phi::Seconds dt) 
+template <typename RB>
+void step_physics(std::vector<RB>& objects, phi::Seconds dt) 
 {
   // update
-  for(auto& rb : objects) 
+  for(auto& object : objects) 
   {
-    rb.update(dt);
+    object.update(dt);
   } 
   
   // collision detection
+  auto collisions = collisions::narrowphase(objects);
+  
   // collision resolution 
+  if(collisions.size() > 0)
+  {
+    collisions::resolve(collisions);
+  } 
+  
 } 
 
 };  // namespace phi
