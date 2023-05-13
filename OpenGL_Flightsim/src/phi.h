@@ -243,12 +243,16 @@ struct CollisionInfo {
 namespace collision 
 {
 
+struct OBB;
+struct Plane;
+struct Collider;
+
 struct Collider 
 {
   virtual bool test_collision(const Collider* other) const = 0;
   virtual bool test_collision(const OBB* other) const = 0;
   virtual bool test_collision(const Plane* other) const = 0;
-  virtual bool test_collision(const Sphere* other) const = 0;
+  //virtual bool test_collision(const Sphere* other) const = 0;
   
    
 
