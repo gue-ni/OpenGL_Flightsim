@@ -245,22 +245,31 @@ namespace collision
 
 struct Collider 
 {
-  bool test_collision(const Collider* other) const
-  {
-    return other->test_collision(this);
-  } 
-};
+  virtual bool test_collision(const Collider* other) const = 0;
+  virtual bool test_collision(const OBB* other) const = 0;
+  virtual bool test_collision(const Plane* other) const = 0;
+  virtual bool test_collision(const Sphere* other) const = 0;
+  
+   
 
+};
+#if 0
 struct Ray 
 { 
   glm::vec3 origin, direction;
 };
-
+#endif
 struct Plane : public Collider 
 {
   glm::vec3 origin, normal;
+  
+  bool test_collision(const Collider *other) const override
+  {  return other->test_collision(this);} 
+  
+  bool test_collision(const OBB* other) const override
+  { return false;} 
 };
-
+#if 0
 struct Sphere : public Collider 
 {
   glm::vec3 origin;
@@ -271,11 +280,18 @@ struct AABB : public Collider
 {
   glm::vec3 origin, size;
 };
-
+#endif
 struct OBB : public Collider
 {
   glm::vec3 origin, size;
   glm::quat orientation;
+  
+  bool test_collision(const Collider* other) const override {
+    return other->test_collision(this);
+  }
+  
+  bool test_collision(const Plane* other) const override 
+  { return false;} 
 
 };
 
