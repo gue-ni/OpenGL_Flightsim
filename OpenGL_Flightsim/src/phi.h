@@ -244,7 +244,12 @@ namespace collision
 {
 
 struct Collider 
-{};
+{
+  bool test_collision(const Collider* other) const
+  {
+    return other->test_collision(this);
+  } 
+};
 
 struct Ray 
 { 
@@ -261,10 +266,17 @@ struct Sphere : public Collider
   glm::vec3 origin;
   float radius;
 };
+  
+struct AABB : public Collider
+{
+  glm::vec3 origin, size;
+};
 
 struct OBB : public Collider
 {
-  glm::vec3 size;
+  glm::vec3 origin, size;
+  glm::quat orientation;
+
 };
 
 template <typename RB>
@@ -278,7 +290,13 @@ std::vector<CollisionInfo> narrowphase(std::vector<RB>& objects, phi::Seconds dt
     {
       if(objects[i].collider && objects[j].collider)
       {
+        auto a = objects[i].collider;
+        auto b = objects[j].collider;
         // test for collison
+        if(a.test_collision(b))
+        {
+          // TODO
+        } 
       } 
     } 
   }
