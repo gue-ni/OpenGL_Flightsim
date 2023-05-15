@@ -291,7 +291,8 @@ struct Plane : public Collider
   
   bool test_collision(const OBB* other) const override
   { 
-    return primitive::test(this, other);
+    //return primitive::test(this, other);
+    return false;
   } 
 };
 
@@ -323,7 +324,8 @@ struct OBB : public Collider
   
   bool test_collision(const Plane* other) const override 
   { 
-    return primitive::test(other, this);
+    //return primitive::test(other, this);
+    return false;
   } 
 
 };
@@ -693,13 +695,13 @@ struct OBB : public Collider
 
 };
   
-namespace collision {  
+
   
-namespace primitive {
-  bool test(const Plane* plane, const OBB* obb) {
+
+bool primitive(const Plane* plane, const OBB* obb) {
     return false;
-  } 
-};
+} 
+
 
 template <typename RB>
 std::vector<CollisionInfo> narrowphase(std::vector<RB>& objects, phi::Seconds dt) 
@@ -735,7 +737,7 @@ void resolve(std::vector<CollisionInfo>& collisions)
   } 
 } 
 
-};
+
 
   
 struct ForceGenerator {
@@ -755,12 +757,12 @@ void step_physics(std::vector<RB>& objects, phi::Seconds dt)
   } 
   
   // collision detection
-  auto collisions = collision::narrowphase(objects, dt);
+  auto collisions = narrowphase(objects, dt);
   
   // collision resolution 
   if(collisions.size() > 0)
   {
-    collision::resolve(collisions);
+    resolve(collisions);
   } 
   
 } 
