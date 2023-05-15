@@ -277,7 +277,7 @@ struct Plane : public Collider
   
   void update(const RigidBody* rb) override 
   {
-    position = rb->position;
+    origin = rb->position;
   } 
   
   bool test_collision(const Collider *other) const override
