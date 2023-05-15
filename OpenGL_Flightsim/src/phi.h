@@ -248,7 +248,7 @@ struct Plane;
 struct Collider;
   
 namespace primitive {
-  bool test() {
+  bool test(const Plane* plane, const OBB* obb) {
     return false;
   } 
 };
@@ -276,13 +276,17 @@ struct Plane : public Collider
   glm::vec3 origin, normal;
   
   void update(const RigidBody* rb) override 
-  {} 
+  {
+    position = rb->position;
+  } 
   
   bool test_collision(const Collider *other) const override
   {  return other->test_collision(this);} 
   
   bool test_collision(const OBB* other) const override
-  { return false;} 
+  { 
+    return primitive::test(this, other);
+  } 
 };
 #if 0
 struct Sphere : public Collider 
@@ -303,6 +307,8 @@ struct OBB : public Collider
   
   void update(const RigidBody *rb) override 
   {
+    origin      = rb->position;
+    orientation = rb->orientation;
   } 
   
   bool test_collision(const Collider* other) const override {
@@ -310,7 +316,9 @@ struct OBB : public Collider
   }
   
   bool test_collision(const Plane* other) const override 
-  { return false;} 
+  { 
+    return primitive::test(other, this);
+  } 
 
 };
 
@@ -327,8 +335,9 @@ std::vector<CollisionInfo> narrowphase(std::vector<RB>& objects, phi::Seconds dt
       {
         auto a = objects[i].collider;
         auto b = objects[j].collider;
+        
         // test for collison
-        if(a.test_collision(b))
+        if(a->test_collision(b))
         {
           // TODO
         } 
@@ -363,6 +372,7 @@ struct RigidBodyParams {
   glm::vec3 angular_velocity{};
   glm::quat orientation = DEFAULT_RB_ORIENTATION;
   bool apply_gravity    = true;
+  collision::Collider   = nullptr;
 };
 
 class RigidBody
@@ -392,7 +402,8 @@ class RigidBody
         orientation(params.orientation),
         apply_gravity(params.apply_gravity),
         angular_velocity(params.angular_velocity),
-        inverse_inertia(glm::inverse(params.inertia))
+        inverse_inertia(glm::inverse(params.inertia)), 
+        collider(params.collider)
   {
   }
 
@@ -505,8 +516,8 @@ class RigidBody
     orientation = glm::normalize(orientation);
 
     if(collider != nullptr) {
-      // update collider position and rotation 
-      //collider.set_transform(this);
+      // update collider transform
+      collider->update(this);
     } 
 
     // reset accumulators
