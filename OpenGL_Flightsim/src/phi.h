@@ -620,7 +620,9 @@ class RigidBody
 
   
    
-  
+bool collision_primitive(const Plane *plane, const OBB *obb) {
+  return false;
+} 
 
 
 struct Collider 
@@ -657,7 +659,7 @@ struct Plane : public Collider
   
   bool test_collision(const OBB* other) const override
   { 
-    return primitive::test(this, other);
+    return collision_primitive(this, other);
   } 
 };
 
@@ -690,7 +692,7 @@ struct OBB : public Collider
   
   bool test_collision(const Plane* other) const override 
   { 
-    return primitive::test(other, this);
+    return collision_primitive(other, this);
   } 
 
 };
@@ -698,9 +700,9 @@ struct OBB : public Collider
 
   
 
-bool primitive(const Plane* plane, const OBB* obb) {
-    return false;
-} 
+
+    
+
 
 
 template <typename RB>
