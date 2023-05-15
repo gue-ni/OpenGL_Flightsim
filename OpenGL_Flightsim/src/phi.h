@@ -372,7 +372,7 @@ struct RigidBodyParams {
   glm::vec3 angular_velocity{};
   glm::quat orientation = DEFAULT_RB_ORIENTATION;
   bool apply_gravity    = true;
-  collision::Collider   = nullptr;
+  collision::Collider collider = nullptr;
 };
 
 class RigidBody
