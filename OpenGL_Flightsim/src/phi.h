@@ -47,7 +47,10 @@ namespace phi
 typedef float Seconds;
   
 class RigidBody;
+  
 struct Collider;  
+struct Plane;
+struct OBB;
 
 // constants
 constexpr float EPSILON       = 1e-8f;
@@ -246,9 +249,9 @@ struct CollisionInfo {
 namespace collision 
 {
 
-struct OBB;
-struct Plane;
-struct Collider;
+
+
+
   
 namespace primitive {
   bool test(const Plane* plane, const OBB* obb) {
@@ -376,7 +379,7 @@ struct RigidBodyParams {
   glm::vec3 angular_velocity{};
   glm::quat orientation = DEFAULT_RB_ORIENTATION;
   bool apply_gravity    = true;
-  cCollider collider    = nullptr;
+  Collider *collider    = nullptr;
 };
 
 class RigidBody
@@ -625,7 +628,7 @@ struct Collider
   virtual bool test_collision(const Collider* other) const = 0;
   virtual bool test_collision(const OBB* other) const = 0;
   virtual bool test_collision(const Plane* other) const = 0;
-  //virtual bool test_collision(const Sphere* other) const = 0;
+
   
    
 
@@ -646,7 +649,9 @@ struct Plane : public Collider
   } 
   
   bool test_collision(const Collider *other) const override
-  {  return other->test_collision(this);} 
+  {  
+    return other->test_collision(this);
+  } 
   
   bool test_collision(const OBB* other) const override
   { 
@@ -676,7 +681,8 @@ struct OBB : public Collider
     orientation = rb->orientation;
   } 
   
-  bool test_collision(const Collider* other) const override {
+  bool test_collision(const Collider* other) const override 
+  {
     return other->test_collision(this);
   }
   
@@ -686,6 +692,7 @@ struct OBB : public Collider
   } 
 
 };
+  
 namespace collision {  
   
 namespace primitive {
