@@ -265,12 +265,12 @@ struct Collider
    
 
 };
-#if 0
-struct Ray 
-{ 
-  glm::vec3 origin, direction;
-};
-#endif
+
+
+
+
+
+
 struct Plane : public Collider 
 {
   glm::vec3 origin, normal;
@@ -288,18 +288,18 @@ struct Plane : public Collider
     return primitive::test(this, other);
   } 
 };
-#if 0
-struct Sphere : public Collider 
-{
-  glm::vec3 origin;
-  float radius;
-};
+
+ 
+
+
+
+
   
-struct AABB : public Collider
-{
-  glm::vec3 origin, size;
-};
-#endif
+
+
+
+
+
 struct OBB : public Collider
 {
   glm::vec3 origin, size;
@@ -514,12 +514,12 @@ class RigidBody
     angular_velocity += inverse_inertia * (m_torque - glm::cross(angular_velocity, inertia * angular_velocity)) * dt;
     orientation += (orientation * glm::quat(0.0f, angular_velocity)) * (0.5f * dt);
     orientation = glm::normalize(orientation);
-
+#if 0
     if(collider != nullptr) {
       // update collider transform
       collider->update(this);
     } 
-
+#endif
     // reset accumulators
     m_force = glm::vec3(0.0f), m_torque = glm::vec3(0.0f);
   }
@@ -612,6 +612,9 @@ void step_physics(std::vector<RB>& objects, phi::Seconds dt)
   for(auto& object : objects) 
   {
     object.update(dt);
+    if(object.collider != nullptr) {
+      object.collider->update(&object);
+    } 
   } 
   
   // collision detection
