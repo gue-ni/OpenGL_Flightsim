@@ -246,9 +246,17 @@ namespace collision
 struct OBB;
 struct Plane;
 struct Collider;
+  
+namespace primitive {
+  bool test() {
+    return false;
+  } 
+};
 
 struct Collider 
 {
+  
+  virtual void update(const RigidBody* rb) = 0;
   virtual bool test_collision(const Collider* other) const = 0;
   virtual bool test_collision(const OBB* other) const = 0;
   virtual bool test_collision(const Plane* other) const = 0;
@@ -266,6 +274,9 @@ struct Ray
 struct Plane : public Collider 
 {
   glm::vec3 origin, normal;
+  
+  void update(const RigidBody* rb) override 
+  {} 
   
   bool test_collision(const Collider *other) const override
   {  return other->test_collision(this);} 
@@ -289,6 +300,10 @@ struct OBB : public Collider
 {
   glm::vec3 origin, size;
   glm::quat orientation;
+  
+  void update(const RigidBody *rb) override 
+  {
+  } 
   
   bool test_collision(const Collider* other) const override {
     return other->test_collision(this);
