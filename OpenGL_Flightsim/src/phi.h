@@ -612,11 +612,11 @@ class RigidBody
 
 
   
-namespace primitive {
-  bool test(const Plane* plane, const OBB* obb) {
-    return false;
-  } 
-};
+
+  
+   
+  
+
 
 struct Collider 
 {
@@ -687,6 +687,12 @@ struct OBB : public Collider
 
 };
 namespace collision {  
+  
+namespace primitive {
+  bool test(const Plane* plane, const OBB* obb) {
+    return false;
+  } 
+};
 
 template <typename RB>
 std::vector<CollisionInfo> narrowphase(std::vector<RB>& objects, phi::Seconds dt) 
