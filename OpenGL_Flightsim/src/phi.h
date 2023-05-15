@@ -45,7 +45,9 @@ namespace phi
 {
 
 typedef float Seconds;
+  
 class RigidBody;
+struct Collider;  
 
 // constants
 constexpr float EPSILON       = 1e-8f;
@@ -239,6 +241,7 @@ struct CollisionInfo {
   float penetration;
   RigidBody *rb1, *rb2;
 };
+#if 0
 
 namespace collision 
 {
@@ -358,6 +361,7 @@ void resolve(std::vector<CollisionInfo>& collisions)
 
 };
 
+#endif
 
 // default rigid body is a sphere with radius 1 meter and a mass of 100 kg
 constexpr float DEFAULT_RB_MASS            = 100.0f;
@@ -372,7 +376,7 @@ struct RigidBodyParams {
   glm::vec3 angular_velocity{};
   glm::quat orientation = DEFAULT_RB_ORIENTATION;
   bool apply_gravity    = true;
-  collision::Collider collider = nullptr;
+  cCollider collider    = nullptr;
 };
 
 class RigidBody
@@ -390,7 +394,7 @@ class RigidBody
   glm::mat3 inertia{}, inverse_inertia{};  // inertia tensor
   bool apply_gravity = true;
   bool active        = true;
-  collision::Collider* collider = nullptr;
+  Collider* collider = nullptr;
 
   RigidBody() : RigidBody({DEFAULT_RB_MASS, DEFAULT_RB_INERTIA}) {}
 
@@ -601,6 +605,126 @@ class RigidBody
   }
 };
 
+
+
+
+
+
+
+  
+namespace primitive {
+  bool test(const Plane* plane, const OBB* obb) {
+    return false;
+  } 
+};
+
+struct Collider 
+{
+  
+  virtual void update(const RigidBody* rb) = 0;
+  virtual bool test_collision(const Collider* other) const = 0;
+  virtual bool test_collision(const OBB* other) const = 0;
+  virtual bool test_collision(const Plane* other) const = 0;
+  //virtual bool test_collision(const Sphere* other) const = 0;
+  
+   
+
+};
+
+
+
+
+
+
+struct Plane : public Collider 
+{
+  glm::vec3 origin, normal;
+  
+  void update(const RigidBody* rb) override 
+  {
+    origin = rb->position;
+  } 
+  
+  bool test_collision(const Collider *other) const override
+  {  return other->test_collision(this);} 
+  
+  bool test_collision(const OBB* other) const override
+  { 
+    return primitive::test(this, other);
+  } 
+};
+
+ 
+
+
+
+
+  
+
+
+
+
+
+struct OBB : public Collider
+{
+  glm::vec3 origin, size;
+  glm::quat orientation;
+  
+  void update(const RigidBody *rb) override 
+  {
+    origin      = rb->position;
+    orientation = rb->orientation;
+  } 
+  
+  bool test_collision(const Collider* other) const override {
+    return other->test_collision(this);
+  }
+  
+  bool test_collision(const Plane* other) const override 
+  { 
+    return primitive::test(other, this);
+  } 
+
+};
+namespace collision {  
+
+template <typename RB>
+std::vector<CollisionInfo> narrowphase(std::vector<RB>& objects, phi::Seconds dt) 
+{
+  std::vector<CollisionInfo> collisions;
+  
+  for(int i = 0; i < objects.size(); i++) 
+  {
+    for(int j = i + 1; j < objects.size(); j++)
+    {
+      if(objects[i].collider && objects[j].collider)
+      {
+        auto a = objects[i].collider;
+        auto b = objects[j].collider;
+        
+        // test for collison
+        if(a->test_collision(b))
+        {
+          // TODO
+        } 
+      } 
+    } 
+  }
+  
+  return collisions;
+} 
+
+void resolve(std::vector<CollisionInfo>& collisions) 
+{
+  for(auto& collision : collisions) 
+  {
+    // TODO
+  } 
+} 
+
+};
+
+  
 struct ForceGenerator {
   virtual void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) = 0;
 };
