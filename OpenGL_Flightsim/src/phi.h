@@ -756,7 +756,7 @@ struct ForceGenerator {
   virtual void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) = 0;
 };
   
-struct Constraint {
+struct Joint {
   phi::RigidBody *a, *b;
   virtual void update(phi::Seconds dt) = 0;
 };
