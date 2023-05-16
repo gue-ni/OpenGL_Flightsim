@@ -52,6 +52,7 @@ struct Collider;
 struct Plane;
 struct OBB;
 
+
 // constants
 constexpr float EPSILON       = 1e-8f;
 constexpr float EARTH_GRAVITY = 9.80665f;
@@ -620,9 +621,10 @@ class RigidBody
 
   
    
-bool collision_primitive(const Plane *plane, const OBB *obb) {
-  return false;
-} 
+bool collision_primitive(const Plane *plane, const OBB *obb);
+  
+  
+
 
 
 struct Collider 
@@ -698,7 +700,9 @@ struct OBB : public Collider
 };
   
 
-  
+bool collision_primitive(const Plane* plane, const OBB* obb) {
+  return false;
+} 
 
 
     
