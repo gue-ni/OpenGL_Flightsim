@@ -371,7 +371,7 @@ void resolve(std::vector<CollisionInfo>& collisions)
 
 // default rigid body is a sphere with radius 1 meter and a mass of 100 kg
 constexpr float DEFAULT_RB_MASS            = 100.0f;
-constexpr float INFINITE_RB_MASS            = std::numeric_limits<float>::infinity;
+constexpr float INFINITE_RB_MASS            = std::numeric_limits<float>::infinity();
 constexpr glm::mat3 DEFAULT_RB_INERTIA     = inertia::tensor(inertia::sphere(1.0f, DEFAULT_RB_MASS));
 constexpr glm::quat DEFAULT_RB_ORIENTATION = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
 
