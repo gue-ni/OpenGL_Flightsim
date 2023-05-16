@@ -242,7 +242,7 @@ struct CollisionInfo {
   glm::vec3 point;
   glm::vec3 normal;
   float penetration;
-  RigidBody *rb1, *rb2;
+  RigidBody *a, *b;
 };
 #if 0
 
@@ -706,7 +706,7 @@ struct OBB : public Collider
 
 
 template <typename RB>
-std::vector<CollisionInfo> narrowphase(std::vector<RB>& objects, phi::Seconds dt) 
+std::vector<CollisionInfo> collision_narrowphase(std::vector<RB>& objects, phi::Seconds dt) 
 {
   std::vector<CollisionInfo> collisions;
   
@@ -723,6 +723,10 @@ std::vector<CollisionInfo> narrowphase(std::vector<RB>& objects, phi::Seconds dt
         if(a->test_collision(b))
         {
           // TODO
+          CollisionInfo info;
+          info.a = a;
+          info.b = b;
+          collisions.push_back(info);
         } 
       } 
     } 
@@ -731,11 +735,12 @@ std::vector<CollisionInfo> narrowphase(std::vector<RB>& objects, phi::Seconds dt
   return collisions;
 } 
 
-void resolve(std::vector<CollisionInfo>& collisions) 
+void collision_resolution(std::vector<CollisionInfo>& collisions) 
 {
-  for(auto& collision : collisions) 
+  for(auto& c : collisions) 
   {
-    // TODO
+
+    phi::RigidBody::impulse_collision_response(c.a, c.b, c);
   } 
 } 
 
@@ -744,6 +749,11 @@ void resolve(std::vector<CollisionInfo>& collisions)
   
 struct ForceGenerator {
   virtual void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) = 0;
+};
+  
+struct Constraint {
+  phi::RigidBody *a, *b;
+  virtual void update(phi::Seconds dt) = 0;
 };
 
 template <typename RB>
@@ -759,12 +769,12 @@ void step_physics(std::vector<RB>& objects, phi::Seconds dt)
   } 
   
   // collision detection
-  auto collisions = narrowphase(objects, dt);
+  auto collisions = collision_narrowphase(objects, dt);
   
   // collision resolution 
   if(collisions.size() > 0)
   {
-    resolve(collisions);
+    collision_resolution(collisions);
   } 
   
 } 
