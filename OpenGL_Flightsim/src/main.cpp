@@ -320,7 +320,7 @@ int main(void)
 #endif
 
   GameObject player = {.transform = gfx::Mesh(model, texture),
-                       .airplane  = Airplane(mass, inertia, wings, engine),
+                       .airplane  = Airplane(mass, inertia, wings, { engine }),
                        .collider  = collider::Sphere({0.0f, 0.0f, 0.0f}, 15.0f)};
 
   player.airplane.position = position;
