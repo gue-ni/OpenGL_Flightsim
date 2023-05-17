@@ -83,7 +83,7 @@ struct SimpleEngine : public Engine {
 };
 
 // does not yet implement engine torque
-struct PropellorEngine : public Engine {
+struct PropellerEngine : public Engine {
   float horsepower, rpm, propellor_diameter;
 
   PropellorEngine(float horsepower, float rpm, float diameter)
@@ -95,7 +95,7 @@ struct PropellorEngine : public Engine {
   {
     float speed        = rigid_body->get_speed();
     float altitude     = rigid_body->position.y;
-    float engine_power = phi::units::watts(horsepower);
+    float engine_power = phi::units::watts(horsepower) * throttle;
 
     const float a = 1.83f, b = -1.32f;  // efficiency curve fit coefficients
     float turnover_rate           = rpm / 60.0f;
@@ -110,7 +110,7 @@ struct PropellorEngine : public Engine {
 
     float thrust = ((propellor_efficiency * engine_power) / speed) * power_drop_off_factor;
     assert(0.0f < thrust);
-    rigid_body->add_force_at_point({thrust * throttle, 0.0f, 0.0f}, relative_position);
+    rigid_body->add_force_at_point({thrust, 0.0f, 0.0f}, relative_position);
   }
 };
 
@@ -140,6 +140,7 @@ class Wing : public phi::ForceGenerator
 
  public:
   float incidence         = 0.0f;
+  float dihedral          = 0.0f;
   bool is_control_surface = true;
 
   // relative position of leading edge to cg
