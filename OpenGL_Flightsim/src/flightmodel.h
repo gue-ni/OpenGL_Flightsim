@@ -55,7 +55,13 @@ struct Airfoil {
     auto value       = (index < max_index) ? phi::lerp(data[index], data[index + 1], fractional) : data[max_index];
     return {value.y, value.z};
   }
-};
+  
+  float cl_slope(float alpha) 
+  {
+    // TODO
+    return 0.0f;
+  } 
+}};
 
 // base engine
 // TODO: offset from cg
@@ -174,7 +180,8 @@ class Wing : public phi::ForceGenerator
     if (speed <= phi::EPSILON) return;
 
     // control surfaces can be rotated
-    glm::vec3 wing_normal = is_control_surface ? deflect_wing(rigid_body, dt) : normal;
+    //glm::vec3 wing_normal = is_control_surface ? deflect_wing(rigid_body, dt) : normal;
+    auto wing_normal = normal;
 
     // drag acts in the opposite direction of velocity
     glm::vec3 drag_direction = glm::normalize(-local_velocity);
@@ -198,7 +205,7 @@ class Wing : public phi::ForceGenerator
 
     float dynamic_pressure = 0.5f * std::pow(speed, 2) * air_density * area;
     
-    glm::vec3 lift         = lift_direction * lift_coeff * lift_multiplier * dynamic_pressure;
+    glm::vec3 lift         = lift_direction * (lift_coeff + delta_lift_coeff) * lift_multiplier * dynamic_pressure;
     glm::vec3 drag         = drag_direction * (drag_coeff + induced_drag_coeff) * drag_multiplier * dynamic_pressure;
 
     // aerodynamic forces are applied at the center of pressure
@@ -243,8 +250,8 @@ struct Airplane : public phi::RigidBody {
   std::ofstream log_file;
 #endif
 
-  Airplane(float mass, const glm::mat3& inertia, std::vector<Wing> elements, Engine* engine)
-      : phi::RigidBody({.mass = mass, .inertia = inertia}), surfaces(elements), engine(engine)
+  Airplane(float mass, const glm::mat3& inertia, std::vector<Wing> elements, std::vectpr<Engine*> engines)
+      : phi::RigidBody({.mass = mass, .inertia = inertia}), surfaces(elements), engines(engines)
   {
 #if LOG_FLIGHT
     std::time_t now = std::time(nullptr);
@@ -308,7 +315,7 @@ struct Airplane : public phi::RigidBody {
       engine->apply_forces(this, dt);
     } 
 
-    engine->apply_forces(this, dt);
+    //engine->apply_forces(this, dt);
 
     // calculate friction with ground
     if (is_landed) {
