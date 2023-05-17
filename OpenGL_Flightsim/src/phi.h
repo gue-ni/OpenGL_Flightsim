@@ -237,7 +237,15 @@ constexpr inline float watts(float horsepower) { return horsepower * 745.7f; }
 
 constexpr inline float mile_to_kilometre(float mile) { return mile * 1.609f; }
 
+
 constexpr inline float feet_to_meter(float feet) { return feet * 0.3048f; }
+
+// power in watts
+constexpr inline float torque(float power, float rpm) 
+{
+  return power / (2 * PI * rpm);
+}
+  
 };  // namespace units
 
 struct CollisionInfo {
