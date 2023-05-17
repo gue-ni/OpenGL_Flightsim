@@ -187,6 +187,8 @@ class Wing : public phi::ForceGenerator
 
     // sample aerodynamic coefficients
     auto [lift_coeff, drag_coeff] = airfoil->sample(angle_of_attack);
+    
+    float delta_lift_coeff = sqrt(flap_ratio) * lift_coeff * sin(glm::radians(deflection));
 
     // induced drag, increases with lift
     float induced_drag_coeff = std::pow(lift_coeff, 2) / (phi::PI * aspect_ratio * efficiency_factor);
@@ -195,6 +197,7 @@ class Wing : public phi::ForceGenerator
     float air_density = isa::get_air_density(0.0f);  // something is not right here, so let's assume sea level
 
     float dynamic_pressure = 0.5f * std::pow(speed, 2) * air_density * area;
+    
     glm::vec3 lift         = lift_direction * lift_coeff * lift_multiplier * dynamic_pressure;
     glm::vec3 drag         = drag_direction * (drag_coeff + induced_drag_coeff) * drag_multiplier * dynamic_pressure;
 
