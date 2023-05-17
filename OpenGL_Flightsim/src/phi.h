@@ -632,9 +632,14 @@ struct Collider
 {
   
   virtual void update(const RigidBody* rb) = 0;
-  virtual bool test_collision(const Collider* other) const = 0;
+  virtual bool test_collision(const Collider* other) 
+  {
+    return other->test_collision(this) ;
+  }
+  
   virtual bool test_collision(const OBB* other) const = 0;
   virtual bool test_collision(const Plane* other) const = 0;
+  virtual bool test_collision(const Heightmap* hm) const = 0;
 
   
    
@@ -668,7 +673,50 @@ struct Plane : public Collider
 
  
 
+struct Heightmap : public Collider{
+  const uint8_t* data;
+  const int width, height, channels;
+  const float scale = 3000.0f, shift = 0.0f;
 
+  float magnification = 25000.0f;
+
+  Heightmap(const uint8_t* data, int width, int height, int channels)
+      : data(data), width(width), height(height), channels(channels)
+  {
+  }
+
+  glm::vec3 sample(const glm::vec2& coord) const
+  {
+    assert(0.0f <= coord.x && coord.x <= 1.0f);
+    assert(0.0f <= coord.y && coord.y <= 1.0f);
+
+    int x = static_cast<int>(width * coord.x);
+    int y = static_cast<int>(height * coord.y);
+
+    int index = (y * width + x) * channels;
+
+    auto color = glm::vec3{static_cast<float>(data[index + 0]), static_cast<float>(data[index + 1]),
+                           static_cast<float>(data[index + 2])};
+    color /= 255.0f;
+    return color;
+  }
+
+  Plane get_plane(const glm::vec2& coord) const
+  {
+    glm::vec2 tmp = glm::clamp(coord / magnification, glm::vec2(-1.0f), glm::vec2(1.0f));
+    auto uv       = phi::scale(tmp, glm::vec2(-1.0f), glm::vec2(1.0f), glm::vec2(0.0f), glm::vec2(1.0f));
+    float value   = sample(uv).r;
+    float height  = scale * value + shift;
+    return { glm::vec3(coord.x, height, coord.y), phi::UP };
+  }
+  
+  bool test_collision(const OBB* obb) override
+  {
+    auto plane = get_plane({ obb->origin.x, obb->origin.z});
+    return collison_primitive(&plane, obb);
+  } 
+  
+}
 
 
   
