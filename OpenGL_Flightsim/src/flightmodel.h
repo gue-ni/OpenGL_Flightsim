@@ -58,8 +58,10 @@ struct Airfoil {
 };
 
 // base engine
+// TODO: offset from cg
 struct Engine : public phi::ForceGenerator {
   float throttle = 0.25f;
+  glm::vec3 relative_position = glm::vec3(0); // position relative to cg
   void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) override {}
 };
 
@@ -70,7 +72,7 @@ struct SimpleEngine : public Engine {
 
   void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) override
   {
-    rigid_body->add_relative_force({throttle * thrust, 0.0f, 0.0f});
+    rigid_body->add_force_at_point({throttle * thrust, 0.0f, 0.0f}, relative_position);
   }
 };
 
@@ -102,7 +104,7 @@ struct PropellorEngine : public Engine {
 
     float thrust = ((propellor_efficiency * engine_power) / speed) * power_drop_off_factor;
     assert(0.0f < thrust);
-    rigid_body->add_relative_force({thrust * throttle, 0.0f, 0.0f});
+    rigid_body->add_force_at_point({thrust * throttle, 0.0f, 0.0f}, relative_position);
   }
 };
 
@@ -122,6 +124,7 @@ class Wing : public phi::ForceGenerator
   float drag_multiplier   = 1.0f;
   float efficiency_factor = 1.0f;
 
+  float flap_ratio          = 0.0f; // percentage of wing that is part of the flap
   float deflection          = 0.0f;
   float control_input       = 0.0f;
   float min_deflection      = -10.0f;
@@ -133,9 +136,10 @@ class Wing : public phi::ForceGenerator
   float incidence         = 0.0f;
   bool is_control_surface = true;
 
-  Wing(const Airfoil* airfoil, const glm::vec3& position, float area, float span, const glm::vec3& normal = phi::UP)
+  // relative position of leading edge to cg
+  Wing(const Airfoil* airfoil, const glm::vec3& relative_position, float area, float span, const glm::vec3& normal = phi::UP)
       : airfoil(airfoil),
-        center_of_pressure(position),
+        center_of_pressure(relative_position), // cp is 0.25 of chord back
         area(area),
         chord(area / span),
         wingspan(span),
@@ -184,7 +188,7 @@ class Wing : public phi::ForceGenerator
     // sample aerodynamic coefficients
     auto [lift_coeff, drag_coeff] = airfoil->sample(angle_of_attack);
 
-    // induced drag
+    // induced drag, increases with lift
     float induced_drag_coeff = std::pow(lift_coeff, 2) / (phi::PI * aspect_ratio * efficiency_factor);
 
     // air density depends on altitude
@@ -225,6 +229,7 @@ class Wing : public phi::ForceGenerator
 struct Airplane : public phi::RigidBody {
   glm::vec4 joystick{};  // roll, yaw, pitch, elevator trim
   Engine* engine;
+  std::vector<Engine*> engines;
   std::vector<Wing> surfaces;
   bool is_landed = false;
 
@@ -295,6 +300,10 @@ struct Airplane : public phi::RigidBody {
     for (auto& wing : surfaces) {
       wing.apply_forces(this, dt);
     }
+    
+    for(auto engine : engines) {
+      engine->apply_forces(this, dt);
+    } 
 
     engine->apply_forces(this, dt);
 
