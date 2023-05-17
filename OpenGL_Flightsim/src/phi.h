@@ -51,6 +51,7 @@ class RigidBody;
 struct Collider;  
 struct Plane;
 struct OBB;
+struct Sphere;
 
 
 // constants
@@ -267,7 +268,7 @@ struct Collider
   virtual bool test_collision(const Collider* other) const = 0;
   virtual bool test_collision(const OBB* other) const = 0;
   virtual bool test_collision(const Plane* other) const = 0;
-  //virtual bool test_collision(const Sphere* other) const = 0;
+  virtual bool test_collision(const Sphere* other) const = 0;
   
    
 
@@ -275,7 +276,9 @@ struct Collider
 
 
 
-
+struct Sphere : public Collider {
+  glm::vec3 origin;
+};
 
 
 struct Plane : public Collider 
@@ -293,7 +296,7 @@ struct Plane : public Collider
   bool test_collision(const OBB* other) const override
   { 
     //return primitive::test(this, other);
-    return false;
+    return ;
   } 
 };
 
@@ -623,6 +626,7 @@ class RigidBody
   
    
 bool collision_primitive(const Plane *plane, const OBB *obb);
+bool collision_primitive(const OBB* a, const OBB* b);
   
   
 
@@ -808,6 +812,8 @@ struct Joint {
   phi::RigidBody *a, *b;
   virtual void update(phi::Seconds dt) = 0;
 };
+  
+
 
 template <typename RB>
 void step_physics(std::vector<RB>& objects, phi::Seconds dt) 
