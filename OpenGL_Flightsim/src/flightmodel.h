@@ -238,9 +238,9 @@ class Wing : public phi::ForceGenerator
 // simple flightmodel
 struct Airplane : public phi::RigidBody {
   glm::vec4 joystick{};  // roll, yaw, pitch, elevator trim
-  Engine* engine;
+  //Engine* engine;
   std::vector<Engine*> engines;
-  std::vector<Wing> surfaces;
+  std::vector<Wing> wings;
   bool is_landed = false;
 
 #if LOG_FLIGHT
@@ -250,8 +250,8 @@ struct Airplane : public phi::RigidBody {
   std::ofstream log_file;
 #endif
 
-  Airplane(float mass, const glm::mat3& inertia, std::vector<Wing> elements, std::vectpr<Engine*> engines)
-      : phi::RigidBody({.mass = mass, .inertia = inertia}), surfaces(elements), engines(engines)
+  Airplane(float mass, const glm::mat3& inertia, std::vector<Wing> wings, std::vector<Engine*> engines)
+      : phi::RigidBody({.mass = mass, .inertia = inertia}), wings(wings), engines(engines)
   {
 #if LOG_FLIGHT
     std::time_t now = std::time(nullptr);
@@ -261,23 +261,23 @@ struct Airplane : public phi::RigidBody {
 #endif
 
     // main wings
-    surfaces[0].is_control_surface = false;
-    surfaces[3].is_control_surface = false;
+    wings[0].is_control_surface = false;
+    wings[3].is_control_surface = false;
 
-    surfaces[1].set_deflection_limits(-15.0f, 15.0f);
-    surfaces[2].set_deflection_limits(-15.0f, 15.0f);
-    surfaces[5].set_deflection_limits(-5.0f, 5.0f);
+    wings[1].set_deflection_limits(-15.0f, 15.0f);
+    wings[2].set_deflection_limits(-15.0f, 15.0f);
+    wings[5].set_deflection_limits(-5.0f, 5.0f);
   }
 
   void update(phi::Seconds dt) override
   {
     float aileron = joystick.x, rudder = joystick.y, elevator = joystick.z, trim = joystick.w;
 
-    surfaces[1].set_control_input(+aileron);
-    surfaces[2].set_control_input(-aileron);
-    surfaces[4].set_control_input(-elevator);
-    surfaces[4].incidence = trim * 10.0f;
-    surfaces[5].set_control_input(-rudder);
+    wings[1].set_control_input(+aileron);
+    wings[2].set_control_input(-aileron);
+    wings[4].set_control_input(-elevator);
+    wings[4].incidence = trim * 10.0f;
+    wings[5].set_control_input(-rudder);
 
 #if LOG_FLIGHT
     flight_time += dt;
@@ -307,7 +307,7 @@ struct Airplane : public phi::RigidBody {
     }
 #endif
 
-    for (auto& wing : surfaces) {
+    for (auto& wing : wings) {
       wing.apply_forces(this, dt);
     }
     
