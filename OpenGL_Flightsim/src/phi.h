@@ -243,7 +243,7 @@ constexpr inline float feet_to_meter(float feet) { return feet * 0.3048f; }
 // power in watts
 constexpr inline float torque(float power, float rpm) 
 {
-  return power / (2 * PI * rpm);
+  return 30.0f * power / (2.0f * rpm);
 }
   
 };  // namespace units
