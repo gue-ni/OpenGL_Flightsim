@@ -379,6 +379,11 @@ void resolve(std::vector<CollisionInfo>& collisions)
 };
 
 #endif
+  
+struct Transform {
+  glm::vec3 position;
+  glm::quat orientation;
+};
 
 // default rigid body is a sphere with radius 1 meter and a mass of 100 kg
 constexpr float DEFAULT_RB_MASS            = 100.0f;
