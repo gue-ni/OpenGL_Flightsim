@@ -68,14 +68,14 @@ struct Joystick {
 
 struct GameObject {
   gfx::Mesh transform;
-  Airplane airplane;
-  collider::Sphere collider;
+  Airplane& airplane;
+  // collider::Sphere collider;
 
   void update(float dt)
   {
-    airplane.update(dt);
+    // airplane.update(dt);
     transform.set_transform(airplane.position, airplane.orientation);
-    collider.center = airplane.position;
+    // collider.center = airplane.position;
   }
 };
 
@@ -319,9 +319,13 @@ int main(void)
 #error FLIGHTMODEL not defined
 #endif
 
-  GameObject player = {.transform = gfx::Mesh(model, texture),
-                       .airplane  = Airplane(mass, inertia, wings, { engine }),
-                       .collider  = collider::Sphere({0.0f, 0.0f, 0.0f}, 15.0f)};
+  Airplane airplane(mass, inertia, wings, {engine}, new phi::Sphere(15.0f));
+  std::vector<Airplane> rigid_bodies = {airplane};
+
+  GameObject player = {
+      .transform = gfx::Mesh(model, texture),
+      .airplane  = rigid_bodies[0],
+  };
 
   player.airplane.position = position;
   player.airplane.velocity = glm::vec3(speed, 0.0f, 0.0f);
@@ -501,7 +505,7 @@ int main(void)
       alt       = player.airplane.get_altitude();
       spd       = phi::units::kilometer_per_hour(player.airplane.get_speed());
       ias       = phi::units::kilometer_per_hour(player.airplane.get_ias());
-      thr       = player.airplane.engine->throttle;
+      thr       = player.airplane.throttle;
       gee       = player.airplane.get_g();
       aoa       = player.airplane.get_aoa();
     }
@@ -513,7 +517,7 @@ int main(void)
     ImGui::Text("ALT:   %.1f m", alt);
     ImGui::Text("SPD:   %.1f km/h", spd);
     ImGui::Text("IAS:   %.1f km/h", ias);
-    ImGui::Text("THR:   %.1f %%", player.airplane.engine->throttle * 100.0f);
+    ImGui::Text("THR:   %.1f %%", player.airplane.throttle * 100.0f);
     ImGui::Text("G:     %.1f", gee);
     ImGui::Text("AoA:   %.2f", aoa);
     ImGui::Text("Trim:  %.2f", player.airplane.joystick.w);
@@ -550,7 +554,7 @@ int main(void)
       player.airplane.joystick.z = pitch_control_pid.calculate(current_av, target_av, dt);
     }
 #endif
-    player.airplane.engine->throttle = joystick.throttle;
+    player.airplane.throttle = joystick.throttle;
 
 #if NPC_AIRCRAFT
     target_marker.visible = glm::length(camera.get_world_position() - npc.airplane.position) > 500.0f;
@@ -558,10 +562,13 @@ int main(void)
 #endif
 
     if (!paused) {
+      phi::step_physics(rigid_bodies, dt);
+
       for (auto obj : objects) {
         obj->update(dt);
       }
 
+#if 0
       // naive, but works for small numbers of objects
       for (int i = 0; i < objects.size(); i++) {
         auto& a = objects[i];
@@ -599,6 +606,7 @@ int main(void)
           }
         }
       }
+#endif
     }
 
     fpm.set_position(glm::normalize(player.airplane.get_body_velocity()) * projection_distance);
