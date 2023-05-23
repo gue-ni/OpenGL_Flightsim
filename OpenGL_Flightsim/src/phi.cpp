@@ -97,10 +97,16 @@ bool Sphere::test_collision(const Sphere* other) const { return false; }
 
 bool collision_primitive(const Plane* plane, const Sphere* sphere)
 {
-  float dist = glm::dot(sphere->origin, plane->normal) - glm::dot(plane->normal, plane->origin);
-  return glm::abs(dist) < sphere->radius;
+    return (sphere->origin.y - sphere->radius) < plane->origin.y;
+  //float dist = glm::dot(sphere->origin, plane->normal) - glm::dot(plane->normal, plane->origin);
+  //return glm::abs(dist) < sphere->radius;
 }
 
-bool collision_primitive(const Sphere* a, const Sphere* b) { return false; }
+bool collision_primitive(const Sphere* a, const Sphere* b)
+{
+  float distance   = glm::length(a->origin - b->origin);
+  float radius_sum = a->radius + b->radius;
+  return distance < radius_sum;
+}
 
 };  // namespace phi

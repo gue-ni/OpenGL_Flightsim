@@ -32,6 +32,7 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <iostream>
 #include <numeric>
 #include <vector>
 
@@ -434,6 +435,9 @@ class RigidBody
   static void impulse_collision_response(RigidBody* a, RigidBody* b, const CollisionInfo& collision,
                                          float restitution_coeff = 0.66f)
   {
+
+
+
     float total_inverse_mass = a->get_inverse_mass() + b->get_inverse_mass();
 
     // move objects so they are no longer colliding. heavier object gets moved less
@@ -512,8 +516,8 @@ struct Heightmap : public Collider {
 
   void update(const RigidBody* rb) override;
   bool test_collision(const Collider* other) const override;
-  bool test_collision(const Sphere* other) const override;
   bool test_collision(const Heightmap* other) const override;
+  bool test_collision(const Sphere* other) const override;
 };
 
 struct Sphere : public Collider {
@@ -547,17 +551,18 @@ std::vector<CollisionInfo> collision_narrowphase(std::vector<RB>& objects, phi::
   std::vector<CollisionInfo> collisions;
 
   for (int i = 0; i < objects.size(); i++) {
+    auto a = objects[i].collider;
+
     for (int j = i + 1; j < objects.size(); j++) {
+
       if (objects[i].collider && objects[j].collider) {
-        auto a = objects[i].collider;
         auto b = objects[j].collider;
 
         // test for collison
         if (a->test_collision(b)) {
-          // TODO
           CollisionInfo info;
-          info.a = a;
-          info.b = b;
+          info.a = &objects[i];
+          info.b = &objects[j];
           collisions.push_back(info);
         }
       }
@@ -569,8 +574,8 @@ std::vector<CollisionInfo> collision_narrowphase(std::vector<RB>& objects, phi::
 
 inline void collision_resolution(std::vector<CollisionInfo>& collisions)
 {
-  for (auto& c : collisions) {
-    phi::RigidBody::impulse_collision_response(c.a, c.b, c);
+  for (auto& collision : collisions) {
+    phi::RigidBody::impulse_collision_response(collision.a, collision.b, collision);
   }
 }
 
@@ -597,6 +602,7 @@ void step_physics(std::vector<RB>& objects, phi::Seconds dt)
 
   // collision resolution
   if (collisions.size() > 0) {
+    std::cout << "found collisions\n";
     collision_resolution(collisions);
   }
 #endif

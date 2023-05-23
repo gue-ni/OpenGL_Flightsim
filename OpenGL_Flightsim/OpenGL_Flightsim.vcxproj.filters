@@ -61,7 +61,6 @@
     <None Include="shaders\billboard.vert" />
     <None Include="shaders\phong.vert" />
     <None Include="shaders\clipmap.vert" />
-    <None Include="tools\airfoil_analyzer.py" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\gfx.h">

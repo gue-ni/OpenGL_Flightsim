@@ -261,27 +261,31 @@ struct Airplane : public phi::RigidBody {
 #endif
 
     // main wings
-    wings[0].is_control_surface = false;
-    wings[3].is_control_surface = false;
+    if (wings.size() > 0) {
+      wings[0].is_control_surface = false;
+      wings[3].is_control_surface = false;
 
-    wings[1].set_deflection_limits(-15.0f, 15.0f);
-    wings[2].set_deflection_limits(-15.0f, 15.0f);
-    wings[5].set_deflection_limits(-5.0f, 5.0f);
+      wings[1].set_deflection_limits(-15.0f, 15.0f);
+      wings[2].set_deflection_limits(-15.0f, 15.0f);
+      wings[5].set_deflection_limits(-5.0f, 5.0f);
+    }
   }
 
   void update(phi::Seconds dt) override
   {
     float aileron = joystick.x, rudder = joystick.y, elevator = joystick.z, trim = joystick.w;
 
+    if (wings.size() > 0) {
 #if 0
     wings[0].set_control_input(+aileron);
     wings[3].set_control_input(-aileron);
 #else
-    wings[1].set_control_input(+aileron);
-    wings[2].set_control_input(-aileron);
+      wings[1].set_control_input(+aileron);
+      wings[2].set_control_input(-aileron);
 #endif
-    wings[4].set_control_input(-elevator);
-    wings[5].set_control_input(-rudder);
+      wings[4].set_control_input(-elevator);
+      wings[5].set_control_input(-rudder);
+    }
 
 #if LOG_FLIGHT
     flight_time += dt;

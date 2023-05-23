@@ -175,7 +175,6 @@ xcopy /y /i /s $(ProjectDir)..\lib\glew-2.2.0\bin\Release\x64\*.dll $(OutDir)</C
     <None Include="shaders\screen.vert" />
     <None Include="shaders\skybox.frag" />
     <None Include="shaders\skybox.vert" />
-    <None Include="tools\airfoil_analyzer.py" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ai.h" />

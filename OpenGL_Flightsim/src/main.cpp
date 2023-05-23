@@ -177,7 +177,7 @@ int main(void)
   int width, height, channels;
   const std::string heightmap_path = "assets/textures/terrain/1/heightmap.png";
   uint8_t* data                    = gfx::gl::Texture::load_image(heightmap_path, &width, &height, &channels, 0);
-  collider::Heightmap terrain_collider(data, width, height, channels);
+  phi::Heightmap terrain_collider(data, width, height, channels);
 #endif
 
   std::vector<GameObject*> objects;
@@ -319,8 +319,9 @@ int main(void)
 #error FLIGHTMODEL not defined
 #endif
 
-  Airplane airplane(mass, inertia, wings, {engine}, new phi::Sphere(15.0f));
-  std::vector<Airplane> rigid_bodies = {airplane};
+  std::vector<Airplane> rigid_bodies = {
+      Airplane(mass, inertia, wings, {engine}, new phi::Sphere(15.0f)),
+      Airplane(phi::INFINITE_RB_MASS, glm::mat4(phi::INFINITE_RB_MASS), {}, {}, &terrain_collider)};
 
   GameObject player = {
       .transform = gfx::Mesh(model, texture),
