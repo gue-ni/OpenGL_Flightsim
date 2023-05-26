@@ -35,19 +35,24 @@ const float sea_level_air_density = get_air_density(0.0f);
 };  // namespace isa
 
 // AoA, Cl, Cd
-typedef glm::vec3 AeroData;
+using AeroData = glm::vec3;
 
 // aerodynamic data sampler
 struct Airfoil {
   float min_alpha, max_alpha;
+  int max_index;
   std::vector<AeroData> data;
 
-  Airfoil(const std::vector<AeroData>& curve) : data(curve) { min_alpha = curve.front().x, max_alpha = curve.back().x; }
+  Airfoil(const std::vector<AeroData>& curve) : data(curve)
+  {
+    min_alpha = curve.front().x, max_alpha = curve.back().x;
+
+    max_index = static_cast<int>(data.size() - 1);
+  }
 
   // lift_coeff, drag_coeff
   std::tuple<float, float> sample(float alpha) const
   {
-    int max_index    = static_cast<int>(data.size() - 1);
     float t          = phi::inverse_lerp(min_alpha, max_alpha, alpha) * max_index;
     float integer    = std::floor(t);
     float fractional = t - integer;
@@ -55,10 +60,18 @@ struct Airfoil {
     auto value       = (index < max_index) ? phi::lerp(data[index], data[index + 1], fractional) : data[max_index];
     return {value.y, value.z};
   }
+
+  float cl_slope(float alpha) const
+  {
+    int i  = static_cast<int>(phi::inverse_lerp(min_alpha, max_alpha, alpha) * max_index);
+    i      = glm::clamp(i, 0, max_index - 2);
+    auto a = data[i + 0U];
+    auto b = data[i + 1U];
+    return (b.y - a.y) / (b.x - a.x);
+  }
 };
 
 // base engine
-// TODO: offset from cg
 struct Engine {
   float throttle                                                         = 0.25f;
   glm::vec3 relative_position                                            = glm::vec3(0);  // position relative to cg
@@ -250,7 +263,7 @@ struct Airplane : public phi::RigidBody {
 #endif
 
   Airplane(float mass, const glm::mat3& inertia, std::vector<Wing> wings, std::vector<Engine*> engines,
-           phi::Collider* collider)
+           const phi::Collider& collider)
       : phi::RigidBody({.mass = mass, .inertia = inertia, .collider = collider}), wings(wings), engines(engines)
   {
 #if LOG_FLIGHT

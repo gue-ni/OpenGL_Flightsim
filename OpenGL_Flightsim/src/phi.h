@@ -266,11 +266,11 @@ struct RigidBodyParams {
   float mass                 = DEFAULT_RB_MASS;
   glm::mat3 inertia          = DEFAULT_RB_INERTIA;
   glm::vec3 position         = glm::vec3(0);
+  glm::quat orientation      = DEFAULT_RB_ORIENTATION;
   glm::vec3 velocity         = glm::vec3(0);
   glm::vec3 angular_velocity = glm::vec3(0);
-  glm::quat orientation      = DEFAULT_RB_ORIENTATION;
   bool apply_gravity         = true;
-  Collider* collider         = nullptr;
+  Collider collider          = Collider(phi::hitbox::Sphere(1.0f));
 };
 
 class RigidBody
@@ -286,9 +286,10 @@ class RigidBody
   glm::vec3 velocity{};                    // velocity in world space, m/s
   glm::vec3 angular_velocity{};            // angular velocity in object space, (x = roll, y = yaw, z = pitch), rad/s
   glm::mat3 inertia{}, inverse_inertia{};  // inertia tensor
-  bool apply_gravity = true;
-  bool sleep         = true;
-  Collider* collider = nullptr;
+  bool apply_gravity    = true;
+  bool sleep            = false;
+  bool detect_collision = true;
+  Collider collider     = Collider{phi::hitbox::Sphere(1.0f)};
 
   RigidBody() : RigidBody({DEFAULT_RB_MASS, DEFAULT_RB_INERTIA}) {}
 
@@ -406,9 +407,13 @@ class RigidBody
     orientation += (orientation * glm::quat(0.0f, angular_velocity)) * (0.5f * dt);
     orientation = glm::normalize(orientation);
 
-    if (collider) {
-      // TODO: update collider transform
-    }
+    // update collider transform
+    std::visit(
+        [=](auto& c) {
+          c.position    = position;
+          c.orientation = orientation;
+        },
+        collider);
 
     // reset accumulators
     m_force = glm::vec3(0.0f), m_torque = glm::vec3(0.0f);
@@ -495,36 +500,42 @@ class RigidBody
 namespace collision
 {
 // collision primitives
-inline bool is_colliding(const hitbox::OBB& a, const hitbox::Sphere& b)
+inline bool is_colliding(const hitbox::OBB& a, const hitbox::Sphere& b, CollisionInfo& info)
 {
   std::cout << "OBB + Sphere" << std::endl;
-  return true;
+  return false;
 }
-inline bool is_colliding(const hitbox::Sphere& a, const hitbox::OBB& b)
+inline bool is_colliding(const hitbox::Sphere& a, const hitbox::OBB& b, CollisionInfo& info)
 {
   std::cout << "Sphere + OBB" << std::endl;
-  return is_colliding(b, a);
+  return is_colliding(b, a, info);
 }
-inline bool is_colliding(const hitbox::OBB& a, const hitbox::OBB& b)
+inline bool is_colliding(const hitbox::OBB& a, const hitbox::OBB& b, CollisionInfo& info)
 {
   std::cout << "OBB + OBB" << std::endl;
-  return true;
+  return false;
 }
-inline bool is_colliding(const hitbox::Sphere& a, const hitbox::Sphere& b)
+inline bool is_colliding(const hitbox::Sphere& a, const hitbox::Sphere& b, CollisionInfo& info)
 {
-  std::cout << "Sphere + Sphere" << std::endl;
-  return true;
+  float distance = glm::length(a.position - b.position);
+  return distance < (a.radius + b.radius);
 }
-inline bool is_colliding(const hitbox::Heightmap& a, const hitbox::Sphere& b) { return false; }
-inline bool is_colliding(const hitbox::Sphere& a, const hitbox::Heightmap& b) { return is_colliding(b, a); }
-inline bool is_colliding(const hitbox::Heightmap& a, const hitbox::OBB& b) { return false; }
-inline bool is_colliding(const hitbox::OBB& a, const hitbox::Heightmap& b) { return is_colliding(b, a); }
-inline bool is_colliding(const hitbox::Heightmap& a, const hitbox::Heightmap& b) { return false; }
+inline bool is_colliding(const hitbox::Heightmap& a, const hitbox::Sphere& b, CollisionInfo& info) { return false; }
+inline bool is_colliding(const hitbox::Sphere& a, const hitbox::Heightmap& b, CollisionInfo& info)
+{
+  return is_colliding(b, a, info);
+}
+inline bool is_colliding(const hitbox::Heightmap& a, const hitbox::OBB& b, CollisionInfo& info) { return false; }
+inline bool is_colliding(const hitbox::OBB& a, const hitbox::Heightmap& b, CollisionInfo& info)
+{
+  return is_colliding(b, a, info);
+}
+inline bool is_colliding(const hitbox::Heightmap& a, const hitbox::Heightmap& b, CollisionInfo& info) { return false; }
 
 // collision dispatch
-inline bool test_collision(const Collider& a, const Collider& b)
+inline bool test_collision(const Collider& a, const Collider& b, CollisionInfo& info)
 {
-  const auto visitor = [](const auto& A, const auto& B) { return is_colliding(A, B); };
+  const auto visitor = [&info](const auto& A, const auto& B) { return is_colliding(A, B, info); };
   return std::visit(visitor, a, b);
 }
 
@@ -536,16 +547,11 @@ std::vector<CollisionInfo> detection(std::vector<RB>& objects, phi::Seconds dt)
 
   for (std::size_t i = 0; i < objects.size(); i++) {
     for (std::size_t j = i + 1; j < objects.size(); j++) {
-      if (objects[i].collider && objects[j].collider) {
-        if (test_collision(*objects[i].collider, *objects[j].collider)) {
-          std::cout << "collision" << std::endl;
-          CollisionInfo info = {
-              glm::vec3(0),
-          };
-          info.a = &objects[i];
-          info.b = &objects[i];
-          collisions.push_back(info);
-        }
+      CollisionInfo info{};
+      if (test_collision(objects[i].collider, objects[j].collider, info)) {
+        info.a = &objects[i];
+        info.b = &objects[j];
+        collisions.push_back(info);
       }
     }
   }
@@ -568,12 +574,14 @@ void step_physics(std::vector<RB>& objects, phi::Seconds dt)
   for (auto& object : objects) {
     object.update(dt);
   }
-
+#if 1
   auto collisions = collision::detection(objects, dt);
 
   if (collisions.size() > 0) {
+    std::cout << "collisions\n";
     collision::resolution(collisions);
   }
+#endif
 }
 
 };  // namespace phi
