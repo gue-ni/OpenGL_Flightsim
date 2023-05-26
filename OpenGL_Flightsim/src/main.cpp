@@ -173,7 +173,7 @@ int main(void)
   Clipmap clipmap;
   scene.add(&clipmap);
 #endif
-#if 1
+#if 0
   int width, height, channels;
   const std::string heightmap_path = "assets/textures/terrain/1/heightmap.png";
   uint8_t* data                    = gfx::gl::Texture::load_image(heightmap_path, &width, &height, &channels, 0);
@@ -182,8 +182,7 @@ int main(void)
 
   std::vector<GameObject*> objects;
 
-  glm::vec3 position = glm::vec3(-7000.0f, 0, 0.0f);
-  position.y         = terrain_collider.get_height(glm::vec2{position.x, position.z}) + 1000.0f;
+  glm::vec3 position = glm::vec3(-7000.0f, 1000.0f, 0.0f);
 
 #if (FLIGHTMODEL == CESSNA)
   constexpr float speed = phi::units::meter_per_second(200.0f /* km/h */);
@@ -320,8 +319,9 @@ int main(void)
 #endif
 
   std::vector<Airplane> rigid_bodies = {
-      Airplane(mass, inertia, wings, {engine}, new phi::Sphere(15.0f)),
-      Airplane(phi::INFINITE_RB_MASS, glm::mat4(phi::INFINITE_RB_MASS), {}, {}, &terrain_collider)};
+      Airplane(mass, inertia, wings, {engine}, new phi::Collider{phi::hitbox::Sphere(15.0f)}),
+      Airplane(phi::INFINITE_RB_MASS, glm::mat4(phi::INFINITE_RB_MASS), {}, {},
+               new phi::Collider{phi::hitbox::Sphere(15.0f)})};
 
   GameObject player = {
       .transform = gfx::Mesh(model, texture),
@@ -527,7 +527,7 @@ int main(void)
 
 #if 1
     auto angular_velocity = glm::degrees(player.airplane.angular_velocity);
-    auto orientation      = glm::degrees(player.airplane.get_euler_angles());
+    auto attitude         = glm::degrees(player.airplane.get_euler_angles());
 
     ImVec2 size(140, 140);
     ImGui::SetNextWindowPos(ImVec2(RESOLUTION.x - size.y - 10.0f, RESOLUTION.y - size.y - 10.0f));
@@ -538,9 +538,9 @@ int main(void)
     ImGui::Text("Roll Rate:  %.1f", angular_velocity.x);
     ImGui::Text("Yaw Rate:   %.1f", angular_velocity.y);
     ImGui::Text("Pitch Rate: %.1f", angular_velocity.z);
-    ImGui::Text("Roll:       %.1f", orientation.x);
-    ImGui::Text("Yaw:        %.1f", orientation.y);
-    ImGui::Text("Pitch:      %.1f", orientation.z);
+    ImGui::Text("Roll:       %.1f", attitude.x);
+    ImGui::Text("Yaw:        %.1f", attitude.y);
+    ImGui::Text("Pitch:      %.1f", attitude.z);
     ImGui::End();
 #endif
 
@@ -568,46 +568,6 @@ int main(void)
       for (auto obj : objects) {
         obj->update(dt);
       }
-
-#if 0
-      // naive, but works for small numbers of objects
-      for (int i = 0; i < objects.size(); i++) {
-        auto& a = objects[i];
-#if 1
-        float terrain_height;
-        float gear_height = 2.0f;
-        if (collider::test_collision(terrain_collider, a->airplane.position - glm::vec3(0.0f, gear_height, 0.0f),
-                                     &terrain_height)) {
-          // printf("[%.1f] terrain collision!, %f\n", flight_time, terrain_height);
-
-          if (a->airplane.velocity.y < 0.0f) {
-            auto euler              = a->airplane.get_euler_angles();
-            euler.x                 = 0;                        // roll
-            euler.z                 = std::max(0.0f, euler.z);  // pitch, allow pitching up
-            a->airplane.orientation = glm::quat(euler);
-          }
-
-          a->airplane.is_landed  = true;
-          a->airplane.velocity.y = std::max(0.0f, a->airplane.velocity.y);
-          a->airplane.position.y = terrain_height + gear_height;
-
-        } else {
-          a->airplane.is_landed = false;
-        }
-#endif
-
-        for (int j = i + 1; j < objects.size(); j++) {
-          auto& b = objects[j];
-
-          phi::CollisionInfo collision{};
-
-          if (collider::test_collision(a->collider, b->collider, &collision)) {
-            printf("[%.1f] collision!, p = %f\n", flight_time, collision.penetration);
-            phi::RigidBody::impulse_collision_response(&a->airplane, &b->airplane, collision);
-          }
-        }
-      }
-#endif
     }
 
     fpm.set_position(glm::normalize(player.airplane.get_body_velocity()) * projection_distance);

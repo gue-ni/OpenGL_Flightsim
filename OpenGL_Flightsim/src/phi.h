@@ -1,39 +1,39 @@
 /*
-  Version: v0.1
+Version: v0.2
 
-  'phi.h' is a simple, header-only 3D rigidbody physics library based
-  on 'Physics for Game Developers, 2nd Edition' by David Bourg and Bryan Bywalec.
+'phi.h' is a simple, header-only 3D rigidbody physics library based
+on 'Physics for Game Developers, 2nd Edition' by David Bourg and Bryan Bywalec.
 
-  All units are SI, x is forward, y is up and z is right.
+All units are SI, x is forward, y is up and z is right.
 
-  MIT License
+MIT License
 
-  Copyright (c) 2023 jakob maier
+Copyright (c) 2023 jakob maier
 
-  Permission is hereby granted, free of charge, to any person obtaining a copy
-  of this software and associated documentation files (the "Software"), to deal
-  in the Software without restriction, including without limitation the rights
-  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-  copies of the Software, and to permit persons to whom the Software is
-  furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-  The above copyright notice and this permission notice shall be included in all
-  copies or substantial portions of the Software.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-  SOFTWARE.
-*/
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE. */
 #pragma once
 
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <iostream>
 #include <numeric>
+#include <variant>
 #include <vector>
 
 // RigidBody::update() can be marked virtual
@@ -50,11 +50,6 @@ typedef float Seconds;
 
 class RigidBody;
 
-struct Collider;
-struct Sphere;
-struct Plane;
-struct Heightmap;
-
 // constants
 constexpr float EPSILON       = 1e-8f;
 constexpr float EARTH_GRAVITY = 9.80665f;
@@ -65,9 +60,9 @@ constexpr glm::vec3 X_AXIS = {1.0f, 0.0f, 0.0f};
 constexpr glm::vec3 Y_AXIS = {0.0f, 1.0f, 0.0f};
 constexpr glm::vec3 Z_AXIS = {0.0f, 0.0f, 1.0f};
 
-constexpr glm::vec3 FORWARD  = X_AXIS;
-constexpr glm::vec3 UP       = Y_AXIS;
-constexpr glm::vec3 RIGHT    = Z_AXIS;
+constexpr glm::vec3 FORWARD  = +X_AXIS;
+constexpr glm::vec3 UP       = +Y_AXIS;
+constexpr glm::vec3 RIGHT    = +Z_AXIS;
 constexpr glm::vec3 BACKWARD = -X_AXIS;
 constexpr glm::vec3 DOWN     = -Y_AXIS;
 constexpr glm::vec3 LEFT     = -Z_AXIS;
@@ -109,47 +104,68 @@ inline T move_towards(T current, T target, T speed)
   return current + glm::sign(target - current) * speed;
 }
 
+struct Transform {
+  glm::vec3 position;
+  glm::quat orientation;
+  inline void set(const glm::vec3& p, const glm::quat& o)
+  {
+    position    = p;
+    orientation = o;
+  }
+};
+
+// moment of inertia according to https://en.wikipedia.org/wiki/List_of_moments_of_inertia
+// all hitboxes must extend Transform
+namespace hitbox
+{
+struct OBB : public Transform {
+  glm::vec3 size;
+  OBB(const glm::vec3& s) : size(s) {}
+  static constexpr glm::vec3 inertia(const glm::vec3& size, float mass)
+  {
+    const float C = (1.0f / 12.0f) * mass;
+    return glm::vec3(sq(size.y) + sq(size.z), sq(size.x) + sq(size.z), sq(size.x) + sq(size.y)) * C;
+  }
+};
+
+struct Sphere : public Transform {
+  float radius;
+  Sphere(float r) : radius(r) {}
+  static constexpr glm::vec3 inertia(float radius, float mass) { return glm::vec3((2.0f / 5.0f) * mass * sq(radius)); }
+};
+
+struct Heightmap : public Transform {
+  float height;
+  Heightmap(float h) : height(h) {}
+};
+}  // namespace hitbox
+
+using Collider = std::variant<hitbox::OBB, hitbox::Sphere, hitbox::Heightmap>;
+
+struct CollisionInfo {
+  glm::vec3 point;
+  glm::vec3 normal;
+  float penetration;
+  RigidBody *a, *b;
+};
+
 // inertia tensor calculations
-// formulas according to https://en.wikipedia.org/wiki/List_of_moments_of_inertia
 namespace inertia
 {
 // mass element used for inertia tensor calculation
 struct Element {
   glm::vec3 size;
   glm::vec3 position;  // position in design coordinates
-  glm::vec3 inertia;
-  glm::vec3 offset;  // offset from center of gravity
+  glm::vec3 inertia;   // moment of inertia
+  glm::vec3 offset;    // offset from center of gravity
   float mass;
   float volume() const { return size.x * size.y * size.z; }
 };
 
-// solid sphere
-constexpr glm::vec3 sphere(float radius, float mass) { return glm::vec3((2.0f / 5.0f) * mass * sq(radius)); }
-
-// cube with side length 'size'
-constexpr glm::vec3 cube(float size, float mass) { return glm::vec3((1.0f / 6.0f) * mass * sq(size)); }
-
-// cuboid with side length 'size'
-constexpr glm::vec3 cuboid(const glm::vec3& size, float mass)
-{
-  const float C = (1.0f / 12.0f) * mass;
-  return glm::vec3(sq(size.y) + sq(size.z), sq(size.x) + sq(size.z), sq(size.x) + sq(size.y)) * C;
-}
-
-// cylinder oriented along the x direction
-constexpr glm::vec3 cylinder(float radius, float length, float mass)
-{
-  const float C = (1.0f / 12.0f) * mass;
-  glm::vec3 I(0.0f);
-  I.x = (0.5f) * mass * sq(radius);
-  I.y = I.z = C * (3.0f * sq(radius) + sq(length));
-  return I;
-}
-
 // helper function for the creation of a cuboid mass element
 constexpr Element cube(const glm::vec3& position, const glm::vec3& size, float mass = 0.0f)
 {
-  return {size, position, cuboid(size, mass), position, mass};
+  return {size, position, hitbox::OBB::inertia(size, mass), position, mass};
 }
 
 // inertia tensor from moment of inertia
@@ -245,37 +261,21 @@ constexpr inline float torque(float power, float rpm) { return 30.0f * power / (
 
 };  // namespace units
 
-#if 1
-struct CollisionInfo {
-  glm::vec3 point;
-  glm::vec3 normal;
-  float penetration;
-  RigidBody *a, *b;
-};
-#endif
-
-#if 0
-struct Transform {
-  glm::vec3 position;
-  glm::quat orientation;
-};
-#endif
-
 // default rigid body is a sphere with radius 1 meter and a mass of 100 kg
 constexpr float DEFAULT_RB_MASS            = 100.0f;
 constexpr float INFINITE_RB_MASS           = std::numeric_limits<float>::infinity();
-constexpr glm::mat3 DEFAULT_RB_INERTIA     = inertia::tensor(inertia::sphere(1.0f, DEFAULT_RB_MASS));
+constexpr glm::mat3 DEFAULT_RB_INERTIA     = inertia::tensor(hitbox::Sphere::inertia(1.0f, DEFAULT_RB_MASS));
 constexpr glm::quat DEFAULT_RB_ORIENTATION = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
 
 struct RigidBodyParams {
-  float mass        = DEFAULT_RB_MASS;
-  glm::mat3 inertia = DEFAULT_RB_INERTIA;
-  glm::vec3 position{};
-  glm::vec3 velocity{};
-  glm::vec3 angular_velocity{};
-  glm::quat orientation = DEFAULT_RB_ORIENTATION;
-  bool apply_gravity    = true;
-  Collider* collider    = nullptr;
+  float mass                 = DEFAULT_RB_MASS;
+  glm::mat3 inertia          = DEFAULT_RB_INERTIA;
+  glm::vec3 position         = glm::vec3(0);
+  glm::vec3 velocity         = glm::vec3(0);
+  glm::vec3 angular_velocity = glm::vec3(0);
+  glm::quat orientation      = DEFAULT_RB_ORIENTATION;
+  bool apply_gravity         = true;
+  Collider* collider         = nullptr;
 };
 
 class RigidBody
@@ -286,13 +286,13 @@ class RigidBody
 
  public:
   float mass;                              // rigidbody mass, kg
-  glm::vec3 position{};                    // position in world space, m
-  glm::quat orientation{};                 // orientation in world space
+  glm::vec3 position;                      // position in world space, m
+  glm::quat orientation;                   // orientation in world space
   glm::vec3 velocity{};                    // velocity in world space, m/s
   glm::vec3 angular_velocity{};            // angular velocity in object space, (x = roll, y = yaw, z = pitch), rad/s
   glm::mat3 inertia{}, inverse_inertia{};  // inertia tensor
   bool apply_gravity = true;
-  bool active        = true;
+  bool sleep         = true;
   Collider* collider = nullptr;
 
   RigidBody() : RigidBody({DEFAULT_RB_MASS, DEFAULT_RB_INERTIA}) {}
@@ -371,15 +371,8 @@ class RigidBody
   // torque vector in body space
   inline void add_relative_torque(const glm::vec3& torque) { m_torque += torque; }
 
-  // add terrain friction
-  glm::vec3 add_friction(const glm::vec3& normal, const glm::vec3& sliding_direction, float friction_coeff)
-  {
-    // https://en.wikipedia.org/wiki/Normal_force
-    // https://en.wikipedia.org/wiki/Friction
-    float weight      = mass * EARTH_GRAVITY;
-    auto normal_force = weight * std::max(glm::dot(normal, UP), 0.0f);
-    return -sliding_direction * normal_force * friction_coeff;
-  }
+  // get transform
+  inline std::pair<glm::vec3, glm::quat> get_transform() const { return {position, orientation}; }
 
   // get speed
   inline float get_speed() const { return glm::length(velocity); }
@@ -403,7 +396,28 @@ class RigidBody
   inline glm::vec3 right() const { return transform_direction(phi::RIGHT); }
 
   // integrate RigidBody
-  RB_VIRTUAL_UPDATE void update(phi::Seconds dt);
+  RB_VIRTUAL_UPDATE void update(phi::Seconds dt)
+  {
+    if (sleep) return;
+
+    glm::vec3 acceleration = m_force / mass;
+
+    if (apply_gravity) acceleration.y -= EARTH_GRAVITY;
+
+    velocity += acceleration * dt;
+    position += velocity * dt;
+
+    angular_velocity += inverse_inertia * (m_torque - glm::cross(angular_velocity, inertia * angular_velocity)) * dt;
+    orientation += (orientation * glm::quat(0.0f, angular_velocity)) * (0.5f * dt);
+    orientation = glm::normalize(orientation);
+
+    if (collider) {
+      // TODO: update collider transform
+    }
+
+    // reset accumulators
+    m_force = glm::vec3(0.0f), m_torque = glm::vec3(0.0f);
+  }
 
   // restitution_coeff:  0 = perfectly inelastic, 1 = perfectly elastic
   // impulse collision response without angular effects
@@ -435,9 +449,6 @@ class RigidBody
   static void impulse_collision_response(RigidBody* a, RigidBody* b, const CollisionInfo& collision,
                                          float restitution_coeff = 0.66f)
   {
-
-
-
     float total_inverse_mass = a->get_inverse_mass() + b->get_inverse_mass();
 
     // move objects so they are no longer colliding. heavier object gets moved less
@@ -485,84 +496,67 @@ class RigidBody
   }
 };
 
-struct Collider {
-  virtual void update(const RigidBody* rb)                 = 0;
-  virtual bool test_collision(const Collider* other) const = 0;
-  virtual bool test_collision(const Sphere* other) const   = 0;
-  virtual bool test_collision(const Heightmap* hm) const   = 0;
-};
+// collision detection system
+namespace collision
+{
+// collision primitives
+inline bool is_colliding(const hitbox::OBB& a, const hitbox::Sphere& b)
+{
+  std::cout << "OBB + Sphere" << std::endl;
+  return true;
+}
 
-struct Plane {
-  glm::vec3 origin, normal;
+inline bool is_colliding(const hitbox::Sphere& a, const hitbox::OBB& b)
+{
+  std::cout << "Sphere + OBB" << std::endl;
+  return is_colliding(b, a);
+}
 
-  Plane() : origin(glm::vec3(0)), normal(phi::UP) {}
-  Plane(const glm::vec3 o, const glm::vec3 n) : origin(o), normal(n) {}
-};
+inline bool is_colliding(const hitbox::OBB& a, const hitbox::OBB& b)
+{
+  std::cout << "OBB + OBB" << std::endl;
+  return true;
+}
 
-struct Heightmap : public Collider {
-  const uint8_t* data;
-  const int width, height, channels;
-  const float scale = 3000.0f, shift = 0.0f, magnification = 25000.0f;
+inline bool is_colliding(const hitbox::Sphere& a, const hitbox::Sphere& b)
+{
+  std::cout << "Sphere + Sphere" << std::endl;
+  return true;
+}
 
-  Heightmap(const uint8_t* data, int width, int height, int channels)
-      : data(data), width(width), height(height), channels(channels)
-  {
-  }
+inline bool is_colliding(const hitbox::Heightmap& a, const hitbox::Sphere& b) { return false; }
 
-  static Plane plane_from_points(const glm::vec3& a, const glm::vec3& b, const glm::vec3& c);
-  float get_height(const glm::vec2& coord) const;
-  glm::vec3 sample(const glm::vec2& coord) const;
-  Plane get_plane(const glm::vec2& coord) const;
+inline bool is_colliding(const hitbox::Sphere& a, const hitbox::Heightmap& b) { return is_colliding(b, a); }
 
-  void update(const RigidBody* rb) override;
-  bool test_collision(const Collider* other) const override;
-  bool test_collision(const Heightmap* other) const override;
-  bool test_collision(const Sphere* other) const override;
-};
+inline bool is_colliding(const hitbox::Heightmap& a, const hitbox::OBB& b) { return false; }
 
-struct Sphere : public Collider {
-  glm::vec3 origin;
-  float radius;
-  Sphere(float r) : radius(r), origin(glm::vec3(0)) {}
-  void update(const RigidBody* rb) override;
-  bool test_collision(const Collider* other) const override;
-  bool test_collision(const Heightmap* other) const override;
-  bool test_collision(const Sphere* other) const override;
-};
+inline bool is_colliding(const hitbox::OBB& a, const hitbox::Heightmap& b) { return is_colliding(b, a); }
 
-#if 0
-struct OBB : public Collider {
-  glm::vec3 origin, size;
-  glm::quat orientation;
-  void update(const RigidBody* rb) override;
-  bool test_collision(const Collider* other) const override;
-  bool test_collision(const Heightmap* other) const override;
-  bool test_collision(const OBB* other) const override;
-  bool test_collision(const Sphere* other) const override;
-};
-#endif
+inline bool is_colliding(const hitbox::Heightmap& a, const hitbox::Heightmap& b) { return false; }
 
-bool collision_primitive(const Plane* plane, const Sphere* sphere);
-bool collision_primitive(const Sphere* a, const Sphere* b);
+// collision dispatch
+inline bool test_collision(const Collider& a, const Collider& b)
+{
+  const auto visitor = [](const auto& A, const auto& B) { return is_colliding(A, B); };
+  return std::visit(visitor, a, b);
+}
 
+// this algorithm is O(n^2) -> very slow
 template <typename RB>
-std::vector<CollisionInfo> collision_narrowphase(std::vector<RB>& objects, phi::Seconds dt)
+std::vector<CollisionInfo> detection(std::vector<RB>& objects, phi::Seconds dt)
 {
   std::vector<CollisionInfo> collisions;
 
-  for (int i = 0; i < objects.size(); i++) {
-    auto a = objects[i].collider;
-
-    for (int j = i + 1; j < objects.size(); j++) {
-
+  for (std::size_t i = 0; i < objects.size(); i++) {
+    for (std::size_t j = i + 1; j < objects.size(); j++) {
       if (objects[i].collider && objects[j].collider) {
-        auto b = objects[j].collider;
-
-        // test for collison
-        if (a->test_collision(b)) {
-          CollisionInfo info;
+        if (test_collision(*objects[i].collider, *objects[j].collider)) {
+          std::cout << "collision" << std::endl;
+          CollisionInfo info = {
+              glm::vec3(0),
+          };
           info.a = &objects[i];
-          info.b = &objects[j];
+          info.b = &objects[i];
           collisions.push_back(info);
         }
       }
@@ -572,21 +566,14 @@ std::vector<CollisionInfo> collision_narrowphase(std::vector<RB>& objects, phi::
   return collisions;
 }
 
-inline void collision_resolution(std::vector<CollisionInfo>& collisions)
+inline void resolution(std::vector<CollisionInfo>& collisions)
 {
   for (auto& collision : collisions) {
     phi::RigidBody::impulse_collision_response(collision.a, collision.b, collision);
   }
 }
 
-struct ForceGenerator {
-  virtual void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) = 0;
-};
-
-struct Joint {
-  phi::RigidBody *a, *b;
-  virtual void update(phi::Seconds dt) = 0;
-};
+};  // namespace collision
 
 template <typename RB>
 void step_physics(std::vector<RB>& objects, phi::Seconds dt)
@@ -596,16 +583,11 @@ void step_physics(std::vector<RB>& objects, phi::Seconds dt)
     object.update(dt);
   }
 
-#if 0
-  // collision detection
-  auto collisions = collision_narrowphase(objects, dt);
+  auto collisions = collision::detection(objects, dt);
 
-  // collision resolution
   if (collisions.size() > 0) {
-    std::cout << "found collisions\n";
-    collision_resolution(collisions);
+    collision::resolution(collisions);
   }
-#endif
 }
 
 };  // namespace phi

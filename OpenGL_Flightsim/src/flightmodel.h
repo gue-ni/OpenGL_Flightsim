@@ -59,10 +59,10 @@ struct Airfoil {
 
 // base engine
 // TODO: offset from cg
-struct Engine : public phi::ForceGenerator {
-  float throttle              = 0.25f;
-  glm::vec3 relative_position = glm::vec3(0);  // position relative to cg
-  void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) override {}
+struct Engine {
+  float throttle                                                         = 0.25f;
+  glm::vec3 relative_position                                            = glm::vec3(0);  // position relative to cg
+  virtual void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) = 0;
 };
 
 // simple jet-like engine
@@ -109,7 +109,7 @@ struct PropellerEngine : public Engine {
 };
 
 // not only a wing, can be any kind of aerodynamic surface
-class Wing : public phi::ForceGenerator
+class Wing
 {
  private:
   const float area;
@@ -168,7 +168,7 @@ class Wing : public phi::ForceGenerator
   void set_deflection_limits(float min, float max) { min_deflection = min, max_deflection = max; }
 
   // compute and apply aerodynamic forces
-  void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) override
+  void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt)
   {
     glm::vec3 local_velocity = rigid_body->get_point_velocity(center_of_pressure);
     float speed              = glm::length(local_velocity);
