@@ -409,7 +409,7 @@ class RigidBody
 
     // update collider transform
     std::visit(
-        [=](auto& c) {
+        [this](auto& c) {
           c.position    = position;
           c.orientation = orientation;
         },
