@@ -107,11 +107,6 @@ inline T move_towards(T current, T target, T speed)
 struct Transform {
   glm::vec3 position;
   glm::quat orientation;
-  inline void set(const glm::vec3& p, const glm::quat& o)
-  {
-    position    = p;
-    orientation = o;
-  }
 };
 
 // moment of inertia according to https://en.wikipedia.org/wiki/List_of_moments_of_inertia
@@ -372,7 +367,7 @@ class RigidBody
   inline void add_relative_torque(const glm::vec3& torque) { m_torque += torque; }
 
   // get transform
-  inline std::pair<glm::vec3, glm::quat> get_transform() const { return {position, orientation}; }
+  inline Transform get_transform() const { return {position, orientation}; }
 
   // get speed
   inline float get_speed() const { return glm::length(velocity); }
@@ -422,7 +417,7 @@ class RigidBody
   // restitution_coeff:  0 = perfectly inelastic, 1 = perfectly elastic
   // impulse collision response without angular effects
   static void linear_impulse_collision_response(RigidBody* a, RigidBody* b, const CollisionInfo& collision,
-                                                float restitution_coeff = 0.66f)
+                                                float restitution_coeff = 0.5f)
   {
     float total_inverse_mass = a->get_inverse_mass() + b->get_inverse_mass();
 
@@ -447,7 +442,7 @@ class RigidBody
 
   // impulse collision response
   static void impulse_collision_response(RigidBody* a, RigidBody* b, const CollisionInfo& collision,
-                                         float restitution_coeff = 0.66f)
+                                         float restitution_coeff = 0.5f)
   {
     float total_inverse_mass = a->get_inverse_mass() + b->get_inverse_mass();
 
@@ -505,33 +500,25 @@ inline bool is_colliding(const hitbox::OBB& a, const hitbox::Sphere& b)
   std::cout << "OBB + Sphere" << std::endl;
   return true;
 }
-
 inline bool is_colliding(const hitbox::Sphere& a, const hitbox::OBB& b)
 {
   std::cout << "Sphere + OBB" << std::endl;
   return is_colliding(b, a);
 }
-
 inline bool is_colliding(const hitbox::OBB& a, const hitbox::OBB& b)
 {
   std::cout << "OBB + OBB" << std::endl;
   return true;
 }
-
 inline bool is_colliding(const hitbox::Sphere& a, const hitbox::Sphere& b)
 {
   std::cout << "Sphere + Sphere" << std::endl;
   return true;
 }
-
 inline bool is_colliding(const hitbox::Heightmap& a, const hitbox::Sphere& b) { return false; }
-
 inline bool is_colliding(const hitbox::Sphere& a, const hitbox::Heightmap& b) { return is_colliding(b, a); }
-
 inline bool is_colliding(const hitbox::Heightmap& a, const hitbox::OBB& b) { return false; }
-
 inline bool is_colliding(const hitbox::OBB& a, const hitbox::Heightmap& b) { return is_colliding(b, a); }
-
 inline bool is_colliding(const hitbox::Heightmap& a, const hitbox::Heightmap& b) { return false; }
 
 // collision dispatch
@@ -578,7 +565,6 @@ inline void resolution(std::vector<CollisionInfo>& collisions)
 template <typename RB>
 void step_physics(std::vector<RB>& objects, phi::Seconds dt)
 {
-  // update
   for (auto& object : objects) {
     object.update(dt);
   }
