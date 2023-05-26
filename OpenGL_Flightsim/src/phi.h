@@ -520,7 +520,10 @@ inline bool is_colliding(const hitbox::Sphere& a, const hitbox::Sphere& b, Colli
   float distance = glm::length(a.position - b.position);
   return distance < (a.radius + b.radius);
 }
-inline bool is_colliding(const hitbox::Heightmap& a, const hitbox::Sphere& b, CollisionInfo& info) { return false; }
+inline bool is_colliding(const hitbox::Heightmap& a, const hitbox::Sphere& b, CollisionInfo& info)
+{
+  return (b.position.y - b.radius) < a.height;
+}
 inline bool is_colliding(const hitbox::Sphere& a, const hitbox::Heightmap& b, CollisionInfo& info)
 {
   return is_colliding(b, a, info);
@@ -574,14 +577,12 @@ void step_physics(std::vector<RB>& objects, phi::Seconds dt)
   for (auto& object : objects) {
     object.update(dt);
   }
-#if 1
+
   auto collisions = collision::detection(objects, dt);
 
   if (collisions.size() > 0) {
-    std::cout << "collisions\n";
     collision::resolution(collisions);
   }
-#endif
 }
 
 };  // namespace phi
