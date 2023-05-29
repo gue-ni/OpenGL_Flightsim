@@ -95,15 +95,6 @@ constexpr inline float inverse_lerp(T a, T b, T v)
   return (v - a) / (b - a);
 }
 
-template <typename T>
-inline T move_towards(T current, T target, T speed)
-{
-  if (std::abs(target - current) <= speed) {
-    return target;
-  }
-  return current + glm::sign(target - current) * speed;
-}
-
 struct Transform {
   glm::vec3 position;
   glm::quat orientation;
@@ -113,9 +104,17 @@ struct Transform {
 // all hitboxes must extend Transform
 namespace hitbox
 {
+
+// oriented bounding box
 struct OBB : public Transform {
-  glm::vec3 size;
-  OBB(const glm::vec3& s) : size(s) {}
+  glm::vec3 half_size;
+  OBB(const glm::vec3& s) : half_size(s) {}
+
+  std::vector<glm::vec3> axis() const
+  {
+    return {phi::X_AXIS * orientation, phi::Y_AXIS * orientation, phi::Z_AXIS * orientation};
+  }
+
   static constexpr glm::vec3 inertia(const glm::vec3& size, float mass)
   {
     const float C = (1.0f / 12.0f) * mass;
@@ -123,15 +122,18 @@ struct OBB : public Transform {
   }
 };
 
+// bounding sphere
 struct Sphere : public Transform {
   float radius;
-  Sphere(float r) : radius(r) {}
+  constexpr Sphere(float r) : radius(r) {}
   static constexpr glm::vec3 inertia(float radius, float mass) { return glm::vec3((2.0f / 5.0f) * mass * sq(radius)); }
 };
 
+// TODO: sample from real heightmap
 struct Heightmap : public Transform {
   float height;
   Heightmap(float h) : height(h) {}
+  float get_height(const glm::vec2& coord) const { return height; }
 };
 }  // namespace hitbox
 
@@ -261,6 +263,7 @@ constexpr float DEFAULT_RB_MASS            = 100.0f;
 constexpr float INFINITE_RB_MASS           = std::numeric_limits<float>::infinity();
 constexpr glm::mat3 DEFAULT_RB_INERTIA     = inertia::tensor(hitbox::Sphere::inertia(1.0f, DEFAULT_RB_MASS));
 constexpr glm::quat DEFAULT_RB_ORIENTATION = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+const Collider DEFAULT_RB_COLLIDER         = Collider(phi::hitbox::Sphere(1.0f));
 
 struct RigidBodyParams {
   float mass                 = DEFAULT_RB_MASS;
@@ -270,7 +273,7 @@ struct RigidBodyParams {
   glm::vec3 velocity         = glm::vec3(0);
   glm::vec3 angular_velocity = glm::vec3(0);
   bool apply_gravity         = true;
-  Collider collider          = Collider(phi::hitbox::Sphere(1.0f));
+  Collider collider          = DEFAULT_RB_COLLIDER;
 };
 
 class RigidBody
@@ -280,16 +283,17 @@ class RigidBody
   glm::vec3 m_torque{};  // torque vector in body space
 
  public:
-  float mass;                              // rigidbody mass, kg
-  glm::vec3 position;                      // position in world space, m
-  glm::quat orientation;                   // orientation in world space
-  glm::vec3 velocity{};                    // velocity in world space, m/s
-  glm::vec3 angular_velocity{};            // angular velocity in object space, (x = roll, y = yaw, z = pitch), rad/s
-  glm::mat3 inertia{}, inverse_inertia{};  // inertia tensor
-  bool apply_gravity    = true;
-  bool sleep            = false;
-  bool detect_collision = true;
-  Collider collider     = Collider{phi::hitbox::Sphere(1.0f)};
+  float mass                 = DEFAULT_RB_MASS;         // rigidbody mass, kg
+  glm::vec3 position         = glm::vec3(0.0f);         // position in world space, m
+  glm::quat orientation      = DEFAULT_RB_ORIENTATION;  // orientation in world space
+  glm::vec3 velocity         = glm::vec3(0.0f);         // velocity in world space, m/s
+  glm::vec3 angular_velocity = glm::vec3(0.0f);         // object space, (x = roll, y = yaw, z = pitch), rad/s
+  bool apply_gravity         = true;
+  bool sleep                 = false;
+  bool detect_collision      = true;
+  Collider collider          = DEFAULT_RB_COLLIDER;
+  glm::mat3 inertia          = glm::mat3(0.0f);
+  glm::mat3 inverse_inertia  = glm::mat3(0.0f);  // inertia tensor
 
   RigidBody() : RigidBody({DEFAULT_RB_MASS, DEFAULT_RB_INERTIA}) {}
 
@@ -499,41 +503,34 @@ class RigidBody
 // collision detection system
 namespace collision
 {
-// collision primitives
-inline bool is_colliding(const hitbox::OBB& a, const hitbox::Sphere& b, CollisionInfo& info)
-{
-  std::cout << "OBB + Sphere" << std::endl;
-  return false;
-}
-inline bool is_colliding(const hitbox::Sphere& a, const hitbox::OBB& b, CollisionInfo& info)
-{
-  std::cout << "Sphere + OBB" << std::endl;
-  return is_colliding(b, a, info);
-}
-inline bool is_colliding(const hitbox::OBB& a, const hitbox::OBB& b, CollisionInfo& info)
-{
-  std::cout << "OBB + OBB" << std::endl;
-  return false;
-}
+
+//  placeholder implementation
+#define NO_COLLISION_IMPL(TypeA, TypeB) \
+  inline bool is_colliding(const TypeA& a, const TypeB& b, CollisionInfo& info) { return false; }
+
+#define SWIZZLE_IMPL(TypeA, TypeB) \
+  inline bool is_colliding(const TypeA& a, const TypeB& b, CollisionInfo& info) { return is_colliding(b, a, info); }
+
+// collision primitives:
+
 inline bool is_colliding(const hitbox::Sphere& a, const hitbox::Sphere& b, CollisionInfo& info)
 {
   float distance = glm::length(a.position - b.position);
   return distance < (a.radius + b.radius);
 }
+
 inline bool is_colliding(const hitbox::Heightmap& a, const hitbox::Sphere& b, CollisionInfo& info)
 {
   return (b.position.y - b.radius) < a.height;
 }
-inline bool is_colliding(const hitbox::Sphere& a, const hitbox::Heightmap& b, CollisionInfo& info)
-{
-  return is_colliding(b, a, info);
-}
-inline bool is_colliding(const hitbox::Heightmap& a, const hitbox::OBB& b, CollisionInfo& info) { return false; }
-inline bool is_colliding(const hitbox::OBB& a, const hitbox::Heightmap& b, CollisionInfo& info)
-{
-  return is_colliding(b, a, info);
-}
-inline bool is_colliding(const hitbox::Heightmap& a, const hitbox::Heightmap& b, CollisionInfo& info) { return false; }
+SWIZZLE_IMPL(hitbox::Sphere, hitbox::Heightmap);
+
+NO_COLLISION_IMPL(hitbox::OBB, hitbox::OBB);
+NO_COLLISION_IMPL(hitbox::Sphere, hitbox::OBB);
+NO_COLLISION_IMPL(hitbox::OBB, hitbox::Sphere);
+NO_COLLISION_IMPL(hitbox::OBB, hitbox::Heightmap);
+NO_COLLISION_IMPL(hitbox::Heightmap, hitbox::OBB);
+NO_COLLISION_IMPL(hitbox::Heightmap, hitbox::Heightmap);
 
 // collision dispatch
 inline bool test_collision(const Collider& a, const Collider& b, CollisionInfo& info)
@@ -542,7 +539,7 @@ inline bool test_collision(const Collider& a, const Collider& b, CollisionInfo& 
   return std::visit(visitor, a, b);
 }
 
-// this algorithm is O(n^2) -> very slow
+// narrowphase collision detection. this algorithm is O(n^2) -> very slow
 template <typename RB>
 std::vector<CollisionInfo> detection(std::vector<RB>& objects, phi::Seconds dt)
 {
@@ -562,6 +559,7 @@ std::vector<CollisionInfo> detection(std::vector<RB>& objects, phi::Seconds dt)
   return collisions;
 }
 
+// resolve collision events
 inline void resolution(std::vector<CollisionInfo>& collisions)
 {
   for (auto& collision : collisions) {

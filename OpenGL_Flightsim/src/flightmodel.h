@@ -46,7 +46,6 @@ struct Airfoil {
   Airfoil(const std::vector<AeroData>& curve) : data(curve)
   {
     min_alpha = curve.front().x, max_alpha = curve.back().x;
-
     max_index = static_cast<int>(data.size() - 1);
   }
 
@@ -272,16 +271,6 @@ struct Airplane : public phi::RigidBody {
     log_file
         << "flight_time,altitude,speed,ias,aoa,roll_rate,yaw_rate,pitch_rate,roll,yaw,pitch,aileron,rudder,elevator,\n";
 #endif
-
-    // main wings
-    if (wings.size() > 0) {
-      wings[0].is_control_surface = false;
-      wings[3].is_control_surface = false;
-
-      wings[1].set_deflection_limits(-15.0f, 15.0f);
-      wings[2].set_deflection_limits(-15.0f, 15.0f);
-      wings[5].set_deflection_limits(-5.0f, 5.0f);
-    }
   }
 
   void update(phi::Seconds dt) override
@@ -289,15 +278,10 @@ struct Airplane : public phi::RigidBody {
     float aileron = joystick.x, rudder = joystick.y, elevator = joystick.z, trim = joystick.w;
 
     if (wings.size() > 0) {
-#if 0
-    wings[0].set_control_input(+aileron);
-    wings[3].set_control_input(-aileron);
-#else
-      wings[1].set_control_input(+aileron);
-      wings[2].set_control_input(-aileron);
-#endif
-      wings[4].set_control_input(-elevator);
-      wings[5].set_control_input(-rudder);
+      wings[0].set_control_input(+aileron);
+      wings[1].set_control_input(-aileron);
+      wings[2].set_control_input(-elevator);
+      wings[3].set_control_input(-rudder);
     }
 
 #if LOG_FLIGHT

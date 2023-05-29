@@ -271,11 +271,11 @@ int main(void)
 
   std::vector<Wing> wings = {
       Wing(&NACA_2412, l_wing_pos, main_wing_area, main_wing_span),               // left wing
-      Wing(&NACA_0012, l_wing_pos - aileron_offset, aileron_area, aileron_span),  // left aileron
-      Wing(&NACA_0012, r_wing_pos - aileron_offset, aileron_area, aileron_span),  // right aileron
       Wing(&NACA_2412, r_wing_pos, main_wing_area, main_wing_span),               // right wing
       Wing(&NACA_0012, h_tail_pos, h_tail_area, h_tail_span),                     // horizontal tail
       Wing(&NACA_0012, v_tail_pos, v_tail_area, v_tail_span, phi::RIGHT),         // vertical tail
+      Wing(&NACA_0012, l_wing_pos - aileron_offset, aileron_area, aileron_span),  // left aileron
+      Wing(&NACA_0012, r_wing_pos - aileron_offset, aileron_area, aileron_span),  // right aileron
   };
 
   auto engine = new PropellorEngine(horsepower, rpm, prop_diameter);
@@ -306,8 +306,6 @@ int main(void)
 
   std::vector<Wing> wings = {
       Wing({wing_offset, 0.0f, -2.7f}, 6.96f, 2.50f, &NACA_2412),             // left wing
-      Wing({wing_offset - 1.5f, 0.0f, -2.0f}, 3.80f, 1.26f, &NACA_0012),      // left aileron
-      Wing({wing_offset - 1.5f, 0.0f, 2.0f}, 3.80f, 1.26f, &NACA_0012),       // right aileron
       Wing({wing_offset, 0.0f, +2.7f}, 6.96f, 2.50f, &NACA_2412),             // right wing
       Wing({tail_offset, -0.1f, 0.0f}, 6.54f, 2.70f, &NACA_0012),             // elevator
       Wing({tail_offset, 0.0f, 0.0f}, 5.31f, 3.10f, &NACA_0012, phi::RIGHT),  // rudder

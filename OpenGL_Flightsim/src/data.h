@@ -3,6 +3,16 @@
 #include <glm/glm.hpp>
 #include <vector>
 
+#if 0
+const std::vector<float> naca0012 = {
+#include "../assets/data/NACA_0012.csv"
+};
+
+const std::vector<float> naca2412 = {
+#include "../assets/data/NACA_2412.csv"
+};
+#endif
+
 // NACA 0012 (n0012-il) Xfoil prediction polar at RE=1,000,000 Ncrit=9
 const std::vector<glm::vec3> NACA_0012_data = {
     {-18.500f, -1.2258f, 0.10236f}, {-18.250f, -1.2456f, 0.09505f}, {-18.000f, -1.2659f, 0.08782f},
