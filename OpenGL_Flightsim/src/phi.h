@@ -98,6 +98,10 @@ constexpr inline float inverse_lerp(T a, T b, T v)
 struct Transform {
   glm::vec3 position;
   glm::quat orientation;
+
+  constexpr Transform(const glm::vec3& p, const glm::quat& o) : position(p), orientation(o) {}
+  constexpr Transform() : position(glm::vec3(0.0f)), orientation(glm::quat(1.0f, 0.0f, 0.0f, 0.0f)) {}
+  glm::mat4 matrix() const { return glm::translate(glm::mat4(1.0f), position) * glm::mat4(orientation); }
 };
 
 // moment of inertia according to https://en.wikipedia.org/wiki/List_of_moments_of_inertia
@@ -107,8 +111,8 @@ namespace hitbox
 
 // oriented bounding box
 struct OBB : public Transform {
-  glm::vec3 half_size;
-  OBB(const glm::vec3& s) : half_size(s) {}
+  glm::vec3 size;
+  constexpr OBB(const glm::vec3& s) : Transform(), size(s) {}
 
   std::vector<glm::vec3> axis() const
   {
@@ -125,7 +129,7 @@ struct OBB : public Transform {
 // bounding sphere
 struct Sphere : public Transform {
   float radius;
-  constexpr Sphere(float r) : radius(r) {}
+  constexpr Sphere(float r) : Transform(), radius(r) {}
   static constexpr glm::vec3 inertia(float radius, float mass) { return glm::vec3((2.0f / 5.0f) * mass * sq(radius)); }
 };
 
@@ -234,6 +238,21 @@ inline glm::mat3 tensor(std::vector<Element>& elements, bool precomputed_offset 
   // clang-format on
 }
 
+constexpr inline glm::mat3 tensor(const hitbox::OBB& obb, float mass)
+{
+  float C                = (1.0f / 12.0f) * mass;
+  auto size              = obb.size;
+  auto moment_of_inertia = glm::vec3(sq(size.y) + sq(size.z), sq(size.x) + sq(size.z), sq(size.x) + sq(size.y)) * C;
+
+  return tensor(moment_of_inertia);
+}
+
+constexpr inline glm::mat3 tensor(const hitbox::Sphere& sphere, float mass)
+{
+  auto moment_of_inertia = glm::vec3((2.0f / 5.0f) * mass * sq(sphere.radius));
+  return tensor(moment_of_inertia);
+}
+
 };  // namespace inertia
 
 // unit conversions
@@ -261,9 +280,11 @@ constexpr inline float torque(float power, float rpm) { return 30.0f * power / (
 // default rigid body is a sphere with radius 1 meter and a mass of 100 kg
 constexpr float DEFAULT_RB_MASS            = 100.0f;
 constexpr float INFINITE_RB_MASS           = std::numeric_limits<float>::infinity();
-constexpr glm::mat3 DEFAULT_RB_INERTIA     = inertia::tensor(hitbox::Sphere::inertia(1.0f, DEFAULT_RB_MASS));
 constexpr glm::quat DEFAULT_RB_ORIENTATION = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
-const Collider DEFAULT_RB_COLLIDER         = Collider(phi::hitbox::Sphere(1.0f));
+constexpr phi::hitbox::Sphere UNIT_SPHERE  = phi::hitbox::Sphere(1.0f);
+constexpr phi::hitbox::OBB UNIT_CUBE       = phi::hitbox::OBB(glm::vec3(1.0f));
+constexpr Collider DEFAULT_RB_COLLIDER     = Collider(UNIT_SPHERE);
+constexpr glm::mat3 DEFAULT_RB_INERTIA     = inertia::tensor(UNIT_SPHERE, DEFAULT_RB_MASS);
 
 struct RigidBodyParams {
   float mass                 = DEFAULT_RB_MASS;
@@ -525,7 +546,48 @@ inline bool is_colliding(const hitbox::Heightmap& a, const hitbox::Sphere& b, Co
 }
 SWIZZLE_IMPL(hitbox::Sphere, hitbox::Heightmap);
 
-NO_COLLISION_IMPL(hitbox::OBB, hitbox::OBB);
+inline bool is_colliding(const hitbox::OBB& a, const hitbox::OBB& b, CollisionInfo& info)
+{
+  auto transform_a = glm::mat3(a.matrix());
+  auto transform_b = glm::mat3(b.matrix());
+
+  // 15 axes
+  glm::vec3 axes[15] = {
+      transform_a[0],
+      transform_a[1],
+      transform_a[2],
+      transform_b[0],
+      transform_b[1],
+      transform_b[2],
+      glm::cross(transform_a[0], transform_b[0]),
+      glm::cross(transform_a[0], transform_b[1]),
+      glm::cross(transform_a[0], transform_b[2]),
+      glm::cross(transform_a[1], transform_b[0]),
+      glm::cross(transform_a[1], transform_b[1]),
+      glm::cross(transform_a[1], transform_b[2]),
+      glm::cross(transform_a[2], transform_b[0]),
+      glm::cross(transform_a[2], transform_b[1]),
+      glm::cross(transform_a[2], transform_b[2]),
+  };
+
+  for (const auto& axis : axes) {
+    float projection_a = glm::dot(axis, a.position);
+    float projection_b = glm::dot(axis, b.position);
+
+    float size_a = a.size.x * abs(glm::dot(axis, transform_a[0])) + a.size.y * abs(glm::dot(axis, transform_a[1])) +
+                   a.size.z * abs(glm::dot(axis, transform_a[2]));
+
+    float size_b = b.size.x * abs(glm::dot(axis, transform_b[0])) + b.size.y * abs(glm::dot(axis, transform_b[1])) +
+                   b.size.z * abs(glm::dot(axis, transform_b[2]));
+
+    if ((projection_a + size_a < projection_b - size_b) || (projection_a - size_a > projection_b + size_b)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 NO_COLLISION_IMPL(hitbox::Sphere, hitbox::OBB);
 NO_COLLISION_IMPL(hitbox::OBB, hitbox::Sphere);
 NO_COLLISION_IMPL(hitbox::OBB, hitbox::Heightmap);
