@@ -101,6 +101,13 @@ struct Transform {
 
   constexpr Transform(const glm::vec3& p, const glm::quat& o) : position(p), orientation(o) {}
   constexpr Transform() : position(glm::vec3(0.0f)), orientation(glm::quat(1.0f, 0.0f, 0.0f, 0.0f)) {}
+  
+  std::vector<glm::vec3> axes() const
+  {
+    auto axes = glm::mat3(matrix());
+    return {axes[0], axes[1], axes[2]};
+  }
+  
   glm::mat4 matrix() const { return glm::translate(glm::mat4(1.0f), position) * glm::mat4(orientation); }
 };
 
@@ -113,11 +120,6 @@ namespace hitbox
 struct OBB : public Transform {
   glm::vec3 size;
   constexpr OBB(const glm::vec3& s) : Transform(), size(s) {}
-
-  std::vector<glm::vec3> axis() const
-  {
-    return {phi::X_AXIS * orientation, phi::Y_AXIS * orientation, phi::Z_AXIS * orientation};
-  }
 
   static constexpr glm::vec3 inertia(const glm::vec3& size, float mass)
   {
