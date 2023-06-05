@@ -33,6 +33,7 @@ SOFTWARE. */
 #include <glm/gtx/quaternion.hpp>
 #include <iostream>
 #include <numeric>
+#include <type_traits>
 #include <variant>
 #include <vector>
 
@@ -118,19 +119,12 @@ struct OBB : public Transform {
   {
     return {phi::X_AXIS * orientation, phi::Y_AXIS * orientation, phi::Z_AXIS * orientation};
   }
-
-  static constexpr glm::vec3 inertia(const glm::vec3& size, float mass)
-  {
-    const float C = (1.0f / 12.0f) * mass;
-    return glm::vec3(sq(size.y) + sq(size.z), sq(size.x) + sq(size.z), sq(size.x) + sq(size.y)) * C;
-  }
 };
 
 // bounding sphere
 struct Sphere : public Transform {
   float radius;
   constexpr Sphere(float r) : Transform(), radius(r) {}
-  static constexpr glm::vec3 inertia(float radius, float mass) { return glm::vec3((2.0f / 5.0f) * mass * sq(radius)); }
 };
 
 // TODO: sample from real heightmap
@@ -144,10 +138,10 @@ struct Heightmap : public Transform {
 using Collider = std::variant<hitbox::OBB, hitbox::Sphere, hitbox::Heightmap>;
 
 struct CollisionInfo {
-  glm::vec3 point;
-  glm::vec3 normal;
-  float penetration;
-  RigidBody *a, *b;
+  glm::vec3 point;    // contact point
+  glm::vec3 normal;   // contact normal
+  float penetration;  // penetration depth
+  RigidBody *a, *b;   // the rigidbodies involved
 };
 
 // inertia tensor calculations
@@ -162,12 +156,6 @@ struct Element {
   float mass;
   float volume() const { return size.x * size.y * size.z; }
 };
-
-// helper function for the creation of a cuboid mass element
-constexpr Element cube(const glm::vec3& position, const glm::vec3& size, float mass = 0.0f)
-{
-  return {size, position, hitbox::OBB::inertia(size, mass), position, mass};
-}
 
 // inertia tensor from moment of inertia
 constexpr glm::mat3 tensor(const glm::vec3& moment_of_inertia)
@@ -238,19 +226,31 @@ inline glm::mat3 tensor(std::vector<Element>& elements, bool precomputed_offset 
   // clang-format on
 }
 
-constexpr inline glm::mat3 tensor(const hitbox::OBB& obb, float mass)
+constexpr inline glm::vec3 moment(const hitbox::OBB& obb, float mass)
 {
-  float C                = (1.0f / 12.0f) * mass;
-  auto size              = obb.size;
-  auto moment_of_inertia = glm::vec3(sq(size.y) + sq(size.z), sq(size.x) + sq(size.z), sq(size.x) + sq(size.y)) * C;
-
-  return tensor(moment_of_inertia);
+  glm::vec3 size = obb.size;
+  float C        = (1.0f / 12.0f) * mass;
+  return glm::vec3(sq(size.y) + sq(size.z), sq(size.x) + sq(size.z), sq(size.x) + sq(size.y)) * C;
 }
 
-constexpr inline glm::mat3 tensor(const hitbox::Sphere& sphere, float mass)
+constexpr inline glm::vec3 moment(const hitbox::Sphere& sphere, float mass)
 {
-  auto moment_of_inertia = glm::vec3((2.0f / 5.0f) * mass * sq(sphere.radius));
-  return tensor(moment_of_inertia);
+  return glm::vec3((2.0f / 5.0f) * mass * sq(sphere.radius));
+}
+
+constexpr inline glm::vec3 moment(const hitbox::Heightmap& hm, float mass) { return glm::vec3(0.0f); }
+
+inline glm::vec3 moment(const Collider& c, float mass)
+{
+  return std::visit([mass](const auto& a) { return moment(a, mass); }, c);
+}
+
+// helper function for the creation of a cuboid mass element
+constexpr Element cube(const glm::vec3& position, const glm::vec3& size, float mass = 0.0f)
+{
+  hitbox::OBB cube(size);
+  auto inertia = moment(cube, mass);
+  return {size, position, inertia, position, mass};
 }
 
 };  // namespace inertia
@@ -284,7 +284,7 @@ constexpr glm::quat DEFAULT_RB_ORIENTATION = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
 constexpr phi::hitbox::Sphere UNIT_SPHERE  = phi::hitbox::Sphere(1.0f);
 constexpr phi::hitbox::OBB UNIT_CUBE       = phi::hitbox::OBB(glm::vec3(1.0f));
 constexpr Collider DEFAULT_RB_COLLIDER     = Collider(UNIT_SPHERE);
-constexpr glm::mat3 DEFAULT_RB_INERTIA     = inertia::tensor(UNIT_SPHERE, DEFAULT_RB_MASS);
+constexpr glm::mat3 DEFAULT_RB_INERTIA     = inertia::tensor(inertia::moment(UNIT_SPHERE, DEFAULT_RB_MASS));
 
 struct RigidBodyParams {
   float mass                 = DEFAULT_RB_MASS;
@@ -364,6 +364,13 @@ class RigidBody
 
   // set moment of inertia
   inline void set_inertia(const glm::vec3& moment) { set_inertia(inertia::tensor(moment)); }
+
+  // calculate moment of inertia from collider and mass
+  inline void set_inertia()
+  {
+    glm::vec3 moment_of_inertia = inertia::moment(collider, mass);
+    set_inertia(inertia::tensor(moment_of_inertia));
+  }
 
   // linear impulse in world space
   inline void add_linear_impulse(const glm::vec3& impulse) { velocity += impulse / mass; }
@@ -641,7 +648,10 @@ void step_physics(std::vector<RB>& objects, phi::Seconds dt)
   auto collisions = collision::detection(objects, dt);
 
   if (collisions.size() > 0) {
+    std::cout << "found collisions, resolving...\n";
     collision::resolution(collisions);
+  } else {
+    std::cout << "found no collisions...\n";
   }
 }
 
