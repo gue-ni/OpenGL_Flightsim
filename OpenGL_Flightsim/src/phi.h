@@ -102,9 +102,22 @@ struct Transform {
   constexpr Transform(const glm::vec3& p, const glm::quat& o) : position(p), orientation(o) {}
   constexpr Transform() : position(glm::vec3(0.0f)), orientation(glm::quat(1.0f, 0.0f, 0.0f, 0.0f)) {}
   
-  
-  
+  // get transform matrix
   glm::mat4 matrix() const { return glm::translate(glm::mat4(1.0f), position) * glm::mat4(orientation); }
+  
+  // transform direction from body space to world space
+  inline glm::vec3 transform_direction(const glm::vec3& direction) const { return orientation * direction; }
+
+  // transform direction from world space to body space
+  inline glm::vec3 inverse_transform_direction(const glm::vec3& direction) const
+  {
+    return glm::inverse(orientation) * direction;
+  }
+ 
+  // get direction in world space
+  inline glm::vec3 up() const { return transform_direction(phi::UP); }
+  inline glm::vec3 right() const { return transform_direction(phi::RIGHT); }
+  inline glm::vec3 forward() const { return transform_direction(phi::FORWARD); }
 };
 
 // moment of inertia according to https://en.wikipedia.org/wiki/List_of_moments_of_inertia
@@ -121,10 +134,6 @@ struct OBB : public Transform {
   {
     auto axes = glm::mat3(matrix());
     return {axes[0], axes[1], axes[2]};
-  }
-  
-  std::vector<glm::vec3> vertices() const {
-    
   }
   
   static constexpr glm::vec3 inertia(const glm::vec3& size, float mass)
@@ -305,7 +314,7 @@ struct RigidBodyParams {
   Collider collider          = DEFAULT_RB_COLLIDER;
 };
 
-class RigidBody
+class RigidBody : public Transform
 {
  private:
   glm::vec3 m_force{};   // force vector in world space
@@ -313,8 +322,6 @@ class RigidBody
 
  public:
   float mass                 = DEFAULT_RB_MASS;         // rigidbody mass, kg
-  glm::vec3 position         = glm::vec3(0.0f);         // position in world space, m
-  glm::quat orientation      = DEFAULT_RB_ORIENTATION;  // orientation in world space
   glm::vec3 velocity         = glm::vec3(0.0f);         // velocity in world space, m/s
   glm::vec3 angular_velocity = glm::vec3(0.0f);         // object space, (x = roll, y = yaw, z = pitch), rad/s
   bool apply_gravity         = true;
@@ -327,11 +334,10 @@ class RigidBody
   RigidBody() : RigidBody({DEFAULT_RB_MASS, DEFAULT_RB_INERTIA}) {}
 
   RigidBody(const RigidBodyParams& params)
-      : mass(params.mass),
-        position(params.position),
+      : Transform(params.position, params.orientation),
+        mass(params.mass),
         velocity(params.velocity),
         inertia(params.inertia),
-        orientation(params.orientation),
         apply_gravity(params.apply_gravity),
         angular_velocity(params.angular_velocity),
         inverse_inertia(glm::inverse(params.inertia)),
@@ -357,16 +363,7 @@ class RigidBody
     m_force += transform_direction(force);
     m_torque += glm::cross(point, force);
   }
-
-  // transform direction from body space to world space
-  inline glm::vec3 transform_direction(const glm::vec3& direction) const { return orientation * direction; }
-
-  // transform direction from world space to body space
-  inline glm::vec3 inverse_transform_direction(const glm::vec3& direction) const
-  {
-    return glm::inverse(orientation) * direction;
-  }
-
+  
   // set inertia tensor
   inline void set_inertia(const glm::mat3& tensor) { inertia = tensor, inverse_inertia = glm::inverse(tensor); }
 
@@ -414,15 +411,6 @@ class RigidBody
 
   // get torque in world space
   inline glm::vec3 get_force() const { return m_force; }
-
-  // get rigidbody forward direction in world space
-  inline glm::vec3 forward() const { return transform_direction(phi::FORWARD); }
-
-  // get rigidbody up direction in world space
-  inline glm::vec3 up() const { return transform_direction(phi::UP); }
-
-  // get rigidbody right direction in world space
-  inline glm::vec3 right() const { return transform_direction(phi::RIGHT); }
 
   // integrate RigidBody
   RB_VIRTUAL_UPDATE void update(phi::Seconds dt)
