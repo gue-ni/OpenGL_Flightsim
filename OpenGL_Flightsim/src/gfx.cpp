@@ -27,7 +27,7 @@ Shader::Shader(const std::string& path) : Shader(load_text_file(path + ".vert"),
 Shader::Shader(const std::string& vertShader, const std::string& fragShader)
 {
   // std::cout << "create Shader\n";
-  const char* vertexShaderSource   = vertShader.c_str();
+  const char* vertexShaderSource = vertShader.c_str();
   const char* fragmentShaderSource = fragShader.c_str();
 
   unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -341,13 +341,13 @@ glm::vec3 Object3D::get_scale() const { return m_scale; }
 
 void Object3D::set_scale(const glm::vec3& scale)
 {
-  m_scale     = scale;
+  m_scale = scale;
   m_dirty_dof = true;
 }
 
 void Object3D::set_position(const glm::vec3& pos)
 {
-  m_position  = pos;
+  m_position = pos;
   m_dirty_dof = true;
 }
 
@@ -366,7 +366,7 @@ void Object3D::set_transform(const glm::vec3& position, const glm::quat& rotatio
 
 void Object3D::set_rotation(const glm::vec3& rot)
 {
-  m_rotation  = glm::quat(rot);
+  m_rotation = glm::quat(rot);
   m_dirty_dof = true;
 }
 
@@ -394,8 +394,8 @@ void Object3D::traverse(const std::function<bool(Object3D*)>& func)
 void Object3D::override_transform(const glm::mat4& matrix)
 {
   m_dirty_transform = true;
-  m_dirty_dof       = true;
-  transform         = matrix;
+  m_dirty_dof = true;
+  transform = matrix;
   // TODO: relcalculate position, rotation etc
 }
 
@@ -464,8 +464,8 @@ Object3D::Type Light::get_type() const { return Object3D::Type::LIGHT; }
 glm::mat4 Light::light_space_matrix()
 {
   float near_plane = 0.1f, far_plane = 10.0f, m = 10.0f;
-  auto wp                    = get_world_position();
-  glm::mat4 light_view       = glm::lookAt(wp, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+  auto wp = get_world_position();
+  glm::mat4 light_view = glm::lookAt(wp, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
   glm::mat4 light_projection = glm::ortho(-m, m, -m, m, near_plane, far_plane);
   return light_projection * light_view;
 }
@@ -475,9 +475,9 @@ void Renderer::render(Camera& camera, Object3D& scene)
   scene.update_world_matrix(false);
 
   RenderContext context;
-  context.camera           = &camera;
-  context.shadow_map       = shadow_map;
-  context.shadow_caster    = nullptr;
+  context.camera = &camera;
+  context.shadow_map = shadow_map;
+  context.shadow_caster = nullptr;
   context.background_color = background;
 
   scene.traverse([&context](Object3D* obj) {
@@ -546,7 +546,7 @@ void Mesh::draw_self(RenderContext& context)
 
     for (int i = 0; i < context.lights.size(); i++) {
       auto index = std::to_string(i);
-      auto type  = context.lights[i]->type;
+      auto type = context.lights[i]->type;
 
       shader->uniform("u_Lights[" + index + "].type", type);
       shader->uniform("u_Lights[" + index + "].color", context.lights[i]->rgb);
@@ -648,9 +648,9 @@ void FirstPersonController::move(const Direction& direction)
 void OrbitController::update(Object3D& target, const glm::vec3& center, float dt)
 {
   glm::vec3 front;
-  front.x     = cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
-  front.y     = sin(glm::radians(m_pitch));
-  front.z     = sin(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
+  front.x = cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
+  front.y = sin(glm::radians(m_pitch));
+  front.z = sin(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
   auto offset = glm::normalize(front) * radius;
 
   const auto pos = center + offset;
@@ -856,10 +856,10 @@ std::shared_ptr<Geometry> make_plane_geometry(int x_elements, int y_elements, fl
 
   for (int y = 0; y < y_elements; y++) {
     for (int x = 0; x < x_elements; x++) {
-      auto bottom_left  = glm::vec3((x + 0) * width, 0.0f, (y + 0) * height);
+      auto bottom_left = glm::vec3((x + 0) * width, 0.0f, (y + 0) * height);
       auto bottom_right = glm::vec3((x + 1) * width, 0.0f, (y + 0) * height);
-      auto top_left     = glm::vec3((x + 0) * width, 0.0f, (y + 1) * height);
-      auto top_right    = glm::vec3((x + 1) * width, 0.0f, (y + 1) * height);
+      auto top_left = glm::vec3((x + 0) * width, 0.0f, (y + 1) * height);
+      auto top_right = glm::vec3((x + 1) * width, 0.0f, (y + 1) * height);
 
       auto tex_coord = glm::vec2(static_cast<float>(x) / static_cast<float>(x_elements),
                                  static_cast<float>(y) / static_cast<float>(y_elements));
@@ -917,8 +917,8 @@ void Billboard::draw_self(RenderContext& context)
 
   auto camera = context.camera;
 
-  auto view       = camera->get_view_matrix();
-  glm::vec3 up    = {view[0][1], view[1][1], view[2][1]};
+  auto view = camera->get_view_matrix();
+  glm::vec3 up = {view[0][1], view[1][1], view[2][1]};
   glm::vec3 right = {view[0][0], view[1][0], view[2][0]};
 
   shader.bind();
@@ -975,7 +975,7 @@ void Skybox::draw_self(RenderContext& context)
 void SkyboxMaterial::bind()
 {
   gl::Shader* shader = get_shader();
-  int unit           = 2;
+  int unit = 2;
   cubemap->bind(unit);
   shader->bind();
   shader->uniform("u_Skybox", unit);

@@ -95,7 +95,7 @@ int main(void)
                                         RESOLUTION.y, SDL_WINDOW_OPENGL);
 
   SDL_GLContext context = SDL_GL_CreateContext(window);
-  glewExperimental      = GL_TRUE;
+  glewExperimental = GL_TRUE;
 
   if (GLEW_OK != glewInit()) return -1;
 
@@ -128,25 +128,25 @@ int main(void)
   // use pid for keyboard control
   PID pitch_control_pid(1.0f, 0.0f, 0.0f);
 
-  int num_joysticks     = SDL_NumJoysticks();
+  int num_joysticks = SDL_NumJoysticks();
   bool joystick_control = num_joysticks > 0;
   if (joystick_control) {
     std::cout << "found " << num_joysticks << " joysticks\n";
     SDL_JoystickEventState(SDL_ENABLE);
     SDL_Joystick* sdl_joystick = SDL_JoystickOpen(0);
-    joystick.num_axis          = SDL_JoystickNumAxes(sdl_joystick);
-    joystick.num_hats          = SDL_JoystickNumHats(sdl_joystick);
-    joystick.num_buttons       = SDL_JoystickNumButtons(sdl_joystick);
+    joystick.num_axis = SDL_JoystickNumAxes(sdl_joystick);
+    joystick.num_hats = SDL_JoystickNumHats(sdl_joystick);
+    joystick.num_buttons = SDL_JoystickNumButtons(sdl_joystick);
     printf("found %d buttons, %d axis\n", joystick.num_buttons, joystick.num_axis);
   }
 
   gfx::Renderer renderer(RESOLUTION.x, RESOLUTION.y);
 
   gfx::gl::TextureParams params = {.flip_vertically = true};
-  auto tex                      = make_shared<gfx::gl::Texture>("assets/textures/f16_large.jpg", params);
-  auto texture                  = make_shared<gfx::Phong>(tex);
-  auto obj                      = gfx::load_obj("assets/models/falcon.obj");
-  auto model                    = std::make_shared<gfx::Geometry>(obj, gfx::Geometry::POS_NORM_UV);
+  auto tex = make_shared<gfx::gl::Texture>("assets/textures/f16_large.jpg", params);
+  auto texture = make_shared<gfx::Phong>(tex);
+  auto obj = gfx::load_obj("assets/models/falcon.obj");
+  auto model = std::make_shared<gfx::Geometry>(obj, gfx::Geometry::POS_NORM_UV);
 
   gfx::Object3D scene;
 
@@ -191,31 +191,31 @@ int main(void)
   const float mass = 1000.0f;
 
   // engine
-  const float rpm           = 2400.0f;
-  const float horsepower    = 160.0f;
+  const float rpm = 2400.0f;
+  const float horsepower = 160.0f;
   const float prop_diameter = 1.9f;
 
   // main wing
   const float total_wing_area = 16.17f;
   const float total_wing_span = 11.00f;
-  const float main_wing_span  = total_wing_span / 2;
-  const float main_wing_area  = total_wing_area / 2;
+  const float main_wing_span = total_wing_span / 2;
+  const float main_wing_area = total_wing_area / 2;
   const float main_wing_chord = main_wing_area / main_wing_span;
 
   // aileron
-  const float aileron_area  = 1.70f;
-  const float aileron_span  = 1.26f;
+  const float aileron_area = 1.70f;
+  const float aileron_span = 1.26f;
   const auto aileron_offset = glm::vec3(-main_wing_chord * 0.75f, 0.0f, 0.0f);
 
   // horizontal tail
   const float elevator_area = 1.35f;
-  const float h_tail_area   = 2.0f + elevator_area;
-  const float h_tail_span   = 2.0f;
-  const float h_tail_chord  = h_tail_area / h_tail_span;
+  const float h_tail_area = 2.0f + elevator_area;
+  const float h_tail_span = 2.0f;
+  const float h_tail_chord = h_tail_area / h_tail_span;
 
   // vertical tail
-  const float v_tail_area  = 2.04f;  // modified
-  const float v_tail_span  = 2.04f;
+  const float v_tail_area = 2.04f;  // modified
+  const float v_tail_span = 2.04f;
   const float v_tail_chord = v_tail_area / v_tail_span;
 
   const float wing_offset = -0.2f;
@@ -284,7 +284,7 @@ int main(void)
 
   constexpr float speed = phi::units::meter_per_second(500.0f /* km/h */);
 
-  const float mass   = 10000.0f;
+  const float mass = 10000.0f;
   const float thrust = 50000.0f;
 
   const float wing_offset = -1.0f;
@@ -323,7 +323,7 @@ int main(void)
 
   GameObject player = {
       .transform = gfx::Mesh(model, texture),
-      .airplane  = rigid_bodies[0],
+      .airplane = rigid_bodies[0],
   };
 
   player.airplane.position = position;
@@ -335,7 +335,7 @@ int main(void)
   auto red_texture = make_shared<gfx::Phong>(glm::vec3(1.0f, 0.0f, 0.0f));
 
   for (int i = 0; i < mass_elements.size(); i++) {
-    auto& mass   = mass_elements[i];
+    auto& mass = mass_elements[i];
     auto element = new gfx::Mesh(gfx::make_cube_geometry(1.0f), red_texture);
     element->set_position(mass.offset);
     element->set_scale(mass.size);
@@ -345,8 +345,8 @@ int main(void)
 
 #if NPC_AIRCRAFT
   GameObject npc = {.transform = gfx::Mesh(model, texture),
-                    .airplane  = Airplane(mass, inertia, wings, engine),
-                    .collider  = collider::Sphere({0.0f, 0.0f, 0.0f}, 15.0f)};
+                    .airplane = Airplane(mass, inertia, wings, engine),
+                    .collider = collider::Sphere({0.0f, 0.0f, 0.0f}, 15.0f)};
 
   npc.airplane.position = position - glm::vec3(-100.0f, 0.0f, 10.0f);
   npc.airplane.velocity = glm::vec3(speed, 0.0f, 0.0f);
@@ -362,7 +362,7 @@ int main(void)
 #endif
 
 #if 1
-  float size                = 0.1f;
+  float size = 0.1f;
   float projection_distance = 150.0f;
   glm::vec3 green(0.0f, 1.0f, 0.0f);
   gfx::Billboard cross(make_shared<gfx::gl::Texture>("assets/textures/sprites/cross.png"), green);
@@ -403,14 +403,14 @@ int main(void)
   while (!quit) {
     // delta time in seconds
     last = now;
-    now  = SDL_GetPerformanceCounter();
-    dt   = static_cast<phi::Seconds>((now - last) / static_cast<phi::Seconds>(SDL_GetPerformanceFrequency()));
+    now = SDL_GetPerformanceCounter();
+    dt = static_cast<phi::Seconds>((now - last) / static_cast<phi::Seconds>(SDL_GetPerformanceFrequency()));
     flight_time += dt;
     dt = std::min(dt, 0.02f);
 
     if ((timer += dt) >= 1.0f) {
       timer = 0.0f;
-      fps   = 1.0f / dt;
+      fps = 1.0f / dt;
     }
 
     while (SDL_PollEvent(&event) != 0) {
@@ -451,7 +451,7 @@ int main(void)
         }
         case SDL_JOYAXISMOTION: {
           if ((event.jaxis.value < -3200) || (event.jaxis.value > 3200)) {
-            uint8_t axis  = event.jaxis.axis;
+            uint8_t axis = event.jaxis.axis;
             int16_t value = event.jaxis.value;
             switch (axis) {
               case 0:
@@ -501,12 +501,12 @@ int main(void)
 
     if ((hud_timer += dt) > 0.1f) {
       hud_timer = 0.0f;
-      alt       = player.airplane.get_altitude();
-      spd       = phi::units::kilometer_per_hour(player.airplane.get_speed());
-      ias       = phi::units::kilometer_per_hour(player.airplane.get_ias());
-      thr       = player.airplane.throttle;
-      gee       = player.airplane.get_g();
-      aoa       = player.airplane.get_aoa();
+      alt = player.airplane.get_altitude();
+      spd = phi::units::kilometer_per_hour(player.airplane.get_speed());
+      ias = phi::units::kilometer_per_hour(player.airplane.get_ias());
+      thr = player.airplane.throttle;
+      gee = player.airplane.get_g();
+      aoa = player.airplane.get_aoa();
     }
 
     ImGui::SetNextWindowPos(ImVec2(10, 10));
@@ -525,7 +525,7 @@ int main(void)
 
 #if 1
     auto angular_velocity = glm::degrees(player.airplane.angular_velocity);
-    auto attitude         = glm::degrees(player.airplane.get_euler_angles());
+    auto attitude = glm::degrees(player.airplane.get_euler_angles());
 
     ImVec2 size(140, 140);
     ImGui::SetNextWindowPos(ImVec2(RESOLUTION.x - size.y - 10.0f, RESOLUTION.y - size.y - 10.0f));
@@ -547,9 +547,9 @@ int main(void)
     player.airplane.joystick = glm::vec4(joystick.aileron, joystick.rudder, joystick.elevator, joystick.trim);
 #if USE_PID
     {
-      float max_av               = 45.0f;  // deg/s
-      float target_av            = max_av * joystick.elevator;
-      float current_av           = glm::degrees(player.airplane.angular_velocity.z);
+      float max_av = 45.0f;  // deg/s
+      float target_av = max_av * joystick.elevator;
+      float current_av = glm::degrees(player.airplane.angular_velocity.z);
       player.airplane.joystick.z = pitch_control_pid.calculate(current_av, target_av, dt);
     }
 #endif
@@ -602,7 +602,7 @@ inline float center(float value, float factor, float dt)
 
 void get_keyboard_state(Joystick& joystick, phi::Seconds dt)
 {
-  const glm::vec3 factor    = {3.0f, 0.5f, 1.0f};  // roll, yaw, pitch
+  const glm::vec3 factor = {3.0f, 0.5f, 1.0f};  // roll, yaw, pitch
   const uint8_t* key_states = SDL_GetKeyboardState(NULL);
 
   if (key_states[SDL_SCANCODE_A] || key_states[SDL_SCANCODE_LEFT]) {

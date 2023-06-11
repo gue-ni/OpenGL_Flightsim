@@ -104,9 +104,9 @@ struct ElementBufferObject {
 };
 
 struct TextureParams {
-  bool flip_vertically     = false;
-  GLint texture_wrap_s     = GL_REPEAT;
-  GLint texture_wrap_t     = GL_REPEAT;
+  bool flip_vertically = false;
+  GLint texture_wrap_s = GL_REPEAT;
+  GLint texture_wrap_t = GL_REPEAT;
   GLint texture_min_filter = GL_LINEAR_MIPMAP_LINEAR;
   GLint texture_mag_filter = GL_NEAREST;
 };
@@ -175,7 +175,7 @@ class Object3D
   std::vector<Object3D*> children;
   glm::mat4 transform;
   bool receive_shadow = true;
-  bool visible        = true;
+  bool visible = true;
 
   Object3D& add(Object3D* child);
 
@@ -207,7 +207,7 @@ class Object3D
   void traverse(const std::function<bool(Object3D*)>& func);
 
  protected:
-  bool m_dirty_dof       = false;
+  bool m_dirty_dof = false;
   bool m_dirty_transform = false;
 
   glm::vec3 m_position;
@@ -237,7 +237,7 @@ class Light : public Object3D
 {
  public:
   enum LightType {
-    POINT       = 0,
+    POINT = 0,
     DIRECTIONAL = 1,
   };
 
@@ -416,9 +416,9 @@ class Renderer
     };
 
     auto geometry = std::make_shared<Geometry>(quad_vertices, Geometry::POS_UV);
-    auto texture  = std::make_shared<gfx::gl::Texture>(shadow_map->depth_map.id);
+    auto texture = std::make_shared<gfx::gl::Texture>(shadow_map->depth_map.id);
     auto material = std::make_shared<ScreenMaterial>(texture);
-    screen_quad   = std::make_shared<Mesh>(geometry, material);
+    screen_quad = std::make_shared<Mesh>(geometry, material);
   }
 
   ~Renderer()
@@ -477,7 +477,7 @@ class OrbitController
   void move_mouse(float x, float y);
 
  private:
-  float m_yaw   = 0.0f;
+  float m_yaw = 0.0f;
   float m_pitch = 0.0f;
 };
 };  // namespace gfx
