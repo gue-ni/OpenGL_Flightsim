@@ -136,7 +136,6 @@ struct OBB : public Transform {
     auto axes = glm::mat3(matrix());
     return {axes[0], axes[1], axes[2]};
   }
-
   static constexpr glm::vec3 inertia(const glm::vec3& size, float mass)
   {
     float c = (1.0f / 12.0f) * mass;
@@ -387,7 +386,6 @@ class RigidBody : public Transform
     m_force += transform_direction(force);
     m_torque += glm::cross(point, force);
   }
-
   // set inertia tensor
   inline void set_inertia(const glm::mat3& tensor) { inertia = tensor, inverse_inertia = glm::inverse(tensor); }
 
