@@ -98,21 +98,21 @@ constexpr inline float inverse_lerp(T a, T b, T v)
 
 struct Transform {
   glm::vec3 position;
-  glm::quat orientation;
+  glm::quat rotation;
 
-  constexpr Transform() : position(0.0f), orientation(1.0f, 0.0f, 0.0f, 0.0f) {}
-  constexpr Transform(const glm::vec3& p, const glm::quat& o) : position(p), orientation(o) {}
+  constexpr Transform() : position(0.0f), rotation(1.0f, 0.0f, 0.0f, 0.0f) {}
+  constexpr Transform(const glm::vec3& p, const glm::quat& o) : position(p), rotation(o) {}
 
   // get transform matrix
-  glm::mat4 matrix() const { return glm::translate(glm::mat4(1.0f), position) * glm::mat4(orientation); }
+  glm::mat4 matrix() const { return glm::translate(glm::mat4(1.0f), position) * glm::mat4(rotation); }
 
   // transform direction from body space to world space
-  inline glm::vec3 transform_direction(const glm::vec3& direction) const { return orientation * direction; }
+  inline glm::vec3 transform_direction(const glm::vec3& direction) const { return rotation * direction; }
 
   // transform direction from world space to body space
   inline glm::vec3 inverse_transform_direction(const glm::vec3& direction) const
   {
-    return glm::inverse(orientation) * direction;
+    return glm::inverse(rotation) * direction;
   }
 
   // get body direction in world space
@@ -130,16 +130,30 @@ struct OBB : public Transform {
   glm::vec3 size;
   constexpr OBB(const glm::vec3& s) : Transform(), size(s) {}
 
+  std::vector<glm::vec3> vertices() const {
+
+      auto transform = matrix();
+
+      // TODO
+      std::vector<glm::vec3> vertices = {
+          glm::vec3(size.x, size.y, size.z),
+          glm::vec3(size.x, size.y, size.z),
+          glm::vec3(size.x, size.y, size.z),
+          glm::vec3(size.x, size.y, size.z),
+          glm::vec3(size.x, size.y, size.z),
+          glm::vec3(size.x, size.y, size.z),
+      };
+
+      assert(vertices.size() == 6U);
+
+      return vertices;
+  }
+
   // x, y z axis
   std::vector<glm::vec3> axes() const
   {
     auto axes = glm::mat3(matrix());
     return {axes[0], axes[1], axes[2]};
-  }
-  static constexpr glm::vec3 inertia(const glm::vec3& size, float mass)
-  {
-    float c = (1.0f / 12.0f) * mass;
-    return glm::vec3(sq(size.y) + sq(size.z), sq(size.x) + sq(size.z), sq(size.x) + sq(size.y)) * c;
   }
 };
 
@@ -248,41 +262,25 @@ inline glm::mat3 tensor(std::vector<Element>& elements, bool precomputed_offset 
   // clang-format on
 }
 
-#if 0
-constexpr inline glm::vec3 moment(const hitbox::OBB& obb, float mass)
-{
-  glm::vec3 size = obb.size;
-  float C        = (1.0f / 12.0f) * mass;
-  return glm::vec3(sq(size.y) + sq(size.z), sq(size.x) + sq(size.z), sq(size.x) + sq(size.y)) * C;
-}
-
-constexpr inline glm::vec3 moment(const hitbox::Sphere& sphere, float mass)
-{
-  return glm::vec3((2.0f / 5.0f) * mass * sq(sphere.radius));
-}
-
-constexpr inline glm::vec3 moment(const hitbox::Heightmap& hm, float mass) { return glm::vec3(0.0f); }
-#endif
-
-constexpr inline glm::vec3 moment(const Collider& c, float mass)
+// calculate moment of inertia for given collider
+constexpr inline glm::vec3 moment(const Collider& collider, float mass)
 {
   return std::visit(
-      [mass](const auto& x) {
-        using T = std::decay_t<decltype(x)>;
+      [mass](const auto& c) {
+        using T = std::decay_t<decltype(c)>;
         if constexpr (std::is_same_v<T, hitbox::Sphere>) {
           // sphere inertia
-          return glm::vec3((2.0f / 5.0f) * mass * sq(x.radius));
+          return glm::vec3((2.0f / 5.0f) * mass * sq(c.radius));
         } else if constexpr (std::is_same_v<T, hitbox::OBB>) {
           // cube inertia
+          glm::vec3 size = c.size;
           float C = (1.0f / 12.0f) * mass;
-          glm::vec3 size = x.size;
           return glm::vec3(sq(size.y) + sq(size.z), sq(size.x) + sq(size.z), sq(size.x) + sq(size.y)) * C;
-
         } else {
           return glm::vec3(0.0f);
         }
       },
-      c);
+      collider);
 }
 
 // helper function for the creation of a cuboid mass element
@@ -330,7 +328,7 @@ struct RigidBodyParams {
   float mass = DEFAULT_RB_MASS;
   glm::mat3 inertia = DEFAULT_RB_INERTIA;
   glm::vec3 position = glm::vec3(0);
-  glm::quat orientation = DEFAULT_RB_ORIENTATION;
+  glm::quat rotation = DEFAULT_RB_ORIENTATION;
   glm::vec3 velocity = glm::vec3(0);
   glm::vec3 angular_velocity = glm::vec3(0);
   bool apply_gravity = true;
@@ -357,7 +355,7 @@ class RigidBody : public Transform
   RigidBody() : RigidBody({DEFAULT_RB_MASS, DEFAULT_RB_INERTIA}) {}
 
   RigidBody(const RigidBodyParams& params)
-      : Transform(params.position, params.orientation),
+      : Transform(params.position, params.rotation),
         mass(params.mass),
         velocity(params.velocity),
         inertia(params.inertia),
@@ -427,13 +425,13 @@ class RigidBody : public Transform
   inline void add_relative_torque(const glm::vec3& torque) { m_torque += torque; }
 
   // get transform
-  inline Transform get_transform() const { return {position, orientation}; }
+  inline Transform get_transform() const { return {position, rotation}; }
 
   // get speed
   inline float get_speed() const { return glm::length(velocity); }
 
   // get euler angles in radians
-  inline glm::vec3 get_euler_angles() const { return glm::eulerAngles(orientation); }
+  inline glm::vec3 get_euler_angles() const { return glm::eulerAngles(rotation); }
 
   // get torque in body space
   inline glm::vec3 get_torque() const { return m_torque; }
@@ -454,14 +452,14 @@ class RigidBody : public Transform
     position += velocity * dt;
 
     angular_velocity += inverse_inertia * (m_torque - glm::cross(angular_velocity, inertia * angular_velocity)) * dt;
-    orientation += (orientation * glm::quat(0.0f, angular_velocity)) * (0.5f * dt);
-    orientation = glm::normalize(orientation);
+    rotation += (rotation * glm::quat(0.0f, angular_velocity)) * (0.5f * dt);
+    rotation = glm::normalize(rotation);
 
     // update collider transform
     std::visit(
         [this](auto& c) {
           c.position = position;
-          c.orientation = orientation;
+          c.rotation = rotation;
         },
         collider);
 

@@ -74,7 +74,7 @@ struct GameObject {
   void update(float dt)
   {
     // airplane.update(dt);
-    transform.set_transform(airplane.position, airplane.orientation);
+    transform.set_transform(airplane.position, airplane.rotation);
     // collider.center = airplane.position;
   }
 };
@@ -647,5 +647,5 @@ void get_keyboard_state(Joystick& joystick, phi::Seconds dt)
 
 void apply_to_object3d(const phi::RigidBody& rigid_body, gfx::Object3D* object3d)
 {
-  object3d->set_transform(rigid_body.position, rigid_body.orientation);
+  object3d->set_transform(rigid_body.position, rigid_body.rotation);
 }
