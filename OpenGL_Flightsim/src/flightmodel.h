@@ -75,15 +75,6 @@ struct Airfoil {
     // float frac =
     return {0.0f, 0.0f};
   }
-
-  float cl_slope(float alpha) const
-  {
-    int i = static_cast<int>(phi::inverse_lerp(min_alpha, max_alpha, alpha) * max_index);
-    i = glm::clamp(i, 0, max_index - 2);
-    auto a = data[i + 0U];
-    auto b = data[i + 1U];
-    return (b.y - a.y) / (b.x - a.x);
-  }
 };
 
 // base engine
@@ -246,9 +237,10 @@ struct Airplane : public phi::RigidBody {
   std::ofstream log_file;
 #endif
 
+  // wings are in the order { left_wing, right_wing, elevator, rudder }
   Airplane(float mass_, const glm::mat3& inertia_, std::vector<Wing> wings_, std::vector<Engine*> engines_,
-           phi::Collider* collider)
-      : phi::RigidBody({.mass = mass_, .inertia = inertia_, .collider = collider}), wings(wings_), engines(engines_)
+           phi::Collider* collider_)
+      : phi::RigidBody({.mass = mass_, .inertia = inertia_, .collider = collider_}), wings(wings_), engines(engines_)
   {
 #if LOG_FLIGHT
     std::time_t now = std::time(nullptr);
@@ -256,6 +248,7 @@ struct Airplane : public phi::RigidBody {
     log_file
         << "flight_time,altitude,speed,ias,aoa,roll_rate,yaw_rate,pitch_rate,roll,yaw,pitch,aileron,rudder,elevator,\n";
 #endif
+    assert(wings.size() == 4);
   }
 
   void update(phi::Seconds dt) override

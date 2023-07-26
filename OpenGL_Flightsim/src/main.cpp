@@ -242,7 +242,7 @@ int main(void)
 
   // individual element mass is proportional to volume
   glm::vec3 center_of_gravity;
-  phi::inertia::compute_uniform_mass(mass_elements, mass);
+  phi::inertia::set_uniform_density(mass_elements, mass);
   std::cout << "cg = " << center_of_gravity << std::endl;
 
   // compute inertia tensor
