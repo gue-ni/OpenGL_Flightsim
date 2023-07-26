@@ -98,7 +98,12 @@ constexpr inline float inverse_lerp(T a, T b, T v)
   return (v - a) / (b - a);
 }
 
-// a transform represents an objects position and attitude in 3d space
+// the time it takes to full from a certain height
+float fall_time(float height, float acceleration = EARTH_GRAVITY)
+{
+  return sqrt((2 * height) / acceleration);
+}
+
 struct Transform {
   glm::vec3 position;
   glm::quat rotation;
@@ -518,10 +523,15 @@ class RigidBody : public Transform
   }
 };
 
+
 struct Collider {
+  virtual bool collision(const Transform* t0, const Collider* c1, const Transform* t1) const = 0;
 };
 
-namespace collision {
+// collision detection system
+namespace collision
+{
+
 
 // narrowphase collision detection. this algorithm is O(n^2) -> very slow
 template <typename RB>
