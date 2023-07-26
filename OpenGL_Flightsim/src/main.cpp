@@ -305,10 +305,10 @@ int main(void)
   const Airfoil NACA_64_206(NACA_64_206_data);
 
   std::vector<Wing> wings = {
-      Wing({wing_offset, 0.0f, -2.7f}, 6.96f, 2.50f, &NACA_2412),             // left wing
-      Wing({wing_offset, 0.0f, +2.7f}, 6.96f, 2.50f, &NACA_2412),             // right wing
-      Wing({tail_offset, -0.1f, 0.0f}, 6.54f, 2.70f, &NACA_0012),             // elevator
-      Wing({tail_offset, 0.0f, 0.0f}, 5.31f, 3.10f, &NACA_0012, phi::RIGHT),  // rudder
+      Wing({wing_offset, 0.0f, -2.7f}, 6.96f, 2.50f, &NACA_2412, phi::UP, 0.05f),    // left wing
+      Wing({wing_offset, 0.0f, +2.7f}, 6.96f, 2.50f, &NACA_2412, phi::UP, 0.05f),    // right wing
+      Wing({tail_offset, -0.1f, 0.0f}, 6.54f, 2.70f, &NACA_0012, phi::UP, 0.25f),    // elevator
+      Wing({tail_offset, 0.0f, 0.0f}, 5.31f, 3.10f, &NACA_0012, phi::RIGHT, 0.25f),  // rudder
   };
 
   auto engine = new SimpleEngine(thrust);
@@ -522,7 +522,7 @@ int main(void)
     ImGui::Text("FPS:   %.1f", fps);
     ImGui::End();
 
-#if 1
+#if 0
     auto angular_velocity = glm::degrees(player.airplane.angular_velocity);
     auto attitude = glm::degrees(player.airplane.get_euler_angles());
 
