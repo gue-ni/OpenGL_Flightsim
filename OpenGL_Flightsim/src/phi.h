@@ -146,9 +146,13 @@ struct Element {
   float volume() const { return size.x * size.y * size.z; }
 };
 
-inline glm::vec3 cuboid(float mass, const glm::vec3& size) { return glm::vec3(0.0f); }
+inline glm::vec3 cuboid(float mass, const glm::vec3& size)
+{
+  float x = size.x, y = size.y, z = size.z;
+  return glm::vec3(sq(y) + sq(z), sq(x) + sq(z), sq(x) + sq(y)) * (1.0f / 12.0f) * mass;
+}
 
-inline glm::vec3 sphere(float mass, float radius) { return glm::vec3(0.0f); }
+inline glm::vec3 sphere(float mass, float radius) { return glm::vec3((2.0f / 5.0f) * mass * sq(radius)); }
 
 // inertia tensor from moment of inertia
 inline glm::mat3 tensor(const glm::vec3& moment_of_inertia) { return glm::diagonal3x3(moment_of_inertia); }
