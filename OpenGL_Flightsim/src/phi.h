@@ -30,6 +30,7 @@ SOFTWARE. */
 #pragma once
 
 #include <glm/glm.hpp>
+#include <glm/gtx/matrix_operation.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <iostream>
 #include <numeric>
@@ -50,6 +51,7 @@ namespace phi
 typedef float Seconds;
 
 class RigidBody;
+struct Collider;
 
 // constants
 constexpr float EPSILON = 1e-8f;
@@ -96,6 +98,7 @@ constexpr inline float inverse_lerp(T a, T b, T v)
   return (v - a) / (b - a);
 }
 
+// a transform represents an objects position and attitude in 3d space
 struct Transform {
   glm::vec3 position;
   glm::quat rotation;
@@ -121,58 +124,6 @@ struct Transform {
   inline glm::vec3 forward() const { return transform_direction(phi::FORWARD); }
 };
 
-// moment of inertia according to https://en.wikipedia.org/wiki/List_of_moments_of_inertia
-namespace hitbox
-{
-
-// oriented bounding box
-struct OBB : public Transform {
-  glm::vec3 size;
-  constexpr OBB(const glm::vec3& s) : Transform(), size(s) {}
-
-  std::vector<glm::vec3> vertices() const {
-
-      auto transform = matrix();
-
-      // TODO
-      std::vector<glm::vec3> vertices = {
-          glm::vec3(size.x, size.y, size.z),
-          glm::vec3(size.x, size.y, size.z),
-          glm::vec3(size.x, size.y, size.z),
-          glm::vec3(size.x, size.y, size.z),
-          glm::vec3(size.x, size.y, size.z),
-          glm::vec3(size.x, size.y, size.z),
-      };
-
-      assert(vertices.size() == 6U);
-
-      return vertices;
-  }
-
-  // x, y z axis
-  std::vector<glm::vec3> axes() const
-  {
-    auto axes = glm::mat3(matrix());
-    return {axes[0], axes[1], axes[2]};
-  }
-};
-
-// bounding sphere
-struct Sphere : public Transform {
-  float radius;
-  constexpr Sphere(float r) : Transform(), radius(r) {}
-};
-
-// TODO: sample from real heightmap
-struct Heightmap : public Transform {
-  float height;
-  Heightmap(float h) : height(h) {}
-  float get_height(const glm::vec2& coord) const { return height; }
-};
-}  // namespace hitbox
-
-using Collider = std::variant<hitbox::OBB, hitbox::Sphere, hitbox::Heightmap>;
-
 struct CollisionInfo {
   glm::vec3 point;    // contact point
   glm::vec3 normal;   // contact normal
@@ -193,17 +144,18 @@ struct Element {
   float volume() const { return size.x * size.y * size.z; }
 };
 
-// inertia tensor from moment of inertia
-constexpr glm::mat3 tensor(const glm::vec3& moment_of_inertia)
+inline glm::vec3 cuboid(float mass, const glm::vec3& size)
 {
-  // clang-format off
-  return {
-      moment_of_inertia.x, 0.0f, 0.0f, 
-      0.0f, moment_of_inertia.y, 0.0f, 
-      0.0f, 0.0f, moment_of_inertia.z,
-  };
-  // clang-format on
+    return glm::vec3(0.0f);
 }
+
+inline glm::vec3 sphere(float mass, float radius)
+{
+    return glm::vec3(0.0f);
+}
+
+// inertia tensor from moment of inertia
+inline glm::mat3 tensor(const glm::vec3& moment_of_inertia) { return glm::diagonal3x3(moment_of_inertia); }
 
 // distribute mass among elements depending on element volume, to be called before passing elements to tensor()
 inline void set_uniform_density(std::vector<Element>& elements, float total_mass)
@@ -216,6 +168,59 @@ inline void set_uniform_density(std::vector<Element>& elements, float total_mass
   }
 }
 
+#if 0
+// calculate inertia tensor for a collection of colliders
+inline glm::mat3 tensor(std::vector<Collider>& elements, float mass)
+{
+  float Ixx = 0, Iyy = 0, Izz = 0;
+  float Ixy = 0, Ixz = 0, Iyz = 0;
+
+  glm::vec3 moment(0.0f);
+
+  float total_volume = 0.0f;
+
+  std::vector<float> element_mass(elements.size());
+  std::vector<float> element_volume(elements.size());
+
+  for (size_t i = 0; i < elements.size(); i++) {
+    auto& element = elements[i];
+    float volume = 0.0f; // TODO
+    element_volume[i] = volume;
+    total_volume += element_volume[i];
+  }
+
+  for (size_t i = 0; i < elements.size(); i++) {
+    element_mass[i] = (element_volume[i] / total_volume) * mass;
+  }
+
+  for (size_t i = 0; i < elements.size(); i++) {
+    moment += element_mass[i] * collider::position(elements[i]);
+  }
+
+  glm::vec3 center_of_gravity = moment / mass;
+
+  for (size_t i = 0; i < elements.size(); i++) {
+    glm::vec3 offset = collider::position(elements[i]) - center_of_gravity;
+    glm::vec3 inertia = moment_of_inertia(elements[i], element_mass[i]);
+
+    Ixx += inertia.x + element_mass[i] * (sq(offset.y) + sq(offset.z));
+    Iyy += inertia.y + element_mass[i] * (sq(offset.z) + sq(offset.x));
+    Izz += inertia.z + element_mass[i] * (sq(offset.x) + sq(offset.y));
+    Ixy += element_mass[i] * (offset.x * offset.y);
+    Ixz += element_mass[i] * (offset.x * offset.z);
+    Iyz += element_mass[i] * (offset.y * offset.z);
+  }
+
+  // clang-format off
+  return {
+      Ixx, -Ixy, -Ixz, 
+      -Ixy, Iyy, -Iyz, 
+      -Ixz, -Iyz, Izz
+  };
+  // clang-format on
+}
+#endif
+
 // calculate inertia tensor for a collection of connected masses
 inline glm::mat3 tensor(std::vector<Element>& elements, bool precomputed_offset = false, glm::vec3* cg = nullptr)
 {
@@ -223,14 +228,14 @@ inline glm::mat3 tensor(std::vector<Element>& elements, bool precomputed_offset 
   float Ixy = 0, Ixz = 0, Iyz = 0;
 
   float mass = 0;
-  glm::vec3 moment(0.0f);
+  glm::vec3 moment_of_inertia(0.0f);
 
   for (const auto& element : elements) {
     mass += element.mass;
-    moment += element.mass * element.position;
+    moment_of_inertia += element.mass * element.position;
   }
 
-  const auto center_of_gravity = moment / mass;
+  const auto center_of_gravity = moment_of_inertia / mass;
 
   for (auto& element : elements) {
     if (!precomputed_offset) {
@@ -262,32 +267,10 @@ inline glm::mat3 tensor(std::vector<Element>& elements, bool precomputed_offset 
   // clang-format on
 }
 
-// calculate moment of inertia for given collider
-constexpr inline glm::vec3 moment(const Collider& collider, float mass)
-{
-  return std::visit(
-      [mass](const auto& c) {
-        using T = std::decay_t<decltype(c)>;
-        if constexpr (std::is_same_v<T, hitbox::Sphere>) {
-          // sphere inertia
-          return glm::vec3((2.0f / 5.0f) * mass * sq(c.radius));
-        } else if constexpr (std::is_same_v<T, hitbox::OBB>) {
-          // cube inertia
-          glm::vec3 size = c.size;
-          float C = (1.0f / 12.0f) * mass;
-          return glm::vec3(sq(size.y) + sq(size.z), sq(size.x) + sq(size.z), sq(size.x) + sq(size.y)) * C;
-        } else {
-          return glm::vec3(0.0f);
-        }
-      },
-      collider);
-}
-
 // helper function for the creation of a cuboid mass element
-constexpr Element cube(const glm::vec3& position, const glm::vec3& size, float mass = 0.0f)
+inline Element cube(const glm::vec3& position, const glm::vec3& size, float mass = 0.0f)
 {
-  hitbox::OBB cube(size);
-  auto inertia = moment(cube, mass);
+  glm::vec3 inertia = cuboid(mass, size);
   return {size, position, inertia, position, mass};
 }
 
@@ -316,13 +299,10 @@ constexpr inline float torque(float power, float rpm) { return 30.0f * power / (
 };  // namespace units
 
 // default rigid body is a sphere with radius 1 meter and a mass of 100 kg
-constexpr float DEFAULT_RB_MASS = 100.0f;
-constexpr float INFINITE_RB_MASS = std::numeric_limits<float>::infinity();
-constexpr glm::quat DEFAULT_RB_ORIENTATION = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
-constexpr phi::hitbox::Sphere UNIT_SPHERE = phi::hitbox::Sphere(1.0f);
-constexpr phi::hitbox::OBB UNIT_CUBE = phi::hitbox::OBB(glm::vec3(1.0f));
-constexpr Collider DEFAULT_RB_COLLIDER = Collider(UNIT_SPHERE);
-constexpr glm::mat3 DEFAULT_RB_INERTIA = inertia::tensor(inertia::moment(UNIT_SPHERE, DEFAULT_RB_MASS));
+const float DEFAULT_RB_MASS = 100.0f;
+const float INFINITE_RB_MASS = std::numeric_limits<float>::infinity();
+const glm::quat DEFAULT_RB_ORIENTATION = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+const glm::mat3 DEFAULT_RB_INERTIA = inertia::tensor(inertia::sphere(DEFAULT_RB_MASS, 1.0f));
 
 struct RigidBodyParams {
   float mass = DEFAULT_RB_MASS;
@@ -332,7 +312,7 @@ struct RigidBodyParams {
   glm::vec3 velocity = glm::vec3(0);
   glm::vec3 angular_velocity = glm::vec3(0);
   bool apply_gravity = true;
-  Collider collider = DEFAULT_RB_COLLIDER;
+  Collider *collider = nullptr;
 };
 
 class RigidBody : public Transform
@@ -348,7 +328,7 @@ class RigidBody : public Transform
   bool apply_gravity = true;
   bool sleep = false;
   bool detect_collision = true;
-  Collider collider = DEFAULT_RB_COLLIDER;
+  Collider *collider = nullptr;
   glm::mat3 inertia = glm::mat3(0.0f);
   glm::mat3 inverse_inertia = glm::mat3(0.0f);  // inertia tensor
 
@@ -388,14 +368,16 @@ class RigidBody : public Transform
   inline void set_inertia(const glm::mat3& tensor) { inertia = tensor, inverse_inertia = glm::inverse(tensor); }
 
   // set moment of inertia
-  inline void set_inertia(const glm::vec3& moment) { set_inertia(inertia::tensor(moment)); }
+  inline void set_inertia(const glm::vec3& moment_of_inertia) { set_inertia(inertia::tensor(moment_of_inertia)); }
 
+#if 0
   // calculate moment of inertia from collider and mass
   inline void set_inertia()
   {
-    glm::vec3 moment_of_inertia = inertia::moment(collider, mass);
+    glm::vec3 moment_of_inertia = inertia::moment_of_inertia(collider, mass);
     set_inertia(inertia::tensor(moment_of_inertia));
   }
+ #endif
 
   // linear impulse in world space
   inline void add_linear_impulse(const glm::vec3& impulse) { velocity += impulse / mass; }
@@ -454,14 +436,6 @@ class RigidBody : public Transform
     angular_velocity += inverse_inertia * (m_torque - glm::cross(angular_velocity, inertia * angular_velocity)) * dt;
     rotation += (rotation * glm::quat(0.0f, angular_velocity)) * (0.5f * dt);
     rotation = glm::normalize(rotation);
-
-    // update collider transform
-    std::visit(
-        [this](auto& c) {
-          c.position = position;
-          c.rotation = rotation;
-        },
-        collider);
 
     // reset accumulators
     m_force = glm::vec3(0.0f), m_torque = glm::vec3(0.0f);
@@ -544,85 +518,10 @@ class RigidBody : public Transform
   }
 };
 
-// collision detection system
-namespace collision
-{
+struct Collider {
+};
 
-//  placeholder implementation
-#define NO_COLLISION_IMPL(TypeA, TypeB) \
-  inline bool is_colliding(const TypeA& a, const TypeB& b, CollisionInfo& info) { return false; }
-
-#define SWIZZLE_IMPL(TypeA, TypeB) \
-  inline bool is_colliding(const TypeA& a, const TypeB& b, CollisionInfo& info) { return is_colliding(b, a, info); }
-
-// collision primitives:
-
-inline bool is_colliding(const hitbox::Sphere& a, const hitbox::Sphere& b, CollisionInfo& info)
-{
-  float distance = glm::length(a.position - b.position);
-  return distance < (a.radius + b.radius);
-}
-
-inline bool is_colliding(const hitbox::Heightmap& a, const hitbox::Sphere& b, CollisionInfo& info)
-{
-  return (b.position.y - b.radius) < a.height;
-}
-SWIZZLE_IMPL(hitbox::Sphere, hitbox::Heightmap);
-
-inline bool is_colliding(const hitbox::OBB& a, const hitbox::OBB& b, CollisionInfo& info)
-{
-  auto transform_a = glm::mat3(a.matrix());
-  auto transform_b = glm::mat3(b.matrix());
-
-  // 15 axes
-  glm::vec3 axes[15] = {
-      transform_a[0],
-      transform_a[1],
-      transform_a[2],
-      transform_b[0],
-      transform_b[1],
-      transform_b[2],
-      glm::cross(transform_a[0], transform_b[0]),
-      glm::cross(transform_a[0], transform_b[1]),
-      glm::cross(transform_a[0], transform_b[2]),
-      glm::cross(transform_a[1], transform_b[0]),
-      glm::cross(transform_a[1], transform_b[1]),
-      glm::cross(transform_a[1], transform_b[2]),
-      glm::cross(transform_a[2], transform_b[0]),
-      glm::cross(transform_a[2], transform_b[1]),
-      glm::cross(transform_a[2], transform_b[2]),
-  };
-
-  for (const auto& axis : axes) {
-    float projection_a = glm::dot(axis, a.position);
-    float projection_b = glm::dot(axis, b.position);
-
-    float size_a = a.size.x * abs(glm::dot(axis, transform_a[0])) + a.size.y * abs(glm::dot(axis, transform_a[1])) +
-                   a.size.z * abs(glm::dot(axis, transform_a[2]));
-
-    float size_b = b.size.x * abs(glm::dot(axis, transform_b[0])) + b.size.y * abs(glm::dot(axis, transform_b[1])) +
-                   b.size.z * abs(glm::dot(axis, transform_b[2]));
-
-    if ((projection_a + size_a < projection_b - size_b) || (projection_a - size_a > projection_b + size_b)) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-NO_COLLISION_IMPL(hitbox::Sphere, hitbox::OBB);
-NO_COLLISION_IMPL(hitbox::OBB, hitbox::Sphere);
-NO_COLLISION_IMPL(hitbox::OBB, hitbox::Heightmap);
-NO_COLLISION_IMPL(hitbox::Heightmap, hitbox::OBB);
-NO_COLLISION_IMPL(hitbox::Heightmap, hitbox::Heightmap);
-
-// collision dispatch
-inline bool test_collision(const Collider& a, const Collider& b, CollisionInfo& info)
-{
-  const auto visitor = [&info](const auto& A, const auto& B) { return is_colliding(A, B, info); };
-  return std::visit(visitor, a, b);
-}
+namespace collision {
 
 // narrowphase collision detection. this algorithm is O(n^2) -> very slow
 template <typename RB>
@@ -632,12 +531,7 @@ std::vector<CollisionInfo> detection(std::vector<RB>& objects, phi::Seconds dt)
 
   for (std::size_t i = 0; i < objects.size(); i++) {
     for (std::size_t j = i + 1; j < objects.size(); j++) {
-      CollisionInfo info{};
-      if (test_collision(objects[i].collider, objects[j].collider, info)) {
-        info.a = &objects[i];
-        info.b = &objects[j];
-        collisions.push_back(info);
-      }
+        // TODO: test collision
     }
   }
 

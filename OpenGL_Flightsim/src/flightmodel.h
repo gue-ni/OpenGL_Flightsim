@@ -271,7 +271,7 @@ struct Airplane : public phi::RigidBody {
 #endif
 
   Airplane(float mass, const glm::mat3& inertia, std::vector<Wing> wings, std::vector<Engine*> engines,
-           const phi::Collider& collider)
+           phi::Collider* collider)
       : phi::RigidBody({.mass = mass, .inertia = inertia, .collider = collider}), wings(wings), engines(engines)
   {
 #if LOG_FLIGHT

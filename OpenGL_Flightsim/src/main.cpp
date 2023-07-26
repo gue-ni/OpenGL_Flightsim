@@ -317,9 +317,8 @@ int main(void)
 #endif
 
   std::vector<Airplane> rigid_bodies = {
-      Airplane(mass, inertia, wings, {engine}, phi::Collider{phi::hitbox::Sphere(15.0f)}),
-      Airplane(phi::INFINITE_RB_MASS, glm::mat4(phi::INFINITE_RB_MASS), {}, {},
-               phi::Collider{phi::hitbox::Sphere(15.0f)})};
+      Airplane(mass, inertia, wings, {engine}, nullptr),
+  };
 
   GameObject player = {
       .transform = gfx::Mesh(model, texture),
