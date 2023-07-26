@@ -99,10 +99,7 @@ constexpr inline float inverse_lerp(T a, T b, T v)
 }
 
 // the time it takes to full from a certain height
-float fall_time(float height, float acceleration = EARTH_GRAVITY)
-{
-  return sqrt((2 * height) / acceleration);
-}
+float fall_time(float height, float acceleration = EARTH_GRAVITY) { return sqrt((2 * height) / acceleration); }
 
 struct Transform {
   glm::vec3 position;
@@ -149,15 +146,9 @@ struct Element {
   float volume() const { return size.x * size.y * size.z; }
 };
 
-inline glm::vec3 cuboid(float mass, const glm::vec3& size)
-{
-    return glm::vec3(0.0f);
-}
+inline glm::vec3 cuboid(float mass, const glm::vec3& size) { return glm::vec3(0.0f); }
 
-inline glm::vec3 sphere(float mass, float radius)
-{
-    return glm::vec3(0.0f);
-}
+inline glm::vec3 sphere(float mass, float radius) { return glm::vec3(0.0f); }
 
 // inertia tensor from moment of inertia
 inline glm::mat3 tensor(const glm::vec3& moment_of_inertia) { return glm::diagonal3x3(moment_of_inertia); }
@@ -317,7 +308,7 @@ struct RigidBodyParams {
   glm::vec3 velocity = glm::vec3(0);
   glm::vec3 angular_velocity = glm::vec3(0);
   bool apply_gravity = true;
-  Collider *collider = nullptr;
+  Collider* collider = nullptr;
 };
 
 class RigidBody : public Transform
@@ -333,7 +324,7 @@ class RigidBody : public Transform
   bool apply_gravity = true;
   bool sleep = false;
   bool detect_collision = true;
-  Collider *collider = nullptr;
+  Collider* collider = nullptr;
   glm::mat3 inertia = glm::mat3(0.0f);
   glm::mat3 inverse_inertia = glm::mat3(0.0f);  // inertia tensor
 
@@ -382,7 +373,7 @@ class RigidBody : public Transform
     glm::vec3 moment_of_inertia = inertia::moment_of_inertia(collider, mass);
     set_inertia(inertia::tensor(moment_of_inertia));
   }
- #endif
+#endif
 
   // linear impulse in world space
   inline void add_linear_impulse(const glm::vec3& impulse) { velocity += impulse / mass; }
@@ -523,7 +514,6 @@ class RigidBody : public Transform
   }
 };
 
-
 struct Collider {
   virtual bool collision(const Transform* t0, const Collider* c1, const Transform* t1) const = 0;
 };
@@ -531,8 +521,6 @@ struct Collider {
 // collision detection system
 namespace collision
 {
-
-
 // narrowphase collision detection. this algorithm is O(n^2) -> very slow
 template <typename RB>
 std::vector<CollisionInfo> detection(std::vector<RB>& objects, phi::Seconds dt)
@@ -541,7 +529,7 @@ std::vector<CollisionInfo> detection(std::vector<RB>& objects, phi::Seconds dt)
 
   for (std::size_t i = 0; i < objects.size(); i++) {
     for (std::size_t j = i + 1; j < objects.size(); j++) {
-        // TODO: test collision
+      // TODO: test collision
     }
   }
 

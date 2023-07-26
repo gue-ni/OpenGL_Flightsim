@@ -205,7 +205,7 @@ class Wing
     if (speed <= phi::EPSILON) return;
 
       // control surfaces can be rotated
-#if 0
+#if 1
     glm::vec3 wing_normal = is_control_surface ? deflect_wing(rigid_body, dt) : normal;
 #else
     auto wing_normal = normal;
@@ -223,7 +223,7 @@ class Wing
     // sample aerodynamic coefficients
     auto [lift_coeff, drag_coeff] = airfoil->sample(angle_of_attack);
 
-    //float delta_lift_coeff = sqrt(flap_ratio) * airfoil->cl_max * sin(glm::radians(deflection));
+    // float delta_lift_coeff = sqrt(flap_ratio) * airfoil->cl_max * sin(glm::radians(deflection));
     float delta_lift_coeff = 0.0f;
 
     // induced drag, increases with lift
@@ -234,7 +234,7 @@ class Wing
 
     float dynamic_pressure = 0.5f * std::pow(speed, 2) * air_density * area;
 
-    glm::vec3 lift = lift_direction * (lift_coeff + delta_lift_coeff)*lift_multiplier * dynamic_pressure;
+    glm::vec3 lift = lift_direction * (lift_coeff + delta_lift_coeff) * lift_multiplier * dynamic_pressure;
     glm::vec3 drag = drag_direction * (drag_coeff + induced_drag_coeff) * drag_multiplier * dynamic_pressure;
 
     // aerodynamic forces are applied at the center of pressure
