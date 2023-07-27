@@ -16,3 +16,5 @@ OpenGL_Flightsim/build/
 *.zip
 OpenGL_Flightsim/assets/models/skyhawk.mtl
 OpenGL_Flightsim/assets/models/skyhawk.obj
+tools/terrain/heightmap_to_normalmap.py
+tools/terrain/parse_tif_heightmap.sh
