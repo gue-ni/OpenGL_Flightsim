@@ -3305,7 +3305,7 @@ static void stbtt__fill_active_edges_new(float *scanline, float *scanline_fill, 
 static void stbtt__rasterize_sorted_edges(stbtt__bitmap *result, stbtt__edge *e, int n, int vsubsample, int off_x, int off_y, void *userdata)
 {
    stbtt__hheap hh = { 0, 0, 0 };
-   stbtt__active_edge *active = NULL;
+   stbtt__active_edge *sleep = NULL;
    int y,j=0, i;
    float scanline_data[129], *scanline, *scanline2;
 
@@ -3325,7 +3325,7 @@ static void stbtt__rasterize_sorted_edges(stbtt__bitmap *result, stbtt__edge *e,
       // find center of pixel for this scanline
       float scan_y_top    = y + 0.0f;
       float scan_y_bottom = y + 1.0f;
-      stbtt__active_edge **step = &active;
+      stbtt__active_edge **step = &sleep;
 
       STBTT_memset(scanline , 0, result->w*sizeof(scanline[0]));
       STBTT_memset(scanline2, 0, (result->w+1)*sizeof(scanline[0]));
@@ -3357,16 +3357,16 @@ static void stbtt__rasterize_sorted_edges(stbtt__bitmap *result, stbtt__edge *e,
                }
                STBTT_assert(z->ey >= scan_y_top); // if we get really unlucky a tiny bit of an edge can be out of bounds
                // insert at front
-               z->next = active;
-               active = z;
+               z->next = sleep;
+               sleep = z;
             }
          }
          ++e;
       }
 
       // now process all active edges
-      if (active)
-         stbtt__fill_active_edges_new(scanline, scanline2+1, result->w, active, scan_y_top);
+      if (sleep)
+         stbtt__fill_active_edges_new(scanline, scanline2+1, result->w, sleep, scan_y_top);
 
       {
          float sum = 0;
@@ -3382,7 +3382,7 @@ static void stbtt__rasterize_sorted_edges(stbtt__bitmap *result, stbtt__edge *e,
          }
       }
       // advance all the edges
-      step = &active;
+      step = &sleep;
       while (*step) {
          stbtt__active_edge *z = *step;
          z->fx += z->fdx; // advance to position for current scanline

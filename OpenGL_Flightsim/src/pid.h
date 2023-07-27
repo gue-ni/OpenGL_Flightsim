@@ -6,8 +6,8 @@
 
 class PID
 {
-  float integral       = 0.0f;
-  bool initialized     = false;
+  float integral = 0.0f;
+  bool initialized = false;
   float previous_value = 0.0f, previous_error = 0.0f;
 
   const bool use_value;
@@ -25,22 +25,22 @@ class PID
   float calculate(float current_value, float target_value, float dt)
   {
     float error = target_value - current_value;
-    float P     = error * proportional_gain;
+    float P = error * proportional_gain;
 
     if (!initialized) {
       previous_error = error;
       previous_value = current_value;
-      initialized    = true;
+      initialized = true;
     }
 
     integral += error * dt;
     float I = integral * integral_gain;
 
     float error_rate_of_change = (error - previous_error) / dt;
-    previous_error             = error;
+    previous_error = error;
 
     float value_rate_of_change = (current_value - previous_value) / dt;
-    previous_value             = current_value;
+    previous_value = current_value;
 
     float D = (use_value ? value_rate_of_change : error_rate_of_change) * derivative_gain;
 
