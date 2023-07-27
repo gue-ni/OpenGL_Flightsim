@@ -270,15 +270,13 @@ int main(void)
   const Airfoil NACA_2412(NACA_2412_data);
 
   std::vector<Wing> wings = {
-      Wing(&NACA_2412, l_wing_pos, main_wing_area, main_wing_span),               // left wing
-      Wing(&NACA_2412, r_wing_pos, main_wing_area, main_wing_span),               // right wing
-      Wing(&NACA_0012, h_tail_pos, h_tail_area, h_tail_span),                     // horizontal tail
-      Wing(&NACA_0012, v_tail_pos, v_tail_area, v_tail_span, phi::RIGHT),         // vertical tail
-      Wing(&NACA_0012, l_wing_pos - aileron_offset, aileron_area, aileron_span),  // left aileron
-      Wing(&NACA_0012, r_wing_pos - aileron_offset, aileron_area, aileron_span),  // right aileron
+      Wing(&NACA_2412, l_wing_pos, main_wing_area, main_wing_span, phi::UP, 0.10f),  // left wing
+      Wing(&NACA_2412, r_wing_pos, main_wing_area, main_wing_span, phi::UP, 0.10f),  // right wing
+      Wing(&NACA_0012, h_tail_pos, h_tail_area, h_tail_span, phi::UP, 0.25f),        // horizontal tail
+      Wing(&NACA_0012, v_tail_pos, v_tail_area, v_tail_span, phi::RIGHT, 0.25f),     // vertical tail
   };
 
-  auto engine = new PropellorEngine(horsepower, rpm, prop_diameter);
+  Engine* engine = new PropellerEngine(horsepower, rpm, prop_diameter);
 
 #elif (FLIGHTMODEL == FAST_JET)
 
@@ -305,8 +303,8 @@ int main(void)
   const Airfoil NACA_64_206(NACA_64_206_data);
 
   std::vector<Wing> wings = {
-      Wing({wing_offset, 0.0f, -2.7f}, 6.96f, 2.50f, &NACA_2412, phi::UP, 0.05f),    // left wing
-      Wing({wing_offset, 0.0f, +2.7f}, 6.96f, 2.50f, &NACA_2412, phi::UP, 0.05f),    // right wing
+      Wing({wing_offset, 0.0f, -2.7f}, 6.96f, 2.50f, &NACA_2412, phi::UP, 0.10f),    // left wing
+      Wing({wing_offset, 0.0f, +2.7f}, 6.96f, 2.50f, &NACA_2412, phi::UP, 0.10f),    // right wing
       Wing({tail_offset, -0.1f, 0.0f}, 6.54f, 2.70f, &NACA_0012, phi::UP, 0.25f),    // elevator
       Wing({tail_offset, 0.0f, 0.0f}, 5.31f, 3.10f, &NACA_0012, phi::RIGHT, 0.25f),  // rudder
   };
@@ -522,7 +520,7 @@ int main(void)
     ImGui::Text("FPS:   %.1f", fps);
     ImGui::End();
 
-#if 0
+#if 1
     auto angular_velocity = glm::degrees(player.airplane.angular_velocity);
     auto attitude = glm::degrees(player.airplane.get_euler_angles());
 
