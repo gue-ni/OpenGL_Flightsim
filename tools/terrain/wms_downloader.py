@@ -4,9 +4,11 @@ import os
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--lat", type=float, required=True)
-parser.add_argument("--lon", type=float, required=True)
+parser.add_argument("--lat", type=float, required=False)
+parser.add_argument("--lon", type=float, required=False)
 parser.add_argument("--zoom", type=int, required=True)
+parser.add_argument("--xtile", type=int, required=False)
+parser.add_argument("--ytile", type=int, required=False)
 parser.add_argument("--download", required=False, action="store_true")
 
 API_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile"
@@ -84,13 +86,17 @@ if __name__ == "__main__":
 
   args = parser.parse_args()
 
-  coord = (args.lat, args.lon)
   zoom = args.zoom
-
-  print("coord =", coord)
   print("zoom =", zoom)
+
+  if args.lat and args.lon:
+    coord = (args.lat, args.lon)
+    tile = lat_lon_to_tile(coord, zoom)
+    print("coord =", coord)
+
+  elif args.xtile and args.ytile:
+    tile = (args.xtile, args.ytile, zoom)
   
-  tile = lat_lon_to_tile(coord, zoom)
   print("tile =", tile)
 
   (x, y, z) = tile

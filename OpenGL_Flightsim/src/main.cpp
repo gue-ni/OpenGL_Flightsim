@@ -42,7 +42,7 @@ JK      control thrust
 #define NPC_AIRCRAFT       0
 #define SHOW_MASS_ELEMENTS 0
 #define USE_PID            1
-#define PS1_RESOLUTION     0
+#define PS1_RESOLUTION     1
 #define DEBUG_INFO         0
 
 /* select flightmodel */
@@ -280,14 +280,14 @@ int main(void)
       Wing(&NACA_0012, r_wing_pos - aileron_offset, aileron_area, aileron_span),  // right aileron
   };
 
-  auto engine = new PropellorEngine(horsepower, rpm, prop_diameter);
+  Engine* engine = new PropellorEngine(horsepower, rpm, prop_diameter);
 
 #elif (FLIGHTMODEL == FAST_JET)
 
   constexpr float speed = phi::units::meter_per_second(500.0f /* km/h */);
 
   const float mass = 10000.0f;
-  const float thrust = 50000.0f;
+  const float thrust = 75000.0f;
 
   const float wing_offset = -1.0f;
   const float tail_offset = -6.6f;
@@ -313,7 +313,7 @@ int main(void)
       Wing({tail_offset, 0.0f, 0.0f}, 5.31f, 3.10f, &NACA_0012, phi::RIGHT, 0.15f),  // rudder
   };
 
-  auto engine = new SimpleEngine(thrust);
+  Engine* engine = new SimpleEngine(thrust);
 #else
 #error FLIGHTMODEL not defined
 #endif

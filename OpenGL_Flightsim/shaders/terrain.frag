@@ -36,7 +36,7 @@ void main()
   vec3 lightDir = vec3(-2.0, 4.0, -1.0);
 
   // Calculate fog
-  float fogMaxdist = 64000.0;
+  float fogMaxdist = 100000.0;
   float fogMindist = 1000.0;
   vec4 fogColor = vec4(u_Background, 1.0);
 

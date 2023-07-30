@@ -35,6 +35,7 @@ const float sea_level_air_density = get_air_density(0.0f);
 };  // namespace isa
 
 // World Geodetic System (WGS 84)
+// TODO: fix calculations
 namespace wgs84
 {
 constexpr float EARTH_RADIUS = 6378.0f;
@@ -126,7 +127,7 @@ struct PropellerEngine : public Engine {
     const float a = 1.83f, b = -1.32f;  // efficiency curve fit coefficients
     float turnover_rate = rpm / 60.0f;
     float propellor_advance_ratio = speed / (turnover_rate * propellor_diameter);
-    float propellor_efficiency = a * propellor_advance_ratio + b * std::pow(propellor_advance_ratio, 3);
+    float propellor_efficiency = a * propellor_advance_ratio + b * phi::cb(propellor_advance_ratio);
     assert(0.0f <= propellor_efficiency && propellor_efficiency <= 1.0f);
 
     const float c = 0.12f;  // mechanical power loss factor
@@ -163,7 +164,7 @@ struct Wing {
         chord(area / span),
         wingspan(span),
         normal(normal),
-        aspect_ratio(std::pow(span, 2) / area),
+        aspect_ratio(phi::sq(span) / area),
         flap_ratio(flap_ratio)
   {
   }
@@ -176,7 +177,7 @@ struct Wing {
         chord(chord),
         wingspan(span),
         normal(normal),
-        aspect_ratio(std::pow(span, 2) / area),
+        aspect_ratio(phi::sq(span) / area),
         flap_ratio(flap_ratio)
   {
   }
@@ -211,13 +212,13 @@ struct Wing {
     }
 
     // induced drag, increases with lift
-    float induced_drag_coeff = std::pow(lift_coeff, 2) / (phi::PI * aspect_ratio * efficiency_factor);
+    float induced_drag_coeff = phi::sq(lift_coeff) / (phi::PI * aspect_ratio * efficiency_factor);
     drag_coeff += induced_drag_coeff;
 
     // air density depends on altitude
     float air_density = isa::get_air_density(rigid_body->position.y);
 
-    float dynamic_pressure = 0.5f * std::pow(speed, 2) * air_density * area;
+    float dynamic_pressure = 0.5f * phi::sq(speed) * air_density * area;
 
     glm::vec3 lift = lift_direction * lift_coeff * dynamic_pressure;
     glm::vec3 drag = drag_direction * drag_coeff * dynamic_pressure;
@@ -357,7 +358,7 @@ struct Airplane : public phi::RigidBody {
   {
     // See: https://aerotoolbox.com/airspeed-conversions/
     float air_density = isa::get_air_density(get_altitude());
-    float dynamic_pressure = 0.5f * std::pow(get_speed(), 2) * air_density;  // bernoulli's equation
+    float dynamic_pressure = 0.5f * phi::sq(get_speed()) * air_density;  // bernoulli's equation
     return std::sqrt(2 * dynamic_pressure / isa::sea_level_air_density);
   }
 };
