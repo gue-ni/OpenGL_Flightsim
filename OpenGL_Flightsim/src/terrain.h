@@ -3,13 +3,20 @@
 #include "gfx.h"
 
 constexpr unsigned int primitive_restart = 0xFFFFU;
-const float MAX_TILE_SIZE = (50708.0f * 4);
+const float MAX_TILE_SIZE = 50708.0f * 4;
 
-#if 0
-const std::string PATH = "assets/textures/terrain/bodensee/9/268/178/";
+#define DATA_SRC 0
+
+#if (DATA_SRC == 1)
+const std::string PATH = "assets/textures/terrain/data/9/268/178/";
 const int ZOOM_FACTOR = 1;
+#elif (DATA_SRC == 2)
+// vienna
+const std::string PATH = "assets/textures/terrain/data/10/557/354/";
+const int ZOOM_FACTOR = 2;
 #else
-const std::string PATH = "assets/textures/terrain/bodensee/10/536/356/";
+// vorarlberg
+const std::string PATH = "assets/textures/terrain/data/10/536/356/";
 const int ZOOM_FACTOR = 2;
 #endif
 

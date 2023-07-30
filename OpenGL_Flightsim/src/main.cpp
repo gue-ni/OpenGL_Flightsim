@@ -73,16 +73,10 @@ struct GameObject {
   Airplane& airplane;
   // collider::Sphere collider;
 
-  void update(float dt)
-  {
-    // airplane.update(dt);
-    transform.set_transform(airplane.position, airplane.rotation);
-    // collider.center = airplane.position;
-  }
+  void update(float dt) { transform.set_transform(airplane.position, airplane.rotation); }
 };
 
 void get_keyboard_state(Joystick& joystick, phi::Seconds dt);
-void apply_to_object3d(const phi::RigidBody& rigid_body, gfx::Object3D* object);
 
 int main(void)
 {
@@ -644,9 +638,4 @@ void get_keyboard_state(Joystick& joystick, phi::Seconds dt)
   } else if (key_states[SDL_SCANCODE_M]) {
     joystick.trim = glm::clamp(joystick.trim + trim_speed, -1.0f, 1.0f);
   }
-}
-
-void apply_to_object3d(const phi::RigidBody& rigid_body, gfx::Object3D* object3d)
-{
-  object3d->set_transform(rigid_body.position, rigid_body.rotation);
 }
