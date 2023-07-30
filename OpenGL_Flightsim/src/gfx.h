@@ -105,8 +105,7 @@ struct ElementBufferObject {
 
 struct TextureParams {
   bool flip_vertically = false;
-  GLint texture_wrap_s = GL_REPEAT;
-  GLint texture_wrap_t = GL_REPEAT;
+  GLint texture_wrap = GL_REPEAT;
   GLint texture_min_filter = GL_LINEAR_MIPMAP_LINEAR;
   GLint texture_mag_filter = GL_NEAREST;
 };

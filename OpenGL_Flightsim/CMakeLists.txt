@@ -10,7 +10,7 @@ find_package(SDL2 REQUIRED)
 add_executable(flightsim
     # Source files
     src/ai.h
-    src/clipmap.h
+    src/terrain.h
     src/collider.h
     src/data.h
     src/flightmodel.h
