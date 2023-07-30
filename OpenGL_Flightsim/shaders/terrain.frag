@@ -7,6 +7,7 @@ uniform vec3 u_Background;
 uniform sampler2D u_Heightmap;
 uniform sampler2D u_Normalmap;
 uniform sampler2D u_Texture;
+uniform vec3 u_CameraPos;
 
 in vec3 Color;
 in vec3 Normal;
@@ -39,7 +40,7 @@ void main()
   float fogMindist = 1000.0;
   vec4 fogColor = vec4(u_Background, 1.0);
 
-  float dist = length(FragPos.xyz);
+  float dist = length(FragPos.xyz - u_CameraPos);
   float fogFactor = (fogMaxdist - dist) / (fogMaxdist - fogMindist);
   fogFactor = clamp(fogFactor, 0.0, 1.0);
 

@@ -13,12 +13,12 @@
 #include "../lib/imgui/imgui_impl_opengl3.h"
 #include "../lib/imgui/imgui_impl_sdl2.h"
 #include "ai.h"
-#include "terrain.h"
 #include "collider.h"
 #include "flightmodel.h"
 #include "gfx.h"
 #include "phi.h"
 #include "pid.h"
+#include "terrain.h"
 
 using std::cout;
 using std::endl;
@@ -184,7 +184,7 @@ int main(void)
 
   std::vector<GameObject*> objects;
 
-  glm::vec3 position = glm::vec3(0.0f, 1000.0f, 0.0f);
+  glm::vec3 initial_position = glm::vec3(0.0f, 3000.0f, 0.0f);
 
 #if (FLIGHTMODEL == CESSNA)
   constexpr float speed = phi::units::meter_per_second(200.0f /* km/h */);
@@ -327,7 +327,7 @@ int main(void)
       .airplane = rigid_bodies[0],
   };
 
-  player.airplane.position = position;
+  player.airplane.position = initial_position;
   player.airplane.velocity = glm::vec3(speed, 0.0f, 0.0f);
   scene.add(&player.transform);
   objects.push_back(&player);

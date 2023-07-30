@@ -39,7 +39,6 @@ namespace wgs84
 {
 constexpr float EARTH_RADIUS = 6378.0f;
 
-
 glm::vec2 coordinate_diff_to_meters(const glm::vec2& diff, float latitude)
 {
   float km_per_latitude = (phi::PI / 180.0f) * EARTH_RADIUS;
@@ -88,15 +87,6 @@ struct Airfoil {
     int index = static_cast<int>(integer);
     auto value = (index < max_index) ? phi::lerp(data[index], data[index + 1], fractional) : data[max_index];
     return {value.y, value.z};
-  }
-
-  std::tuple<float, float> sample2(float alpha) const
-  {
-    float t = phi::inverse_lerp(min_alpha, max_alpha, alpha) * max_index;
-    float lo = glm::floor(t);
-    float hi = glm::ceil(t);
-    // float frac =
-    return {0.0f, 0.0f};
   }
 };
 

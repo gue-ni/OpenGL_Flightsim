@@ -3,9 +3,17 @@
 #include "gfx.h"
 
 constexpr unsigned int primitive_restart = 0xFFFFU;
-const std::string path = "assets/textures/terrain/6/";
+const float MAX_TILE_SIZE = (50708.0f * 4);
 
-const gfx::gl::TextureParams params = {.texture_wrap = GL_CLAMP_TO_EDGE, .texture_mag_filter = GL_LINEAR};
+#if 0
+const std::string PATH = "assets/textures/terrain/bodensee/9/268/178/";
+const int ZOOM_FACTOR = 1;
+#else
+const std::string PATH = "assets/textures/terrain/bodensee/10/536/356/";
+const int ZOOM_FACTOR = 2;
+#endif
+
+const gfx::gl::TextureParams params = {.texture_wrap = GL_REPEAT, .texture_mag_filter = GL_LINEAR};
 
 struct Seam {
   gfx::gl::VertexBuffer vbo;
@@ -112,9 +120,9 @@ class Clipmap : public gfx::Object3D
 
   Clipmap(int levels = 16, int segments = 32, float segment_size = 2.0f)
       : shader("shaders/terrain"),
-        heightmap(path + "heightmap.png", params),
-        normalmap(path + "normalmap.png", params),
-        terrain(path + "texture.png", params),
+        heightmap(PATH + "heightmap.png", params),
+        normalmap(PATH + "normalmap.png", params),
+        terrain(PATH + "texture.png", params),
         levels(levels),
         segments(segments),
         segment_size(segment_size),
@@ -125,7 +133,7 @@ class Clipmap : public gfx::Object3D
         vertical(1, 2 * segments + 2, segment_size),
         center(2 * segments + 2, 2 * segments + 2, segment_size),
         seam(2 * segments + 2, segment_size * 2),
-        terrain_size(1173.45f * 16.0f)
+        terrain_size(MAX_TILE_SIZE / ZOOM_FACTOR)
   {
   }
 
@@ -152,7 +160,6 @@ class Clipmap : public gfx::Object3D
       shader.uniform("u_CameraPos", context.camera->get_world_position());
       shader.uniform("u_Projection", context.camera->get_projection_matrix());
       shader.uniform("u_TerrainSize", terrain_size);
-      // shader.uniform("u_TerrainSize", 25000.0f);
 
       glEnable(GL_CULL_FACE);
       glEnable(GL_PRIMITIVE_RESTART);
