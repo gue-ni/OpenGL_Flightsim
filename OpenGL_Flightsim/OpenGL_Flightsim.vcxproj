@@ -196,9 +196,6 @@ xcopy /y /i /s $(ProjectDir)..\lib\glew-2.2.0\bin\Release\x64\*.dll $(OutDir)</C
     <ClInclude Include="src\phi.h" />
     <ClInclude Include="src\pid.h" />
   </ItemGroup>
-  <ItemGroup>
-    <Text Include="assets\textures\terrain\5\readme.txt" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

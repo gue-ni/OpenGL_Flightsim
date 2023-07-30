@@ -118,7 +118,4 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
-  <ItemGroup>
-    <Text Include="assets\textures\terrain\5\readme.txt" />
-  </ItemGroup>
 </Project>
