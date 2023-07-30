@@ -13,7 +13,7 @@
 #include "../lib/imgui/imgui_impl_opengl3.h"
 #include "../lib/imgui/imgui_impl_sdl2.h"
 #include "ai.h"
-#include "clipmap.h"
+#include "terrain.h"
 #include "collider.h"
 #include "flightmodel.h"
 #include "gfx.h"
@@ -42,7 +42,7 @@ JK      control thrust
 #define NPC_AIRCRAFT       0
 #define SHOW_MASS_ELEMENTS 0
 #define USE_PID            1
-#define PS1_RESOLUTION     1
+#define PS1_RESOLUTION     0
 #define DEBUG_INFO         0
 
 /* select flightmodel */
@@ -184,7 +184,7 @@ int main(void)
 
   std::vector<GameObject*> objects;
 
-  glm::vec3 position = glm::vec3(-7000.0f, 1000.0f, 0.0f);
+  glm::vec3 position = glm::vec3(0.0f, 1000.0f, 0.0f);
 
 #if (FLIGHTMODEL == CESSNA)
   constexpr float speed = phi::units::meter_per_second(200.0f /* km/h */);
@@ -307,10 +307,10 @@ int main(void)
   const Airfoil NACA_64_206(NACA_64_206_data);
 
   std::vector<Wing> wings = {
-      Wing({wing_offset, 0.0f, -2.7f}, 6.96f, 2.50f, &NACA_2412, phi::UP, 0.10f),    // left wing
-      Wing({wing_offset, 0.0f, +2.7f}, 6.96f, 2.50f, &NACA_2412, phi::UP, 0.10f),    // right wing
+      Wing({wing_offset, 0.0f, -2.7f}, 6.96f, 2.50f, &NACA_2412, phi::UP, 0.20f),    // left wing
+      Wing({wing_offset, 0.0f, +2.7f}, 6.96f, 2.50f, &NACA_2412, phi::UP, 0.20f),    // right wing
       Wing({tail_offset, -0.1f, 0.0f}, 6.54f, 2.70f, &NACA_0012, phi::UP, 1.0f),     // elevator
-      Wing({tail_offset, 0.0f, 0.0f}, 5.31f, 3.10f, &NACA_0012, phi::RIGHT, 0.25f),  // rudder
+      Wing({tail_offset, 0.0f, 0.0f}, 5.31f, 3.10f, &NACA_0012, phi::RIGHT, 0.15f),  // rudder
   };
 
   auto engine = new SimpleEngine(thrust);

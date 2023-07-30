@@ -111,7 +111,7 @@ class Clipmap : public gfx::Object3D
   bool wireframe = false;
 
   Clipmap(int levels = 16, int segments = 32, float segment_size = 2.0f)
-      : shader("shaders/clipmap"),
+      : shader("shaders/terrain"),
         heightmap(path + "heightmap.png", params),
         normalmap(path + "normalmap.png", params),
         terrain(path + "texture.png", params),
