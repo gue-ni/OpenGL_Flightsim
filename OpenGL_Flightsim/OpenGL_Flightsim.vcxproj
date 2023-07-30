@@ -162,8 +162,8 @@ xcopy /y /i /s $(ProjectDir)..\lib\glew-2.2.0\bin\Release\x64\*.dll $(OutDir)</C
     <None Include="shaders\basic.vert" />
     <None Include="shaders\billboard.frag" />
     <None Include="shaders\billboard.vert" />
-    <None Include="shaders\clipmap.frag" />
-    <None Include="shaders\clipmap.vert" />
+    <None Include="shaders\terrain.frag" />
+    <None Include="shaders\terrain.vert" />
     <None Include="shaders\depth.frag" />
     <None Include="shaders\depth.vert" />
     <None Include="shaders\phong.frag">
@@ -179,7 +179,7 @@ xcopy /y /i /s $(ProjectDir)..\lib\glew-2.2.0\bin\Release\x64\*.dll $(OutDir)</C
     <ClInclude Include="src\ai.h" />
     <ClInclude Include="src\collider.h" />
     <ClInclude Include="src\data.h" />
-    <ClInclude Include="src\clipmap.h" />
+    <ClInclude Include="src\terrain.h" />
     <ClInclude Include="src\flightmodel.h" />
     <ClInclude Include="src\gfx.h" />
     <ClInclude Include="lib\imgui\imconfig.h" />

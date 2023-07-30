@@ -13,12 +13,12 @@
 #include "../lib/imgui/imgui_impl_opengl3.h"
 #include "../lib/imgui/imgui_impl_sdl2.h"
 #include "ai.h"
-#include "clipmap.h"
 #include "collider.h"
 #include "flightmodel.h"
 #include "gfx.h"
 #include "phi.h"
 #include "pid.h"
+#include "terrain.h"
 
 using std::cout;
 using std::endl;
@@ -42,13 +42,15 @@ JK      control thrust
 #define NPC_AIRCRAFT       0
 #define SHOW_MASS_ELEMENTS 0
 #define USE_PID            1
+#define PS1_RESOLUTION     1
+#define DEBUG_INFO         0
 
 /* select flightmodel */
 #define FAST_JET    0
 #define CESSNA      1
 #define FLIGHTMODEL FAST_JET
 
-#if 0
+#if PS1_RESOLUTION
 constexpr glm::ivec2 RESOLUTION{640, 480};
 #else
 constexpr glm::ivec2 RESOLUTION{1024, 728};
@@ -71,16 +73,10 @@ struct GameObject {
   Airplane& airplane;
   // collider::Sphere collider;
 
-  void update(float dt)
-  {
-    // airplane.update(dt);
-    transform.set_transform(airplane.position, airplane.rotation);
-    // collider.center = airplane.position;
-  }
+  void update(float dt) { transform.set_transform(airplane.position, airplane.rotation); }
 };
 
 void get_keyboard_state(Joystick& joystick, phi::Seconds dt);
-void apply_to_object3d(const phi::RigidBody& rigid_body, gfx::Object3D* object);
 
 int main(void)
 {
@@ -142,8 +138,8 @@ int main(void)
 
   gfx::Renderer renderer(RESOLUTION.x, RESOLUTION.y);
 
-  gfx::gl::TextureParams params = {.flip_vertically = true};
-  auto tex = make_shared<gfx::gl::Texture>("assets/textures/f16_large.jpg", params);
+  gfx::gl::TextureParams params = {.flip_vertically = true, .texture_mag_filter = GL_LINEAR};
+  auto tex = make_shared<gfx::gl::Texture>("assets/textures/f16_256.jpg", params);
   auto texture = make_shared<gfx::Phong>(tex);
   auto obj = gfx::load_obj("assets/models/falcon.obj");
   auto model = std::make_shared<gfx::Geometry>(obj, gfx::Geometry::POS_NORM_UV);
@@ -182,7 +178,7 @@ int main(void)
 
   std::vector<GameObject*> objects;
 
-  glm::vec3 position = glm::vec3(-7000.0f, 1000.0f, 0.0f);
+  glm::vec3 initial_position = glm::vec3(0.0f, 3000.0f, 0.0f);
 
 #if (FLIGHTMODEL == CESSNA)
   constexpr float speed = phi::units::meter_per_second(200.0f /* km/h */);
@@ -276,14 +272,14 @@ int main(void)
       Wing(&NACA_0012, v_tail_pos, v_tail_area, v_tail_span, phi::RIGHT, 0.25f),     // vertical tail
   };
 
-  Engine* engine = new PropellerEngine(horsepower, rpm, prop_diameter);
+  Engine* engine = new PropellorEngine(horsepower, rpm, prop_diameter);
 
 #elif (FLIGHTMODEL == FAST_JET)
 
   constexpr float speed = phi::units::meter_per_second(500.0f /* km/h */);
 
   const float mass = 10000.0f;
-  const float thrust = 50000.0f;
+  const float thrust = 75000.0f;
 
   const float wing_offset = -1.0f;
   const float tail_offset = -6.6f;
@@ -303,13 +299,13 @@ int main(void)
   const Airfoil NACA_64_206(NACA_64_206_data);
 
   std::vector<Wing> wings = {
-      Wing({wing_offset, 0.0f, -2.7f}, 6.96f, 2.50f, &NACA_2412, phi::UP, 0.10f),    // left wing
-      Wing({wing_offset, 0.0f, +2.7f}, 6.96f, 2.50f, &NACA_2412, phi::UP, 0.10f),    // right wing
-      Wing({tail_offset, -0.1f, 0.0f}, 6.54f, 2.70f, &NACA_0012, phi::UP, 0.25f),    // elevator
-      Wing({tail_offset, 0.0f, 0.0f}, 5.31f, 3.10f, &NACA_0012, phi::RIGHT, 0.25f),  // rudder
+      Wing({wing_offset, 0.0f, -2.7f}, 6.96f, 2.50f, &NACA_2412, phi::UP, 0.20f),    // left wing
+      Wing({wing_offset, 0.0f, +2.7f}, 6.96f, 2.50f, &NACA_2412, phi::UP, 0.20f),    // right wing
+      Wing({tail_offset, -0.1f, 0.0f}, 6.54f, 2.70f, &NACA_0012, phi::UP, 1.0f),     // elevator
+      Wing({tail_offset, 0.0f, 0.0f}, 5.31f, 3.10f, &NACA_0012, phi::RIGHT, 0.15f),  // rudder
   };
 
-  auto engine = new SimpleEngine(thrust);
+  Engine* engine = new SimpleEngine(thrust);
 #else
 #error FLIGHTMODEL not defined
 #endif
@@ -323,7 +319,7 @@ int main(void)
       .airplane = rigid_bodies[0],
   };
 
-  player.airplane.position = position;
+  player.airplane.position = initial_position;
   player.airplane.velocity = glm::vec3(speed, 0.0f, 0.0f);
   scene.add(&player.transform);
   objects.push_back(&player);
@@ -520,7 +516,7 @@ int main(void)
     ImGui::Text("FPS:   %.1f", fps);
     ImGui::End();
 
-#if 1
+#if DEBUG_INFO
     auto angular_velocity = glm::degrees(player.airplane.angular_velocity);
     auto attitude = glm::degrees(player.airplane.get_euler_angles());
 
@@ -640,9 +636,4 @@ void get_keyboard_state(Joystick& joystick, phi::Seconds dt)
   } else if (key_states[SDL_SCANCODE_M]) {
     joystick.trim = glm::clamp(joystick.trim + trim_speed, -1.0f, 1.0f);
   }
-}
-
-void apply_to_object3d(const phi::RigidBody& rigid_body, gfx::Object3D* object3d)
-{
-  object3d->set_transform(rigid_body.position, rigid_body.rotation);
 }
