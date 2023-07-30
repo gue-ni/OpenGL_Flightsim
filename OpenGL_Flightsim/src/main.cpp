@@ -42,13 +42,15 @@ JK      control thrust
 #define NPC_AIRCRAFT       0
 #define SHOW_MASS_ELEMENTS 0
 #define USE_PID            1
+#define PS1_RESOLUTION     1
+#define DEBUG_INFO         0
 
 /* select flightmodel */
 #define FAST_JET    0
 #define CESSNA      1
 #define FLIGHTMODEL FAST_JET
 
-#if 0
+#if PS1_RESOLUTION
 constexpr glm::ivec2 RESOLUTION{640, 480};
 #else
 constexpr glm::ivec2 RESOLUTION{1024, 728};
@@ -142,8 +144,8 @@ int main(void)
 
   gfx::Renderer renderer(RESOLUTION.x, RESOLUTION.y);
 
-  gfx::gl::TextureParams params = {.flip_vertically = true};
-  auto tex = make_shared<gfx::gl::Texture>("assets/textures/f16_large.jpg", params);
+  gfx::gl::TextureParams params = {.flip_vertically = true, .texture_mag_filter = GL_LINEAR};
+  auto tex = make_shared<gfx::gl::Texture>("assets/textures/f16_256.jpg", params);
   auto texture = make_shared<gfx::Phong>(tex);
   auto obj = gfx::load_obj("assets/models/falcon.obj");
   auto model = std::make_shared<gfx::Geometry>(obj, gfx::Geometry::POS_NORM_UV);
@@ -305,10 +307,10 @@ int main(void)
   const Airfoil NACA_64_206(NACA_64_206_data);
 
   std::vector<Wing> wings = {
-      Wing({wing_offset, 0.0f, -2.7f}, 6.96f, 2.50f, &NACA_2412),             // left wing
-      Wing({wing_offset, 0.0f, +2.7f}, 6.96f, 2.50f, &NACA_2412),             // right wing
-      Wing({tail_offset, -0.1f, 0.0f}, 6.54f, 2.70f, &NACA_0012),             // elevator
-      Wing({tail_offset, 0.0f, 0.0f}, 5.31f, 3.10f, &NACA_0012, phi::RIGHT),  // rudder
+      Wing({wing_offset, 0.0f, -2.7f}, 6.96f, 2.50f, &NACA_2412, phi::UP, 0.10f),    // left wing
+      Wing({wing_offset, 0.0f, +2.7f}, 6.96f, 2.50f, &NACA_2412, phi::UP, 0.10f),    // right wing
+      Wing({tail_offset, -0.1f, 0.0f}, 6.54f, 2.70f, &NACA_0012, phi::UP, 1.0f),     // elevator
+      Wing({tail_offset, 0.0f, 0.0f}, 5.31f, 3.10f, &NACA_0012, phi::RIGHT, 0.25f),  // rudder
   };
 
   auto engine = new SimpleEngine(thrust);
@@ -522,7 +524,7 @@ int main(void)
     ImGui::Text("FPS:   %.1f", fps);
     ImGui::End();
 
-#if 1
+#if DEBUG_INFO
     auto angular_velocity = glm::degrees(player.airplane.angular_velocity);
     auto attitude = glm::degrees(player.airplane.get_euler_angles());
 

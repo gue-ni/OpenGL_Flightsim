@@ -45,6 +45,11 @@ SOFTWARE. */
 #define RB_VIRTUAL_UPDATE virtual
 #endif
 
+#define DISABLE 0
+#define ENABLE  1
+
+#define COLLIDERS DISABLE
+
 namespace phi
 {
 
@@ -71,10 +76,19 @@ constexpr glm::vec3 DOWN = -Y_AXIS;
 constexpr glm::vec3 LEFT = -Z_AXIS;
 
 // utility functions
+
+// x^2
 template <typename T>
-constexpr inline T sq(T a)
+constexpr inline T sq(T x)
 {
-  return a * a;
+  return x * x;
+}
+
+// x^3
+template <typename T>
+constexpr inline T cb(T x)
+{
+  return x * x * x;
 }
 
 template <typename T>
@@ -97,9 +111,6 @@ constexpr inline float inverse_lerp(T a, T b, T v)
   v = glm::clamp(v, a, b);
   return (v - a) / (b - a);
 }
-
-// the time it takes to full from a certain height
-float fall_time(float height, float acceleration = EARTH_GRAVITY) { return sqrt((2 * height) / acceleration); }
 
 struct Transform {
   glm::vec3 position;
@@ -146,9 +157,15 @@ struct Element {
   float volume() const { return size.x * size.y * size.z; }
 };
 
-inline glm::vec3 cuboid(float mass, const glm::vec3& size) { return glm::vec3(0.0f); }
+// cuboid moment of inertia
+inline glm::vec3 cuboid(float mass, const glm::vec3& size)
+{
+  float x = size.x, y = size.y, z = size.z;
+  return glm::vec3(sq(y) + sq(z), sq(x) + sq(z), sq(x) + sq(y)) * (1.0f / 12.0f) * mass;
+}
 
-inline glm::vec3 sphere(float mass, float radius) { return glm::vec3(0.0f); }
+// sphere moment of inertia
+inline glm::vec3 sphere(float mass, float radius) { return glm::vec3((2.0f / 5.0f) * mass * sq(radius)); }
 
 // inertia tensor from moment of inertia
 inline glm::mat3 tensor(const glm::vec3& moment_of_inertia) { return glm::diagonal3x3(moment_of_inertia); }
@@ -163,59 +180,6 @@ inline void set_uniform_density(std::vector<Element>& elements, float total_mass
     element.mass = (element.volume() / total_volume) * total_mass;
   }
 }
-
-#if 0
-// calculate inertia tensor for a collection of colliders
-inline glm::mat3 tensor(std::vector<Collider>& elements, float mass)
-{
-  float Ixx = 0, Iyy = 0, Izz = 0;
-  float Ixy = 0, Ixz = 0, Iyz = 0;
-
-  glm::vec3 moment(0.0f);
-
-  float total_volume = 0.0f;
-
-  std::vector<float> element_mass(elements.size());
-  std::vector<float> element_volume(elements.size());
-
-  for (size_t i = 0; i < elements.size(); i++) {
-    auto& element = elements[i];
-    float volume = 0.0f; // TODO
-    element_volume[i] = volume;
-    total_volume += element_volume[i];
-  }
-
-  for (size_t i = 0; i < elements.size(); i++) {
-    element_mass[i] = (element_volume[i] / total_volume) * mass;
-  }
-
-  for (size_t i = 0; i < elements.size(); i++) {
-    moment += element_mass[i] * collider::position(elements[i]);
-  }
-
-  glm::vec3 center_of_gravity = moment / mass;
-
-  for (size_t i = 0; i < elements.size(); i++) {
-    glm::vec3 offset = collider::position(elements[i]) - center_of_gravity;
-    glm::vec3 inertia = moment_of_inertia(elements[i], element_mass[i]);
-
-    Ixx += inertia.x + element_mass[i] * (sq(offset.y) + sq(offset.z));
-    Iyy += inertia.y + element_mass[i] * (sq(offset.z) + sq(offset.x));
-    Izz += inertia.z + element_mass[i] * (sq(offset.x) + sq(offset.y));
-    Ixy += element_mass[i] * (offset.x * offset.y);
-    Ixz += element_mass[i] * (offset.x * offset.z);
-    Iyz += element_mass[i] * (offset.y * offset.z);
-  }
-
-  // clang-format off
-  return {
-      Ixx, -Ixy, -Ixz, 
-      -Ixy, Iyy, -Iyz, 
-      -Ixz, -Iyz, Izz
-  };
-  // clang-format on
-}
-#endif
 
 // calculate inertia tensor for a collection of connected masses
 inline glm::mat3 tensor(std::vector<Element>& elements, bool precomputed_offset = false, glm::vec3* cg = nullptr)
@@ -289,10 +253,18 @@ constexpr inline float mile_to_kilometre(float mile) { return mile * 1.609f; }
 
 constexpr inline float feet_to_meter(float feet) { return feet * 0.3048f; }
 
+};  // namespace units
+
+// various useful formulas
+namespace calc
+{
 // power in watts
 constexpr inline float torque(float power, float rpm) { return 30.0f * power / (2.0f * rpm); }
 
-};  // namespace units
+// the time it takes to full from a certain height
+float fall_time(float height, float acceleration = EARTH_GRAVITY) { return sqrt((2 * height) / acceleration); }
+
+};  // namespace calc
 
 // default rigid body is a sphere with radius 1 meter and a mass of 100 kg
 const float DEFAULT_RB_MASS = 100.0f;
@@ -363,17 +335,8 @@ class RigidBody : public Transform
   // set inertia tensor
   inline void set_inertia(const glm::mat3& tensor) { inertia = tensor, inverse_inertia = glm::inverse(tensor); }
 
-  // set moment of inertia
+  // set inertia tensor from moment of inertia
   inline void set_inertia(const glm::vec3& moment_of_inertia) { set_inertia(inertia::tensor(moment_of_inertia)); }
-
-#if 0
-  // calculate moment of inertia from collider and mass
-  inline void set_inertia()
-  {
-    glm::vec3 moment_of_inertia = inertia::moment_of_inertia(collider, mass);
-    set_inertia(inertia::tensor(moment_of_inertia));
-  }
-#endif
 
   // linear impulse in world space
   inline void add_linear_impulse(const glm::vec3& impulse) { velocity += impulse / mass; }
@@ -515,8 +478,38 @@ class RigidBody : public Transform
 };
 
 struct Collider {
+  virtual float volume() const = 0;
+  virtual glm::vec3 inertia(float mass) const = 0;
   virtual bool collision(const Transform* t0, const Collider* c1, const Transform* t1) const = 0;
 };
+
+#if (COLLIDERS == ENABLE)
+struct Sphere : public Collider {
+  const float radius;
+  Sphere(float radius_) : radius(radius_) {}
+  float volume() const override { return (4.0f / 3.0f) * PI * cb(radius); }
+  glm::vec3 inertia(float mass) const override { return inertia::sphere(mass, radius); }
+  bool collision(const Transform* t0, const Collider* c1, const Transform* t1) const override;
+};
+
+struct Cuboid : public Collider {
+  const glm::vec3 size;
+  Cuboid(const glm::vec3& size_) : size(size_) {}
+  float volume() const override { return size.x * size.y * size.z; }
+  glm::vec3 inertia(float mass) const override { return inertia::cuboid(mass, size); }
+  bool collision(const Transform* t0, const Collider* c1, const Transform* t1) const override;
+};
+
+bool Sphere::collision(const Transform* t0, const Collider* c1, const Transform* t1) const
+{
+  return c1->collision(t1, this, t0);
+}
+
+bool Cuboid::collision(const Transform* t0, const Collider* c1, const Transform* t1) const
+{
+  return c1->collision(t1, this, t0);
+}
+#endif
 
 // collision detection system
 namespace collision

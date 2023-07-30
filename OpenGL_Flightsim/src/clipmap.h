@@ -3,7 +3,9 @@
 #include "gfx.h"
 
 constexpr unsigned int primitive_restart = 0xFFFFU;
-const std::string path = "assets/textures/terrain/1/";
+const std::string path = "assets/textures/terrain/6/";
+
+const gfx::gl::TextureParams params = {.texture_wrap = GL_CLAMP_TO_EDGE, .texture_mag_filter = GL_LINEAR};
 
 struct Seam {
   gfx::gl::VertexBuffer vbo;
@@ -110,9 +112,9 @@ class Clipmap : public gfx::Object3D
 
   Clipmap(int levels = 16, int segments = 32, float segment_size = 2.0f)
       : shader("shaders/clipmap"),
-        heightmap(path + "heightmap.png", {.texture_mag_filter = GL_LINEAR}),
-        normalmap(path + "normalmap.png", {.texture_mag_filter = GL_LINEAR}),
-        terrain(path + "terrain.png", {.texture_mag_filter = GL_NEAREST}),
+        heightmap(path + "heightmap.png", params),
+        normalmap(path + "normalmap.png", params),
+        terrain(path + "texture.png", params),
         levels(levels),
         segments(segments),
         segment_size(segment_size),
@@ -122,7 +124,8 @@ class Clipmap : public gfx::Object3D
         horizontal(2 * segments + 2, 1, segment_size),
         vertical(1, 2 * segments + 2, segment_size),
         center(2 * segments + 2, 2 * segments + 2, segment_size),
-        seam(2 * segments + 2, segment_size * 2)
+        seam(2 * segments + 2, segment_size * 2),
+        terrain_size(1173.45f * 16.0f)
   {
   }
 
@@ -148,6 +151,8 @@ class Clipmap : public gfx::Object3D
       shader.uniform("u_View", context.camera->get_view_matrix());
       shader.uniform("u_CameraPos", context.camera->get_world_position());
       shader.uniform("u_Projection", context.camera->get_projection_matrix());
+      shader.uniform("u_TerrainSize", terrain_size);
+      // shader.uniform("u_TerrainSize", 25000.0f);
 
       glEnable(GL_CULL_FACE);
       glEnable(GL_PRIMITIVE_RESTART);
@@ -279,6 +284,7 @@ class Clipmap : public gfx::Object3D
   unsigned index_count = 0;
   const int levels;
   const int segments;
+  const float terrain_size;  // width and length of the terrain represented by the heightmap
   const float segment_size;
 
   glm::vec2 calc_base(int level, glm::vec2 camera_pos)

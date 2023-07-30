@@ -34,13 +34,36 @@ float get_air_density(float altitude)
 const float sea_level_air_density = get_air_density(0.0f);
 };  // namespace isa
 
+// World Geodetic System (WGS 84)
+namespace wgs84
+{
+constexpr float EARTH_RADIUS = 6378.0f;
+
+
+glm::vec2 coordinate_diff_to_meters(const glm::vec2& diff, float latitude)
+{
+  float km_per_latitude = (phi::PI / 180.0f) * EARTH_RADIUS;
+  float km_per_longitude = (phi::PI / 180.0f) * EARTH_RADIUS * cos(latitude * phi::PI / 180.0f);
+  return glm::vec2(km_per_latitude, km_per_longitude) / 1000.0f;
+}
+
+// origin is lat/lon, offset in meters
+glm::vec2 lat_lon_from_offset(const glm::vec2& origin, const glm::vec2& offset)
+{
+  float latitude = origin.x, longitude = origin.y;
+  float new_latitude = latitude + (offset.y / EARTH_RADIUS) * (180.0f / phi::PI);
+  float new_longitude = longitude + (offset.x / EARTH_RADIUS) * (180.0f / phi::PI) / cos(latitude * phi::PI / 180.0f);
+  return glm::vec2(new_latitude, new_longitude);
+}
+}  // namespace wgs84
+
 // AoA, Cl, Cd
 using AeroData = glm::vec3;
 
 // aerodynamic data sampler
 struct Airfoil {
   float min_alpha, max_alpha;
-  float cl_max, cd_max;
+  float cl_max;
   int max_index;
   std::vector<AeroData> data;
 
@@ -49,11 +72,10 @@ struct Airfoil {
     min_alpha = curve.front().x, max_alpha = curve.back().x;
     max_index = static_cast<int>(data.size() - 1);
 
-    cl_max = 0.0f, cd_max = 0.0f;
+    cl_max = 0.0f;
 
     for (auto& val : curve) {
       if (val.y > cl_max) cl_max = val.y;
-      if (val.z > cd_max) cd_max = val.z;
     }
   }
 
@@ -75,15 +97,6 @@ struct Airfoil {
     float hi = glm::ceil(t);
     // float frac =
     return {0.0f, 0.0f};
-  }
-
-  float cl_slope(float alpha) const
-  {
-    int i = static_cast<int>(phi::inverse_lerp(min_alpha, max_alpha, alpha) * max_index);
-    i = glm::clamp(i, 0, max_index - 2);
-    auto a = data[i + 0U];
-    auto b = data[i + 1U];
-    return (b.y - a.y) / (b.x - a.x);
   }
 };
 
@@ -137,10 +150,8 @@ struct PropellerEngine : public Engine {
   }
 };
 
-// not only a wing, can be any kind of aerodynamic surface
-class Wing
-{
- private:
+// wing element
+struct Wing {
   const float area;
   const float wingspan;
   const float chord;
@@ -148,53 +159,40 @@ class Wing
   const Airfoil* airfoil;
   const glm::vec3 normal;
   const glm::vec3 center_of_pressure;
+  const float flap_ratio;  // percentage of wing that is part of the flap
+  const float efficiency_factor = 1.0f;
 
-  float lift_multiplier = 1.0f;
-  float drag_multiplier = 1.0f;
-  float efficiency_factor = 1.0f;
-
-  float flap_ratio = 0.0f;  // percentage of wing that is part of the flap
-  float deflection = 0.0f;
   float control_input = 0.0f;
-  float min_deflection = -10.0f;
-  float max_deflection = +10.0f;
-  float max_actuator_speed = 90.0f;
-  float max_actuator_torque = 6000.0f;
-
- public:
-  float incidence = 0.0f;
-  float dihedral = 0.0f;
-  bool is_control_surface = true;
 
   // relative position of leading edge to cg
-  Wing(const Airfoil* airfoil, const glm::vec3& relative_position, float area, float span,
-       const glm::vec3& normal = phi::UP)
+  Wing(const Airfoil* airfoil, const glm::vec3& relative_position, float area, float span, const glm::vec3& normal,
+       float flap_ratio = 0.25f)
       : airfoil(airfoil),
-        center_of_pressure(relative_position),  // cp is 0.25 of chord back
+        center_of_pressure(relative_position),
         area(area),
         chord(area / span),
         wingspan(span),
         normal(normal),
-        aspect_ratio(std::pow(span, 2) / area)
+        aspect_ratio(std::pow(span, 2) / area),
+        flap_ratio(flap_ratio)
   {
   }
 
-  Wing(const glm::vec3& position, float span, float chord, const Airfoil* airfoil, const glm::vec3& normal = phi::UP)
+  Wing(const glm::vec3& position, float span, float chord, const Airfoil* airfoil, const glm::vec3& normal,
+       float flap_ratio = 0.25f)
       : airfoil(airfoil),
         center_of_pressure(position),
         area(span * chord),
         chord(chord),
         wingspan(span),
         normal(normal),
-        aspect_ratio(std::pow(span, 2) / area)
+        aspect_ratio(std::pow(span, 2) / area),
+        flap_ratio(flap_ratio)
   {
   }
 
   // controls how much the wing is deflected
   void set_control_input(float input) { control_input = glm::clamp(input, -1.0f, 1.0f); }
-
-  // how far the wing can be deflected, degrees
-  void set_deflection_limits(float min, float max) { min_deflection = min, max_deflection = max; }
 
   // compute and apply aerodynamic forces
   void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt)
@@ -204,62 +202,45 @@ class Wing
 
     if (speed <= phi::EPSILON) return;
 
-      // control surfaces can be rotated
-#if 1
-    glm::vec3 wing_normal = is_control_surface ? deflect_wing(rigid_body, dt) : normal;
-#else
-    auto wing_normal = normal;
-#endif
-
     // drag acts in the opposite direction of velocity
     glm::vec3 drag_direction = glm::normalize(-local_velocity);
 
     // lift is always perpendicular to drag
-    glm::vec3 lift_direction = glm::normalize(glm::cross(glm::cross(drag_direction, wing_normal), drag_direction));
+    glm::vec3 lift_direction = glm::normalize(glm::cross(glm::cross(drag_direction, normal), drag_direction));
 
     // angle between chord line and air flow
-    float angle_of_attack = glm::degrees(std::asin(glm::dot(drag_direction, wing_normal)));
+    float angle_of_attack = glm::degrees(std::asin(glm::dot(drag_direction, normal)));
 
     // sample aerodynamic coefficients
     auto [lift_coeff, drag_coeff] = airfoil->sample(angle_of_attack);
 
-    // float delta_lift_coeff = sqrt(flap_ratio) * airfoil->cl_max * sin(glm::radians(deflection));
-    float delta_lift_coeff = 0.0f;
+    if (flap_ratio > 0.0f) {
+      // lift coefficient changes based on flap deflection ie control input
+      float delta_lift_coeff = sqrt(flap_ratio) * airfoil->cl_max * control_input;
+      lift_coeff += delta_lift_coeff;
+    }
 
     // induced drag, increases with lift
     float induced_drag_coeff = std::pow(lift_coeff, 2) / (phi::PI * aspect_ratio * efficiency_factor);
+    drag_coeff += induced_drag_coeff;
 
     // air density depends on altitude
-    float air_density = isa::get_air_density(0.0f);  // something is not right here, so let's assume sea level
+    float air_density = isa::get_air_density(rigid_body->position.y);
 
     float dynamic_pressure = 0.5f * std::pow(speed, 2) * air_density * area;
 
-    glm::vec3 lift = lift_direction * (lift_coeff + delta_lift_coeff) * lift_multiplier * dynamic_pressure;
-    glm::vec3 drag = drag_direction * (drag_coeff + induced_drag_coeff) * drag_multiplier * dynamic_pressure;
+    glm::vec3 lift = lift_direction * lift_coeff * dynamic_pressure;
+    glm::vec3 drag = drag_direction * drag_coeff * dynamic_pressure;
 
     // aerodynamic forces are applied at the center of pressure
     rigid_body->add_force_at_point(lift + drag, center_of_pressure);
   }
 
-  // returns updated wing normal according to control input and deflection
-  glm::vec3 deflect_wing(phi::RigidBody* rigid_body, phi::Seconds dt)
+  // TODO: consider dihedral as well
+  static glm::vec3 calc_wing_normal(const glm::vec3& normal, float incidence)
   {
-#if 0
-    // with increased speed control surfaces become harder to move
-    float torque = std::pow(rigid_body.get_speed(), 2) * area;
-    float compression = glm::degrees(std::asin(max_actuator_torque / torque));
-    compression = glm::clamp(compression, 0.0f, 1.0f);
-
-    float target_deflection =
-        (control_input >= 0.0f ? max_deflection : min_deflection) * compression * std::abs(control_input);
-    deflection = phi::move_towards(deflection, target_deflection, max_actuator_speed * compression * dt);
-#else
-    // assume instant deflection
-    deflection = (control_input >= 0.0f ? max_deflection : min_deflection) * std::abs(control_input);
-#endif
-
     auto axis = glm::normalize(glm::cross(phi::FORWARD, normal));
-    auto rotation = glm::rotate(glm::mat4(1.0f), glm::radians(incidence + deflection), axis);
+    auto rotation = glm::rotate(glm::mat4(1.0f), glm::radians(incidence), axis);
     return glm::vec3(rotation * glm::vec4(normal, 1.0f));
   }
 };
@@ -279,9 +260,10 @@ struct Airplane : public phi::RigidBody {
   std::ofstream log_file;
 #endif
 
-  Airplane(float mass, const glm::mat3& inertia, std::vector<Wing> wings, std::vector<Engine*> engines,
-           phi::Collider* collider)
-      : phi::RigidBody({.mass = mass, .inertia = inertia, .collider = collider}), wings(wings), engines(engines)
+  // wings are in the order { left_wing, right_wing, elevator, rudder }
+  Airplane(float mass_, const glm::mat3& inertia_, std::vector<Wing> wings_, std::vector<Engine*> engines_,
+           phi::Collider* collider_)
+      : phi::RigidBody({.mass = mass_, .inertia = inertia_, .collider = collider_}), wings(wings_), engines(engines_)
   {
 #if LOG_FLIGHT
     std::time_t now = std::time(nullptr);
@@ -289,12 +271,7 @@ struct Airplane : public phi::RigidBody {
     log_file
         << "flight_time,altitude,speed,ias,aoa,roll_rate,yaw_rate,pitch_rate,roll,yaw,pitch,aileron,rudder,elevator,\n";
 #endif
-
-    if (wings.size() > 0) {
-      glm::vec2 limits = {-0.0f, 0.0f};
-      wings[0].set_deflection_limits(limits.x, limits.y);
-      wings[1].set_deflection_limits(limits.x, limits.y);
-    }
+    assert(wings.size() == 4);
   }
 
   void update(phi::Seconds dt) override
@@ -348,6 +325,7 @@ struct Airplane : public phi::RigidBody {
     phi::RigidBody::update(dt);
   }
 
+  // aircraft altitude
   float get_altitude() const { return position.y; }
 
   // pitch g force

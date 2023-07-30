@@ -12,7 +12,7 @@ in vec3 Color;
 in vec3 Normal;
 in vec3 FragPos;
 in vec2 TexCoord;
-flat in int Factor;
+flat in float Factor;
 
 vec3 calculateDirLight(vec3 direction, vec3 normal, vec3 color)
 {

@@ -12,13 +12,14 @@ uniform vec3    u_CameraPos;
 uniform float   u_Scale;
 uniform float   u_SegmentSize;
 uniform float   u_Level;
+uniform float   u_TerrainSize;
 
 out vec3 Color;
 out vec3 Normal;
 out vec3 FragPos;
 out vec2 TexCoord;
 
-flat out int Factor;
+flat out float Factor;
 
 float scale(float input_val, float in_min, float in_max, float out_min, float out_max)
 {
@@ -32,7 +33,13 @@ float getHeight(vec2 uv)
         return 0.0;
     }
 
+#if 1
     float height = texture(u_Heightmap, uv).r;
+#else
+    vec3 val = texture(u_Heightmap, uv).rgb * 255.0;
+    float height = (val.r * 256.0 + val.g + val.b / 256.0) - 32768.0;
+#endif
+
 
     float scale = 3000;
     float shift = 0;
@@ -54,7 +61,8 @@ vec2 getUV(vec2 pos)
 
 void main()
 {
-    Factor = 25000;
+    // size of the area covered by the heightmap
+    Factor = u_TerrainSize / 2.0;
 
     FragPos = vec3(u_Model * vec4(a_Pos, 1.0));
     TexCoord = getUV(FragPos.xz);
