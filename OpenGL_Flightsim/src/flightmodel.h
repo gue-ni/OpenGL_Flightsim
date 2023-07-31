@@ -38,22 +38,12 @@ const float sea_level_air_density = get_air_density(0.0f);
 // TODO: fix calculations
 namespace wgs84
 {
-constexpr float EARTH_RADIUS = 6378.0f;
-
-glm::vec2 coordinate_diff_to_meters(const glm::vec2& diff, float latitude)
+// origin is degrees lat/lon, offset in meters
+glm::vec2 coordinates(const glm::vec2& origin, const glm::vec2& offset)
 {
-  float km_per_latitude = (phi::PI / 180.0f) * EARTH_RADIUS;
-  float km_per_longitude = (phi::PI / 180.0f) * EARTH_RADIUS * cos(latitude * phi::PI / 180.0f);
-  return glm::vec2(km_per_latitude, km_per_longitude) / 1000.0f;
-}
-
-// origin is lat/lon, offset in meters
-glm::vec2 lat_lon_from_offset(const glm::vec2& origin, const glm::vec2& offset)
-{
-  constexpr float radius_earth = 6371.0f * 1000.0f; // earth radius (m)
   float latitude = origin.x, longitude = origin.y;
-  float new_latitude  = latitude  + glm::degrees(offset.y / radius_earth);
-  float new_longitude = longitude + glm::degrees(offset.x / radius_earth) / cos(glm::radians(latitude));
+  float new_latitude  = latitude  + glm::degrees(offset.y / phi::EARTH_RADIUS);
+  float new_longitude = longitude + glm::degrees(offset.x / phi::EARTH_RADIUS) / cos(glm::radians(latitude));
   return glm::vec2(new_latitude, new_longitude);
 }
 }  // namespace wgs84
