@@ -50,9 +50,10 @@ glm::vec2 coordinate_diff_to_meters(const glm::vec2& diff, float latitude)
 // origin is lat/lon, offset in meters
 glm::vec2 lat_lon_from_offset(const glm::vec2& origin, const glm::vec2& offset)
 {
+  constexpr float radius_earth = 6371.0f * 1000.0f; // earth radius (m)
   float latitude = origin.x, longitude = origin.y;
-  float new_latitude = latitude + (offset.y / EARTH_RADIUS) * (180.0f / phi::PI);
-  float new_longitude = longitude + (offset.x / EARTH_RADIUS) * (180.0f / phi::PI) / cos(latitude * phi::PI / 180.0f);
+  float new_latitude  = latitude  + glm::degrees(offset.y / radius_earth);
+  float new_longitude = longitude + glm::degrees(offset.x / radius_earth) / cos(glm::radians(latitude));
   return glm::vec2(new_latitude, new_longitude);
 }
 }  // namespace wgs84
