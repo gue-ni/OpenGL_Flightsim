@@ -12,17 +12,15 @@ constexpr float MAX_TILE_SIZE = 50708.0f * 4;
 const std::string PATH = "assets/textures/terrain/data/9/268/178/";
 const int ZOOM_FACTOR = 1;
 #elif (DATA_SRC == 2)
-// vienna
-const std::string PATH = "assets/textures/terrain/data/10/557/354/";
+// vorarlberg
+const std::string PATH = "assets/textures/terrain/data/10/536/356/";
 const int ZOOM_FACTOR = 2;
 #elif (DATA_SRC == 3)
 // vorarlberg
 const std::string PATH = "assets/textures/terrain/data/11/1072/712/";
 const int ZOOM_FACTOR = 3;
 #else
-// vorarlberg
-const std::string PATH = "assets/textures/terrain/data/10/536/356/";
-const int ZOOM_FACTOR = 2;
+#error Unknown DATA_SRC
 #endif
 
 constexpr gfx::gl::TextureParams params = {.texture_wrap = GL_REPEAT, .texture_mag_filter = GL_LINEAR};

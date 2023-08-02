@@ -17,3 +17,9 @@ OpenGL_Flightsim/build/
 OpenGL_Flightsim/assets/models/skyhawk.mtl
 OpenGL_Flightsim/assets/models/skyhawk.obj
 .vscode/settings.json
+OpenGL_Flightsim/assets/textures/terrain/data/11/*
+OpenGL_Flightsim/assets/textures/terrain/data/13/*
+OpenGL_Flightsim/assets/textures/terrain/data/14/*
+OpenGL_Flightsim/assets/textures/terrain/data/15/*
+
+

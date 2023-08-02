@@ -5,53 +5,27 @@ set -e
 # options
 size=3 # is actually size + 1
 
-#x_min=2060
-#y_min=1562
-#zoom=12
+x_min=$1
+y_min=$2
+zoom=$3
+tile_type=$4
 
-#x_min=4122
-#y_min=3127
-#zoom=13
+[ -z "$tile_type" ] && tile_type="texture"
 
-# lukla
-#x_min=6069
-#y_min=3439
-#zoom=13
-
-# mt everest
-#x_min=6074
-#y_min=3432
-#zoom=13
-
-# vorarlberg
-# all upper left corners
-#x_min=268
-#y_min=178
-#zoom=9
-
-#x_min=536
-#y_min=356
-#zoom=10
-
-x_min=1072
-y_min=712
-zoom=11
-
-#x_min=2144
-#y_min=1424
-#zoom=12
+if [ "$#" -eq 3 ] || [ "$#" -eq 4 ]; then
+  echo "x_min=${x_min}, y_min=${y_min}, zoom=${zoom}, dir=${tile_type}"
+else
+  echo "Error: invalid number of arguments: ${#}"
+  exit 1
+fi
 
 x_max=$(expr $x_min + $size)
 y_max=$(expr $y_min + $size)
 
-DIR=height
-
-mkdir -p $DIR
-
-if [ $DIR == "height" ] 
+if [ $tile_type == "height" ] 
 then
   API="https://tile.nextzen.org/tilezen/terrain/v1/256/terrarium"
-elif [ $DIR == "normal" ] 
+elif [ $tile_type == "normal" ] 
 then
   API="https://tile.nextzen.org/tilezen/terrain/v1/256/normal"
 else
@@ -70,12 +44,12 @@ for y in $(seq $y_min $y_max); do
 
   for x in $(seq $x_min $x_max); do
 
-    tile="${DIR}/tile_${zoom}_${x}_${y}.${FILETYPE}"
+    tile="${tile_type}/tile_${zoom}_${x}_${y}.${FILETYPE}"
 
     if [ ! -f $tile ] 
     then
 
-      if [ $DIR == "texture" ]
+      if [ $tile_type == "texture" ]
       then
         echo "texture"
         curl --output $tile "${API}/${zoom}/${y}/${x}" 
@@ -90,14 +64,21 @@ for y in $(seq $y_min $y_max); do
     hor="${hor} ${tile}"
   done
   
-  convert $hor +append "${DIR}/hor-${y}.${FILETYPE}"
+  convert $hor +append "${tile_type}/hor-${y}.${FILETYPE}"
 
-  vert="${vert} ${DIR}/hor-${y}.${FILETYPE}"
+  vert="${vert} ${tile_type}/hor-${y}.${FILETYPE}"
 done
 
 
-outfile="merged/merged_${x_min}_${y_min}_s${size}_z${zoom}_${DIR}.${FILETYPE}"
+#outfile="merged/merged_${x_min}_${y_min}_s${size}_z${zoom}_${tile_type}.${FILETYPE}"
+
+outdir="combined/${zoom}/${x_min}/${y_min}"
+mkdir -p $outdir
+
+outfile="${outdir}/${tile_type}.${FILETYPE}"
+
 convert $vert -append $outfile
+
 echo "write to $outfile"
 
 rm -f $vert 
