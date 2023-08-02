@@ -3,24 +3,29 @@
 #include "gfx.h"
 
 constexpr unsigned int primitive_restart = 0xFFFFU;
-const float MAX_TILE_SIZE = 50708.0f * 4;
+constexpr float MAX_TILE_SIZE = 50708.0f * 4;
 
-#define DATA_SRC 0
+#define DATA_SRC 2
 
 #if (DATA_SRC == 1)
+// vorarlberg
 const std::string PATH = "assets/textures/terrain/data/9/268/178/";
 const int ZOOM_FACTOR = 1;
 #elif (DATA_SRC == 2)
 // vienna
 const std::string PATH = "assets/textures/terrain/data/10/557/354/";
 const int ZOOM_FACTOR = 2;
+#elif (DATA_SRC == 3)
+// vorarlberg
+const std::string PATH = "assets/textures/terrain/data/11/1072/712/";
+const int ZOOM_FACTOR = 3;
 #else
 // vorarlberg
 const std::string PATH = "assets/textures/terrain/data/10/536/356/";
 const int ZOOM_FACTOR = 2;
 #endif
 
-const gfx::gl::TextureParams params = {.texture_wrap = GL_REPEAT, .texture_mag_filter = GL_LINEAR};
+constexpr gfx::gl::TextureParams params = {.texture_wrap = GL_REPEAT, .texture_mag_filter = GL_LINEAR};
 
 struct Seam {
   gfx::gl::VertexBuffer vbo;
@@ -127,8 +132,8 @@ class Clipmap : public gfx::Object3D
 
   Clipmap(int levels = 16, int segments = 32, float segment_size = 2.0f)
       : shader("shaders/terrain"),
-        heightmap(PATH + "heightmap.png", params),
-        normalmap(PATH + "normalmap.png", params),
+        heightmap(PATH + "height.png", params),
+        normalmap(PATH + "normal.png", params),
         terrain(PATH + "texture.png", params),
         levels(levels),
         segments(segments),

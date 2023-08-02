@@ -48,15 +48,19 @@ SOFTWARE. */
 #define DISABLE 0
 #define ENABLE  1
 
-#define COLLIDERS ENABLE
+#define COLLIDERS DISABLE
 
 namespace phi
 {
 
-typedef float Seconds;
+using Seconds = float;
 
 class RigidBody;
+
 struct Collider;
+struct Cuboid;
+struct Sphere;
+struct Heightmap;
 
 // constants
 constexpr float EPSILON = 1e-8f;
@@ -113,6 +117,7 @@ constexpr inline float inverse_lerp(T a, T b, T v)
   return (v - a) / (b - a);
 }
 
+//
 struct Transform {
   glm::vec3 position;
   glm::quat rotation;
@@ -138,6 +143,7 @@ struct Transform {
   inline glm::vec3 forward() const { return transform_direction(phi::FORWARD); }
 };
 
+// 
 struct CollisionInfo {
   glm::vec3 point;    // contact point
   glm::vec3 normal;   // contact normal
@@ -269,7 +275,6 @@ float fall_time(float height, float acceleration = EARTH_GRAVITY) { return sqrt(
 
 // default rigid body is a sphere with radius 1 meter and a mass of 100 kg
 const float DEFAULT_RB_MASS = 100.0f;
-const float INFINITE_RB_MASS = std::numeric_limits<float>::infinity();
 const glm::quat DEFAULT_RB_ORIENTATION = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
 const glm::mat3 DEFAULT_RB_INERTIA = inertia::tensor(inertia::sphere(DEFAULT_RB_MASS, 1.0f));
 
@@ -284,6 +289,7 @@ struct RigidBodyParams {
   Collider* collider = nullptr;
 };
 
+// 
 class RigidBody : public Transform
 {
  private:
@@ -478,9 +484,8 @@ class RigidBody : public Transform
   }
 };
 
+// collider abstract base class
 struct Collider {
-  virtual float volume() const = 0;
-  virtual glm::vec3 inertia(float mass) const = 0;
   virtual bool collision(const Transform* t0, const Collider* c1, const Transform* t1) const = 0;
 };
 
@@ -488,16 +493,16 @@ struct Collider {
 struct Sphere : public Collider {
   const float radius;
   Sphere(float radius_) : radius(radius_) {}
-  float volume() const override { return (4.0f / 3.0f) * PI * cb(radius); }
-  glm::vec3 inertia(float mass) const override { return inertia::sphere(mass, radius); }
   bool collision(const Transform* t0, const Collider* c1, const Transform* t1) const override;
 };
 
 struct Cuboid : public Collider {
   const glm::vec3 size;
   Cuboid(const glm::vec3& size_) : size(size_) {}
-  float volume() const override { return size.x * size.y * size.z; }
-  glm::vec3 inertia(float mass) const override { return inertia::cuboid(mass, size); }
+  bool collision(const Transform* t0, const Collider* c1, const Transform* t1) const override;
+};
+
+struct Heightmap : public Collider {
   bool collision(const Transform* t0, const Collider* c1, const Transform* t1) const override;
 };
 
@@ -507,6 +512,11 @@ bool Sphere::collision(const Transform* t0, const Collider* c1, const Transform*
 }
 
 bool Cuboid::collision(const Transform* t0, const Collider* c1, const Transform* t1) const
+{
+  return c1->collision(t1, this, t0);
+}
+
+bool Heightmap::collision(const Transform* t0, const Collider* c1, const Transform* t1) const
 {
   return c1->collision(t1, this, t0);
 }
