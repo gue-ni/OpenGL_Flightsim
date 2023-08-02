@@ -13,7 +13,8 @@ const std::string PATH = "assets/textures/terrain/data/9/268/178/";
 const int ZOOM_FACTOR = 1;
 #elif (DATA_SRC == 2)
 // vorarlberg
-const std::string PATH = "assets/textures/terrain/data/10/536/356/";
+// const std::string PATH = "assets/textures/terrain/data/10/536/356/";
+const std::string PATH = "assets/textures/terrain/data/10/536/360/";
 const int ZOOM_FACTOR = 2;
 #elif (DATA_SRC == 3)
 // vorarlberg
@@ -28,7 +29,7 @@ constexpr gfx::gl::TextureParams params = {.texture_wrap = GL_REPEAT, .texture_m
 struct Seam {
   gfx::gl::VertexBuffer vbo;
   gfx::gl::VertexArrayObject vao;
-  unsigned int index_count;
+  size_t index_count;
 
   Seam(int columns, float size)
   {
@@ -70,7 +71,7 @@ struct Block {
   gfx::gl::VertexBuffer vbo;
   gfx::gl::ElementBufferObject ebo;
   gfx::gl::VertexArrayObject vao;
-  unsigned int index_count;
+  size_t index_count;
 
   Block(int width, int height, float segment_size)
   {
@@ -123,27 +124,28 @@ struct Block {
   }
 };
 
+// Geometry Clipmap
 class Clipmap : public gfx::Object3D
 {
  public:
   bool wireframe = false;
 
-  Clipmap(int levels = 16, int segments = 32, float segment_size = 2.0f)
-      : shader("shaders/terrain"),
+  Clipmap(int levels_ = 16, int segments_ = 8)
+      : segment_size(2.0f),
+        levels(levels_),
+        segments(segments_),
+        terrain_size(MAX_TILE_SIZE / ZOOM_FACTOR),
+        shader("shaders/terrain"),
         heightmap(PATH + "height.png", params),
         normalmap(PATH + "normal.png", params),
         terrain(PATH + "texture.png", params),
-        levels(levels),
-        segments(segments),
-        segment_size(segment_size),
         tile(segments, segments, segment_size),
         col_fixup(2, segments, segment_size),
         row_fixup(segments, 2, segment_size),
         horizontal(2 * segments + 2, 1, segment_size),
         vertical(1, 2 * segments + 2, segment_size),
         center(2 * segments + 2, 2 * segments + 2, segment_size),
-        seam(2 * segments + 2, segment_size * 2),
-        terrain_size(MAX_TILE_SIZE / ZOOM_FACTOR)
+        seam(2 * segments + 2, segment_size * 2)
   {
   }
 
@@ -151,7 +153,6 @@ class Clipmap : public gfx::Object3D
 
   void draw_self(gfx::RenderContext& context) override
   {
-#if 1
     if (!context.is_shadow_pass) {
       auto camera_pos = context.camera->get_world_position();
       float height = camera_pos.y;
@@ -176,11 +177,10 @@ class Clipmap : public gfx::Object3D
       glPrimitiveRestartIndex(primitive_restart);
       if (wireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-      int min_level = 1;  // should depend on camera height
+      int min_level = 1;  // depends on camera height
 
       for (int l = min_level; l <= levels; l++) {
         const int rows = 5, cols = 5;
-        // float border = 0.0f;
         float scale = std::pow(2.0f, l);
         float next_scale = std::pow(2.0f, l + 2);
         float scaled_segment_size = segment_size * scale;
@@ -280,15 +280,25 @@ class Clipmap : public gfx::Object3D
       glDisable(GL_CULL_FACE);
 
       shader.unbind();
+
+      heightmap.unbind();
+      normalmap.unbind();
+      terrain.unbind();
     }
-#endif
   }
 
  private:
+  const float segment_size;
+  const int levels;
+  const int segments;
+  const float terrain_size;  // width and length of the terrain represented by the heightmap
+
   gfx::gl::Shader shader;
   gfx::gl::Texture heightmap;
   gfx::gl::Texture normalmap;
   gfx::gl::Texture terrain;
+
+  // std::array<gfx::gl::Texture, 2> heightmaps;
 
   Block tile;
   Block center;
@@ -297,12 +307,6 @@ class Clipmap : public gfx::Object3D
   Block horizontal;
   Block vertical;
   Seam seam;
-
-  unsigned index_count = 0;
-  const int levels;
-  const int segments;
-  const float terrain_size;  // width and length of the terrain represented by the heightmap
-  const float segment_size;
 
   glm::vec2 calc_base(int level, glm::vec2 camera_pos)
   {

@@ -47,5 +47,10 @@ void main()
   fogFactor = clamp(fogFactor, 0.0, 1.0);
 
   vec4 terrainColor = vec4(calculateDirLight(lightDir, Normal, texture(u_Texture, TexCoord).rgb), 1.0);
+
+#if 1
   FragColor = mix(fogColor, terrainColor, fogFactor);
+#else
+  FragColor = mix(vec4(Color, 1.0), terrainColor, 0.5);
+#endif
 }

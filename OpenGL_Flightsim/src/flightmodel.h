@@ -42,7 +42,7 @@ namespace wgs84
 glm::vec2 coordinates(const glm::vec2& origin, const glm::vec2& offset)
 {
   float latitude = origin.x, longitude = origin.y;
-  float new_latitude  = latitude  + glm::degrees(offset.y / phi::EARTH_RADIUS);
+  float new_latitude = latitude + glm::degrees(offset.y / phi::EARTH_RADIUS);
   float new_longitude = longitude + glm::degrees(offset.x / phi::EARTH_RADIUS) / cos(glm::radians(latitude));
   return glm::vec2(new_latitude, new_longitude);
 }

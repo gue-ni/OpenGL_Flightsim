@@ -143,7 +143,7 @@ struct Transform {
   inline glm::vec3 forward() const { return transform_direction(phi::FORWARD); }
 };
 
-// 
+//
 struct CollisionInfo {
   glm::vec3 point;    // contact point
   glm::vec3 normal;   // contact normal
@@ -289,7 +289,7 @@ struct RigidBodyParams {
   Collider* collider = nullptr;
 };
 
-// 
+//
 class RigidBody : public Transform
 {
  private:
