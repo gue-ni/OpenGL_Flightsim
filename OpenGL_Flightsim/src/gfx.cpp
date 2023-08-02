@@ -112,33 +112,7 @@ unsigned char* Texture::load_image(const std::string path, int* width, int* heig
 Texture::Texture(const std::string& path, const TextureParams& params)
 {
   glGenTextures(1, &id);
-  glBindTexture(GL_TEXTURE_2D, id);
-
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, params.texture_wrap);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, params.texture_wrap);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, params.texture_min_filter);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, params.texture_mag_filter);
-
-  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-  int width, height, channels;
-  // stbi_set_flip_vertically_on_load(params.flip_vertically);
-  unsigned char* data = load_image(path, &width, &height, &channels, params.flip_vertically);
-
-  // printf("channels = %d\n", channels);
-
-  if (data) {
-    auto format = get_format(channels);
-
-    // std::cout  << path << ": format = " << format << ", channels = " <<
-    // channels << std::endl;
-    glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-    glGenerateMipmap(GL_TEXTURE_2D);
-  } else {
-    std::cout << "Failed to load texture" << std::endl;
-  }
-  stbi_image_free(data);
+  load_from_image(path, params);
 }
 
 Texture::~Texture() { glDeleteTextures(1, &id); }
@@ -175,6 +149,28 @@ GLint Texture::get_format(int channels)
 }
 
 void Texture::set_parameteri(GLenum target, GLenum pname, GLint param) { glTexParameteri(target, pname, param); }
+
+void Texture::load_from_image(const std::string& path, const TextureParams& params)
+{
+  glBindTexture(GL_TEXTURE_2D, id);
+
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, params.texture_wrap);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, params.texture_wrap);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, params.texture_min_filter);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, params.texture_mag_filter);
+
+  int width, height, channels;
+  unsigned char* data = load_image(path, &width, &height, &channels, params.flip_vertically);
+
+  if (data) {
+    auto format = get_format(channels);
+    glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+  } else {
+    std::cout << "Failed to load texture" << std::endl;
+  }
+  stbi_image_free(data);
+}
 
 CubemapTexture::CubemapTexture(const std::array<std::string, 6>& paths, bool flip_vertically)
 {

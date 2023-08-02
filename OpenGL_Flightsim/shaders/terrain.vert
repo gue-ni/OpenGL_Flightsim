@@ -33,17 +33,14 @@ float getHeight(vec2 uv)
         return 0.0;
     }
 
-#if 1
+#if 0
     float height = texture(u_Heightmap, uv).r;
 #else
-    vec3 val = texture(u_Heightmap, uv).rgb * 255.0;
+    vec3 val = texture(u_Heightmap, uv).rgb * 256.0;
     float height = (val.r * 256.0 + val.g + val.b / 256.0) - 32768.0;
 #endif
 
-
-    float scale = 3000;
-    float shift = 0;
-    return scale * height + shift;
+    return height;
 }
 
 vec3 getNormal(vec2 uv)
@@ -71,7 +68,7 @@ void main()
 
     Normal = getNormal(TexCoord);
 
-	  Color = vec3(1.0, u_Level, 0.0);
+    Color = vec3(1.0, u_Level, 0.0);
 
     gl_Position = u_Projection * u_View * vec4(FragPos, 1.0);
 }
