@@ -48,7 +48,7 @@ SOFTWARE. */
 #define DISABLE 0
 #define ENABLE  1
 
-#define COLLIDERS DISABLE
+#define COLLIDERS ENABLE
 
 namespace phi
 {
@@ -521,8 +521,17 @@ std::vector<CollisionInfo> detection(std::vector<RB>& objects, phi::Seconds dt)
   std::vector<CollisionInfo> collisions;
 
   for (std::size_t i = 0; i < objects.size(); i++) {
-    for (std::size_t j = i + 1; j < objects.size(); j++) {
-      // TODO: test collision
+    RB& rb_a = objects[i];
+
+    if (rb_a.collider != nullptr) {
+      for (std::size_t j = i + 1; j < objects.size(); j++) {
+        RB& rb_b = objects[j];
+
+        if ((rb_b.collider != nullptr) && (rb_a.collider->collision(&rb_a, rb_b.collider, &rb_b))) {
+          CollisionInfo collision{};
+          collisions.push_back(collision);
+        }
+      }
     }
   }
 
@@ -546,7 +555,7 @@ void step_physics(std::vector<RB>& objects, phi::Seconds dt)
     object.update(dt);
   }
 
-  auto collisions = collision::detection(objects, dt);
+  std::vector<CollisionInfo> collisions = collision::detection(objects, dt);
 
   if (collisions.size() > 0) {
     // std::cout << "found collisions, resolving...\n";

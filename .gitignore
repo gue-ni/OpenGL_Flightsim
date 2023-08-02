@@ -16,3 +16,4 @@ OpenGL_Flightsim/build/
 *.zip
 OpenGL_Flightsim/assets/models/skyhawk.mtl
 OpenGL_Flightsim/assets/models/skyhawk.obj
+.vscode/settings.json
