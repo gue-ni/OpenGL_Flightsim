@@ -10,8 +10,6 @@
 #include "gfx.h"
 #include "phi.h"
 
-#define LOG_FLIGHT 0
-
 //  International Standard Atmosphere (ISA)
 namespace isa
 {
@@ -73,6 +71,7 @@ struct Airfoil {
   // lift_coeff, drag_coeff
   std::tuple<float, float> sample(float alpha) const
   {
+    assert(min_alpha <= alpha && alpha <= max_alpha);
     float t = phi::inverse_lerp(min_alpha, max_alpha, alpha) * max_index;
     float integer = std::floor(t);
     float fractional = t - integer;
@@ -235,24 +234,12 @@ struct Airplane : public phi::RigidBody {
   std::vector<Wing> wings;
   bool is_landed = false;
 
-#if LOG_FLIGHT
-  float log_timer = 0.0f;
-  float log_intervall = 0.1f;
-  float flight_time = 0.0f;
-  std::ofstream log_file;
-#endif
 
   // wings are in the order { left_wing, right_wing, elevator, rudder }
   Airplane(float mass_, const glm::mat3& inertia_, std::vector<Wing> wings_, std::vector<Engine*> engines_,
            Collider* collider_)
       : phi::RigidBody({.mass = mass_, .inertia = inertia_, .collider = collider_}), wings(wings_), engines(engines_)
   {
-#if LOG_FLIGHT
-    std::time_t now = std::time(nullptr);
-    log_file.open("log/flight_log_" + std::to_string(now) + ".csv");
-    log_file
-        << "flight_time,altitude,speed,ias,aoa,roll_rate,yaw_rate,pitch_rate,roll,yaw,pitch,aileron,rudder,elevator,\n";
-#endif
     assert(wings.size() == 4);
   }
 
@@ -267,34 +254,7 @@ struct Airplane : public phi::RigidBody {
       wings[3].set_control_input(-rudder);
     }
 
-#if LOG_FLIGHT
-    flight_time += dt;
-    if ((log_timer -= dt) <= 0.0f) {
-      log_timer = log_intervall;
-      auto av = glm::degrees(rigid_body.angular_velocity);
-      auto euler = glm::degrees(glm::eulerAngles(glm::normalize(rigid_body.orientation)));
-
-      /* clang-format off */
-      log_file 
-          << flight_time << "," 
-          << get_altitude() << "," 
-          << get_speed() << "," 
-          << get_ias() << ","
-          << get_aoa() << "," 
-          << av.x << "," 
-          << av.y << "," 
-          << av.z << "," 
-          << euler.x << "," 
-          << euler.y << "," 
-          << euler.z << ","
-          << aileron << "," 
-          << rudder << "," 
-          << elevator << "," 
-          << std::endl;
-      /* clang-format on */
-    }
-#endif
-
+#if 1
     for (auto& wing : wings) {
       wing.apply_forces(this, dt);
     }
@@ -303,6 +263,8 @@ struct Airplane : public phi::RigidBody {
       engine->throttle = throttle;
       engine->apply_forces(this, dt);
     }
+#endif
+
 
     phi::RigidBody::update(dt);
   }

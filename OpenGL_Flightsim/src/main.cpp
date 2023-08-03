@@ -44,6 +44,7 @@ JK      control thrust
 #define USE_PID            1
 #define PS1_RESOLUTION     1
 #define DEBUG_INFO         0
+#define TERRAIN_COLLISION  1
 
 /* select flightmodel */
 #define FAST_JET    0
@@ -175,7 +176,7 @@ int main(void)
 
   std::vector<GameObject*> objects;
 
-  glm::vec3 initial_position = glm::vec3(0.0f, 1500.0f, 0.0f);
+  glm::vec3 initial_position = glm::vec3(0.0f, 1000.0f, 0.0f);
 
 #if (FLIGHTMODEL == CESSNA)
   constexpr float speed = phi::units::meter_per_second(200.0f /* km/h */);
@@ -276,6 +277,7 @@ int main(void)
 #elif (FLIGHTMODEL == FAST_JET)
 
   constexpr float speed = phi::units::meter_per_second(500.0f /* km/h */);
+  //constexpr float speed = 0.0f;
 
   const float mass = 10000.0f;
   const float thrust = 75000.0f;
@@ -322,7 +324,8 @@ int main(void)
 
   phi::RigidBody terrain;
   terrain.sleep = true;
-  terrain.collider = new Heightmap(1000.0f);
+  terrain.mass = phi::INFINITE_RB_MASS;
+  terrain.collider = new Heightmap(height_from_pixel(gfx::rgb(0x818600)));
 
   player.rigid_body.position = initial_position;
   player.rigid_body.velocity = glm::vec3(speed, 0.0f, 0.0f);
@@ -566,13 +569,14 @@ int main(void)
         obj->mesh.set_transform(obj->rigid_body.position, obj->rigid_body.rotation);
       }
 
-#if 1
+#if TERRAIN_COLLISION
       // terrain collision
       phi::CollisionInfo info;
 
       if (test_collision(&player.rigid_body, &terrain, &info)) {
-        std::cout << "terrain collision\n";
-        phi::RigidBody::impulse_collision_response(info);
+        phi::RigidBody::linear_impulse_collision_response(info);
+        std::cout << "after terrain collision:\n";
+        std::cout << player.rigid_body << std::endl;
       }
 #endif
     }

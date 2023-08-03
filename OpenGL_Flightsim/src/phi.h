@@ -38,13 +38,6 @@ SOFTWARE. */
 #include <variant>
 #include <vector>
 
-// RigidBody::update() can be marked virtual
-#if 0
-#define RB_VIRTUAL_UPDATE
-#else
-#define RB_VIRTUAL_UPDATE virtual
-#endif
-
 // defined externally
 struct Collider;
 
@@ -138,6 +131,7 @@ struct Transform {
 
 //
 struct CollisionInfo {
+  float restitution_coeff = 0.75f;
   glm::vec3 point;    // contact point
   glm::vec3 normal;   // contact normal
   float penetration;  // penetration depth
@@ -268,6 +262,7 @@ float fall_time(float height, float acceleration = EARTH_GRAVITY) { return sqrt(
 
 // default rigid body is a sphere with radius 1 meter and a mass of 100 kg
 const float DEFAULT_RB_MASS = 100.0f;
+const float INFINITE_RB_MASS = std::numeric_limits<float>::max();
 const glm::quat DEFAULT_RB_ORIENTATION = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
 const glm::mat3 DEFAULT_RB_INERTIA = inertia::tensor(inertia::sphere(DEFAULT_RB_MASS, 1.0f));
 
@@ -295,6 +290,7 @@ class RigidBody : public Transform
   glm::vec3 angular_velocity = glm::vec3(0.0f);  // object space, (x = roll, y = yaw, z = pitch), rad/s
   bool apply_gravity = true;
   bool sleep = false;
+  bool sleep_one = false;
   bool detect_collision = true;
   Collider* collider = nullptr;
   glm::mat3 inertia = glm::mat3(0.0f);
@@ -381,7 +377,7 @@ class RigidBody : public Transform
   inline glm::vec3 get_force() const { return m_force; }
 
   // integrate RigidBody
-  RB_VIRTUAL_UPDATE void update(phi::Seconds dt)
+  virtual void update(phi::Seconds dt)
   {
     if (sleep) return;
 
@@ -402,26 +398,30 @@ class RigidBody : public Transform
 
   // restitution_coeff:  0 = perfectly inelastic, 1 = perfectly elastic
   // impulse collision response without angular effects
-  static void linear_impulse_collision_response(const CollisionInfo& collision, float restitution_coeff = 0.5f)
+  static void linear_impulse_collision_response(const CollisionInfo& collision)
   {
     RigidBody* a = collision.a;
     RigidBody* b = collision.b;
+    float penetration = collision.penetration;
+    float restitution_coeff = collision.restitution_coeff;
 
-    float total_inverse_mass = a->get_inverse_mass() + b->get_inverse_mass();
+    if (penetration < phi::EPSILON) return;
 
-    // move objects so they are no longer colliding. heavier object gets moved less
-    a->position -= collision.normal * collision.penetration * (a->get_inverse_mass() / total_inverse_mass);
-    b->position += collision.normal * collision.penetration * (b->get_inverse_mass() / total_inverse_mass);
+    glm::vec3 relative_velocity = b->velocity - a->velocity;
 
-    auto relative_velocity = b->velocity - a->velocity;
+    glm::vec3 normal = glm::normalize(b->position - a->position);
 
-    // force is highest in head on collision
-    float impulse_force = glm::dot(relative_velocity, collision.normal);
+    // move so no longer intersecting
+    // the lighter body is moved more
+    float total_mass = a->mass + b->mass;
+    a->position -= normal * penetration * (b->mass / total_mass);
+    b->position += normal * penetration * (a->mass / total_mass);
 
     // magnitude of impulse
-    float j = (-(1 + restitution_coeff) * impulse_force) / (total_inverse_mass);
+    float j = (-(1.0f + restitution_coeff) * glm::dot(glm::normalize(relative_velocity), normal)) /
+              (a->get_inverse_mass() + b->get_inverse_mass());
 
-    auto impulse = j * collision.normal;
+    glm::vec3 impulse = j * normal;
 
     // apply linear impulse
     a->add_linear_impulse(-impulse);
@@ -429,16 +429,21 @@ class RigidBody : public Transform
   }
 
   // impulse collision response
-  static void impulse_collision_response(const CollisionInfo& collision, float restitution_coeff = 0.5f)
+  static void impulse_collision_response(const CollisionInfo& collision)
   {
     RigidBody* a = collision.a;
     RigidBody* b = collision.b;
+    float penetration = collision.penetration;
+    float restitution_coeff = collision.restitution_coeff;
 
+    float total_mass = a->mass + b->mass;
     float total_inverse_mass = a->get_inverse_mass() + b->get_inverse_mass();
 
+    glm::vec3 normal = glm::normalize(b->position - a->position);
+
     // move objects so they are no longer colliding. heavier object gets moved less
-    a->position -= collision.normal * collision.penetration * (a->get_inverse_mass() / total_inverse_mass);
-    b->position += collision.normal * collision.penetration * (b->get_inverse_mass() / total_inverse_mass);
+    a->position -= normal * penetration * (b->mass / total_mass);
+    b->position += normal * penetration * (a->mass / total_mass);
 
     // location of collision point relative to rigidbody
     auto a_relative = collision.point - a->position;
@@ -484,9 +489,14 @@ class RigidBody : public Transform
 template <typename RB>
 void step_physics(std::vector<RB>& objects, phi::Seconds dt)
 {
-  for (auto& object : objects) {
+  for (RB& object : objects) {
     object.update(dt);
   }
 }
 
 };  // namespace phi
+
+std::ostream& operator<<(std::ostream& os, const phi::RigidBody& rb)
+{
+  return os << "RigidBody { " << rb.position << ", " << rb.velocity << "} ";
+}

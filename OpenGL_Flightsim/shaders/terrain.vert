@@ -28,7 +28,7 @@ float scale(float input_val, float in_min, float in_max, float out_min, float ou
 
 float getHeight(vec2 uv)
 {
-    vec3 pixel = texture(u_Heightmap, uv).rgb * 256.0;
+    vec3 pixel = texture(u_Heightmap, uv).rgb * 255.0;
     return (pixel.r * 256.0 + pixel.g + pixel.b / 256.0) - 32768.0;
 }
 

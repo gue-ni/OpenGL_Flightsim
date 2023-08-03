@@ -319,3 +319,11 @@ class Clipmap : public gfx::Object3D
     return T * R * S;
   }
 };
+
+// pixel value in range [0, 1]
+float height_from_pixel(const glm::vec3& rgb)
+{
+    glm::vec3 pixel = rgb * 255.0f;
+    return (pixel.r * 256.0f + pixel.g + pixel.b / 256.0f) - 32768.0f;
+
+}
