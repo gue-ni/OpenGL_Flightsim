@@ -17,6 +17,7 @@
 #include "gfx.h"
 #include "phi.h"
 #include "pid.h"
+#include "collider.h"
 #include "terrain.h"
 
 using std::cout;
@@ -70,7 +71,6 @@ struct Joystick {
 struct GameObject {
   gfx::Mesh mesh;
   Airplane& rigid_body;
-  void update(float dt) { mesh.set_transform(rigid_body.position, rigid_body.rotation); }
 };
 
 void get_keyboard_state(Joystick& joystick, phi::Seconds dt);
@@ -175,7 +175,7 @@ int main(void)
 
   std::vector<GameObject*> objects;
 
-  glm::vec3 initial_position = glm::vec3(0.0f, 3000.0f, 0.0f);
+  glm::vec3 initial_position = glm::vec3(0.0f, 1500.0f, 0.0f);
 
 #if (FLIGHTMODEL == CESSNA)
   constexpr float speed = phi::units::meter_per_second(200.0f /* km/h */);
@@ -309,8 +309,10 @@ int main(void)
 #error FLIGHTMODEL not defined
 #endif
 
+  Sphere airplane_collider(15.0f);
+
   std::vector<Airplane> rigid_bodies = {
-      Airplane(mass, inertia, wings, {engine}, nullptr),
+      Airplane(mass, inertia, wings, {engine}, &airplane_collider),
   };
 
   GameObject player = {
@@ -318,6 +320,9 @@ int main(void)
       .rigid_body = rigid_bodies[0],
   };
 
+  phi::RigidBody terrain;
+  terrain.sleep = true;
+  terrain.collider = new Heightmap(1000.0f);
 
   player.rigid_body.position = initial_position;
   player.rigid_body.velocity = glm::vec3(speed, 0.0f, 0.0f);
@@ -557,9 +562,19 @@ int main(void)
     if (!paused) {
       phi::step_physics(rigid_bodies, dt);
 
-      for (auto obj : objects) {
-        obj->update(dt);
+      for (GameObject* obj : objects) {
+        obj->mesh.set_transform(obj->rigid_body.position, obj->rigid_body.rotation);
       }
+
+#if 1
+      // terrain collision
+      phi::CollisionInfo info;
+
+      if (test_collision(&player.rigid_body, &terrain, &info)) {
+        std::cout << "terrain collision\n";
+        phi::RigidBody::impulse_collision_response(info);
+      }
+#endif
     }
 
     fpm.set_position(glm::normalize(player.rigid_body.get_body_velocity()) * projection_distance);

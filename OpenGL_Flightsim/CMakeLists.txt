@@ -12,6 +12,7 @@ add_executable(flightsim
     src/ai.h
     src/terrain.h
     src/data.h
+    src/collider.h
     src/flightmodel.h
     src/gfx.cpp
     src/gfx.h

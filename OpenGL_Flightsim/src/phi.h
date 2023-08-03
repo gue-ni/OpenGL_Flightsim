@@ -45,10 +45,8 @@ SOFTWARE. */
 #define RB_VIRTUAL_UPDATE virtual
 #endif
 
-#define DISABLE 0
-#define ENABLE  1
-
-#define COLLIDERS DISABLE
+// defined externally
+struct Collider;
 
 namespace phi
 {
@@ -56,11 +54,6 @@ namespace phi
 using Seconds = float;
 
 class RigidBody;
-
-struct Collider;
-struct Cuboid;
-struct Sphere;
-struct Heightmap;
 
 // constants
 constexpr float EPSILON = 1e-8f;
@@ -409,9 +402,11 @@ class RigidBody : public Transform
 
   // restitution_coeff:  0 = perfectly inelastic, 1 = perfectly elastic
   // impulse collision response without angular effects
-  static void linear_impulse_collision_response(RigidBody* a, RigidBody* b, const CollisionInfo& collision,
-                                                float restitution_coeff = 0.5f)
+  static void linear_impulse_collision_response(const CollisionInfo& collision, float restitution_coeff = 0.5f)
   {
+    RigidBody* a = collision.a;
+    RigidBody* b = collision.b;
+
     float total_inverse_mass = a->get_inverse_mass() + b->get_inverse_mass();
 
     // move objects so they are no longer colliding. heavier object gets moved less
@@ -434,9 +429,11 @@ class RigidBody : public Transform
   }
 
   // impulse collision response
-  static void impulse_collision_response(RigidBody* a, RigidBody* b, const CollisionInfo& collision,
-                                         float restitution_coeff = 0.5f)
+  static void impulse_collision_response(const CollisionInfo& collision, float restitution_coeff = 0.5f)
   {
+    RigidBody* a = collision.a;
+    RigidBody* b = collision.b;
+
     float total_inverse_mass = a->get_inverse_mass() + b->get_inverse_mass();
 
     // move objects so they are no longer colliding. heavier object gets moved less
@@ -484,95 +481,11 @@ class RigidBody : public Transform
   }
 };
 
-// collider abstract base class
-struct Collider {
-  virtual bool collision(const Transform* t0, const Collider* c1, const Transform* t1) const = 0;
-};
-
-#if (COLLIDERS == ENABLE)
-struct Sphere : public Collider {
-  const float radius;
-  Sphere(float radius_) : radius(radius_) {}
-  bool collision(const Transform* t0, const Collider* c1, const Transform* t1) const override;
-};
-
-struct Cuboid : public Collider {
-  const glm::vec3 size;
-  Cuboid(const glm::vec3& size_) : size(size_) {}
-  bool collision(const Transform* t0, const Collider* c1, const Transform* t1) const override;
-};
-
-struct Heightmap : public Collider {
-  bool collision(const Transform* t0, const Collider* c1, const Transform* t1) const override;
-};
-
-bool Sphere::collision(const Transform* t0, const Collider* c1, const Transform* t1) const
-{
-  return c1->collision(t1, this, t0);
-}
-
-bool Cuboid::collision(const Transform* t0, const Collider* c1, const Transform* t1) const
-{
-  return c1->collision(t1, this, t0);
-}
-
-bool Heightmap::collision(const Transform* t0, const Collider* c1, const Transform* t1) const
-{
-  return c1->collision(t1, this, t0);
-}
-#endif
-
-// collision detection system
-namespace collision
-{
-// narrowphase collision detection. this algorithm is O(n^2) -> very slow
-template <typename RB>
-std::vector<CollisionInfo> detection(std::vector<RB>& objects, phi::Seconds dt)
-{
-  std::vector<CollisionInfo> collisions;
-
-  for (std::size_t i = 0; i < objects.size(); i++) {
-    RB& rb_a = objects[i];
-
-    if (rb_a.collider != nullptr) {
-      for (std::size_t j = i + 1; j < objects.size(); j++) {
-        RB& rb_b = objects[j];
-
-        if ((rb_b.collider != nullptr) && (rb_a.collider->collision(&rb_a, rb_b.collider, &rb_b))) {
-          CollisionInfo collision{};
-          collisions.push_back(collision);
-        }
-      }
-    }
-  }
-
-  return collisions;
-}
-
-// resolve collision events
-inline void resolution(std::vector<CollisionInfo>& collisions)
-{
-  for (auto& collision : collisions) {
-    phi::RigidBody::impulse_collision_response(collision.a, collision.b, collision);
-  }
-}
-
-};  // namespace collision
-
 template <typename RB>
 void step_physics(std::vector<RB>& objects, phi::Seconds dt)
 {
   for (auto& object : objects) {
     object.update(dt);
-  }
-
-  std::vector<CollisionInfo> collisions = collision::detection(objects, dt);
-
-  if (collisions.size() > 0) {
-    // std::cout << "found collisions, resolving...\n";
-    collision::resolution(collisions);
-  } else {
-    // std::cout << "found no collisions...\n";
   }
 }
 

@@ -114,5 +114,8 @@
     <ClInclude Include="src\pid.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\collider.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

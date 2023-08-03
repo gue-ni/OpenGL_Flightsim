@@ -244,7 +244,7 @@ struct Airplane : public phi::RigidBody {
 
   // wings are in the order { left_wing, right_wing, elevator, rudder }
   Airplane(float mass_, const glm::mat3& inertia_, std::vector<Wing> wings_, std::vector<Engine*> engines_,
-           phi::Collider* collider_)
+           Collider* collider_)
       : phi::RigidBody({.mass = mass_, .inertia = inertia_, .collider = collider_}), wings(wings_), engines(engines_)
   {
 #if LOG_FLIGHT
