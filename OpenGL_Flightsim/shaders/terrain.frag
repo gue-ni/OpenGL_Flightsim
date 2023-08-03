@@ -14,7 +14,7 @@ in vec3 Color;
 in vec3 Normal;
 in vec3 FragPos;
 in vec2 TexCoord;
-flat in float Factor;
+flat in float scaleFactor;
 
 vec3 calculateDirLight(vec3 lightDirection, vec3 normal, vec3 color)
 {
@@ -43,13 +43,13 @@ void main()
   vec4 fogColor = vec4(u_Background, 1.0);
 
   float distFromCamera = length(FragPos.xyz - u_CameraPos);
-  float fogFactor = (fogMaxdist - distFromCamera) / (fogMaxdist - fogMindist);
-  fogFactor = clamp(fogFactor, 0.0, 1.0);
+  float fogscaleFactor = (fogMaxdist - distFromCamera) / (fogMaxdist - fogMindist);
+  fogscaleFactor = clamp(fogscaleFactor, 0.0, 1.0);
 
   vec4 terrainColor = vec4(calculateDirLight(lightDir, Normal, texture(u_Texture, TexCoord).rgb), 1.0);
 
 #if 1
-  FragColor = mix(fogColor, terrainColor, fogFactor);
+  FragColor = mix(fogColor, terrainColor, fogscaleFactor);
 #else
   FragColor = mix(vec4(Color, 1.0), terrainColor, 0.5);
 #endif

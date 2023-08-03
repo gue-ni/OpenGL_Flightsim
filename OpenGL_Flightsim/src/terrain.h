@@ -61,7 +61,6 @@ struct Seam {
   void draw()
   {
     bind();
-    // glDrawElements(GL_TRIANGLE_STRIP, index_count, GL_UNSIGNED_INT, 0);
     glDrawArrays(GL_TRIANGLES, 0, 3 * index_count);
     unbind();
   }
@@ -75,7 +74,6 @@ struct Block {
 
   Block(int width, int height, float segment_size)
   {
-#if 1
     std::vector<glm::vec3> vertices;
     std::vector<unsigned int> indices;
 
@@ -109,7 +107,6 @@ struct Block {
     glEnableVertexAttribArray(0);
 
     vao.unbind();
-#endif
   }
 
   void bind() { vao.bind(); }
@@ -128,8 +125,6 @@ struct Block {
 class Clipmap : public gfx::Object3D
 {
  public:
-  bool wireframe = false;
-
   Clipmap(int levels_ = 16, int segments_ = 8)
       : segment_size(2.0f),
         levels(levels_),
@@ -175,7 +170,6 @@ class Clipmap : public gfx::Object3D
       glEnable(GL_CULL_FACE);
       glEnable(GL_PRIMITIVE_RESTART);
       glPrimitiveRestartIndex(primitive_restart);
-      if (wireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
       int min_level = 1;  // depends on camera height
 
@@ -274,8 +268,6 @@ class Clipmap : public gfx::Object3D
           }
         }
       }
-
-      if (wireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
       glDisable(GL_CULL_FACE);
 

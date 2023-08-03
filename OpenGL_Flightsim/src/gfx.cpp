@@ -315,7 +315,11 @@ int Object3D::counter = 0;
 void Object3D::draw(RenderContext& context)
 {
   if (visible) {
+    if (wireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
     draw_self(context);
+
+    if (wireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   }
   draw_children(context);
 }

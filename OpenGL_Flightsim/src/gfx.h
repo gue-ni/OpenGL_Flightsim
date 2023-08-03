@@ -176,6 +176,7 @@ class Object3D
   glm::mat4 transform;
   bool receive_shadow = true;
   bool visible = true;
+  bool wireframe = false;
 
   Object3D& add(Object3D* child);
 

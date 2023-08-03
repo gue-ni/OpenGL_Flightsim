@@ -68,11 +68,9 @@ struct Joystick {
 };
 
 struct GameObject {
-  gfx::Mesh transform;
-  Airplane& airplane;
-  // collider::Sphere collider;
-
-  void update(float dt) { transform.set_transform(airplane.position, airplane.rotation); }
+  gfx::Mesh mesh;
+  Airplane& rigid_body;
+  void update(float dt) { mesh.set_transform(rigid_body.position, rigid_body.rotation); }
 };
 
 void get_keyboard_state(Joystick& joystick, phi::Seconds dt);
@@ -316,24 +314,26 @@ int main(void)
   };
 
   GameObject player = {
-      .transform = gfx::Mesh(model, texture),
-      .airplane = rigid_bodies[0],
+      .mesh = gfx::Mesh(model, texture),
+      .rigid_body = rigid_bodies[0],
   };
 
-  player.airplane.position = initial_position;
-  player.airplane.velocity = glm::vec3(speed, 0.0f, 0.0f);
-  scene.add(&player.transform);
+
+  player.rigid_body.position = initial_position;
+  player.rigid_body.velocity = glm::vec3(speed, 0.0f, 0.0f);
+  scene.add(&player.mesh);
   objects.push_back(&player);
 
 #if SHOW_MASS_ELEMENTS
   auto red_texture = make_shared<gfx::Phong>(glm::vec3(1.0f, 0.0f, 0.0f));
 
-  for (int i = 0; i < mass_elements.size(); i++) {
-    auto& mass = mass_elements[i];
-    auto element = new gfx::Mesh(gfx::make_cube_geometry(1.0f), red_texture);
+  for (int i = 0; i < masses.size(); i++) {
+    auto& mass = masses[i];
+    gfx::Mesh* element = new gfx::Mesh(gfx::make_cube_geometry(1.0f), red_texture);
+    element->wireframe = true;
     element->set_position(mass.offset);
     element->set_scale(mass.size);
-    player.transform.add(element);
+    player.mesh.add(element);
   }
 #endif
 
@@ -362,21 +362,21 @@ int main(void)
   gfx::Billboard cross(make_shared<gfx::gl::Texture>("assets/textures/sprites/cross.png"), green);
   cross.set_position(phi::FORWARD * projection_distance);
   cross.set_scale(glm::vec3(size));
-  player.transform.add(&cross);
+  player.mesh.add(&cross);
 
   gfx::Billboard fpm(make_shared<gfx::gl::Texture>("assets/textures/sprites/fpm.png"), green);
   fpm.set_scale(glm::vec3(size));
-  player.transform.add(&fpm);
+  player.mesh.add(&fpm);
 #endif
 
   gfx::Object3D camera_transform;
   camera_transform.set_position({-25.0f, 5, 0});
   camera_transform.set_rotation({0, glm::radians(-90.0f), 0.0f});
-  player.transform.add(&camera_transform);
+  player.mesh.add(&camera_transform);
 
   gfx::Camera camera(glm::radians(45.0f), (float)RESOLUTION.x / (float)RESOLUTION.y, 1.0f, 150000.0f);
 #if SMOOTH_CAMERA
-  camera.set_position(player.airplane.position);
+  camera.set_position(player.rigid_body.position);
   camera.set_rotation({0, glm::radians(-90.0f), 0.0f});
   scene.add(&camera);
 #else
@@ -495,12 +495,12 @@ int main(void)
 
     if ((hud_timer += dt) > 0.1f) {
       hud_timer = 0.0f;
-      alt = player.airplane.get_altitude();
-      spd = phi::units::kilometer_per_hour(player.airplane.get_speed());
-      ias = phi::units::kilometer_per_hour(player.airplane.get_ias());
-      thr = player.airplane.throttle;
-      gee = player.airplane.get_g();
-      aoa = player.airplane.get_aoa();
+      alt = player.rigid_body.get_altitude();
+      spd = phi::units::kilometer_per_hour(player.rigid_body.get_speed());
+      ias = phi::units::kilometer_per_hour(player.rigid_body.get_ias());
+      thr = player.rigid_body.throttle;
+      gee = player.rigid_body.get_g();
+      aoa = player.rigid_body.get_aoa();
     }
 
     ImGui::SetNextWindowPos(ImVec2(10, 10));
@@ -510,10 +510,10 @@ int main(void)
     ImGui::Text("ALT:   %.1f m", alt);
     ImGui::Text("SPD:   %.1f km/h", spd);
     ImGui::Text("IAS:   %.1f km/h", ias);
-    ImGui::Text("THR:   %.1f %%", player.airplane.throttle * 100.0f);
+    ImGui::Text("THR:   %.1f %%", player.rigid_body.throttle * 100.0f);
     ImGui::Text("G:     %.1f", gee);
     ImGui::Text("AoA:   %.2f", aoa);
-    ImGui::Text("Trim:  %.2f", player.airplane.joystick.w);
+    ImGui::Text("Trim:  %.2f", player.rigid_body.joystick.w);
     ImGui::Text("FPS:   %.1f", fps);
     ImGui::End();
 
@@ -538,16 +538,16 @@ int main(void)
 
     get_keyboard_state(joystick, dt);
 
-    player.airplane.joystick = glm::vec4(joystick.aileron, joystick.rudder, joystick.elevator, joystick.trim);
+    player.rigid_body.joystick = glm::vec4(joystick.aileron, joystick.rudder, joystick.elevator, joystick.trim);
 #if USE_PID
     {
       float max_av = 45.0f;  // deg/s
       float target_av = max_av * joystick.elevator;
-      float current_av = glm::degrees(player.airplane.angular_velocity.z);
-      player.airplane.joystick.z = pitch_control_pid.calculate(current_av, target_av, dt);
+      float current_av = glm::degrees(player.rigid_body.angular_velocity.z);
+      player.rigid_body.joystick.z = pitch_control_pid.calculate(current_av, target_av, dt);
     }
 #endif
-    player.airplane.throttle = joystick.throttle;
+    player.rigid_body.throttle = joystick.throttle;
 
 #if NPC_AIRCRAFT
     target_marker.visible = glm::length(camera.get_world_position() - npc.airplane.position) > 500.0f;
@@ -562,14 +562,14 @@ int main(void)
       }
     }
 
-    fpm.set_position(glm::normalize(player.airplane.get_body_velocity()) * projection_distance);
+    fpm.set_position(glm::normalize(player.rigid_body.get_body_velocity()) * projection_distance);
 
     if (orbit) {
-      controller.update(camera, player.airplane.position, dt);
+      controller.update(camera, player.rigid_body.position, dt);
       cross.visible = fpm.visible = false;
     } else if (!paused) {
 #if SMOOTH_CAMERA
-      auto& rb = player.airplane;
+      auto& rb = player.rigid_body;
       camera.set_position(glm::mix(camera.get_position(), rb.position + rb.up() * 4.5f, dt * 0.035f * rb.get_speed()));
       camera.set_rotation_quat(
           glm::mix(camera.get_rotation_quat(), camera_transform.get_world_rotation_quat(), dt * 5.0f));
