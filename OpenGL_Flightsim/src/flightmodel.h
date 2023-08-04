@@ -33,7 +33,6 @@ const float sea_level_air_density = get_air_density(0.0f);
 };  // namespace isa
 
 // World Geodetic System (WGS 84)
-// TODO: fix calculations
 namespace wgs84
 {
 // origin is degrees lat/lon, offset in meters
@@ -234,7 +233,6 @@ struct Airplane : public phi::RigidBody {
   std::vector<Wing> wings;
   bool is_landed = false;
 
-
   // wings are in the order { left_wing, right_wing, elevator, rudder }
   Airplane(float mass_, const glm::mat3& inertia_, std::vector<Wing> wings_, std::vector<Engine*> engines_,
            Collider* collider_)
@@ -245,6 +243,7 @@ struct Airplane : public phi::RigidBody {
 
   void update(phi::Seconds dt) override
   {
+#if 0
     float aileron = joystick.x, rudder = joystick.y, elevator = joystick.z, trim = joystick.w;
 
     if (wings.size() > 0) {
@@ -254,7 +253,6 @@ struct Airplane : public phi::RigidBody {
       wings[3].set_control_input(-rudder);
     }
 
-#if 1
     for (auto& wing : wings) {
       wing.apply_forces(this, dt);
     }
@@ -264,8 +262,6 @@ struct Airplane : public phi::RigidBody {
       engine->apply_forces(this, dt);
     }
 #endif
-
-
     phi::RigidBody::update(dt);
   }
 
@@ -275,7 +271,7 @@ struct Airplane : public phi::RigidBody {
   // pitch g force
   float get_g() const
   {
-    auto velocity = get_body_velocity();
+    glm::vec3 velocity = get_body_velocity();
 
     // avoid division by zero
     float turn_radius = (std::abs(angular_velocity.z) < phi::EPSILON) ? std::numeric_limits<float>::max()

@@ -13,11 +13,11 @@
 #include "../lib/imgui/imgui_impl_opengl3.h"
 #include "../lib/imgui/imgui_impl_sdl2.h"
 #include "ai.h"
+#include "collider.h"
 #include "flightmodel.h"
 #include "gfx.h"
 #include "phi.h"
 #include "pid.h"
-#include "collider.h"
 #include "terrain.h"
 
 using std::cout;
@@ -179,105 +179,11 @@ int main(void)
   glm::vec3 initial_position = glm::vec3(0.0f, 1000.0f, 0.0f);
 
 #if (FLIGHTMODEL == CESSNA)
-  constexpr float speed = phi::units::meter_per_second(200.0f /* km/h */);
-
-  // airplane mass
-  const float mass = 1000.0f;
-
-  // engine
-  const float rpm = 2400.0f;
-  const float horsepower = 160.0f;
-  const float prop_diameter = 1.9f;
-
-  // main wing
-  const float total_wing_area = 16.17f;
-  const float total_wing_span = 11.00f;
-  const float main_wing_span = total_wing_span / 2;
-  const float main_wing_area = total_wing_area / 2;
-  const float main_wing_chord = main_wing_area / main_wing_span;
-
-  // aileron
-  const float aileron_area = 1.70f;
-  const float aileron_span = 1.26f;
-  const auto aileron_offset = glm::vec3(-main_wing_chord * 0.75f, 0.0f, 0.0f);
-
-  // horizontal tail
-  const float elevator_area = 1.35f;
-  const float h_tail_area = 2.0f + elevator_area;
-  const float h_tail_span = 2.0f;
-  const float h_tail_chord = h_tail_area / h_tail_span;
-
-  // vertical tail
-  const float v_tail_area = 2.04f;  // modified
-  const float v_tail_span = 2.04f;
-  const float v_tail_chord = v_tail_area / v_tail_span;
-
-  const float wing_offset = -0.2f;
-  const float tail_offset = -4.6f;
-
-  std::cout << "aileron_offset = " << aileron_offset << std::endl;
-
-  // design coordinates go from the back forwards
-  std::vector<phi::inertia::Element> mass_elements = {
-#if 0
-    {.size = {main_wing_chord, 0.10f, main_wing_span}, .position = {5.0f, 0.5f, -2.7f}},  // left wing
-    {.size = {main_wing_chord, 0.10f, main_wing_span}, .position = {5.0f, 0.5f, +2.7f}},  // right wing
-    {.size = {h_tail_chord, 0.10f, h_tail_span}, .position = {0.0f, 0.0f, 0.0f}},         // horizontal tail
-    {.size = {v_tail_chord, v_tail_span, 0.1f}, .position = {0.0f, 1.0f, 0.0f}},          // vertical tail
-    {.size = {5.0f, 1.0f, 1.0f}, .position = {6.5f, 0.0f, 0.0f}},                         // fuselage
-#else
-    phi::inertia::cube({wing_offset, 0.5f, -2.7f}, {main_wing_chord, 0.10f, main_wing_span}),  // left wing
-    phi::inertia::cube({wing_offset, 0.5f, +2.7f}, {main_wing_chord, 0.10f, main_wing_area}),  // right wing
-    phi::inertia::cube({tail_offset, -0.1f, 0.0f}, {h_tail_chord, 0.10f, h_tail_span}),        // elevator
-    phi::inertia::cube({tail_offset, 0.0f, 0.0f}, {v_tail_chord, v_tail_span, 0.10f}),         // rudder
-    phi::inertia::cube({0.0f, 0.0f, 0.0f}, {8.0f, 2.0f, 1.0f}),                                // fuselage
-#endif
-  };
-
-  // individual element mass is proportional to volume
-  glm::vec3 center_of_gravity;
-  phi::inertia::compute_uniform_mass(mass_elements, mass);
-  std::cout << "cg = " << center_of_gravity << std::endl;
-
-  // compute inertia tensor
-  const auto inertia = phi::inertia::tensor(mass_elements, true, &center_of_gravity);
-  std::cout << "inertia = " << inertia << std::endl;
-
-  for (int i = 0; i < mass_elements.size(); i++) {
-    auto& m = mass_elements[i];
-    std::cout << "[Mass] m = " << m.mass << ", o = " << m.offset << ", p = " << m.position << std::endl;
-  }
-
-#if 0
-  auto l_wing_pos = glm::vec3{wing_offset, 0.0f, -2.7f};
-  auto r_wing_pos = glm::vec3{wing_offset, 0.0f, +2.7f};
-  auto h_tail_pos = glm::vec3{tail_offset, -0.1f, 0.0f};
-  auto v_tail_pos = glm::vec3{tail_offset, 0.5f, 0.0f};
-#else
-  auto l_wing_pos = mass_elements[0].offset;
-  auto r_wing_pos = mass_elements[1].offset;
-  auto h_tail_pos = mass_elements[2].offset;
-  auto v_tail_pos = mass_elements[3].offset;
-#endif
-
-  const Airfoil NACA_0012(NACA_0012_data);
-  const Airfoil NACA_2412(NACA_2412_data);
-
-  std::vector<Wing> wings = {
-      Wing(&NACA_2412, l_wing_pos, main_wing_area, main_wing_span),               // left wing
-      Wing(&NACA_2412, r_wing_pos, main_wing_area, main_wing_span),               // right wing
-      Wing(&NACA_0012, h_tail_pos, h_tail_area, h_tail_span),                     // horizontal tail
-      Wing(&NACA_0012, v_tail_pos, v_tail_area, v_tail_span, phi::RIGHT),         // vertical tail
-      Wing(&NACA_0012, l_wing_pos - aileron_offset, aileron_area, aileron_span),  // left aileron
-      Wing(&NACA_0012, r_wing_pos - aileron_offset, aileron_area, aileron_span),  // right aileron
-  };
-
-  Engine* engine = new PropellorEngine(horsepower, rpm, prop_diameter);
-
+#error not implemented
 #elif (FLIGHTMODEL == FAST_JET)
 
-  constexpr float speed = phi::units::meter_per_second(500.0f /* km/h */);
-  //constexpr float speed = 0.0f;
+  // constexpr float speed = phi::units::meter_per_second(500.0f /* km/h */);
+  constexpr float speed = 0.0f;
 
   const float mass = 10000.0f;
   const float thrust = 75000.0f;
@@ -311,10 +217,11 @@ int main(void)
 #error FLIGHTMODEL not defined
 #endif
 
-  Sphere airplane_collider(15.0f);
+  Sphere sphere(15.0f);
+  LandingGear landing_gear(glm::vec3(2.0f, -1.0f, 0.0f), glm::vec3(-0.5, -1.0f, +1.5f), glm::vec3(-0.5, -1.0f, -1.5f));
 
   std::vector<Airplane> rigid_bodies = {
-      Airplane(mass, inertia, wings, {engine}, &airplane_collider),
+      Airplane(mass, inertia, wings, {engine}, &sphere),
   };
 
   GameObject player = {
@@ -323,7 +230,7 @@ int main(void)
   };
 
   phi::RigidBody terrain;
-  terrain.sleep = true;
+  terrain.inactive = true;
   terrain.mass = phi::INFINITE_RB_MASS;
   terrain.collider = new Heightmap(height_from_pixel(gfx::rgb(0x818600)));
 
@@ -571,12 +478,18 @@ int main(void)
 
 #if TERRAIN_COLLISION
       // terrain collision
-      phi::CollisionInfo info;
+      phi::CollisionInfo collision;
 
-      if (test_collision(&player.rigid_body, &terrain, &info)) {
-        phi::RigidBody::linear_impulse_collision_response(info);
-        std::cout << "after terrain collision:\n";
+      if (test_collision(&player.rigid_body, &terrain, &collision)) {
+        std::cout << "before collision:\n";
         std::cout << player.rigid_body << std::endl;
+
+        phi::RigidBody::linear_impulse_collision(collision);
+        // phi::RigidBody::impulse_collision(collision);
+
+        std::cout << "after collision:\n";
+        std::cout << player.rigid_body << std::endl;
+        // paused = true;
       }
 #endif
     }
