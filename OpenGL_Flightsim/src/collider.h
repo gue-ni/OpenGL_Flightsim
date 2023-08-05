@@ -197,7 +197,7 @@ inline bool LandingGear::test(const phi::Transform* tf, const Heightmap* other, 
     info->penetration = penetration;
     info->normal = phi::DOWN;
     info->point = lowest_point;
-    info->restitution_coeff = 0.05f;
+    info->restitution_coeff = 0.5f;
     return true;
   }
 

@@ -301,7 +301,7 @@ class RigidBody : public Transform
   glm::vec3 velocity;                  // velocity in world space, m/s
   glm::vec3 angular_velocity;          // object space, (x = roll, y = yaw, z = pitch), rad/s
   glm::mat3 inertia, inverse_inertia;  // inertia tensor
-  bool apply_gravity, inactive;
+  bool apply_gravity, active;
   Collider* collider;
 
   RigidBody() : RigidBody({DEFAULT_RB_MASS, DEFAULT_RB_INERTIA}) {}
@@ -314,7 +314,7 @@ class RigidBody : public Transform
         inertia(params.inertia),
         inverse_inertia(glm::inverse(params.inertia)),
         apply_gravity(true),
-        inactive(false),
+        active(true),
         collider(params.collider)
   {
   }
@@ -373,19 +373,36 @@ class RigidBody : public Transform
   inline void set_inertia(const glm::vec3& moment_of_inertia) { set_inertia(inertia::tensor(moment_of_inertia)); }
 
   // linear impulse in world space
-  inline void add_impulse(const glm::vec3& impulse) { velocity += impulse / mass; }
+  inline void add_impulse(const glm::vec3& impulse)
+  {
+    if (active) {
+      velocity += impulse / mass;
+    }
+  }
 
   // linear impulse in body space
-  inline void add_relative_impulse(const glm::vec3& impulse) { velocity += transform_direction(impulse) / mass; }
+  inline void add_relative_impulse(const glm::vec3& impulse)
+  {
+    if (active) {
+      velocity += transform_direction(impulse) / mass;
+    }
+  }
 
   // angular impulse in world space
   inline void add_angular_impulse(const glm::vec3& impulse)
   {
-    angular_velocity += inverse_transform_direction(impulse) * inverse_inertia;
+    if (active) {
+      angular_velocity += inverse_transform_direction(impulse) * inverse_inertia;
+    }
   }
 
   // angular impulse in body space
-  inline void add_relative_angular_impulse(const glm::vec3& impulse) { angular_velocity += impulse * inverse_inertia; }
+  inline void add_relative_angular_impulse(const glm::vec3& impulse)
+  {
+    if (active) {
+      angular_velocity += impulse * inverse_inertia;
+    }
+  }
 
   // force vector in world space
   inline void add_force(const glm::vec3& force) { m_force += force; }
@@ -414,30 +431,27 @@ class RigidBody : public Transform
   // get torque in world space
   inline glm::vec3 get_force() const { return m_force; }
 
-  inline glm::mat3 get_rotated_inertia() const
+  // get inverse inertia tensor in world space
+  inline glm::mat3 get_rotated_inverse_inertia() const
   {
-#if 0
-    return glm::mat3(rotation) * inertia * glm::mat3(glm::conjugate(rotation));
-#else
     return glm::mat3(rotation) * inverse_inertia * glm::mat3(glm::inverse(rotation));
-#endif
   }
 
   // integrate RigidBody
   virtual void update(phi::Seconds dt)
   {
-    if (inactive) return;
+    if (active) {
+      glm::vec3 acceleration = m_force / mass;
 
-    glm::vec3 acceleration = m_force / mass;
+      if (apply_gravity) acceleration.y -= EARTH_GRAVITY;
 
-    if (apply_gravity) acceleration.y -= EARTH_GRAVITY;
+      velocity += acceleration * dt;
+      position += velocity * dt;
 
-    velocity += acceleration * dt;
-    position += velocity * dt;
-
-    angular_velocity += inverse_inertia * (m_torque - glm::cross(angular_velocity, inertia * angular_velocity)) * dt;
-    rotation += (rotation * glm::quat(0.0f, angular_velocity)) * (0.5f * dt);
-    rotation = glm::normalize(rotation);
+      angular_velocity += inverse_inertia * (m_torque - glm::cross(angular_velocity, inertia * angular_velocity)) * dt;
+      rotation += (rotation * glm::quat(0.0f, angular_velocity)) * (0.5f * dt);
+      rotation = glm::normalize(rotation);
+    }
 
     // reset accumulators
     m_force = glm::vec3(0.0f), m_torque = glm::vec3(0.0f);
@@ -484,14 +498,9 @@ class RigidBody : public Transform
     glm::vec3 a_relative = collision.point - a->position;
     glm::vec3 b_relative = collision.point - b->position;
 
-    // get velocity at this point
-#if 0
+    // get velocity at collision point
     glm::vec3 a_velocity = a->get_point_world_velocity(collision.point);
     glm::vec3 b_velocity = b->get_point_world_velocity(collision.point);
-#else
-    glm::vec3 a_velocity = a->velocity;
-    glm::vec3 b_velocity = b->velocity;
-#endif
 
     // relative velocity in world space
     glm::vec3 relative_velocity = b_velocity - a_velocity;
@@ -499,19 +508,13 @@ class RigidBody : public Transform
     // force is highest in a head on collision
     float impulse_force = glm::dot(glm::normalize(relative_velocity), collision.normal);
 
-#if 0
-    glm::mat3 a_tensor = a->get_rotated_inertia();
-    glm::mat3 b_tensor = b->get_rotated_inertia();
+    glm::mat3 a_tensor = a->get_rotated_inverse_inertia();
+    glm::mat3 b_tensor = b->get_rotated_inverse_inertia();
 
     glm::vec3 a_inertia = glm::cross(a_tensor * glm::cross(a_relative, collision.normal), a_relative);
     glm::vec3 b_inertia = glm::cross(b_tensor * glm::cross(b_relative, collision.normal), b_relative);
 
     float angular_effect = glm::dot(a_inertia, collision.normal);
-#else
-    float angular_effect = 0.0f;
-#endif
-
-    std::cout << "angular_effect = " << angular_effect << std::endl;
 
     float j = (-(1 + collision.restitution_coeff) * impulse_force) / (total_inverse_mass + angular_effect);
 
