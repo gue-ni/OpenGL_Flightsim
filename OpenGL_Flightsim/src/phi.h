@@ -514,7 +514,7 @@ class RigidBody : public Transform
     glm::vec3 a_inertia = glm::cross(a_tensor * glm::cross(a_relative, collision.normal), a_relative);
     glm::vec3 b_inertia = glm::cross(b_tensor * glm::cross(b_relative, collision.normal), b_relative);
 
-    float angular_effect = glm::dot(a_inertia, collision.normal);
+    float angular_effect = glm::dot(a_inertia + b_inertia , collision.normal);
 
     float j = (-(1 + collision.restitution_coeff) * impulse_force) / (total_inverse_mass + angular_effect);
 
