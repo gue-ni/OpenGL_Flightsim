@@ -176,14 +176,13 @@ int main(void)
 
   std::vector<GameObject*> objects;
 
-  glm::vec3 initial_position = glm::vec3(0.0f, 400.0f, 0.0f);
+  glm::vec3 initial_position = glm::vec3(0.0f, 1400.0f, 0.0f);
 
 #if (FLIGHTMODEL == CESSNA)
 #error not implemented
 #elif (FLIGHTMODEL == FAST_JET)
 
-  // constexpr float speed = phi::units::meter_per_second(100.0f /* km/h */);
-  constexpr float speed = 0.0f;
+  constexpr float speed = phi::units::meter_per_second(400.0f /* km/h */);
 
   const float mass = 10000.0f;
   const float thrust = 75000.0f;
@@ -232,13 +231,8 @@ int main(void)
 
   phi::RigidBody terrain;
   terrain.active = false;
-#if 0
-  terrain.mass = phi::EARTH_MASS;
-  terrain.set_inertia(phi::inertia::sphere(phi::EARTH_MASS, phi::EARTH_RADIUS));
-#else
   terrain.mass = 10000.0f;
   terrain.set_inertia(phi::inertia::sphere(terrain.mass, 1000.0f));
-#endif
 
   terrain.collider = new Heightmap(height_from_pixel(gfx::rgb(0x818600)));
 

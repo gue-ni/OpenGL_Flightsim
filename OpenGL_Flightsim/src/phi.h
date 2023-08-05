@@ -52,7 +52,6 @@ class RigidBody;
 constexpr float EPSILON = 1e-8f;
 constexpr float EARTH_GRAVITY = 9.80665f;
 constexpr float EARTH_RADIUS = 6371000.0f;
-constexpr float EARTH_MASS = 5.9722e24f;
 constexpr float PI = 3.141592653589793f;
 
 // directions in body space

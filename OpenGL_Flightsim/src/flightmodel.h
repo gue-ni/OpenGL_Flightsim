@@ -70,11 +70,7 @@ struct Airfoil {
   // lift_coeff, drag_coeff
   std::tuple<float, float> sample(float alpha) const
   {
-#if 0
-    assert(min_alpha <= alpha && alpha <= max_alpha);
-#else
     alpha = glm::clamp(alpha, min_alpha, max_alpha);
-#endif
     float t = phi::inverse_lerp(min_alpha, max_alpha, alpha) * max_index;
     float integer = std::floor(t);
     float fractional = t - integer;
