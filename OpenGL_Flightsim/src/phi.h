@@ -52,6 +52,7 @@ class RigidBody;
 constexpr float EPSILON = 1e-8f;
 constexpr float EARTH_GRAVITY = 9.80665f;
 constexpr float EARTH_RADIUS = 6371000.0f;
+constexpr float EARTH_MASS = 5.9722e24f;
 constexpr float PI = 3.141592653589793f;
 
 // directions in body space
@@ -129,6 +130,12 @@ struct Transform {
     return glm::vec3(matrix() * glm::vec4(vector, 1.0f));
   }
 
+  // transform vector from world space to body space (includes translation)
+  inline glm::vec3 inverse_transform_vector(const glm::vec3& vector) const
+  {
+    return glm::vec3(glm::inverse(matrix()) * glm::vec4(vector, 1.0f));
+  }
+
   // get body direction in world space
   inline glm::vec3 up() const { return transform_direction(phi::UP); }
   inline glm::vec3 right() const { return transform_direction(phi::RIGHT); }
@@ -137,7 +144,7 @@ struct Transform {
 
 // information needed to resolve a collision
 struct CollisionInfo {
-  float restitution_coeff = 0.75f;  // coefficient of restitution
+  float restitution_coeff = 0.75f;  // coefficient of restitution, 0 = perfectly inelastic, 1 = perfectly elastic
   glm::vec3 point;                  // contact point
   glm::vec3 normal;                 // contact normal
   float penetration;                // penetration depth
@@ -279,7 +286,6 @@ struct RigidBodyParams {
   glm::quat rotation = DEFAULT_RB_ORIENTATION;
   glm::vec3 velocity = glm::vec3(0);
   glm::vec3 angular_velocity = glm::vec3(0);
-  bool apply_gravity = true;
   Collider* collider = nullptr;
 };
 
@@ -295,8 +301,8 @@ class RigidBody : public Transform
   glm::vec3 velocity;                  // velocity in world space, m/s
   glm::vec3 angular_velocity;          // object space, (x = roll, y = yaw, z = pitch), rad/s
   glm::mat3 inertia, inverse_inertia;  // inertia tensor
-  bool apply_gravity, inactive = false;
-  Collider* collider = nullptr;
+  bool apply_gravity, inactive;
+  Collider* collider;
 
   RigidBody() : RigidBody({DEFAULT_RB_MASS, DEFAULT_RB_INERTIA}) {}
 
@@ -304,10 +310,11 @@ class RigidBody : public Transform
       : Transform(params.position, params.rotation),
         mass(params.mass),
         velocity(params.velocity),
-        inertia(params.inertia),
-        apply_gravity(params.apply_gravity),
         angular_velocity(params.angular_velocity),
+        inertia(params.inertia),
         inverse_inertia(glm::inverse(params.inertia)),
+        apply_gravity(true),
+        inactive(false),
         collider(params.collider)
   {
   }
@@ -407,6 +414,15 @@ class RigidBody : public Transform
   // get torque in world space
   inline glm::vec3 get_force() const { return m_force; }
 
+  inline glm::mat3 get_rotated_inertia() const
+  {
+#if 0
+    return glm::mat3(rotation) * inertia * glm::mat3(glm::conjugate(rotation));
+#else
+    return glm::mat3(rotation) * inverse_inertia * glm::mat3(glm::inverse(rotation));
+#endif
+  }
+
   // integrate RigidBody
   virtual void update(phi::Seconds dt)
   {
@@ -452,11 +468,10 @@ class RigidBody : public Transform
     b->add_impulse(+impulse);
   }
 
+  // impulse collision response with angular effects
   static void impulse_collision(const CollisionInfo& collision)
   {
     RigidBody *a = collision.a, *b = collision.b;
-
-    glm::vec3 relative_velocity = b->velocity - a->velocity;
 
     float total_mass = a->mass + b->mass;
     float total_inverse_mass = a->get_inverse_mass() + b->get_inverse_mass();
@@ -465,77 +480,46 @@ class RigidBody : public Transform
     a->position -= collision.normal * collision.penetration * (b->mass / total_mass);
     b->position += collision.normal * collision.penetration * (a->mass / total_mass);
 
-    // TODO: angular effect
+    // location of collision point relative to rigidbody
+    glm::vec3 a_relative = collision.point - a->position;
+    glm::vec3 b_relative = collision.point - b->position;
 
+    // get velocity at this point
+#if 0
+    glm::vec3 a_velocity = a->get_point_world_velocity(collision.point);
+    glm::vec3 b_velocity = b->get_point_world_velocity(collision.point);
+#else
+    glm::vec3 a_velocity = a->velocity;
+    glm::vec3 b_velocity = b->velocity;
+#endif
+
+    // relative velocity in world space
+    glm::vec3 relative_velocity = b_velocity - a_velocity;
+
+    // force is highest in a head on collision
     float impulse_force = glm::dot(glm::normalize(relative_velocity), collision.normal);
-    float j = (-(1.0f + collision.restitution_coeff) * impulse_force) / (total_inverse_mass);
+
+#if 0
+    glm::mat3 a_tensor = a->get_rotated_inertia();
+    glm::mat3 b_tensor = b->get_rotated_inertia();
+
+    glm::vec3 a_inertia = glm::cross(a_tensor * glm::cross(a_relative, collision.normal), a_relative);
+    glm::vec3 b_inertia = glm::cross(b_tensor * glm::cross(b_relative, collision.normal), b_relative);
+
+    float angular_effect = glm::dot(a_inertia, collision.normal);
+#else
+    float angular_effect = 0.0f;
+#endif
+
+    std::cout << "angular_effect = " << angular_effect << std::endl;
+
+    float j = (-(1 + collision.restitution_coeff) * impulse_force) / (total_inverse_mass + angular_effect);
 
     glm::vec3 impulse = j * collision.normal;
 
-    // apply linear impulse
     a->add_impulse_at_world_point(-impulse, collision.point);
     b->add_impulse_at_world_point(+impulse, collision.point);
   }
-
-#if 0
-  // impulse collision response
-  static void impulse_collision(const CollisionInfo& collision)
-  {
-    RigidBody *a = collision.a, *b = collision.b;
-    float penetration = collision.penetration;
-    float restitution_coeff = collision.restitution_coeff;
-
-    if (penetration < phi::EPSILON) return;
-
-    float total_mass = a->mass + b->mass;
-    float total_inverse_mass = a->get_inverse_mass() + b->get_inverse_mass();
-
-    glm::vec3 normal = collision.normal;
-
-    // move objects so they are no longer colliding. heavier object gets moved less
-    a->position -= normal * penetration * (b->mass / total_mass);
-    b->position += normal * penetration * (a->mass / total_mass);
-
-    // location of collision point relative to rigidbody
-    auto a_relative = collision.point - a->position;
-    auto b_relative = collision.point - b->position;
-
-    // get velocity at this point (body space)
-    auto a_velocity = a->get_point_velocity(a_relative);
-    auto b_velocity = b->get_point_velocity(b_relative);
-
-    // relative velocity in world space
-    auto relative_velocity = b->transform_direction(b_velocity) - a->transform_direction(a_velocity);
-
-    // force is highest in a head on collision
-    float impulse_force = glm::dot(glm::normalize(relative_velocity), normal);
-
-    auto a_inertia = glm::cross(a->inertia * glm::cross(a_relative, normal), a_relative);
-    auto b_inertia = glm::cross(b->inertia * glm::cross(b_relative, normal), b_relative);
-    float angular_effect_1 = glm::dot(a_inertia + b_inertia, normal);
-
-    float angular_effect_2 =
-        glm::dot(normal, glm::cross((glm::cross(a_relative, collision.normal) / a->inertia), a_relative)) +
-        glm::dot(normal, glm::cross((glm::cross(b_relative, collision.normal) / b->inertia), b_relative));
-
-    // TODO: find correct implementation
-    // printf("a_1 = %f, a_2 = %f\n", angular_effect_1, angular_effect_2);
-    // assert(std::abs(angular_effect_1 - angular_effect_2) < phi::EPSILON);
-
-    // float j = (-(1 + restitution_coeff) * impulse_force) / (total_inverse_mass + angular_effect_1);
-    float j = (-(1 + restitution_coeff) * impulse_force) / (total_inverse_mass);
-
-    glm::vec3 impulse = j * normal;
-
-    // apply linear impulse
-    a->add_impulse(-impulse);
-    b->add_impulse(+impulse);
-
-    // apply angular impulse at position
-    a->add_angular_impulse(glm::cross(a_relative, -impulse));
-    b->add_angular_impulse(glm::cross(b_relative, +impulse));
-  }
-#endif
 };
 
 template <typename RB>

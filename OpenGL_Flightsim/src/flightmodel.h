@@ -230,11 +230,11 @@ struct Airplane : public phi::RigidBody {
   glm::vec4 joystick{};  // roll, yaw, pitch, elevator trim
   float throttle = 0.25f;
   std::vector<Engine*> engines;
-  std::vector<Wing> wings;
+  std::array<Wing, 4> wings;
   bool is_landed = false;
 
   // wings are in the order { left_wing, right_wing, elevator, rudder }
-  Airplane(float mass_, const glm::mat3& inertia_, std::vector<Wing> wings_, std::vector<Engine*> engines_,
+  Airplane(float mass_, const glm::mat3& inertia_, std::array<Wing, 4> wings_, std::vector<Engine*> engines_,
            Collider* collider_)
       : phi::RigidBody({.mass = mass_, .inertia = inertia_, .collider = collider_}), wings(wings_), engines(engines_)
   {

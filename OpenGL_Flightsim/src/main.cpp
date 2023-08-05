@@ -38,12 +38,12 @@ JK      control thrust
 
 #define CLIPMAP            1
 #define SKYBOX             1
-#define SMOOTH_CAMERA      1
+#define SMOOTH_CAMERA      0
 #define NPC_AIRCRAFT       0
 #define SHOW_MASS_ELEMENTS 0
 #define USE_PID            1
 #define PS1_RESOLUTION     1
-#define DEBUG_INFO         0
+#define DEBUG_INFO         1
 #define TERRAIN_COLLISION  1
 
 /* select flightmodel */
@@ -176,7 +176,7 @@ int main(void)
 
   std::vector<GameObject*> objects;
 
-  glm::vec3 initial_position = glm::vec3(0.0f, 1000.0f, 0.0f);
+  glm::vec3 initial_position = glm::vec3(0.0f, 400.0f, 0.0f);
 
 #if (FLIGHTMODEL == CESSNA)
 #error not implemented
@@ -205,7 +205,7 @@ int main(void)
   const Airfoil NACA_2412(NACA_2412_data);
   const Airfoil NACA_64_206(NACA_64_206_data);
 
-  std::vector<Wing> wings = {
+  std::array<Wing, 4> wings = {
       Wing({wing_offset, 0.0f, -2.7f}, 6.96f, 2.50f, &NACA_2412, phi::UP, 0.20f),    // left wing
       Wing({wing_offset, 0.0f, +2.7f}, 6.96f, 2.50f, &NACA_2412, phi::UP, 0.20f),    // right wing
       Wing({tail_offset, -0.1f, 0.0f}, 6.54f, 2.70f, &NACA_0012, phi::UP, 1.0f),     // elevator
@@ -218,10 +218,11 @@ int main(void)
 #endif
 
   Sphere sphere(15.0f);
-  LandingGear landing_gear(glm::vec3(2.0f, -1.0f, 0.0f), glm::vec3(-0.5, -1.0f, +1.5f), glm::vec3(-0.5, -1.0f, -1.5f));
+  LandingGear landing_gear(glm::vec3(3.0f, -1.5f, 0.0f), glm::vec3(-3.0f, -1.5f, +3.0f),
+                           glm::vec3(-3.0f, -1.5f, -3.0f));
 
   std::vector<Airplane> rigid_bodies = {
-      Airplane(mass, inertia, wings, {engine}, &sphere),
+      Airplane(mass, inertia, wings, {engine}, &landing_gear),
   };
 
   GameObject player = {
@@ -231,11 +232,14 @@ int main(void)
 
   phi::RigidBody terrain;
   terrain.inactive = true;
-  terrain.mass = phi::INFINITE_RB_MASS;
+  terrain.mass = phi::EARTH_MASS;
+  terrain.set_inertia(phi::inertia::sphere(terrain.mass, phi::EARTH_RADIUS));
   terrain.collider = new Heightmap(height_from_pixel(gfx::rgb(0x818600)));
 
   player.rigid_body.position = initial_position;
   player.rigid_body.velocity = glm::vec3(speed, 0.0f, 0.0f);
+  player.rigid_body.rotation.x = -0.1f;
+  player.rigid_body.rotation.z = -0.1f;
   scene.add(&player.mesh);
   objects.push_back(&player);
 
@@ -433,8 +437,8 @@ int main(void)
     ImGui::End();
 
 #if DEBUG_INFO
-    auto angular_velocity = glm::degrees(player.airplane.angular_velocity);
-    auto attitude = glm::degrees(player.airplane.get_euler_angles());
+    auto angular_velocity = glm::degrees(player.rigid_body.angular_velocity);
+    auto attitude = glm::degrees(player.rigid_body.get_euler_angles());
 
     ImVec2 size(140, 140);
     ImGui::SetNextWindowPos(ImVec2(RESOLUTION.x - size.y - 10.0f, RESOLUTION.y - size.y - 10.0f));
@@ -481,14 +485,14 @@ int main(void)
       phi::CollisionInfo collision;
 
       if (test_collision(&player.rigid_body, &terrain, &collision)) {
-        std::cout << "before collision:\n";
-        std::cout << player.rigid_body << std::endl;
+        // std::cout << "before collision:\n";
+        // std::cout << player.rigid_body << std::endl;
 
-        phi::RigidBody::linear_impulse_collision(collision);
-        // phi::RigidBody::impulse_collision(collision);
+        // phi::RigidBody::linear_impulse_collision(collision);
+        phi::RigidBody::impulse_collision(collision);
 
-        std::cout << "after collision:\n";
-        std::cout << player.rigid_body << std::endl;
+        // std::cout << "after collision:\n";
+        // std::cout << player.rigid_body << std::endl;
         // paused = true;
       }
 #endif
