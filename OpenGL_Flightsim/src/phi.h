@@ -291,15 +291,12 @@ class RigidBody : public Transform
   glm::vec3 m_torque{};  // torque vector in body space
 
  public:
-  float mass = DEFAULT_RB_MASS;                  // rigidbody mass, kg
-  glm::vec3 velocity = glm::vec3(0.0f);          // velocity in world space, m/s
-  glm::vec3 angular_velocity = glm::vec3(0.0f);  // object space, (x = roll, y = yaw, z = pitch), rad/s
-  bool apply_gravity = true;
-  bool inactive = false;
-  bool detect_collision = true;
+  float mass = DEFAULT_RB_MASS;        // rigidbody mass, kg
+  glm::vec3 velocity;                  // velocity in world space, m/s
+  glm::vec3 angular_velocity;          // object space, (x = roll, y = yaw, z = pitch), rad/s
+  glm::mat3 inertia, inverse_inertia;  // inertia tensor
+  bool apply_gravity, inactive = false;
   Collider* collider = nullptr;
-  glm::mat3 inertia = glm::mat3(0.0f);
-  glm::mat3 inverse_inertia = glm::mat3(0.0f);  // inertia tensor
 
   RigidBody() : RigidBody({DEFAULT_RB_MASS, DEFAULT_RB_INERTIA}) {}
 
@@ -321,6 +318,13 @@ class RigidBody : public Transform
     return get_body_velocity() + glm::cross(angular_velocity, point);
   }
 
+  // get velocity of point in world space
+  inline glm::vec3 get_point_world_velocity(const glm::vec3& point) const
+  {
+    glm::vec3 relative_point = inverse_transform_direction(point - position);
+    return transform_direction(get_point_velocity(relative_point));
+  }
+
   // get velocity in body space
   inline glm::vec3 get_body_velocity() const { return inverse_transform_direction(velocity); }
 
@@ -328,11 +332,33 @@ class RigidBody : public Transform
   inline float get_inverse_mass() const { return 1.0f / mass; };
 
   // force and point vectors are in body space
-  inline void add_force_at_point(const glm::vec3& force, const glm::vec3& point)
+  inline void add_force_at_point(const glm::vec3& force, const glm::vec3& relative_point)
   {
-    m_force += transform_direction(force);
-    m_torque += glm::cross(point, force);
+    add_relative_force(force);
+    add_relative_torque(glm::cross(relative_point, force));
   }
+
+  // impulse and point vectors are in body space
+  inline void add_impulse_at_point(const glm::vec3& impulse, const glm::vec3& relative_point)
+  {
+    add_relative_impulse(impulse);
+    add_relative_angular_impulse(glm::cross(relative_point, impulse));
+  }
+
+  // force and point vectors are in world space
+  inline void add_force_at_world_point(const glm::vec3& force, const glm::vec3& point)
+  {
+    add_force(force);
+    add_torque(glm::cross((point - position), force));
+  }
+
+  // impulse and point vectors are in world space
+  inline void add_impulse_at_world_point(const glm::vec3& impulse, const glm::vec3& point)
+  {
+    add_impulse(impulse);
+    add_angular_impulse(glm::cross((point - position), impulse));
+  }
+
   // set inertia tensor
   inline void set_inertia(const glm::mat3& tensor) { inertia = tensor, inverse_inertia = glm::inverse(tensor); }
 
@@ -353,13 +379,6 @@ class RigidBody : public Transform
 
   // angular impulse in body space
   inline void add_relative_angular_impulse(const glm::vec3& impulse) { angular_velocity += impulse * inverse_inertia; }
-
-  // impulse and point vectors are in body space
-  inline void add_impulse_at_point(const glm::vec3& impulse, const glm::vec3& point)
-  {
-    add_impulse(impulse);
-    add_relative_angular_impulse(glm::cross(point, impulse));
-  }
 
   // force vector in world space
   inline void add_force(const glm::vec3& force) { m_force += force; }
@@ -433,6 +452,32 @@ class RigidBody : public Transform
     b->add_impulse(+impulse);
   }
 
+  static void impulse_collision(const CollisionInfo& collision)
+  {
+    RigidBody *a = collision.a, *b = collision.b;
+
+    glm::vec3 relative_velocity = b->velocity - a->velocity;
+
+    float total_mass = a->mass + b->mass;
+    float total_inverse_mass = a->get_inverse_mass() + b->get_inverse_mass();
+
+    // move objects so they are no longer colliding. heavier object gets moved less
+    a->position -= collision.normal * collision.penetration * (b->mass / total_mass);
+    b->position += collision.normal * collision.penetration * (a->mass / total_mass);
+
+    // TODO: angular effect
+
+    float impulse_force = glm::dot(glm::normalize(relative_velocity), collision.normal);
+    float j = (-(1.0f + collision.restitution_coeff) * impulse_force) / (total_inverse_mass);
+
+    glm::vec3 impulse = j * collision.normal;
+
+    // apply linear impulse
+    a->add_impulse_at_world_point(-impulse, collision.point);
+    b->add_impulse_at_world_point(+impulse, collision.point);
+  }
+
+#if 0
   // impulse collision response
   static void impulse_collision(const CollisionInfo& collision)
   {
@@ -490,6 +535,7 @@ class RigidBody : public Transform
     a->add_angular_impulse(glm::cross(a_relative, -impulse));
     b->add_angular_impulse(glm::cross(b_relative, +impulse));
   }
+#endif
 };
 
 template <typename RB>
