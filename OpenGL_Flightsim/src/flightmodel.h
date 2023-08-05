@@ -70,7 +70,11 @@ struct Airfoil {
   // lift_coeff, drag_coeff
   std::tuple<float, float> sample(float alpha) const
   {
+#if 0
     assert(min_alpha <= alpha && alpha <= max_alpha);
+#else
+    alpha = glm::clamp(alpha, min_alpha, max_alpha);
+#endif
     float t = phi::inverse_lerp(min_alpha, max_alpha, alpha) * max_index;
     float integer = std::floor(t);
     float fractional = t - integer;
@@ -243,7 +247,6 @@ struct Airplane : public phi::RigidBody {
 
   void update(phi::Seconds dt) override
   {
-#if 0
     float aileron = joystick.x, rudder = joystick.y, elevator = joystick.z, trim = joystick.w;
 
     if (wings.size() > 0) {
@@ -261,7 +264,7 @@ struct Airplane : public phi::RigidBody {
       engine->throttle = throttle;
       engine->apply_forces(this, dt);
     }
-#endif
+
     phi::RigidBody::update(dt);
   }
 
