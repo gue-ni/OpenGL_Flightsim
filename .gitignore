@@ -18,3 +18,11 @@ OpenGL_Flightsim/assets/models/skyhawk.mtl
 OpenGL_Flightsim/assets/models/skyhawk.obj
 tools/terrain/heightmap_to_normalmap.py
 tools/terrain/parse_tif_heightmap.sh
+.vscode/settings.json
+OpenGL_Flightsim/assets/textures/terrain/data/11/*
+OpenGL_Flightsim/assets/textures/terrain/data/12/*
+OpenGL_Flightsim/assets/textures/terrain/data/13/*
+OpenGL_Flightsim/assets/textures/terrain/data/14/*
+OpenGL_Flightsim/assets/textures/terrain/data/15/*
+
+

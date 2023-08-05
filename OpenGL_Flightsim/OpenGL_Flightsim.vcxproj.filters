@@ -81,9 +81,6 @@
     <ClInclude Include="src\data.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\collider.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="lib\imgui\imgui.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -115,6 +112,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\pid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\collider.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

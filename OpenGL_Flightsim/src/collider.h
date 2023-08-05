@@ -1,186 +1,225 @@
-/*
-    Algorithms based on Christer_Ericson's Real-Time Collision Detection
-*/
 #pragma once
-
-#include <glm/glm.hpp>
-
 #include "phi.h"
 
-namespace collider
-{
+struct Collider;
+struct Sphere;
+struct Heightmap;
+struct LandingGear;
 
-typedef void CollisionCallback(const glm::vec3& point, const glm::vec3& normal);
+#define COLLISION_NOT_IMPLEMENTED 0
 
+// collider abstract base class
 struct Collider {
-  CollisionCallback* on_collision = nullptr;
+  virtual bool test(const phi::Transform* tf, const Collider* other, const phi::Transform* other_tf,
+                    phi::CollisionInfo* info) const = 0;
+  virtual bool test(const phi::Transform* tf, const Sphere* other, const phi::Transform* other_tf,
+                    phi::CollisionInfo* info) const = 0;
+  virtual bool test(const phi::Transform* tf, const Heightmap* other, const phi::Transform* other_tf,
+                    phi::CollisionInfo* info) const = 0;
+  virtual bool test(const phi::Transform* tf, const LandingGear* other, const phi::Transform* other_tf,
+                    phi::CollisionInfo* info) const = 0;
 };
 
-struct Contact {
-  Collider *a, *b;  // the objects in contact
-  float restitution_coeff;
-};
-
-// axis aligned bounding box
-struct AABB : public Collider {
-  glm::vec3 center, size;
-  glm::vec3 min() const { return center - size / 2.0f; }
-  glm::vec3 max() const { return center + size / 2.0f; }
-};
-
-// bounding sphere
 struct Sphere : public Collider {
-  glm::vec3 center;
-  float radius;
-  Sphere() : Sphere(glm::vec3(0.0f), 1.0f) {}
-  Sphere(const glm::vec3& center, float radius) : center(center), radius(radius) {}
+  const float radius;
+  Sphere(float radius_) : radius(radius_) {}
+  bool test(const phi::Transform* tf, const Collider* other, const phi::Transform* other_tf,
+            phi::CollisionInfo* info) const override;
+  bool test(const phi::Transform* tf, const Sphere* other, const phi::Transform* other_tf,
+            phi::CollisionInfo* info) const override;
+  bool test(const phi::Transform* tf, const Heightmap* other, const phi::Transform* other_tf,
+            phi::CollisionInfo* info) const override;
+  bool test(const phi::Transform* tf, const LandingGear* other, const phi::Transform* other_tf,
+            phi::CollisionInfo* info) const override;
 };
 
-struct Ray : public Collider {
-  glm::vec3 origin, direction;
-  Ray() : Ray(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f)) {}
-  Ray(const glm::vec3& origin, const glm::vec3& direction) : origin(origin), direction(direction) {}
-  inline glm::vec3 point_at(float t) const { return origin + direction * t; }
+struct Heightmap : public Collider {
+  const float height;
+  Heightmap(float height_) : height(height_) {}
+  bool test(const phi::Transform* tf, const Collider* other, const phi::Transform* other_tf,
+            phi::CollisionInfo* info) const override;
+  bool test(const phi::Transform* tf, const Sphere* other, const phi::Transform* other_tf,
+            phi::CollisionInfo* info) const override;
+  bool test(const phi::Transform* tf, const Heightmap* other, const phi::Transform* other_tf,
+            phi::CollisionInfo* info) const override;
+  bool test(const phi::Transform* tf, const LandingGear* other, const phi::Transform* other_tf,
+            phi::CollisionInfo* info) const override;
 };
 
-struct Heightmap {
-  const uint8_t* data;
-  const int width, height, channels;
-  const float scale = 3000.0f, shift = 0.0f;
-
-  float magnification = 25000.0f;
-
-  Heightmap(const uint8_t* data, int width, int height, int channels)
-      : data(data), width(width), height(height), channels(channels)
+struct LandingGear : public Collider {
+  const glm::vec3 center, left, right;  // wheel positions
+  LandingGear(const glm::vec3& center_, const glm::vec3& left_, const glm::vec3& right_)
+      : center(center_), left(left_), right(right_)
   {
   }
-
-  glm::vec3 sample(const glm::vec2& coord) const
-  {
-    assert(0.0f <= coord.x && coord.x <= 1.0f);
-    assert(0.0f <= coord.y && coord.y <= 1.0f);
-
-    int x = static_cast<int>(width * coord.x);
-    int y = static_cast<int>(height * coord.y);
-
-    int index = (y * width + x) * channels;
-
-    auto color = glm::vec3{static_cast<float>(data[index + 0]), static_cast<float>(data[index + 1]),
-                           static_cast<float>(data[index + 2])};
-    color /= 255.0f;
-    return color;
-  }
-
-  float get_height(const glm::vec2& coord) const
-  {
-    glm::vec2 tmp = glm::clamp(coord / magnification, glm::vec2(-1.0f), glm::vec2(1.0f));
-    auto uv = phi::scale(tmp, glm::vec2(-1.0f), glm::vec2(1.0f), glm::vec2(0.0f), glm::vec2(1.0f));
-    float value = sample(uv).r;
-    float height = scale * value + shift;
-    return height;
-  }
+  bool test(const phi::Transform* tf, const Collider* other, const phi::Transform* other_tf,
+            phi::CollisionInfo* info) const override;
+  bool test(const phi::Transform* tf, const Sphere* other, const phi::Transform* other_tf,
+            phi::CollisionInfo* info) const override;
+  bool test(const phi::Transform* tf, const Heightmap* other, const phi::Transform* other_tf,
+            phi::CollisionInfo* info) const override;
+  bool test(const phi::Transform* tf, const LandingGear* other, const phi::Transform* other_tf,
+            phi::CollisionInfo* info) const override;
 };
 
-// test collision between a ray and a sphere
-bool test_collision(const Ray& r, const Sphere& s, float* t)
+/* ############### Sphere ############### */
+
+inline bool Sphere::test(const phi::Transform* tf, const Collider* other, const phi::Transform* other_tf,
+                         phi::CollisionInfo* info) const
 {
-  // Christer_Ericson-Real-Time_Collision_Detection.pdf#page=178
-  auto m = r.origin - s.center;
-  auto b = glm::dot(m, r.direction);
-  auto c = glm::dot(m, m) - phi::sq(s.radius);
-
-  if (c > 0.0f && b > 0.0f) return false;
-
-  auto discr = phi::sq(b) - c;
-
-  if (discr < 0.0f) return false;
-
-  *t = std::max(-b - std::sqrt(discr), 0.0f);
-  return true;
+  return other->test(other_tf, this, tf, info);
 }
 
-// test collision between two spheres
-bool test_collision(const Sphere& a, const Sphere& b, phi::CollisionInfo* info)
+inline bool Sphere::test(const phi::Transform* tf, const Sphere* other, const phi::Transform* other_tf,
+                         phi::CollisionInfo* info) const
 {
-  float distance = glm::length(a.center - b.center);
-  float radius_sum = a.radius + b.radius;
+  float sum_radius = radius + other->radius;
+  float distance = glm::length(tf->position - other_tf->position);
 
-  if (distance < radius_sum) {
-    info->normal = glm::normalize(b.center - a.center);
-    info->penetration = radius_sum - distance;
-    info->point = a.center + a.radius * info->normal;
+  if (distance < sum_radius) {
+    glm::vec3 vec = other_tf->position - tf->position;
+    info->penetration = sum_radius - distance;
+    info->normal = glm::normalize(vec);
+    info->point = tf->position + vec * 0.5f;
     return true;
   } else {
     return false;
   }
 }
 
-// test collision between two axis aligned bounding boxes
-bool test_collision(const AABB& a, const AABB& b)
+inline bool Sphere::test(const phi::Transform* tf, const Heightmap* other, const phi::Transform* other_tf,
+                         phi::CollisionInfo* info) const
 {
-  auto a_min = a.min(), a_max = a.max();
-  auto b_min = b.min(), b_max = b.max();
-  return ((a_max.x < b_min.x || a_min.x > b_max.x) && (a_max.y < b_min.y || a_min.y > b_max.y) &&
-          (a_max.z < b_min.z || a_min.z > b_max.z));
+  float lowest_point = tf->position.y;
+  float diff = other->height - lowest_point;
+  if (diff > 0) {
+    info->penetration = diff;
+    info->normal = phi::DOWN;  // b - a
+    info->point = tf->position - glm::vec3(0.0f, radius, 0.0f);
+    return true;
+  }
+  return false;
 }
 
-bool test_collision(const Heightmap& heightmap, const glm::vec3& point, float* height)
+inline bool Sphere::test(const phi::Transform* tf, const LandingGear* other, const phi::Transform* other_tf,
+                         phi::CollisionInfo* info) const
 {
-  *height = heightmap.get_height({point.x, point.z});
-  return point.y <= *height;
+  assert(COLLISION_NOT_IMPLEMENTED);
+  return false;
 }
 
-// test collision of two moving spheres
-bool test_moving_collision(const Sphere& s0, const glm::vec3& velocity0, const Sphere& s1, const glm::vec3& velocity1,
-                           float* t = nullptr)
+/* ############### Heightmap ############### */
+
+inline bool Heightmap::test(const phi::Transform* tf, const Collider* other, const phi::Transform* other_tf,
+                            phi::CollisionInfo* info) const
 {
-  // Christer_Ericson-Real-Time_Collision_Detection.pdf#page=264
+  return other->test(other_tf, this, tf, info);
+}
+
+inline bool Heightmap::test(const phi::Transform* tf, const Sphere* other, const phi::Transform* other_tf,
+                            phi::CollisionInfo* info) const
+{
+  return other->test(other_tf, this, tf, info);
+}
+
+inline bool Heightmap::test(const phi::Transform* tf, const Heightmap* other, const phi::Transform* other_tf,
+                            phi::CollisionInfo* info) const
+{
+  assert(COLLISION_NOT_IMPLEMENTED);
+  return false;
+}
+
+inline bool Heightmap::test(const phi::Transform* tf, const LandingGear* other, const phi::Transform* other_tf,
+                            phi::CollisionInfo* info) const
+{
+  return other->test(other_tf, this, tf, info);
+}
+
+/* ############### LandingGear ############### */
+
+inline bool LandingGear::test(const phi::Transform* tf, const Collider* other, const phi::Transform* other_tf,
+                              phi::CollisionInfo* info) const
+{
+  return other->test(other_tf, this, tf, info);
+}
+
+inline bool LandingGear::test(const phi::Transform* tf, const Sphere* other, const phi::Transform* other_tf,
+                              phi::CollisionInfo* info) const
+{
+  assert(COLLISION_NOT_IMPLEMENTED);
+  return false;
+}
+
+inline bool LandingGear::test(const phi::Transform* tf, const Heightmap* other, const phi::Transform* other_tf,
+                              phi::CollisionInfo* info) const
+{
+  // no collision if landing gear is not pointing down
+  if (glm::dot(phi::UP, tf->up()) < 0) return false;
+
+  float height = other->height;
+
+  glm::vec3 left_wheel = tf->transform_vector(left);
+  glm::vec3 right_wheel = tf->transform_vector(right);
+  glm::vec3 center_wheel = tf->transform_vector(center);
+
+  glm::vec3 lowest_point;
+
+  std::string wheel;
+
+  if (center_wheel.y <= right_wheel.y && center_wheel.y <= left_wheel.y) {
+    lowest_point = center_wheel;
+    wheel = "center wheel";
+
+  } else {
+    if (std::abs(right_wheel.y - left_wheel.y) < 0.1f) {
+      lowest_point = (right_wheel + left_wheel) / 2.0f;
+      wheel = "between wheels";
+    } else if (right_wheel.y < left_wheel.y && right_wheel.y < center_wheel.y) {
+      lowest_point = right_wheel;
+      wheel = "right wheel";
+    } else {
+      lowest_point = left_wheel;
+      wheel = "left wheel";
+    }
+  }
+
+  float penetration = height - lowest_point.y;
+
+  if (penetration > 0) {
 #if 0
-    auto direction = s1.center - s0.center;
-    auto radius_sum = s0.radius + s1.radius;
-    auto relative_velocity = velocity1 - velocity0;
-
-    float c = glm::dot(direction, direction) - sq(radius_sum);
-
-    if (c < 0.0f) {
-        *t = 0.0f;
-        return true; // spheres are intersecting
-    }
-
-    float a = glm::dot(relative_velocity, relative_velocity);
-
-    if (a < EPSILON)
-        return false; // spheres not moving relative to each other
-
-    float b = glm::dot(relative_velocity, direction);
-
-    if (b >= 0.0f)
-        return false; // spheres moving away from each other
-
-    float d = sq(b) - a * c;
-
-    if (d < 0.0f)
-        return false; // spheres are not intersecting
-
-    *t = (-b - std::sqrt(d)) / a;
-    return true;
-#else
-  // Christer_Ericson-Real-Time_Collision_Detection.pdf#page=226
-  float tmp_t = 0.0f;
-  auto v = velocity0 - velocity1;
-  auto vlen = glm::length(v);
-
-  Ray ray(s0.center, v / vlen);
-  Sphere sphere(s1.center, s0.radius + s1.radius);
-
-  if (test_collision(ray, sphere, &tmp_t)) {
-    if (t != nullptr) {
-      *t = tmp_t;
-    }
-    return tmp_t <= vlen;
-  } else {
-    return false;
-  }
+    std::cout << "########### start collision #############\n";
+    std::cout << wheel << std::endl;
+    std::cout << center_wheel << std::endl;
+    std::cout << left_wheel << std::endl;
+    std::cout << right_wheel << std::endl;
+    std::cout << "########### end collision #############\n";
 #endif
+    info->penetration = penetration;
+    info->normal = phi::DOWN;
+    info->point = lowest_point;
+    info->restitution_coeff = 0.5f;
+    return true;
+  }
+
+  return false;
 }
-};  // namespace collider
+
+inline bool LandingGear::test(const phi::Transform* tf, const LandingGear* other, const phi::Transform* other_tf,
+                              phi::CollisionInfo* info) const
+{
+  assert(COLLISION_NOT_IMPLEMENTED);
+  return false;
+}
+
+// collision detection
+bool test_collision(phi::RigidBody* a, phi::RigidBody* b, phi::CollisionInfo* info)
+{
+  assert((a && b) && (a->collider && b->collider));
+
+  if (a->collider->test(a, b->collider, b, info)) {
+    info->a = a, info->b = b;
+    return true;
+  }
+
+  return false;
+}

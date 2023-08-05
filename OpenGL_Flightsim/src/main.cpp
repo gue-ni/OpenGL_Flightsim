@@ -38,12 +38,13 @@ JK      control thrust
 
 #define CLIPMAP            1
 #define SKYBOX             1
-#define SMOOTH_CAMERA      1
+#define SMOOTH_CAMERA      0
 #define NPC_AIRCRAFT       0
 #define SHOW_MASS_ELEMENTS 0
 #define USE_PID            1
-#define PS1_RESOLUTION     1
+#define PS1_RESOLUTION     0
 #define DEBUG_INFO         0
+#define TERRAIN_COLLISION  1
 
 /* select flightmodel */
 #define FAST_JET    0
@@ -69,11 +70,8 @@ struct Joystick {
 };
 
 struct GameObject {
-  gfx::Mesh transform;
-  Airplane& airplane;
-  // collider::Sphere collider;
-
-  void update(float dt) { transform.set_transform(airplane.position, airplane.rotation); }
+  gfx::Mesh mesh;
+  Airplane& rigid_body;
 };
 
 void get_keyboard_state(Joystick& joystick, phi::Seconds dt);
@@ -178,105 +176,14 @@ int main(void)
 
   std::vector<GameObject*> objects;
 
-  glm::vec3 initial_position = glm::vec3(0.0f, 3000.0f, 0.0f);
+  glm::vec3 initial_position = glm::vec3(0.0f, 400.0f, 0.0f);
 
 #if (FLIGHTMODEL == CESSNA)
-  constexpr float speed = phi::units::meter_per_second(200.0f /* km/h */);
-
-  // airplane mass
-  const float mass = 1000.0f;
-
-  // engine
-  const float rpm = 2400.0f;
-  const float horsepower = 160.0f;
-  const float prop_diameter = 1.9f;
-
-  // main wing
-  const float total_wing_area = 16.17f;
-  const float total_wing_span = 11.00f;
-  const float main_wing_span = total_wing_span / 2;
-  const float main_wing_area = total_wing_area / 2;
-  const float main_wing_chord = main_wing_area / main_wing_span;
-
-  // aileron
-  const float aileron_area = 1.70f;
-  const float aileron_span = 1.26f;
-  const auto aileron_offset = glm::vec3(-main_wing_chord * 0.75f, 0.0f, 0.0f);
-
-  // horizontal tail
-  const float elevator_area = 1.35f;
-  const float h_tail_area = 2.0f + elevator_area;
-  const float h_tail_span = 2.0f;
-  const float h_tail_chord = h_tail_area / h_tail_span;
-
-  // vertical tail
-  const float v_tail_area = 2.04f;  // modified
-  const float v_tail_span = 2.04f;
-  const float v_tail_chord = v_tail_area / v_tail_span;
-
-  const float wing_offset = -0.2f;
-  const float tail_offset = -4.6f;
-
-  std::cout << "aileron_offset = " << aileron_offset << std::endl;
-
-  // design coordinates go from the back forwards
-  std::vector<phi::inertia::Element> mass_elements = {
-#if 0
-    {.size = {main_wing_chord, 0.10f, main_wing_span}, .position = {5.0f, 0.5f, -2.7f}},  // left wing
-    {.size = {main_wing_chord, 0.10f, main_wing_span}, .position = {5.0f, 0.5f, +2.7f}},  // right wing
-    {.size = {h_tail_chord, 0.10f, h_tail_span}, .position = {0.0f, 0.0f, 0.0f}},         // horizontal tail
-    {.size = {v_tail_chord, v_tail_span, 0.1f}, .position = {0.0f, 1.0f, 0.0f}},          // vertical tail
-    {.size = {5.0f, 1.0f, 1.0f}, .position = {6.5f, 0.0f, 0.0f}},                         // fuselage
-#else
-    phi::inertia::cube({wing_offset, 0.5f, -2.7f}, {main_wing_chord, 0.10f, main_wing_span}),  // left wing
-    phi::inertia::cube({wing_offset, 0.5f, +2.7f}, {main_wing_chord, 0.10f, main_wing_area}),  // right wing
-    phi::inertia::cube({tail_offset, -0.1f, 0.0f}, {h_tail_chord, 0.10f, h_tail_span}),        // elevator
-    phi::inertia::cube({tail_offset, 0.0f, 0.0f}, {v_tail_chord, v_tail_span, 0.10f}),         // rudder
-    phi::inertia::cube({0.0f, 0.0f, 0.0f}, {8.0f, 2.0f, 1.0f}),                                // fuselage
-#endif
-  };
-
-  // individual element mass is proportional to volume
-  glm::vec3 center_of_gravity;
-  phi::inertia::set_uniform_density(mass_elements, mass);
-  std::cout << "cg = " << center_of_gravity << std::endl;
-
-  // compute inertia tensor
-  const auto inertia = phi::inertia::tensor(mass_elements, true, &center_of_gravity);
-  std::cout << "inertia = " << inertia << std::endl;
-
-  for (int i = 0; i < mass_elements.size(); i++) {
-    auto& m = mass_elements[i];
-    std::cout << "[Mass] m = " << m.mass << ", o = " << m.offset << ", p = " << m.position << std::endl;
-  }
-
-#if 0
-  auto l_wing_pos = glm::vec3{wing_offset, 0.0f, -2.7f};
-  auto r_wing_pos = glm::vec3{wing_offset, 0.0f, +2.7f};
-  auto h_tail_pos = glm::vec3{tail_offset, -0.1f, 0.0f};
-  auto v_tail_pos = glm::vec3{tail_offset, 0.5f, 0.0f};
-#else
-  auto l_wing_pos = mass_elements[0].offset;
-  auto r_wing_pos = mass_elements[1].offset;
-  auto h_tail_pos = mass_elements[2].offset;
-  auto v_tail_pos = mass_elements[3].offset;
-#endif
-
-  const Airfoil NACA_0012(NACA_0012_data);
-  const Airfoil NACA_2412(NACA_2412_data);
-
-  std::vector<Wing> wings = {
-      Wing(&NACA_2412, l_wing_pos, main_wing_area, main_wing_span, phi::UP, 0.10f),  // left wing
-      Wing(&NACA_2412, r_wing_pos, main_wing_area, main_wing_span, phi::UP, 0.10f),  // right wing
-      Wing(&NACA_0012, h_tail_pos, h_tail_area, h_tail_span, phi::UP, 0.25f),        // horizontal tail
-      Wing(&NACA_0012, v_tail_pos, v_tail_area, v_tail_span, phi::RIGHT, 0.25f),     // vertical tail
-  };
-
-  Engine* engine = new PropellorEngine(horsepower, rpm, prop_diameter);
-
+#error not implemented
 #elif (FLIGHTMODEL == FAST_JET)
 
-  constexpr float speed = phi::units::meter_per_second(500.0f /* km/h */);
+  // constexpr float speed = phi::units::meter_per_second(100.0f /* km/h */);
+  constexpr float speed = 0.0f;
 
   const float mass = 10000.0f;
   const float thrust = 75000.0f;
@@ -298,7 +205,7 @@ int main(void)
   const Airfoil NACA_2412(NACA_2412_data);
   const Airfoil NACA_64_206(NACA_64_206_data);
 
-  std::vector<Wing> wings = {
+  std::array<Wing, 4> wings = {
       Wing({wing_offset, 0.0f, -2.7f}, 6.96f, 2.50f, &NACA_2412, phi::UP, 0.20f),    // left wing
       Wing({wing_offset, 0.0f, +2.7f}, 6.96f, 2.50f, &NACA_2412, phi::UP, 0.20f),    // right wing
       Wing({tail_offset, -0.1f, 0.0f}, 6.54f, 2.70f, &NACA_0012, phi::UP, 1.0f),     // elevator
@@ -310,29 +217,48 @@ int main(void)
 #error FLIGHTMODEL not defined
 #endif
 
+  Sphere sphere(15.0f);
+  LandingGear landing_gear(glm::vec3(3.0f, -1.5f, 0.0f), glm::vec3(-3.0f, -1.5f, +3.0f),
+                           glm::vec3(-3.0f, -1.5f, -3.0f));
+
   std::vector<Airplane> rigid_bodies = {
-      Airplane(mass, inertia, wings, {engine}, nullptr),
+      Airplane(mass, inertia, wings, {engine}, &landing_gear),
   };
 
   GameObject player = {
-      .transform = gfx::Mesh(model, texture),
-      .airplane = rigid_bodies[0],
+      .mesh = gfx::Mesh(model, texture),
+      .rigid_body = rigid_bodies[0],
   };
 
-  player.airplane.position = initial_position;
-  player.airplane.velocity = glm::vec3(speed, 0.0f, 0.0f);
-  scene.add(&player.transform);
+  phi::RigidBody terrain;
+  terrain.active = false;
+#if 0
+  terrain.mass = phi::EARTH_MASS;
+  terrain.set_inertia(phi::inertia::sphere(phi::EARTH_MASS, phi::EARTH_RADIUS));
+#else
+  terrain.mass = 10000.0f;
+  terrain.set_inertia(phi::inertia::sphere(terrain.mass, 1000.0f));
+#endif
+
+  terrain.collider = new Heightmap(height_from_pixel(gfx::rgb(0x818600)));
+
+  player.rigid_body.position = initial_position;
+  player.rigid_body.velocity = glm::vec3(speed, 0.0f, 0.0f);
+  player.rigid_body.rotation.x = -0.1f;
+  player.rigid_body.rotation.z = -0.1f;
+  scene.add(&player.mesh);
   objects.push_back(&player);
 
 #if SHOW_MASS_ELEMENTS
   auto red_texture = make_shared<gfx::Phong>(glm::vec3(1.0f, 0.0f, 0.0f));
 
-  for (int i = 0; i < mass_elements.size(); i++) {
-    auto& mass = mass_elements[i];
-    auto element = new gfx::Mesh(gfx::make_cube_geometry(1.0f), red_texture);
+  for (int i = 0; i < masses.size(); i++) {
+    auto& mass = masses[i];
+    gfx::Mesh* element = new gfx::Mesh(gfx::make_cube_geometry(1.0f), red_texture);
+    element->wireframe = true;
     element->set_position(mass.offset);
     element->set_scale(mass.size);
-    player.transform.add(element);
+    player.mesh.add(element);
   }
 #endif
 
@@ -361,21 +287,21 @@ int main(void)
   gfx::Billboard cross(make_shared<gfx::gl::Texture>("assets/textures/sprites/cross.png"), green);
   cross.set_position(phi::FORWARD * projection_distance);
   cross.set_scale(glm::vec3(size));
-  player.transform.add(&cross);
+  player.mesh.add(&cross);
 
   gfx::Billboard fpm(make_shared<gfx::gl::Texture>("assets/textures/sprites/fpm.png"), green);
   fpm.set_scale(glm::vec3(size));
-  player.transform.add(&fpm);
+  player.mesh.add(&fpm);
 #endif
 
   gfx::Object3D camera_transform;
   camera_transform.set_position({-25.0f, 5, 0});
   camera_transform.set_rotation({0, glm::radians(-90.0f), 0.0f});
-  player.transform.add(&camera_transform);
+  player.mesh.add(&camera_transform);
 
   gfx::Camera camera(glm::radians(45.0f), (float)RESOLUTION.x / (float)RESOLUTION.y, 1.0f, 150000.0f);
 #if SMOOTH_CAMERA
-  camera.set_position(player.airplane.position);
+  camera.set_position(player.rigid_body.position);
   camera.set_rotation({0, glm::radians(-90.0f), 0.0f});
   scene.add(&camera);
 #else
@@ -494,12 +420,12 @@ int main(void)
 
     if ((hud_timer += dt) > 0.1f) {
       hud_timer = 0.0f;
-      alt = player.airplane.get_altitude();
-      spd = phi::units::kilometer_per_hour(player.airplane.get_speed());
-      ias = phi::units::kilometer_per_hour(player.airplane.get_ias());
-      thr = player.airplane.throttle;
-      gee = player.airplane.get_g();
-      aoa = player.airplane.get_aoa();
+      alt = player.rigid_body.get_altitude();
+      spd = phi::units::kilometer_per_hour(player.rigid_body.get_speed());
+      ias = phi::units::kilometer_per_hour(player.rigid_body.get_ias());
+      thr = player.rigid_body.throttle;
+      gee = player.rigid_body.get_g();
+      aoa = player.rigid_body.get_aoa();
     }
 
     ImGui::SetNextWindowPos(ImVec2(10, 10));
@@ -509,16 +435,16 @@ int main(void)
     ImGui::Text("ALT:   %.1f m", alt);
     ImGui::Text("SPD:   %.1f km/h", spd);
     ImGui::Text("IAS:   %.1f km/h", ias);
-    ImGui::Text("THR:   %.1f %%", player.airplane.throttle * 100.0f);
+    ImGui::Text("THR:   %.1f %%", player.rigid_body.throttle * 100.0f);
     ImGui::Text("G:     %.1f", gee);
     ImGui::Text("AoA:   %.2f", aoa);
-    ImGui::Text("Trim:  %.2f", player.airplane.joystick.w);
+    ImGui::Text("Trim:  %.2f", player.rigid_body.joystick.w);
     ImGui::Text("FPS:   %.1f", fps);
     ImGui::End();
 
 #if DEBUG_INFO
-    auto angular_velocity = glm::degrees(player.airplane.angular_velocity);
-    auto attitude = glm::degrees(player.airplane.get_euler_angles());
+    auto angular_velocity = glm::degrees(player.rigid_body.angular_velocity);
+    auto attitude = glm::degrees(player.rigid_body.get_euler_angles());
 
     ImVec2 size(140, 140);
     ImGui::SetNextWindowPos(ImVec2(RESOLUTION.x - size.y - 10.0f, RESOLUTION.y - size.y - 10.0f));
@@ -537,16 +463,16 @@ int main(void)
 
     get_keyboard_state(joystick, dt);
 
-    player.airplane.joystick = glm::vec4(joystick.aileron, joystick.rudder, joystick.elevator, joystick.trim);
+    player.rigid_body.joystick = glm::vec4(joystick.aileron, joystick.rudder, joystick.elevator, joystick.trim);
 #if USE_PID
     {
       float max_av = 45.0f;  // deg/s
       float target_av = max_av * joystick.elevator;
-      float current_av = glm::degrees(player.airplane.angular_velocity.z);
-      player.airplane.joystick.z = pitch_control_pid.calculate(current_av, target_av, dt);
+      float current_av = glm::degrees(player.rigid_body.angular_velocity.z);
+      player.rigid_body.joystick.z = pitch_control_pid.calculate(current_av, target_av, dt);
     }
 #endif
-    player.airplane.throttle = joystick.throttle;
+    player.rigid_body.throttle = joystick.throttle;
 
 #if NPC_AIRCRAFT
     target_marker.visible = glm::length(camera.get_world_position() - npc.airplane.position) > 500.0f;
@@ -556,19 +482,28 @@ int main(void)
     if (!paused) {
       phi::step_physics(rigid_bodies, dt);
 
-      for (auto obj : objects) {
-        obj->update(dt);
+      for (GameObject* obj : objects) {
+        obj->mesh.set_transform(obj->rigid_body.position, obj->rigid_body.rotation);
       }
+
+#if TERRAIN_COLLISION
+      // terrain collision
+      phi::CollisionInfo collision;
+
+      if (test_collision(&player.rigid_body, &terrain, &collision)) {
+        phi::RigidBody::impulse_collision(collision);
+      }
+#endif
     }
 
-    fpm.set_position(glm::normalize(player.airplane.get_body_velocity()) * projection_distance);
+    fpm.set_position(glm::normalize(player.rigid_body.get_body_velocity()) * projection_distance);
 
     if (orbit) {
-      controller.update(camera, player.airplane.position, dt);
+      controller.update(camera, player.rigid_body.position, dt);
       cross.visible = fpm.visible = false;
     } else if (!paused) {
 #if SMOOTH_CAMERA
-      auto& rb = player.airplane;
+      auto& rb = player.rigid_body;
       camera.set_position(glm::mix(camera.get_position(), rb.position + rb.up() * 4.5f, dt * 0.035f * rb.get_speed()));
       camera.set_rotation_quat(
           glm::mix(camera.get_rotation_quat(), camera_transform.get_world_rotation_quat(), dt * 5.0f));

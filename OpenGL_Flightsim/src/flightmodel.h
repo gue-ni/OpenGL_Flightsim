@@ -10,8 +10,6 @@
 #include "gfx.h"
 #include "phi.h"
 
-#define LOG_FLIGHT 0
-
 //  International Standard Atmosphere (ISA)
 namespace isa
 {
@@ -35,24 +33,14 @@ const float sea_level_air_density = get_air_density(0.0f);
 };  // namespace isa
 
 // World Geodetic System (WGS 84)
-// TODO: fix calculations
 namespace wgs84
 {
-constexpr float EARTH_RADIUS = 6378.0f;
-
-glm::vec2 coordinate_diff_to_meters(const glm::vec2& diff, float latitude)
-{
-  float km_per_latitude = (phi::PI / 180.0f) * EARTH_RADIUS;
-  float km_per_longitude = (phi::PI / 180.0f) * EARTH_RADIUS * cos(latitude * phi::PI / 180.0f);
-  return glm::vec2(km_per_latitude, km_per_longitude) / 1000.0f;
-}
-
-// origin is lat/lon, offset in meters
-glm::vec2 lat_lon_from_offset(const glm::vec2& origin, const glm::vec2& offset)
+// origin is degrees lat/lon, offset in meters
+glm::vec2 coordinates(const glm::vec2& origin, const glm::vec2& offset)
 {
   float latitude = origin.x, longitude = origin.y;
-  float new_latitude = latitude + (offset.y / EARTH_RADIUS) * (180.0f / phi::PI);
-  float new_longitude = longitude + (offset.x / EARTH_RADIUS) * (180.0f / phi::PI) / cos(latitude * phi::PI / 180.0f);
+  float new_latitude = latitude + glm::degrees(offset.y / phi::EARTH_RADIUS);
+  float new_longitude = longitude + glm::degrees(offset.x / phi::EARTH_RADIUS) / cos(glm::radians(latitude));
   return glm::vec2(new_latitude, new_longitude);
 }
 }  // namespace wgs84
@@ -82,6 +70,11 @@ struct Airfoil {
   // lift_coeff, drag_coeff
   std::tuple<float, float> sample(float alpha) const
   {
+#if 0
+    assert(min_alpha <= alpha && alpha <= max_alpha);
+#else
+    alpha = glm::clamp(alpha, min_alpha, max_alpha);
+#endif
     float t = phi::inverse_lerp(min_alpha, max_alpha, alpha) * max_index;
     float integer = std::floor(t);
     float fractional = t - integer;
@@ -241,27 +234,14 @@ struct Airplane : public phi::RigidBody {
   glm::vec4 joystick{};  // roll, yaw, pitch, elevator trim
   float throttle = 0.25f;
   std::vector<Engine*> engines;
-  std::vector<Wing> wings;
+  std::array<Wing, 4> wings;
   bool is_landed = false;
 
-#if LOG_FLIGHT
-  float log_timer = 0.0f;
-  float log_intervall = 0.1f;
-  float flight_time = 0.0f;
-  std::ofstream log_file;
-#endif
-
   // wings are in the order { left_wing, right_wing, elevator, rudder }
-  Airplane(float mass_, const glm::mat3& inertia_, std::vector<Wing> wings_, std::vector<Engine*> engines_,
-           phi::Collider* collider_)
+  Airplane(float mass_, const glm::mat3& inertia_, std::array<Wing, 4> wings_, std::vector<Engine*> engines_,
+           Collider* collider_)
       : phi::RigidBody({.mass = mass_, .inertia = inertia_, .collider = collider_}), wings(wings_), engines(engines_)
   {
-#if LOG_FLIGHT
-    std::time_t now = std::time(nullptr);
-    log_file.open("log/flight_log_" + std::to_string(now) + ".csv");
-    log_file
-        << "flight_time,altitude,speed,ias,aoa,roll_rate,yaw_rate,pitch_rate,roll,yaw,pitch,aileron,rudder,elevator,\n";
-#endif
     assert(wings.size() == 4);
   }
 
@@ -275,34 +255,6 @@ struct Airplane : public phi::RigidBody {
       wings[2].set_control_input(-elevator);
       wings[3].set_control_input(-rudder);
     }
-
-#if LOG_FLIGHT
-    flight_time += dt;
-    if ((log_timer -= dt) <= 0.0f) {
-      log_timer = log_intervall;
-      auto av = glm::degrees(rigid_body.angular_velocity);
-      auto euler = glm::degrees(glm::eulerAngles(glm::normalize(rigid_body.orientation)));
-
-      /* clang-format off */
-      log_file 
-          << flight_time << "," 
-          << get_altitude() << "," 
-          << get_speed() << "," 
-          << get_ias() << ","
-          << get_aoa() << "," 
-          << av.x << "," 
-          << av.y << "," 
-          << av.z << "," 
-          << euler.x << "," 
-          << euler.y << "," 
-          << euler.z << ","
-          << aileron << "," 
-          << rudder << "," 
-          << elevator << "," 
-          << std::endl;
-      /* clang-format on */
-    }
-#endif
 
     for (auto& wing : wings) {
       wing.apply_forces(this, dt);
@@ -322,7 +274,7 @@ struct Airplane : public phi::RigidBody {
   // pitch g force
   float get_g() const
   {
-    auto velocity = get_body_velocity();
+    glm::vec3 velocity = get_body_velocity();
 
     // avoid division by zero
     float turn_radius = (std::abs(angular_velocity.z) < phi::EPSILON) ? std::numeric_limits<float>::max()

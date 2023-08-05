@@ -14,10 +14,10 @@ glm::vec3 get_intercept_point(const glm::vec3& position, const glm::vec3& veloci
   return target_position + target_velocity * time_to_intercept;
 }
 
-void fly_towards(Airplane& airplane, const glm::vec3& target)
+void fly_towards(Airplane& rigid_body, const glm::vec3& target)
 {
-  auto& rb = airplane;
-  auto& joystick = airplane.joystick;
+  auto& rb = rigid_body;
+  auto& joystick = rigid_body.joystick;
   auto position = rb.position;
   auto direction = glm::normalize(rb.inverse_transform_direction(target - rb.position));
   auto angle = glm::angle(phi::FORWARD, direction);
@@ -35,10 +35,10 @@ void fly_towards(Airplane& airplane, const glm::vec3& target)
 }
 
 #if 1
-void fly_towards(Airplane& airplane, const Airplane& target)
+void fly_towards(Airplane& rigid_body, const Airplane& target)
 {
-  auto point = get_intercept_point(airplane.position, airplane.velocity, target.position, target.velocity);
+  auto point = get_intercept_point(rigid_body.position, rigid_body.velocity, target.position, target.velocity);
 
-  fly_towards(airplane, point);
+  fly_towards(rigid_body, point);
 }
 #endif
