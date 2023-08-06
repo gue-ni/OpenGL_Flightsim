@@ -185,18 +185,13 @@ inline bool LandingGear::test(const phi::Transform* tf, const Heightmap* other, 
 
   if (center_wheel.y <= right_wheel.y && center_wheel.y <= left_wheel.y) {
     lowest_point = center_wheel;
-    wheel = "center wheel";
-
   } else {
     if (std::abs(right_wheel.y - left_wheel.y) < 0.1f) {
       lowest_point = (right_wheel + left_wheel) / 2.0f;
-      wheel = "between wheels";
     } else if (right_wheel.y < left_wheel.y && right_wheel.y < center_wheel.y) {
       lowest_point = right_wheel;
-      wheel = "right wheel";
     } else {
       lowest_point = left_wheel;
-      wheel = "left wheel";
     }
   }
 
@@ -205,14 +200,6 @@ inline bool LandingGear::test(const phi::Transform* tf, const Heightmap* other, 
   float penetration = height - lowest_point.y;
 
   if (penetration > 0) {
-#if 0
-    std::cout << "########### start collision #############\n";
-    std::cout << wheel << std::endl;
-    std::cout << center_wheel << std::endl;
-    std::cout << left_wheel << std::endl;
-    std::cout << right_wheel << std::endl;
-    std::cout << "########### end collision #############\n";
-#endif
     info->penetration = penetration;
     info->normal = phi::DOWN;
     info->point = lowest_point;

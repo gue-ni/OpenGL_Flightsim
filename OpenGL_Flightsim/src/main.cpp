@@ -226,22 +226,10 @@ int main(void)
   Clipmap clipmap;
   scene.add(&clipmap);
 #endif
-#if 0
-  int width, height, channels;
-  const std::string heightmap_path = "assets/textures/terrain/1/heightmap.png";
-  uint8_t* data                    = gfx::gl::Texture::load_image(heightmap_path, &width, &height, &channels, 0);
-  phi::Heightmap terrain_collider(data, width, height, channels);
-#endif
-
-  std::vector<GameObject*> objects;
-
-  glm::vec3 initial_position = glm::vec3(0.0f, 1410.0f, 0.0f);
 
 #if (FLIGHTMODEL == CESSNA)
 #error not implemented
 #elif (FLIGHTMODEL == FAST_JET)
-
-  constexpr float speed = phi::units::meter_per_second(000.0f /* km/h */);
 
   const float mass = 10000.0f;
   const float thrust = 75000.0f;
@@ -283,10 +271,12 @@ int main(void)
       Airplane(mass, inertia, wings, {engine}, &landing_gear),
   };
 
-  GameObject player = {
+  std::vector<GameObject> objects = {{
       .mesh = gfx::Mesh(model, texture),
       .rigid_body = rigid_bodies[0],
-  };
+  }};
+
+  GameObject& player = objects[0];
 
   phi::RigidBody terrain;
   terrain.active = false;
@@ -295,12 +285,9 @@ int main(void)
 
   terrain.collider = new Heightmap(&clipmap);
 
-  player.rigid_body.position = initial_position;
-  player.rigid_body.velocity = glm::vec3(speed, 0.0f, 0.0f);
-  player.rigid_body.rotation.x = -0.1f;
-  player.rigid_body.rotation.z = +0.1f;
+  player.rigid_body.position = glm::vec3(clipmap.get_terrain_size() / 4.0f, 1500.0f, clipmap.get_terrain_size() / 4.0f);
+  player.rigid_body.velocity = glm::vec3(phi::units::meter_per_second(300.0f), 0.0f, 0.0f);
   scene.add(&player.mesh);
-  objects.push_back(&player);
 
 #if 1
   auto wheel_texture = make_shared<gfx::Phong>(glm::vec3(0.0f, 0.0f, 1.0f));
@@ -354,6 +341,7 @@ int main(void)
   float size = 0.1f;
   float projection_distance = 150.0f;
   glm::vec3 green(0.0f, 1.0f, 0.0f);
+
   gfx::Billboard cross(make_shared<gfx::gl::Texture>("assets/textures/sprites/cross.png"), green);
   cross.set_position(phi::FORWARD * projection_distance);
   cross.set_scale(glm::vec3(size));
@@ -552,17 +540,20 @@ int main(void)
     if (!paused) {
       phi::step_physics(rigid_bodies, dt);
 
-      for (GameObject* obj : objects) {
-        obj->mesh.set_transform(obj->rigid_body.position, obj->rigid_body.rotation);
+      for (GameObject& obj : objects) {
+        obj.mesh.set_transform(obj.rigid_body.position, obj.rigid_body.rotation);
       }
 
 #if TERRAIN_COLLISION
-      // terrain collision
       phi::CollisionInfo collision;
 
       if (test_collision(&player.rigid_body, &terrain, &collision)) {
-        std::cout << "contact\n";
+        // std::cout << "contact\n";
         phi::RigidBody::impulse_collision(collision);
+
+        // TODO: vehicle takes damage if ke is too large
+        float kinetic_energy = phi::calc::kinetic_energy(player.rigid_body.mass, player.rigid_body.get_speed());
+        std::cout << kinetic_energy << std::endl;
 
 #if 0
         // auto wheel = collision.point;
@@ -603,7 +594,7 @@ int main(void)
         }
 #endif
       } else {
-        std::cout << "no contact\n";
+        // std::cout << "no contact\n";
       }
 #endif
     }

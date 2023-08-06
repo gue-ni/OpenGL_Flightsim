@@ -216,6 +216,7 @@ class Object3D
   void update_world_matrix(bool dirty_parent);
   glm::mat4 get_local_transform() const;
   glm::mat4 get_parent_transform() const;
+  glm::mat4 get_transform() const;
   void traverse(const std::function<bool(Object3D*)>& func);
 
  protected:

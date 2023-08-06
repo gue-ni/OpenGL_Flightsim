@@ -424,6 +424,14 @@ void Object3D::override_transform(const glm::mat4& matrix)
   // TODO: relcalculate position, rotation etc
 }
 
+glm::mat4 Object3D::get_transform() const
+{
+  if (parent)
+    return get_parent_transform() * get_local_transform();
+  else
+    return get_local_transform();
+}
+
 void Object3D::update_world_matrix(bool dirty_parent)
 {
   bool dirty = m_dirty_dof || dirty_parent;
@@ -942,9 +950,20 @@ void Billboard::draw_self(RenderContext& context)
 
   auto camera = context.camera;
 
+#if 1
   auto view = camera->get_view_matrix();
+#else
+  glm::mat4 tmp_transform;
+  auto r = get_rotation();
+  camera->rotate_by(glm::vec3(+r.x, 0, 0));
+  // auto view = camera->get_view_matrix();
+  auto view = glm::inverse(camera->get_transform());
+  camera->rotate_by(glm::vec3(-r.x, 0, 0));
+#endif
+
   glm::vec3 up = {view[0][1], view[1][1], view[2][1]};
   glm::vec3 right = {view[0][0], view[1][0], view[2][0]};
+
 
   shader.bind();
   shader.uniform("u_View", view);
@@ -985,8 +1004,8 @@ void Skybox::draw_self(RenderContext& context)
     m_material->bind();
     gl::Shader* shader = m_material->get_shader();
 
-    auto u_View = glm::mat4(glm::mat3(context.camera->get_view_matrix()));
-    shader->uniform("u_View", u_View);
+    auto view = glm::mat4(glm::mat3(context.camera->get_view_matrix()));
+    shader->uniform("u_View", view);
     shader->uniform("u_Model", transform);
     shader->uniform("u_Projection", context.camera->get_projection_matrix());
 
