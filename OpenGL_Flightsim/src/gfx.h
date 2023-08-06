@@ -29,7 +29,9 @@ class Skybox;
 class Material;
 class Geometry;
 
-constexpr RGB rgb(int r, int g, int b)
+// value [0, 255]
+template <typename T>
+constexpr RGB rgb(T r, T g, T b)
 {
   return RGB(static_cast<float>(r), static_cast<float>(g), static_cast<float>(b)) / 255.0f;
 }
@@ -103,6 +105,14 @@ struct ElementBufferObject {
   }
 };
 
+struct Image {
+  unsigned char* data = nullptr;
+  int width, height, channels;
+  Image(const std::string& path, bool flip_vertically = false);
+  ~Image();
+  glm::vec3 sample(const glm::vec2 uv) const;
+};
+
 struct TextureParams {
   bool flip_vertically = false;
   GLint texture_wrap = GL_REPEAT;
@@ -116,6 +126,7 @@ struct Texture {
   Texture(GLuint texture_id) : id(texture_id) {}
   Texture(const std::string& path);
   Texture(const std::string& path, const TextureParams& params);
+  Texture(const Image& image, const TextureParams& params);
   ~Texture();
 
   virtual void bind(GLuint texture = 0U) const;

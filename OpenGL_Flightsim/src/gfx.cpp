@@ -109,10 +109,19 @@ unsigned char* Texture::load_image(const std::string path, int* width, int* heig
   return stbi_load(path.c_str(), width, height, channels, 0);
 }
 
-Texture::Texture(const std::string& path, const TextureParams& params)
+Texture::Texture(const std::string& path, const TextureParams& params) : Texture() { load_from_image(path, params); }
+
+Texture::Texture(const Image& image, const TextureParams& params) : Texture()
 {
-  glGenTextures(1, &id);
-  load_from_image(path, params);
+  glBindTexture(GL_TEXTURE_2D, id);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, params.texture_wrap);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, params.texture_wrap);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, params.texture_min_filter);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, params.texture_mag_filter);
+
+  auto format = get_format(image.channels);
+  glTexImage2D(GL_TEXTURE_2D, 0, format, image.width, image.height, 0, format, GL_UNSIGNED_BYTE, image.data);
+  glGenerateMipmap(GL_TEXTURE_2D);
 }
 
 Texture::~Texture() { glDeleteTextures(1, &id); }
@@ -239,6 +248,22 @@ void ElementBufferObject::buffer(const void* data, size_t size)
 {
   bind();
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
+}
+Image::Image(const std::string& path, bool flip_vertically)
+{
+  stbi_set_flip_vertically_on_load(flip_vertically);
+  data = stbi_load(path.c_str(), &width, &height, &channels, 0);
+  assert(data != nullptr);
+}
+
+Image::~Image() { stbi_image_free(data); }
+
+glm::vec3 Image::sample(const glm::vec2 uv) const
+{
+  // nearest pixel
+  glm::ivec2 pixel_coord = uv * glm::vec2(width, height);
+  int index = (height * pixel_coord.y + pixel_coord.x) * channels;
+  return gfx::rgb(data[index + 0], data[index + 1], data[index + 2]);
 }
 };  // namespace gl
 

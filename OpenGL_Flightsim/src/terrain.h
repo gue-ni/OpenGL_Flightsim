@@ -14,7 +14,7 @@ const int ZOOM_FACTOR = 1;
 #elif (DATA_SRC == 2)
 // vorarlberg
 const std::string PATH = "assets/textures/terrain/data/10/536/356/";
-//const std::string PATH = "assets/textures/terrain/data/10/536/360/";
+// const std::string PATH = "assets/textures/terrain/data/10/536/360/";
 const int ZOOM_FACTOR = 2;
 #elif (DATA_SRC == 3)
 // vorarlberg
@@ -25,6 +25,28 @@ const int ZOOM_FACTOR = 3;
 #endif
 
 constexpr gfx::gl::TextureParams params = {.texture_wrap = GL_REPEAT, .texture_mag_filter = GL_LINEAR};
+
+// pixel value in range [0, 1]
+float height_from_pixel(const glm::vec3& rgb)
+{
+  glm::vec3 pixel = rgb * 255.0f;
+  return (pixel.r * 256.0f + pixel.g + pixel.b / 256.0f) - 32768.0f;
+}
+
+float scale(float input_val, float in_min, float in_max, float out_min, float out_max)
+{
+  return (input_val - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+float sample_heightmap(const gfx::gl::Image& heightmap, const glm::vec2& pos, float terrain_size)
+{
+  glm::vec2 coord = pos / (terrain_size / 2.0f);
+  coord.x = scale(coord.x, -1.0, 1.0, 0.0, 1.0);
+  coord.y = scale(coord.y, -1.0, 1.0, 0.0, 1.0);
+
+  auto pixel = heightmap.sample(coord);
+  return height_from_pixel(glm::vec3(pixel));
+}
 
 struct Seam {
   gfx::gl::VertexBuffer vbo;
@@ -131,7 +153,8 @@ class Clipmap : public gfx::Object3D
         segments(segments_),
         terrain_size(MAX_TILE_SIZE / ZOOM_FACTOR),
         shader("shaders/terrain"),
-        heightmap(PATH + "flat_height.png", params),
+        heightmap_image(PATH + "height.png"),
+        heightmap(heightmap_image, params),
         normalmap(PATH + "normal.png", params),
         terrain(PATH + "texture.png", params),
         tile(segments, segments, segment_size),
@@ -144,7 +167,10 @@ class Clipmap : public gfx::Object3D
   {
   }
 
-  float get_terrain_height(glm::vec2 coords) { return 0.0f; }
+  float get_terrain_height(const glm::vec2 pos) const
+  {
+      return sample_heightmap(heightmap_image, pos, terrain_size);
+  }
 
   void draw_self(gfx::RenderContext& context) override
   {
@@ -287,11 +313,10 @@ class Clipmap : public gfx::Object3D
   const float terrain_size;  // width and length of the terrain represented by the heightmap
 
   gfx::gl::Shader shader;
+  gfx::gl::Image heightmap_image;
   gfx::gl::Texture heightmap;
   gfx::gl::Texture normalmap;
   gfx::gl::Texture terrain;
-
-  // std::array<gfx::gl::Texture, 2> heightmaps;
 
   Block tile;
   Block center;
@@ -319,11 +344,3 @@ class Clipmap : public gfx::Object3D
     return T * R * S;
   }
 };
-
-// pixel value in range [0, 1]
-float height_from_pixel(const glm::vec3& rgb)
-{
-    glm::vec3 pixel = rgb * 255.0f;
-    return (pixel.r * 256.0f + pixel.g + pixel.b / 256.0f) - 32768.0f;
-
-}

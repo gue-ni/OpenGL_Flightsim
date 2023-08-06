@@ -1,5 +1,6 @@
 #pragma once
-#include "phi.h"
+#include "gfx.h"
+#include "terrain.h"
 
 struct Collider;
 struct Sphere;
@@ -34,8 +35,10 @@ struct Sphere : public Collider {
 };
 
 struct Heightmap : public Collider {
-  const float height;
-  Heightmap(float height_) : height(height_) {}
+  const Clipmap* terrain = nullptr;
+
+  Heightmap(Clipmap* terrain_) : terrain(terrain_) {}
+
   bool test(const phi::Transform* tf, const Collider* other, const phi::Transform* other_tf,
             phi::CollisionInfo* info) const override;
   bool test(const phi::Transform* tf, const Sphere* other, const phi::Transform* other_tf,
@@ -107,7 +110,7 @@ inline bool Sphere::test(const phi::Transform* tf, const Heightmap* other, const
                          phi::CollisionInfo* info) const
 {
   float lowest_point = tf->position.y;
-  float diff = other->height - lowest_point;
+  float diff = other->terrain->get_terrain_height(glm::vec2(tf->position.x, tf->position.z)) - lowest_point;
   if (diff > 0) {
     info->penetration = diff;
     info->normal = phi::DOWN;  // b - a
@@ -172,8 +175,6 @@ inline bool LandingGear::test(const phi::Transform* tf, const Heightmap* other, 
   // no collision if landing gear is not pointing down
   if (glm::dot(phi::UP, tf->up()) < 0) return false;
 
-  float height = other->height;
-
   glm::vec3 left_wheel = tf->transform_vector(left);
   glm::vec3 right_wheel = tf->transform_vector(right);
   glm::vec3 center_wheel = tf->transform_vector(center);
@@ -198,6 +199,8 @@ inline bool LandingGear::test(const phi::Transform* tf, const Heightmap* other, 
       wheel = "left wheel";
     }
   }
+
+  float height = other->terrain->get_terrain_height(glm::vec2(lowest_point.x, lowest_point.z));
 
   float penetration = height - lowest_point.y;
 

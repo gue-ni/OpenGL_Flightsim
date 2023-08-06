@@ -129,10 +129,9 @@ void get_keyboard_state(Joystick& joystick, phi::Seconds dt)
   }
 
   if (key_states[SDL_SCANCODE_B]) {
-
-              joystick.engage_breaks = true;
+    joystick.engage_breaks = true;
   } else {
-              joystick.engage_breaks = false;
+    joystick.engage_breaks = false;
   }
 }
 
@@ -236,13 +235,13 @@ int main(void)
 
   std::vector<GameObject*> objects;
 
-  glm::vec3 initial_position = glm::vec3(0.0f, 410.0f, 0.0f);
+  glm::vec3 initial_position = glm::vec3(0.0f, 1410.0f, 0.0f);
 
 #if (FLIGHTMODEL == CESSNA)
 #error not implemented
 #elif (FLIGHTMODEL == FAST_JET)
 
-  constexpr float speed = phi::units::meter_per_second(300.0f /* km/h */);
+  constexpr float speed = phi::units::meter_per_second(000.0f /* km/h */);
 
   const float mass = 10000.0f;
   const float thrust = 75000.0f;
@@ -294,7 +293,7 @@ int main(void)
   terrain.mass = 10000.0f;
   terrain.set_inertia(phi::inertia::sphere(terrain.mass, 1000.0f));
 
-  terrain.collider = new Heightmap(height_from_pixel(gfx::rgb(0x818600)));
+  terrain.collider = new Heightmap(&clipmap);
 
   player.rigid_body.position = initial_position;
   player.rigid_body.velocity = glm::vec3(speed, 0.0f, 0.0f);
@@ -562,7 +561,7 @@ int main(void)
       phi::CollisionInfo collision;
 
       if (test_collision(&player.rigid_body, &terrain, &collision)) {
-        // std::cout << "contact\n";
+        std::cout << "contact\n";
         phi::RigidBody::impulse_collision(collision);
 
 #if 0
@@ -598,13 +597,13 @@ int main(void)
         }
 #else
         if (joystick.engage_breaks) {
-          glm::vec3 direction = glm::normalize(-player.rigid_body.velocity * glm::vec3(1, 0, 1));
           float breaking_force = 100000.0f;
+          glm::vec3 direction = glm::normalize(-player.rigid_body.velocity * glm::vec3(1, 0, 1));
           player.rigid_body.add_relative_force(direction * breaking_force);
-        } 
+        }
 #endif
       } else {
-        // std::cout << "no contact\n";
+        std::cout << "no contact\n";
       }
 #endif
     }
