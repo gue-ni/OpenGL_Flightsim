@@ -67,6 +67,8 @@ struct Airfoil {
     }
   }
 
+
+
   // lift_coeff, drag_coeff
   std::tuple<float, float> sample(float alpha) const
   {
@@ -180,7 +182,7 @@ struct Wing {
     glm::vec3 local_velocity = rigid_body->get_point_velocity(center_of_pressure);
     float speed = glm::length(local_velocity);
 
-    if (speed <= phi::EPSILON) return;
+    if (speed <= 1.0f) return;
 
     // drag acts in the opposite direction of velocity
     glm::vec3 drag_direction = glm::normalize(-local_velocity);

@@ -52,6 +52,22 @@ struct LandingGear : public Collider {
       : center(center_), left(left_), right(right_)
   {
   }
+
+  std::vector<glm::vec3> wheels() const { return {center, left, right}; }
+
+  std::vector<glm::vec3> wheels_in_contact(float height) const
+  {
+    std::vector<glm::vec3> wic;
+
+    for (auto w : wheels()) {
+      if (w.y < height) {
+        wic.push_back(w);
+      }
+    }
+
+    return wic;
+  }
+
   bool test(const phi::Transform* tf, const Collider* other, const phi::Transform* other_tf,
             phi::CollisionInfo* info) const override;
   bool test(const phi::Transform* tf, const Sphere* other, const phi::Transform* other_tf,

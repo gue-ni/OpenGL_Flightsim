@@ -1,5 +1,5 @@
 /*
-Version: v0.2
+Version: v0.3
 
 'phi.h' is a simple, header-only 3D rigidbody physics library based
 on 'Physics for Game Developers, 2nd Edition' by David Bourg and Bryan Bywalec.
@@ -34,8 +34,6 @@ SOFTWARE. */
 #include <glm/gtx/quaternion.hpp>
 #include <iostream>
 #include <numeric>
-#include <type_traits>
-#include <variant>
 #include <vector>
 
 // defined externally
@@ -347,7 +345,7 @@ class RigidBody : public Transform
   // impulse and point vectors are in body space
   inline void add_impulse_at_point(const glm::vec3& impulse, const glm::vec3& relative_point)
   {
-    add_relative_impulse(impulse);
+    add_relative_linear_impulse(impulse);
     add_relative_angular_impulse(glm::cross(relative_point, impulse));
   }
 
@@ -361,7 +359,7 @@ class RigidBody : public Transform
   // impulse and point vectors are in world space
   inline void add_impulse_at_world_point(const glm::vec3& impulse, const glm::vec3& point)
   {
-    add_impulse(impulse);
+    add_linear_impulse(impulse);
     add_angular_impulse(glm::cross((point - position), impulse));
   }
 
@@ -372,7 +370,7 @@ class RigidBody : public Transform
   inline void set_inertia(const glm::vec3& moment_of_inertia) { set_inertia(inertia::tensor(moment_of_inertia)); }
 
   // linear impulse in world space
-  inline void add_impulse(const glm::vec3& impulse)
+  inline void add_linear_impulse(const glm::vec3& impulse)
   {
     if (active) {
       velocity += impulse / mass;
@@ -380,7 +378,7 @@ class RigidBody : public Transform
   }
 
   // linear impulse in body space
-  inline void add_relative_impulse(const glm::vec3& impulse)
+  inline void add_relative_linear_impulse(const glm::vec3& impulse)
   {
     if (active) {
       velocity += transform_direction(impulse) / mass;
@@ -477,8 +475,8 @@ class RigidBody : public Transform
     glm::vec3 impulse = j * collision.normal;
 
     // apply linear impulse
-    a->add_impulse(-impulse);
-    b->add_impulse(+impulse);
+    a->add_linear_impulse(-impulse);
+    b->add_linear_impulse(+impulse);
   }
 
   // impulse collision response with angular effects

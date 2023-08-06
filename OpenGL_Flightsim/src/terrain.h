@@ -131,7 +131,7 @@ class Clipmap : public gfx::Object3D
         segments(segments_),
         terrain_size(MAX_TILE_SIZE / ZOOM_FACTOR),
         shader("shaders/terrain"),
-        heightmap(PATH + "height.png", params),
+        heightmap(PATH + "flat_height.png", params),
         normalmap(PATH + "normal.png", params),
         terrain(PATH + "texture.png", params),
         tile(segments, segments, segment_size),

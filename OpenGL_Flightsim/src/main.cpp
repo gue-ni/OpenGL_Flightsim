@@ -60,6 +60,7 @@ constexpr glm::ivec2 RESOLUTION{1024, 728};
 struct Joystick {
   int num_axis{0}, num_hats{0}, num_buttons{0};
   float aileron{0.0f}, elevator{0.0f}, rudder{0.0f}, throttle{0.0f}, trim{0.0f};
+  bool engage_breaks;
 
   // scale from int16 to -1.0, 1.0
   inline static float scale(int16_t value)
@@ -75,6 +76,65 @@ struct GameObject {
 };
 
 void get_keyboard_state(Joystick& joystick, phi::Seconds dt);
+
+inline float move(float value, float factor, float dt) { return glm::clamp(value - factor * dt, -1.0f, 1.0f); }
+
+inline float center(float value, float factor, float dt)
+{
+  return (value >= 0) ? glm::clamp(value - factor * dt, 0.0f, 1.0f) : glm::clamp(value + factor * dt, -1.0f, 0.0f);
+}
+
+void get_keyboard_state(Joystick& joystick, phi::Seconds dt)
+{
+  const glm::vec3 factor = {3.0f, 0.5f, 1.0f};  // roll, yaw, pitch
+  const uint8_t* key_states = SDL_GetKeyboardState(NULL);
+
+  if (key_states[SDL_SCANCODE_A] || key_states[SDL_SCANCODE_LEFT]) {
+    joystick.aileron = move(joystick.aileron, +factor.x, dt);
+  } else if (key_states[SDL_SCANCODE_D] || key_states[SDL_SCANCODE_RIGHT]) {
+    joystick.aileron = move(joystick.aileron, -factor.x, dt);
+  } else if (joystick.num_axis <= 0) {
+    joystick.aileron = center(joystick.aileron, factor.x, dt);
+  }
+
+  if (key_states[SDL_SCANCODE_W] || key_states[SDL_SCANCODE_UP]) {
+    joystick.elevator = move(joystick.elevator, +factor.z, dt);
+  } else if (key_states[SDL_SCANCODE_S] || key_states[SDL_SCANCODE_DOWN]) {
+    joystick.elevator = move(joystick.elevator, -factor.z, dt);
+  } else if (joystick.num_axis <= 0) {
+    joystick.elevator = center(joystick.elevator, factor.z * 3.0f, dt);
+  }
+
+  if (key_states[SDL_SCANCODE_E]) {
+    joystick.rudder = move(joystick.rudder, -factor.x, dt);
+  } else if (key_states[SDL_SCANCODE_Q]) {
+    joystick.rudder = move(joystick.rudder, +factor.x, dt);
+  } else if (joystick.num_axis <= 0) {
+    joystick.rudder = center(joystick.rudder, factor.z, dt);
+  }
+
+  const float throttle_speed = 0.002f;
+
+  if (key_states[SDL_SCANCODE_J]) {
+    joystick.throttle = glm::clamp(joystick.throttle - throttle_speed, 0.0f, 1.0f);
+  } else if (key_states[SDL_SCANCODE_K]) {
+    joystick.throttle = glm::clamp(joystick.throttle + throttle_speed, 0.0f, 1.0f);
+  }
+
+  const float trim_speed = 0.002f;
+  if (key_states[SDL_SCANCODE_N]) {
+    joystick.trim = glm::clamp(joystick.trim - trim_speed, -1.0f, 1.0f);
+  } else if (key_states[SDL_SCANCODE_M]) {
+    joystick.trim = glm::clamp(joystick.trim + trim_speed, -1.0f, 1.0f);
+  }
+
+  if (key_states[SDL_SCANCODE_B]) {
+
+              joystick.engage_breaks = true;
+  } else {
+              joystick.engage_breaks = false;
+  }
+}
 
 int main(void)
 {
@@ -176,13 +236,13 @@ int main(void)
 
   std::vector<GameObject*> objects;
 
-  glm::vec3 initial_position = glm::vec3(0.0f, 1400.0f, 0.0f);
+  glm::vec3 initial_position = glm::vec3(0.0f, 410.0f, 0.0f);
 
 #if (FLIGHTMODEL == CESSNA)
 #error not implemented
 #elif (FLIGHTMODEL == FAST_JET)
 
-  constexpr float speed = phi::units::meter_per_second(400.0f /* km/h */);
+  constexpr float speed = phi::units::meter_per_second(300.0f /* km/h */);
 
   const float mass = 10000.0f;
   const float thrust = 75000.0f;
@@ -217,8 +277,8 @@ int main(void)
 #endif
 
   Sphere sphere(15.0f);
-  LandingGear landing_gear(glm::vec3(3.0f, -1.5f, 0.0f), glm::vec3(-3.0f, -1.5f, +3.0f),
-                           glm::vec3(-3.0f, -1.5f, -3.0f));
+  LandingGear landing_gear(glm::vec3(4.0f, -1.5f, 0.0f), glm::vec3(-1.0f, -1.5f, +2.0f),
+                           glm::vec3(-1.0f, -1.5f, -2.0f));
 
   std::vector<Airplane> rigid_bodies = {
       Airplane(mass, inertia, wings, {engine}, &landing_gear),
@@ -239,9 +299,26 @@ int main(void)
   player.rigid_body.position = initial_position;
   player.rigid_body.velocity = glm::vec3(speed, 0.0f, 0.0f);
   player.rigid_body.rotation.x = -0.1f;
-  player.rigid_body.rotation.z = -0.1f;
+  player.rigid_body.rotation.z = +0.1f;
   scene.add(&player.mesh);
   objects.push_back(&player);
+
+#if 1
+  auto wheel_texture = make_shared<gfx::Phong>(glm::vec3(0.0f, 0.0f, 1.0f));
+  auto wheel_geometry = gfx::make_cube_geometry(0.5f);
+
+  gfx::Mesh center_wheel(wheel_geometry, wheel_texture);
+  center_wheel.set_position(landing_gear.center);
+  player.mesh.add(&center_wheel);
+
+  gfx::Mesh left_wheel(wheel_geometry, wheel_texture);
+  left_wheel.set_position(landing_gear.left);
+  player.mesh.add(&left_wheel);
+
+  gfx::Mesh right_wheel(wheel_geometry, wheel_texture);
+  right_wheel.set_position(landing_gear.right);
+  player.mesh.add(&right_wheel);
+#endif
 
 #if SHOW_MASS_ELEMENTS
   auto red_texture = make_shared<gfx::Phong>(glm::vec3(1.0f, 0.0f, 0.0f));
@@ -415,8 +492,8 @@ int main(void)
     if ((hud_timer += dt) > 0.1f) {
       hud_timer = 0.0f;
       alt = player.rigid_body.get_altitude();
+      spd = player.rigid_body.get_speed();
       spd = phi::units::kilometer_per_hour(player.rigid_body.get_speed());
-      ias = phi::units::kilometer_per_hour(player.rigid_body.get_ias());
       thr = player.rigid_body.throttle;
       gee = player.rigid_body.get_g();
       aoa = player.rigid_body.get_aoa();
@@ -485,12 +562,58 @@ int main(void)
       phi::CollisionInfo collision;
 
       if (test_collision(&player.rigid_body, &terrain, &collision)) {
+        // std::cout << "contact\n";
         phi::RigidBody::impulse_collision(collision);
+
+#if 0
+        // auto wheel = collision.point;
+        auto wheels_in_contact = landing_gear.wheels_in_contact(static_cast<Heightmap*>(terrain.collider)->height);
+        for (auto& wheel : wheels_in_contact)  // maybe actually only get wheels in contact
+        {
+          // velocity without y axis
+          glm::vec3 plane_velocity = player.rigid_body.get_point_velocity(wheel);
+          // glm::vec3 plane_velocity = player.rigid_body.velocity * glm::vec3(1, 0, 1);
+
+          if (glm::length(plane_velocity) > 0.01f) {
+            glm::vec3 friction_direction = glm::normalize(-plane_velocity);
+
+            float weight = (player.rigid_body.mass * phi::EARTH_GRAVITY) / wheels_in_contact.size();
+
+            // float rolling_resistance_coeff = 5.0f;
+            // glm::vec3 rolling_resistance = friction_direction * weight * rolling_resistance_coeff;
+
+            float friction_coeff = 0.7f;  // rubber on dry pavement
+
+            float sideslip_ratio =
+                std::abs(1 - glm::dot(phi::FORWARD, glm::normalize(plane_velocity)));  // 1 if going sideways
+            // std::cout << sideslip_ratio << std::endl;
+
+            glm::vec3 sliding_friction = friction_direction * weight * friction_coeff * sideslip_ratio;
+
+            glm::vec3 force = sliding_friction * 100.0f;
+            std::cout << force << std::endl;
+
+            player.rigid_body.add_force_at_point(force, wheel);
+          }
+        }
+#else
+        if (joystick.engage_breaks) {
+          glm::vec3 direction = glm::normalize(-player.rigid_body.velocity * glm::vec3(1, 0, 1));
+          float breaking_force = 100000.0f;
+          player.rigid_body.add_relative_force(direction * breaking_force);
+        } 
+#endif
+      } else {
+        // std::cout << "no contact\n";
       }
 #endif
     }
 
-    fpm.set_position(glm::normalize(player.rigid_body.get_body_velocity()) * projection_distance);
+    joystick.engage_breaks = false;
+
+    fpm.set_position(
+        glm::normalize(player.rigid_body.get_speed() > 1.0f ? player.rigid_body.get_body_velocity() : phi::FORWARD) *
+        projection_distance);
 
     if (orbit) {
       controller.update(camera, player.rigid_body.position, dt);
@@ -513,56 +636,4 @@ int main(void)
     SDL_GL_SwapWindow(window);
   }
   return 0;
-}
-
-inline float move(float value, float factor, float dt) { return glm::clamp(value - factor * dt, -1.0f, 1.0f); }
-
-inline float center(float value, float factor, float dt)
-{
-  return (value >= 0) ? glm::clamp(value - factor * dt, 0.0f, 1.0f) : glm::clamp(value + factor * dt, -1.0f, 0.0f);
-}
-
-void get_keyboard_state(Joystick& joystick, phi::Seconds dt)
-{
-  const glm::vec3 factor = {3.0f, 0.5f, 1.0f};  // roll, yaw, pitch
-  const uint8_t* key_states = SDL_GetKeyboardState(NULL);
-
-  if (key_states[SDL_SCANCODE_A] || key_states[SDL_SCANCODE_LEFT]) {
-    joystick.aileron = move(joystick.aileron, +factor.x, dt);
-  } else if (key_states[SDL_SCANCODE_D] || key_states[SDL_SCANCODE_RIGHT]) {
-    joystick.aileron = move(joystick.aileron, -factor.x, dt);
-  } else if (joystick.num_axis <= 0) {
-    joystick.aileron = center(joystick.aileron, factor.x, dt);
-  }
-
-  if (key_states[SDL_SCANCODE_W] || key_states[SDL_SCANCODE_UP]) {
-    joystick.elevator = move(joystick.elevator, +factor.z, dt);
-  } else if (key_states[SDL_SCANCODE_S] || key_states[SDL_SCANCODE_DOWN]) {
-    joystick.elevator = move(joystick.elevator, -factor.z, dt);
-  } else if (joystick.num_axis <= 0) {
-    joystick.elevator = center(joystick.elevator, factor.z * 3.0f, dt);
-  }
-
-  if (key_states[SDL_SCANCODE_E]) {
-    joystick.rudder = move(joystick.rudder, -factor.x, dt);
-  } else if (key_states[SDL_SCANCODE_Q]) {
-    joystick.rudder = move(joystick.rudder, +factor.x, dt);
-  } else if (joystick.num_axis <= 0) {
-    joystick.rudder = center(joystick.rudder, factor.z, dt);
-  }
-
-  const float throttle_speed = 0.002f;
-
-  if (key_states[SDL_SCANCODE_J]) {
-    joystick.throttle = glm::clamp(joystick.throttle - throttle_speed, 0.0f, 1.0f);
-  } else if (key_states[SDL_SCANCODE_K]) {
-    joystick.throttle = glm::clamp(joystick.throttle + throttle_speed, 0.0f, 1.0f);
-  }
-
-  const float trim_speed = 0.002f;
-  if (key_states[SDL_SCANCODE_N]) {
-    joystick.trim = glm::clamp(joystick.trim - trim_speed, -1.0f, 1.0f);
-  } else if (key_states[SDL_SCANCODE_M]) {
-    joystick.trim = glm::clamp(joystick.trim + trim_speed, -1.0f, 1.0f);
-  }
 }
