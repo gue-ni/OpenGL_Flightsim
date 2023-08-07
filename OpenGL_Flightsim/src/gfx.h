@@ -88,6 +88,15 @@ struct VertexArrayObject {
   void unbind() const;
 };
 
+struct FrameBuffer {
+  GLuint id = 0;
+  FrameBuffer() : id(0) { glGenFramebuffers(1, &id); }
+  FrameBuffer(GLuint id_) : id(id_) {}
+  ~FrameBuffer() { glDeleteFramebuffers(1, &id); };
+  void bind() const;
+  void unbind() const;
+};
+
 struct ElementBufferObject {
   GLuint id = 0;
   ElementBufferObject();
