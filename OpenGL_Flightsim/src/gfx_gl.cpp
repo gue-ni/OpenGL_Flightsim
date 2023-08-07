@@ -24,6 +24,28 @@ void FrameBuffer::bind() const { glBindFramebuffer(GL_FRAMEBUFFER, id); }
 
 void FrameBuffer::unbind() const { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
 
+VertexArrayObject::VertexArrayObject() { glGenVertexArrays(1, &id); }
+
+VertexArrayObject::~VertexArrayObject() { glDeleteVertexArrays(1, &id); }
+
+void VertexArrayObject::bind() const { glBindVertexArray(id); }
+
+void VertexArrayObject::unbind() const { glBindVertexArray(0); }
+
+ElementBufferObject::ElementBufferObject() { glGenBuffers(1, &id); }
+
+ElementBufferObject::~ElementBufferObject() { glDeleteBuffers(1, &id); }
+
+void ElementBufferObject::bind() const { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, id); }
+
+void ElementBufferObject::unbind() const { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); }
+
+void ElementBufferObject::buffer(const void* data, size_t size)
+{
+  bind();
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
+}
+
 Shader::Shader(const std::string& path) : Shader(load_text_file(path + ".vert"), load_text_file(path + ".frag")) {}
 
 Shader::Shader(const std::string& vertShader, const std::string& fragShader)

@@ -53,29 +53,6 @@ std::shared_ptr<Geometry> make_plane_geometry(int x_elements, int y_elements, fl
 namespace gl
 {
 
-struct VertexArrayObject {
-  GLuint id = 0;
-  VertexArrayObject();
-  ~VertexArrayObject();
-  void bind() const;
-  void unbind() const;
-};
-
-struct ElementBufferObject {
-  GLuint id = 0;
-  ElementBufferObject();
-  ~ElementBufferObject();
-  void bind() const;
-  void unbind() const;
-  void buffer(const void* data, size_t size);
-
-  template <typename T>
-  void buffer(const std::vector<T>& data)
-  {
-    buffer(&data[0], sizeof(data[0]) * data.size());
-  }
-};
-
 struct Image {
   unsigned char* data = nullptr;
   int width, height, channels;
@@ -100,13 +77,10 @@ struct Texture {
   Texture(const Image& image, const TextureParams& params);
   ~Texture();
 
-  virtual void bind(GLuint texture = 0U) const;
+  virtual void bind(GLuint active_texture = 0U) const;
   virtual void unbind() const;
   GLint get_format(int channels);
   void set_parameteri(GLenum target, GLenum pname, GLint param);
-  void load_from_image(const std::string& path, const TextureParams& params);
-
-  static unsigned char* load_image(const std::string path, int* width, int* height, int* channels, bool flip);
 };
 
 struct CubemapTexture : public Texture {

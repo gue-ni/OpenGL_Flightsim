@@ -33,7 +33,6 @@ struct VertexBuffer {
   }
 };
 
-
 struct FrameBuffer {
   GLuint id = 0;
   FrameBuffer() : id(0) { glGenFramebuffers(1, &id); }
@@ -43,7 +42,28 @@ struct FrameBuffer {
   void unbind() const;
 };
 
+struct VertexArrayObject {
+  GLuint id = 0;
+  VertexArrayObject();
+  ~VertexArrayObject();
+  void bind() const;
+  void unbind() const;
+};
 
+struct ElementBufferObject {
+  GLuint id = 0;
+  ElementBufferObject();
+  ~ElementBufferObject();
+  void bind() const;
+  void unbind() const;
+  void buffer(const void* data, size_t size);
+
+  template <typename T>
+  void buffer(const std::vector<T>& data)
+  {
+    buffer(&data[0], sizeof(data[0]) * data.size());
+  }
+};
 
 struct Shader {
   GLuint id;
@@ -60,9 +80,6 @@ struct Shader {
   void uniform(const std::string& name, const glm::vec4& value);
   void uniform(const std::string& name, const glm::mat4& value);
 };
-
-
-
 
 }  // namespace gl
 }  // namespace gfx

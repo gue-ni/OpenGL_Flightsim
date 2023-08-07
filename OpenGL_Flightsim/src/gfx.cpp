@@ -1,4 +1,5 @@
 #include "gfx.h"
+
 #include "gfx_util.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
@@ -6,8 +7,6 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "../lib/stb_image.h"
-
-
 
 namespace gfx
 {
@@ -17,13 +16,10 @@ namespace gl
 
 Texture::Texture(const std::string& path) : Texture(path, {}) {}
 
-unsigned char* Texture::load_image(const std::string path, int* width, int* height, int* channels, bool flip)
+Texture::Texture(const std::string& path, const TextureParams& params)
+    : Texture(gl::Image(path, params.flip_vertically), params)
 {
-  stbi_set_flip_vertically_on_load(flip);
-  return stbi_load(path.c_str(), width, height, channels, 0);
 }
-
-Texture::Texture(const std::string& path, const TextureParams& params) : Texture() { load_from_image(path, params); }
 
 Texture::Texture(const Image& image, const TextureParams& params) : Texture()
 {
@@ -40,9 +36,9 @@ Texture::Texture(const Image& image, const TextureParams& params) : Texture()
 
 Texture::~Texture() { glDeleteTextures(1, &id); }
 
-void Texture::bind(GLuint texture) const
+void Texture::bind(GLuint active_texture) const
 {
-  glActiveTexture(GL_TEXTURE0 + texture);
+  glActiveTexture(GL_TEXTURE0 + active_texture);
   glBindTexture(GL_TEXTURE_2D, id);
 }
 
@@ -72,28 +68,6 @@ GLint Texture::get_format(int channels)
 }
 
 void Texture::set_parameteri(GLenum target, GLenum pname, GLint param) { glTexParameteri(target, pname, param); }
-
-void Texture::load_from_image(const std::string& path, const TextureParams& params)
-{
-  glBindTexture(GL_TEXTURE_2D, id);
-
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, params.texture_wrap);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, params.texture_wrap);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, params.texture_min_filter);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, params.texture_mag_filter);
-
-  int width, height, channels;
-  unsigned char* data = load_image(path, &width, &height, &channels, params.flip_vertically);
-
-  if (data) {
-    auto format = get_format(channels);
-    glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-    glGenerateMipmap(GL_TEXTURE_2D);
-  } else {
-    std::cout << "Failed to load texture" << std::endl;
-  }
-  stbi_image_free(data);
-}
 
 CubemapTexture::CubemapTexture(const std::array<std::string, 6>& paths, bool flip_vertically)
 {
@@ -128,27 +102,6 @@ void CubemapTexture::bind(GLuint texture) const
 
 void CubemapTexture::unbind() const { glBindTexture(GL_TEXTURE_CUBE_MAP, 0); }
 
-VertexArrayObject::VertexArrayObject() { glGenVertexArrays(1, &id); }
-
-VertexArrayObject::~VertexArrayObject() { glDeleteVertexArrays(1, &id); }
-
-void VertexArrayObject::bind() const { glBindVertexArray(id); }
-
-void VertexArrayObject::unbind() const { glBindVertexArray(0); }
-
-ElementBufferObject::ElementBufferObject() { glGenBuffers(1, &id); }
-
-ElementBufferObject::~ElementBufferObject() { glDeleteBuffers(1, &id); }
-
-void ElementBufferObject::bind() const { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, id); }
-
-void ElementBufferObject::unbind() const { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); }
-
-void ElementBufferObject::buffer(const void* data, size_t size)
-{
-  bind();
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
-}
 Image::Image(const std::string& path, bool flip_vertically)
 {
   stbi_set_flip_vertically_on_load(flip_vertically);
