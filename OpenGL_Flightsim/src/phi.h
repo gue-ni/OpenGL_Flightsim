@@ -266,7 +266,10 @@ namespace calc
 constexpr inline float torque(float power, float rpm) { return 30.0f * power / (2.0f * rpm); }
 
 // the time it takes to fall from a certain height
-inline float fall_time(float height, float acceleration = EARTH_GRAVITY) { return sqrt((2.0f * height) / acceleration); }
+inline float fall_time(float height, float acceleration = EARTH_GRAVITY)
+{
+  return sqrt((2.0f * height) / acceleration);
+}
 
 // kinetic energy in joules
 constexpr inline float kinetic_energy(float mass, float speed) { return 0.5f * mass * sq(speed); }

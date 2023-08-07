@@ -67,8 +67,6 @@ struct Airfoil {
     }
   }
 
-
-
   // lift_coeff, drag_coeff
   std::tuple<float, float> sample(float alpha) const
   {

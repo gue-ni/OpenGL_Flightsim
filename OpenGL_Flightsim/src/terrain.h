@@ -8,18 +8,21 @@ constexpr float MAX_TILE_SIZE = 50708.0f * 4;
 #define DATA_SRC 2
 
 #if (DATA_SRC == 1)
-// vorarlberg
 const std::string PATH = "assets/textures/terrain/data/9/268/178/";
 const int ZOOM_FACTOR = 1;
 #elif (DATA_SRC == 2)
-// vorarlberg
 const std::string PATH = "assets/textures/terrain/data/10/536/356/";
 // const std::string PATH = "assets/textures/terrain/data/10/536/360/";
 const int ZOOM_FACTOR = 2;
 #elif (DATA_SRC == 3)
-// vorarlberg
 const std::string PATH = "assets/textures/terrain/data/11/1072/712/";
 const int ZOOM_FACTOR = 3;
+#elif (DATA_SRC == 4)
+const std::string PATH = "assets/textures/terrain/data/12/2144/1424/";
+const int ZOOM_FACTOR = 4;
+#elif (DATA_SRC == 5)
+const std::string PATH = "assets/textures/terrain/data/13/4288/2848/";
+const int ZOOM_FACTOR = 5;
 #else
 #error Unknown DATA_SRC
 #endif
@@ -144,10 +147,12 @@ struct Block {
 };
 
 // Geometry Clipmap
+// https://developer.nvidia.com/gpugems/gpugems2/part-i-geometric-complexity/chapter-2-terrain-rendering-using-gpu-based-geometry
+// https://mikejsavage.co.uk/blog/geometry-clipmaps.html
 class Clipmap : public gfx::Object3D
 {
  public:
-  Clipmap(int levels_ = 16, int segments_ = 8)
+  Clipmap(int levels_ = 16, int segments_ = 16)
       : segment_size(2.0f),
         levels(levels_),
         segments(segments_),
@@ -157,6 +162,7 @@ class Clipmap : public gfx::Object3D
         heightmap(heightmap_image, params),
         normalmap(PATH + "normal.png", params),
         terrain(PATH + "texture.png", params),
+        terrain_0(),
         tile(segments, segments, segment_size),
         col_fixup(2, segments, segment_size),
         row_fixup(segments, 2, segment_size),
@@ -167,10 +173,9 @@ class Clipmap : public gfx::Object3D
   {
   }
 
-  float get_terrain_height(const glm::vec2 pos) const
-  {
-      return sample_heightmap(heightmap_image, pos, terrain_size);
-  }
+  float get_terrain_height(const glm::vec2 pos) const { return sample_heightmap(heightmap_image, pos, terrain_size); }
+
+  float get_terrain_size() const { return terrain_size; }
 
   void draw_self(gfx::RenderContext& context) override
   {
@@ -181,9 +186,8 @@ class Clipmap : public gfx::Object3D
     float height = camera_pos.y;
     auto camera_pos_xy = glm::vec2(camera_pos.x, camera_pos.z);
 
-    heightmap.bind(2);
-    normalmap.bind(3);
-    terrain.bind(4);
+    // TODO: select proper texture LOD
+    glm::vec2 origin = camera_pos_xy - glm::vec2(terrain_size / 2);
 
     shader.bind();
     shader.uniform("u_Heightmap", 2);
@@ -201,32 +205,37 @@ class Clipmap : public gfx::Object3D
 
     int min_level = 1;  // depends on camera height
 
-    for (int l = min_level; l <= levels; l++) {
-      const int rows = 5, cols = 5;
-      float scale = std::pow(2.0f, l);
-      float next_scale = std::pow(2.0f, l + 2);
+    for (int level = min_level; level <= levels; level++) {
+      const int rows = 5, columns = 5;
+      float scale = std::pow(2.0f, level);
+      float next_scale = std::pow(2.0f, level + 2);
       float scaled_segment_size = segment_size * scale;
       float tile_size = segments * scaled_segment_size;
       glm::vec2 snapped = glm::floor(camera_pos_xy / next_scale) * next_scale;
-      auto base = calc_base(l, camera_pos_xy);
+      auto base = calc_base(level, camera_pos_xy);
 
       shader.uniform("u_Scale", scale);
       shader.uniform("u_SegmentSize", scaled_segment_size);
-      shader.uniform("u_Level", static_cast<float>(l) / levels);
+      shader.uniform("u_Level", static_cast<float>(level) / levels);
 
 #if 1
       // don't render lots of detail if we are very high up
       if (tile_size * 5 < height * 2.5) {
-        min_level = l + 1;
+        min_level = level + 1;
         continue;
       }
 #endif
+
+      heightmap.bind(2);
+      normalmap.bind(3);
+      terrain.bind(4);
+
 #if 1
-      if (l == min_level) {
+      if (level == min_level) {
         shader.uniform("u_Model", transform_matrix(base + glm::vec2(tile_size, tile_size), scale));
         center.draw();
-      } else {
-        auto prev_base = calc_base(l - 1, camera_pos_xy);
+      } else {  // not at base level
+        auto prev_base = calc_base(level - 1, camera_pos_xy);
         auto diff = glm::abs(base - prev_base);
 
         auto l_offset = glm::vec2(tile_size, tile_size);
@@ -245,29 +254,29 @@ class Clipmap : public gfx::Object3D
         vertical.draw();
       }
 #endif
-
+#if 1
       glm::vec2 offset(0.0f);
-      for (int r = 0; r < rows; r++) {
+      for (int row = 0; row < rows; row++) {
         offset.y = 0;
-        for (int c = 0; c < cols; c++) {
-          if (r == 0 || r == rows - 1 || c == 0 || c == cols - 1) {
+        for (int column = 0; column < columns; column++) {
+          if (row == 0 || row == rows - 1 || column == 0 || column == columns - 1) {
             auto tile_pos = base + offset;
             shader.uniform("u_Model", transform_matrix(tile_pos, scale));
 
-            if ((c != 2) && (r != 2)) {
-              if (c == 0 && r == 0)  // east
+            if ((column != 2) && (row != 2)) {
+              if (column == 0 && row == 0)  // east
               {
                 shader.uniform("u_Model", transform_matrix(tile_pos, scale));
                 seam.draw();
-              } else if (c == cols - 1 && r == rows - 1)  // west
+              } else if (column == columns - 1 && row == rows - 1)  // west
               {
                 shader.uniform("u_Model", transform_matrix(tile_pos + glm::vec2(tile_size), scale, 180.0f));
                 seam.draw();
-              } else if (c == cols - 1 && r == 0)  // south
+              } else if (column == columns - 1 && row == 0)  // south
               {
                 shader.uniform("u_Model", transform_matrix(tile_pos + glm::vec2(0, tile_size), scale, 90.0f));
                 seam.draw();
-              } else if (c == 0 && r == rows - 1)  // north
+              } else if (column == 0 && row == rows - 1)  // north
               {
                 shader.uniform("u_Model", transform_matrix(tile_pos + glm::vec2(tile_size, 0), scale, -90.0f));
                 seam.draw();
@@ -275,35 +284,36 @@ class Clipmap : public gfx::Object3D
 
               shader.uniform("u_Model", transform_matrix(tile_pos, scale));
               tile.draw();
-            } else if (c == 2) {
+            } else if (column == 2) {
               col_fixup.draw();
-            } else if (r == 2) {
+            } else if (row == 2) {
               row_fixup.draw();
             }
           }
 
-          if (c == 2) {
+          if (column == 2) {
             offset.y += 2 * scaled_segment_size;
           } else {
             offset.y += tile_size;
           }
         }
 
-        if (r == 2) {
+        if (row == 2) {
           offset.x += 2 * scaled_segment_size;
         } else {
           offset.x += tile_size;
         }
       }
+#endif
+
+      heightmap.unbind();
+      normalmap.unbind();
+      terrain.unbind();
     }
 
     glDisable(GL_CULL_FACE);
 
     shader.unbind();
-
-    heightmap.unbind();
-    normalmap.unbind();
-    terrain.unbind();
   }
 
  private:
@@ -314,9 +324,7 @@ class Clipmap : public gfx::Object3D
 
   gfx::gl::Shader shader;
   gfx::gl::Image heightmap_image;
-  gfx::gl::Texture heightmap;
-  gfx::gl::Texture normalmap;
-  gfx::gl::Texture terrain;
+  gfx::gl::Texture heightmap, normalmap, terrain, terrain_0;
 
   Block tile;
   Block center;

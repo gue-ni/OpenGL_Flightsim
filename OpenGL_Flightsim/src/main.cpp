@@ -38,7 +38,7 @@ JK      control thrust
 
 #define CLIPMAP            1
 #define SKYBOX             1
-#define SMOOTH_CAMERA      0
+#define SMOOTH_CAMERA      1
 #define NPC_AIRCRAFT       0
 #define SHOW_MASS_ELEMENTS 0
 #define USE_PID            1
