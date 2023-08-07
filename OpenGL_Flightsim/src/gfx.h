@@ -14,6 +14,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "gfx_gl.h"
+
 namespace gfx
 {
 
@@ -53,41 +55,11 @@ namespace gl
 // OpenGL base object
 struct Object {
     GLuint id;
-    GL_Object() = default;
+    Object() = default;
     // cast operator to call OpenGL functions with Object
     operator GLuint() const { return id; }
 };
 
-struct Shader {
-  GLuint id;
-  Shader(const std::string& path);
-  Shader(const std::string& vertShader, const std::string& fragShader);
-  Shader(GLuint shader_id) : id(shader_id) {}
-  ~Shader();
-  void bind() const;
-  void unbind() const;
-  void uniform(const std::string& name, int value);
-  void uniform(const std::string& name, float value);
-  void uniform(const std::string& name, unsigned int value);
-  void uniform(const std::string& name, const glm::vec3& value);
-  void uniform(const std::string& name, const glm::vec4& value);
-  void uniform(const std::string& name, const glm::mat4& value);
-};
-
-struct VertexBuffer {
-  GLuint id = 0;
-  VertexBuffer();
-  ~VertexBuffer();
-  void bind() const;
-  void unbind() const;
-  void buffer(const void* data, size_t size);
-
-  template <typename T>
-  void buffer(const std::vector<T>& data)
-  {
-    buffer(&data[0], sizeof(data[0]) * data.size());
-  }
-};
 
 struct VertexArrayObject {
   GLuint id = 0;
