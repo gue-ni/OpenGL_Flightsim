@@ -48,6 +48,13 @@ std::shared_ptr<Geometry> make_plane_geometry(int x_elements, int y_elements, fl
 // gl primitives
 namespace gl
 {
+// OpenGL base object
+struct Object {
+    GLuint id;
+    GL_Object() = default;
+    // cast operator to call OpenGL functions with Object
+    operator GLuint() const { return id; }
+};
 
 struct Shader {
   GLuint id;
