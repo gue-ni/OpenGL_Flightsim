@@ -74,17 +74,15 @@ CubemapTexture::CubemapTexture(const std::array<std::string, 6>& paths, bool fli
   glGenTextures(1, &id);
   glBindTexture(GL_TEXTURE_CUBE_MAP, id);
 
-  int width, height, channels;
   for (int i = 0; i < 6; i++) {
-    stbi_set_flip_vertically_on_load(flip_vertically);
-    unsigned char* data = stbi_load(paths[i].c_str(), &width, &height, &channels, 0);
-    if (data) {
-      auto format = get_format(channels);
-      glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-      stbi_image_free(data);
+    Image image(paths[i], flip_vertically);
+
+    if (image.data) {
+      auto format = get_format(image.channels);
+      glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, image.width, image.height, 0, format,
+                   GL_UNSIGNED_BYTE, image.data);
     } else {
       std::cout << "Cubemap tex failed to load at path: " << paths[i] << std::endl;
-      stbi_image_free(data);
     }
   }
   glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
