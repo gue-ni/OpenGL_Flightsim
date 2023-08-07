@@ -319,37 +319,13 @@ int main(void)
   }
 #endif
 
-#if NPC_AIRCRAFT
-  GameObject npc = {.transform = gfx::Mesh(model, texture),
-                    .airplane = Airplane(mass, inertia, wings, engine),
-                    .collider = collider::Sphere({0.0f, 0.0f, 0.0f}, 15.0f)};
-
-  npc.airplane.position = position - glm::vec3(-100.0f, 0.0f, 10.0f);
-  npc.airplane.velocity = glm::vec3(speed, 0.0f, 0.0f);
-  scene.add(&npc.transform);
-  objects.push_back(&npc);
-
-  auto red = glm::vec3(1.0f, 0.0f, 0.0f);
-  gfx::Billboard target_marker(make_shared<gfx::gl::Texture>("assets/textures/sprites/triangle.png"), red);
-  target_marker.set_scale(glm::vec3(0.05f));
-  target_marker.set_position({0.0f, 10.0f, 0.0f});
-  target_marker.transform_flags = OBJ3D_TRANSFORM | OBJ3D_SCALE;
-  npc.transform.add(&target_marker);
-#endif
-
 #if 1
-  float size = 0.1f;
-  float projection_distance = 150.0f;
-  glm::vec3 green(0.0f, 1.0f, 0.0f);
+  auto cross_texture = make_shared<gfx::gl::Texture>("assets/textures/sprites/cross.png");
+  auto screen_geometry = gfx::make_quad_geometry();
 
-  gfx::Billboard cross(make_shared<gfx::gl::Texture>("assets/textures/sprites/cross.png"), green);
-  cross.set_position(phi::FORWARD * projection_distance);
-  cross.set_scale(glm::vec3(size));
-  player.mesh.add(&cross);
-
-  gfx::Billboard fpm(make_shared<gfx::gl::Texture>("assets/textures/sprites/fpm.png"), green);
-  fpm.set_scale(glm::vec3(size));
-  player.mesh.add(&fpm);
+  auto screen_material = std::make_shared<gfx::ScreenMaterial>(cross_texture);
+  auto screen_quad = gfx::Mesh(screen_geometry, screen_material);
+  scene.add(&screen_quad);
 #endif
 
   gfx::Object3D camera_transform;
@@ -519,6 +495,9 @@ int main(void)
     ImGui::End();
 #endif
 
+    // TODO: render hud to texture
+    // TODO: use texture in screen quad
+
     get_keyboard_state(joystick, dt);
 
     player.rigid_body.joystick = glm::vec4(joystick.aileron, joystick.rudder, joystick.elevator, joystick.trim);
@@ -601,23 +580,17 @@ int main(void)
 
     joystick.engage_breaks = false;
 
-    fpm.set_position(
-        glm::normalize(player.rigid_body.get_speed() > 1.0f ? player.rigid_body.get_body_velocity() : phi::FORWARD) *
-        projection_distance);
-
     if (orbit) {
       controller.update(camera, player.rigid_body.position, dt);
-      cross.visible = fpm.visible = false;
     } else if (!paused) {
 #if SMOOTH_CAMERA
       auto& rb = player.rigid_body;
-      camera.set_position(glm::mix(camera.get_position(), rb.position + rb.up() * 4.5f, dt * 0.035f * rb.get_speed()));
+      camera.set_position(glm::mix(camera.get_position(), rb.position + rb.up() * 3.5f, dt * 0.035f * rb.get_speed()));
       camera.set_rotation_quat(
           glm::mix(camera.get_rotation_quat(), camera_transform.get_world_rotation_quat(), dt * 5.0f));
 #else
       camera.set_transform(glm::vec3(0.0f), glm::vec3(0.0f));
 #endif
-      cross.visible = fpm.visible = true;
     }
     renderer.render(camera, scene);
 

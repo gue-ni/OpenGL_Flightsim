@@ -653,6 +653,21 @@ std::shared_ptr<Geometry> make_plane_geometry(int x_elements, int y_elements, fl
   return std::make_shared<Geometry>(vertices, Geometry::POS_NORM_UV);
 }
 
+std::shared_ptr<Geometry> make_quad_geometry()
+{
+    const std::vector<float> quad_vertices = {
+        -1.0f, 1.0f,  0.0f, 0.0f, 1.0f,  // top left
+        -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,  // bottom left
+        1.0f,  1.0f,  0.0f, 1.0f, 1.0f,  // top right
+
+        1.0f,  1.0f,  0.0f, 1.0f, 1.0f,  // top right
+        -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,  // bottom left
+        1.0f,  -1.0f, 0.0f, 1.0f, 0.0f,  // bottom right
+    };
+
+    return std::make_shared<Geometry>(quad_vertices, Geometry::POS_UV);
+}
+
 Billboard::Billboard(std::shared_ptr<gl::Texture> sprite, glm::vec3 color)
     : texture(sprite), shader("shaders/billboard"), color(color)
 {

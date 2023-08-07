@@ -18,8 +18,16 @@ namespace gfx
 {
 namespace gl
 {
-struct VertexBuffer {
+
+// abstract opengl object
+struct Object {
   GLuint id = 0;
+  Object() = default;
+  // cast to GLuint
+  inline operator GLuint() const noexcept { return id; };
+};
+
+struct VertexBuffer : public Object {
   VertexBuffer();
   ~VertexBuffer();
   void bind() const;
@@ -33,25 +41,21 @@ struct VertexBuffer {
   }
 };
 
-struct FrameBuffer {
-  GLuint id = 0;
-  FrameBuffer() : id(0) { glGenFramebuffers(1, &id); }
-  FrameBuffer(GLuint id_) : id(id_) {}
-  ~FrameBuffer() { glDeleteFramebuffers(1, &id); };
+struct FrameBuffer : public Object {
+  FrameBuffer();
+  ~FrameBuffer();
   void bind() const;
   void unbind() const;
 };
 
-struct VertexArrayObject {
-  GLuint id = 0;
+struct VertexArrayObject : public Object {
   VertexArrayObject();
   ~VertexArrayObject();
   void bind() const;
   void unbind() const;
 };
 
-struct ElementBufferObject {
-  GLuint id = 0;
+struct ElementBufferObject : public Object {
   ElementBufferObject();
   ~ElementBufferObject();
   void bind() const;
@@ -65,11 +69,9 @@ struct ElementBufferObject {
   }
 };
 
-struct Shader {
-  GLuint id;
+struct Shader : public Object {
   Shader(const std::string& path);
-  Shader(const std::string& vertShader, const std::string& fragShader);
-  Shader(GLuint shader_id) : id(shader_id) {}
+  Shader(const std::string& vert_shader, const std::string& frag_shader);
   ~Shader();
   void bind() const;
   void unbind() const;
@@ -96,10 +98,9 @@ struct TextureParams {
   GLint texture_mag_filter = GL_NEAREST;
 };
 
-struct Texture {
-  GLuint id = 0;
-  Texture() : id(0) { glGenTextures(1, &id); }
-  Texture(GLuint texture_id) : id(texture_id) {}
+struct Texture : public Object {
+  Texture() { glGenTextures(1, &id); }
+  Texture(GLuint texture_id) { id = texture_id; }
   Texture(const std::string& path);
   Texture(const std::string& path, const TextureParams& params);
   Texture(const Image& image, const TextureParams& params);

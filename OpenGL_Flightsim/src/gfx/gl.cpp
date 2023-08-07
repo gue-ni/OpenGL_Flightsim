@@ -23,6 +23,10 @@ void VertexBuffer::buffer(const void* data, size_t size)
   glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
 }
 
+FrameBuffer::FrameBuffer() { glGenFramebuffers(1, &id); }
+
+FrameBuffer::~FrameBuffer() { glDeleteFramebuffers(1, &id); }
+
 void FrameBuffer::bind() const { glBindFramebuffer(GL_FRAMEBUFFER, id); }
 
 void FrameBuffer::unbind() const { glBindFramebuffer(GL_FRAMEBUFFER, 0); }

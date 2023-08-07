@@ -35,6 +35,7 @@ class Geometry;
 std::vector<float> load_obj(const std::string path);
 std::shared_ptr<Geometry> make_cube_geometry(float size);
 std::shared_ptr<Geometry> make_plane_geometry(int x_elements, int y_elements, float size);
+std::shared_ptr<Geometry> make_quad_geometry();
 
 struct ShadowMap {
   ShadowMap(unsigned int shadow_width, unsigned int shadow_height);
