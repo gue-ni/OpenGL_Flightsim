@@ -14,8 +14,8 @@
 #include <unordered_map>
 #include <vector>
 
-#include "gfx_gl.h"
-#include "gfx_util.h"
+#include "gl.h"
+#include "util.h"
 
 namespace gfx
 {
@@ -35,12 +35,6 @@ class Geometry;
 std::vector<float> load_obj(const std::string path);
 std::shared_ptr<Geometry> make_cube_geometry(float size);
 std::shared_ptr<Geometry> make_plane_geometry(int x_elements, int y_elements, float size);
-
-// gl primitives
-namespace gl
-{
-
-};  // namespace gl
 
 struct ShadowMap {
   ShadowMap(unsigned int shadow_width, unsigned int shadow_height);

@@ -1,5 +1,5 @@
 #pragma once
-#include "gfx.h"
+#include "gfx/gfx.h"
 #include "terrain.h"
 
 struct Collider;

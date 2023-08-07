@@ -1,9 +1,9 @@
-#include "gfx_gl.h"
+#include "gl.h"
 
-#include "gfx_util.h"
+#include "util.h"
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "../lib/stb_image.h"
+#include "../../lib/stb_image.h"
 
 namespace gfx
 {

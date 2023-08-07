@@ -15,7 +15,7 @@
 #include "ai.h"
 #include "collider.h"
 #include "flightmodel.h"
-#include "gfx.h"
+#include "gfx/gfx.h"
 #include "phi.h"
 #include "pid.h"
 #include "terrain.h"

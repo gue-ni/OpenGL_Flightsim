@@ -154,10 +154,10 @@ xcopy /y /i /s $(ProjectDir)..\lib\glew-2.2.0\bin\Release\x64\*.dll $(OutDir)</C
     <ClCompile Include="lib\imgui\imgui_impl_sdl2.cpp" />
     <ClCompile Include="lib\imgui\imgui_tables.cpp" />
     <ClCompile Include="lib\imgui\imgui_widgets.cpp" />
-    <ClCompile Include="src\gfx_gl.cpp" />
-    <ClCompile Include="src\gfx_util.cpp" />
+    <ClCompile Include="src\gfx\gl.cpp" />
+    <ClCompile Include="src\gfx\util.cpp" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\gfx.cpp" />
+    <ClCompile Include="src\gfx\gfx.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\basic.frag" />
@@ -181,11 +181,11 @@ xcopy /y /i /s $(ProjectDir)..\lib\glew-2.2.0\bin\Release\x64\*.dll $(OutDir)</C
     <ClInclude Include="src\ai.h" />
     <ClInclude Include="src\collider.h" />
     <ClInclude Include="src\data.h" />
-    <ClInclude Include="src\gfx_gl.h" />
-    <ClInclude Include="src\gfx_util.h" />
+    <ClInclude Include="src\gfx\gl.h" />
+    <ClInclude Include="src\gfx\util.h" />
     <ClInclude Include="src\terrain.h" />
     <ClInclude Include="src\flightmodel.h" />
-    <ClInclude Include="src\gfx.h" />
+    <ClInclude Include="src\gfx\gfx.h" />
     <ClInclude Include="lib\imgui\imconfig.h" />
     <ClInclude Include="lib\imgui\imgui.h" />
     <ClInclude Include="lib\imgui\imgui_impl_opengl3.h" />

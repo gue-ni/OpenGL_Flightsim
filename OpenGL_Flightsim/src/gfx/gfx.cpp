@@ -1,17 +1,12 @@
 #include "gfx.h"
 
-#include "gfx_util.h"
+#include "util.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
-#include "../lib/tiny_obj_loader.h"
+#include "../../lib/tiny_obj_loader.h"
 
 namespace gfx
 {
-
-namespace gl
-{
-
-};  // namespace gl
 
 Geometry::Geometry(const std::vector<float>& vertices, const VertexLayout& layout)
     : triangle_count(static_cast<int>(vertices.size()) / (get_stride(layout)))

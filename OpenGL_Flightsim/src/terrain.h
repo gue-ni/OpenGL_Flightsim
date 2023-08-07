@@ -1,6 +1,6 @@
 #pragma once
 
-#include "gfx.h"
+#include "gfx/gfx.h"
 
 constexpr unsigned int primitive_restart = 0xFFFFU;
 constexpr float MAX_TILE_SIZE = 50708.0f * 4;

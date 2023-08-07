@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "data.h"
-#include "gfx.h"
+#include "gfx/gfx.h"
 #include "phi.h"
 
 //  International Standard Atmosphere (ISA)

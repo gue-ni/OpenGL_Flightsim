@@ -18,7 +18,7 @@
     <ClCompile Include="src\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\gfx.cpp">
+    <ClCompile Include="src\gfx\gfx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="lib\imgui\imgui.cpp">
@@ -42,10 +42,10 @@
     <ClCompile Include="lib\imgui\imgui_widgets.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\gfx_gl.cpp">
+    <ClCompile Include="src\gfx\gl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\gfx_util.cpp">
+    <ClCompile Include="src\gfx\util.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -66,7 +66,7 @@
     <None Include="shaders\terrain.vert" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\gfx.h">
+    <ClInclude Include="src\gfx\gfx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="lib\stb_image.h">
@@ -123,10 +123,10 @@
     <ClInclude Include="src\collider.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\gfx_gl.h">
+    <ClInclude Include="src\gfx\gl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\gfx_util.h">
+    <ClInclude Include="src\gfx\util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
