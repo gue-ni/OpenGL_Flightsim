@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "gfx_gl.h"
+#include "gfx_util.h"
 
 namespace gfx
 {
@@ -31,20 +32,6 @@ class Skybox;
 class Material;
 class Geometry;
 
-// value [0, 255]
-template <typename T>
-constexpr RGB rgb(T r, T g, T b)
-{
-  return RGB(static_cast<float>(r), static_cast<float>(g), static_cast<float>(b)) / 255.0f;
-}
-
-constexpr RGB rgb(uint32_t hex)
-{
-  assert(hex <= 0xffffffU);
-  return RGB{static_cast<float>((hex & 0xff0000U) >> 16) / 255.0f, static_cast<float>((hex & 0x00ff00U) >> 8) / 255.0f,
-             static_cast<float>((hex & 0x0000ffU) >> 0) / 255.0f};
-}
-
 std::vector<float> load_obj(const std::string path);
 std::shared_ptr<Geometry> make_cube_geometry(float size);
 std::shared_ptr<Geometry> make_plane_geometry(int x_elements, int y_elements, float size);
@@ -53,41 +40,6 @@ std::shared_ptr<Geometry> make_plane_geometry(int x_elements, int y_elements, fl
 namespace gl
 {
 
-struct Image {
-  unsigned char* data = nullptr;
-  int width, height, channels;
-  Image(const std::string& path, bool flip_vertically = false);
-  ~Image();
-  glm::vec3 sample(const glm::vec2 uv) const;
-};
-
-struct TextureParams {
-  bool flip_vertically = false;
-  GLint texture_wrap = GL_REPEAT;
-  GLint texture_min_filter = GL_LINEAR_MIPMAP_LINEAR;
-  GLint texture_mag_filter = GL_NEAREST;
-};
-
-struct Texture {
-  GLuint id = 0;
-  Texture() : id(0) { glGenTextures(1, &id); }
-  Texture(GLuint texture_id) : id(texture_id) {}
-  Texture(const std::string& path);
-  Texture(const std::string& path, const TextureParams& params);
-  Texture(const Image& image, const TextureParams& params);
-  ~Texture();
-
-  virtual void bind(GLuint active_texture = 0U) const;
-  virtual void unbind() const;
-  GLint get_format(int channels);
-  void set_parameteri(GLenum target, GLenum pname, GLint param);
-};
-
-struct CubemapTexture : public Texture {
-  CubemapTexture(const std::array<std::string, 6>& paths, bool flip_vertically = false);
-  void bind(GLuint texture) const override;
-  void unbind() const override;
-};
 };  // namespace gl
 
 struct ShadowMap {

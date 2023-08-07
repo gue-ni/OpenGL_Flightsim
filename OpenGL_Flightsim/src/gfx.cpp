@@ -5,117 +5,12 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "../lib/tiny_obj_loader.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "../lib/stb_image.h"
-
 namespace gfx
 {
 
 namespace gl
 {
 
-Texture::Texture(const std::string& path) : Texture(path, {}) {}
-
-Texture::Texture(const std::string& path, const TextureParams& params)
-    : Texture(gl::Image(path, params.flip_vertically), params)
-{
-}
-
-Texture::Texture(const Image& image, const TextureParams& params) : Texture()
-{
-  glBindTexture(GL_TEXTURE_2D, id);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, params.texture_wrap);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, params.texture_wrap);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, params.texture_min_filter);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, params.texture_mag_filter);
-
-  auto format = get_format(image.channels);
-  glTexImage2D(GL_TEXTURE_2D, 0, format, image.width, image.height, 0, format, GL_UNSIGNED_BYTE, image.data);
-  glGenerateMipmap(GL_TEXTURE_2D);
-}
-
-Texture::~Texture() { glDeleteTextures(1, &id); }
-
-void Texture::bind(GLuint active_texture) const
-{
-  glActiveTexture(GL_TEXTURE0 + active_texture);
-  glBindTexture(GL_TEXTURE_2D, id);
-}
-
-void Texture::unbind() const { glBindTexture(GL_TEXTURE_2D, 0); }
-
-GLint Texture::get_format(int channels)
-{
-  GLint format{};
-
-  switch (channels) {
-    case 1:
-      format = GL_RED;
-      break;
-    case 3:
-      format = GL_RGB;
-      break;
-    case 4:
-      format = GL_RGBA;
-      break;
-    default:
-      std::cout << "Failed to load texture, invalid format, channels = " << channels << std::endl;
-      assert(false);
-      break;
-  }
-
-  return format;
-}
-
-void Texture::set_parameteri(GLenum target, GLenum pname, GLint param) { glTexParameteri(target, pname, param); }
-
-CubemapTexture::CubemapTexture(const std::array<std::string, 6>& paths, bool flip_vertically)
-{
-  glGenTextures(1, &id);
-  glBindTexture(GL_TEXTURE_CUBE_MAP, id);
-
-  for (int i = 0; i < 6; i++) {
-    Image image(paths[i], flip_vertically);
-
-    if (image.data) {
-      auto format = get_format(image.channels);
-      glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, image.width, image.height, 0, format,
-                   GL_UNSIGNED_BYTE, image.data);
-    } else {
-      std::cout << "Cubemap tex failed to load at path: " << paths[i] << std::endl;
-    }
-  }
-  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-}
-
-void CubemapTexture::bind(GLuint texture) const
-{
-  glActiveTexture(GL_TEXTURE0 + texture);
-  glBindTexture(GL_TEXTURE_CUBE_MAP, id);
-}
-
-void CubemapTexture::unbind() const { glBindTexture(GL_TEXTURE_CUBE_MAP, 0); }
-
-Image::Image(const std::string& path, bool flip_vertically)
-{
-  stbi_set_flip_vertically_on_load(flip_vertically);
-  data = stbi_load(path.c_str(), &width, &height, &channels, 0);
-  assert(data != nullptr);
-}
-
-Image::~Image() { stbi_image_free(data); }
-
-glm::vec3 Image::sample(const glm::vec2 uv) const
-{
-  // nearest pixel
-  glm::ivec2 pixel_coord = uv * glm::vec2(width, height);
-  int index = (height * pixel_coord.y + pixel_coord.x) * channels;
-  return gfx::rgb(data[index + 0], data[index + 1], data[index + 2]);
-}
 };  // namespace gl
 
 Geometry::Geometry(const std::vector<float>& vertices, const VertexLayout& layout)
