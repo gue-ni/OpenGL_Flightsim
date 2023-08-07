@@ -33,6 +33,18 @@ struct VertexBuffer {
   }
 };
 
+
+struct FrameBuffer {
+  GLuint id = 0;
+  FrameBuffer() : id(0) { glGenFramebuffers(1, &id); }
+  FrameBuffer(GLuint id_) : id(id_) {}
+  ~FrameBuffer() { glDeleteFramebuffers(1, &id); };
+  void bind() const;
+  void unbind() const;
+};
+
+
+
 struct Shader {
   GLuint id;
   Shader(const std::string& path);

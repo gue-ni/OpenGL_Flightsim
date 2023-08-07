@@ -52,28 +52,11 @@ std::shared_ptr<Geometry> make_plane_geometry(int x_elements, int y_elements, fl
 // gl primitives
 namespace gl
 {
-// OpenGL base object
-struct Object {
-    GLuint id;
-    Object() = default;
-    // cast operator to call OpenGL functions with Object
-    operator GLuint() const { return id; }
-};
-
 
 struct VertexArrayObject {
   GLuint id = 0;
   VertexArrayObject();
   ~VertexArrayObject();
-  void bind() const;
-  void unbind() const;
-};
-
-struct FrameBuffer {
-  GLuint id = 0;
-  FrameBuffer() : id(0) { glGenFramebuffers(1, &id); }
-  FrameBuffer(GLuint id_) : id(id_) {}
-  ~FrameBuffer() { glDeleteFramebuffers(1, &id); };
   void bind() const;
   void unbind() const;
 };

@@ -1,6 +1,6 @@
 #include "gfx_gl.h"
-#include "gfx_util.h"
 
+#include "gfx_util.h"
 
 namespace gfx
 {
@@ -19,6 +19,10 @@ void VertexBuffer::buffer(const void* data, size_t size)
   bind();
   glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
 }
+
+void FrameBuffer::bind() const { glBindFramebuffer(GL_FRAMEBUFFER, id); }
+
+void FrameBuffer::unbind() const { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
 
 Shader::Shader(const std::string& path) : Shader(load_text_file(path + ".vert"), load_text_file(path + ".frag")) {}
 
@@ -98,7 +102,6 @@ void Shader::uniform(const std::string& name, const glm::mat4& value)
 {
   glUniformMatrix4fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE, &value[0][0]);
 }
-
 
 }  // namespace gl
 }  // namespace gfx

@@ -165,8 +165,6 @@ glm::vec3 Image::sample(const glm::vec2 uv) const
   int index = (height * pixel_coord.y + pixel_coord.x) * channels;
   return gfx::rgb(data[index + 0], data[index + 1], data[index + 2]);
 }
-void FrameBuffer::bind() const {}
-void FrameBuffer::unbind() const {}
 };  // namespace gl
 
 Geometry::Geometry(const std::vector<float>& vertices, const VertexLayout& layout)
