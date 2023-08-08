@@ -14,6 +14,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "util.h"
+
 namespace gfx
 {
 namespace gl
@@ -116,14 +118,6 @@ struct Shader : public Object {
   void uniform(const std::string& name, const glm::vec3& value);
   void uniform(const std::string& name, const glm::vec4& value);
   void uniform(const std::string& name, const glm::mat4& value);
-};
-
-struct Image {
-  unsigned char* data = nullptr;
-  int width, height, channels;
-  Image(const std::string& path, bool flip_vertically = false);
-  ~Image();
-  glm::vec3 sample(const glm::vec2 uv) const;
 };
 
 struct TextureParams {

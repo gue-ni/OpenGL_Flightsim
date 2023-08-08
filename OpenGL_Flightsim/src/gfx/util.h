@@ -28,8 +28,18 @@ constexpr glm::vec3 rgb(T r, T g, T b)
 constexpr glm::vec3 rgb(uint32_t hex)
 {
   assert(hex <= 0xffffffU);
-  return glm::vec3(static_cast<float>((hex & 0xff0000U) >> 16) / 255.0f, static_cast<float>((hex & 0x00ff00U) >> 8) / 255.0f,
-             static_cast<float>((hex & 0x0000ffU) >> 0) / 255.0f);
+  auto r = (hex & 0xff0000U) >> 16;
+  auto g = (hex & 0x00ff00U) >> 8;
+  auto b = (hex & 0xff00ffU) >> 0;
+  return rgb(r, g, b);
 }
 
-}
+struct Image {
+  unsigned char* data = nullptr;
+  int width, height, channels;
+  Image(const std::string& path, bool flip_vertically = false);
+  ~Image();
+  glm::vec3 sample(const glm::vec2 uv) const;
+};
+
+}  // namespace gfx

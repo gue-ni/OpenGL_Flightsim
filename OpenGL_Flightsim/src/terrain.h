@@ -41,7 +41,7 @@ float scale(float input_val, float in_min, float in_max, float out_min, float ou
   return (input_val - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
-float sample_heightmap(const gfx::gl::Image& heightmap, const glm::vec2& pos, float terrain_size)
+float sample_heightmap(const gfx::Image& heightmap, const glm::vec2& pos, float terrain_size)
 {
   glm::vec2 coord = pos / (terrain_size / 2.0f);
   coord.x = scale(coord.x, -1.0, 1.0, 0.0, 1.0);
@@ -323,7 +323,7 @@ class Clipmap : public gfx::Object3D
   const float terrain_size;  // width and length of the terrain represented by the heightmap
 
   gfx::gl::Shader shader;
-  gfx::gl::Image heightmap_image;
+  gfx::Image heightmap_image;
   gfx::gl::Texture heightmap, normalmap, terrain, terrain_0;
 
   Block tile;

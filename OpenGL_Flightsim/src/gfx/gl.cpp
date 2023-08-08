@@ -2,9 +2,6 @@
 
 #include "util.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "../../lib/stb_image.h"
-
 namespace gfx
 {
 namespace gl
@@ -92,27 +89,10 @@ void Shader::uniform(const std::string& name, const glm::mat4& value)
   glUniformMatrix4fv(glGetUniformLocation(m_id, name.c_str()), 1, GL_FALSE, &value[0][0]);
 }
 
-Image::Image(const std::string& path, bool flip_vertically)
-{
-  stbi_set_flip_vertically_on_load(flip_vertically);
-  data = stbi_load(path.c_str(), &width, &height, &channels, 0);
-  assert(data != nullptr);
-}
-
-Image::~Image() { stbi_image_free(data); }
-
-glm::vec3 Image::sample(const glm::vec2 uv) const
-{
-  // nearest pixel
-  glm::ivec2 pixel_coord = uv * glm::vec2(width, height);
-  int index = (height * pixel_coord.y + pixel_coord.x) * channels;
-  return gfx::rgb(data[index + 0], data[index + 1], data[index + 2]);
-}
-
 Texture::Texture(const std::string& path) : Texture(path, {}) {}
 
 Texture::Texture(const std::string& path, const TextureParams& params)
-    : Texture(gl::Image(path, params.flip_vertically), params)
+    : Texture(Image(path, params.flip_vertically), params)
 {
 }
 
