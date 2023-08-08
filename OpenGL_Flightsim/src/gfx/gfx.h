@@ -305,10 +305,10 @@ class ShaderCache
 {
  public:
   void add_shader(const std::string& path);
-  gl::Shader* get_shader(const std::string& path);
+  gl::ShaderPtr get_shader(const std::string& path) ;
 
  private:
-  std::unordered_map<std::string, gl::Shader*> m_cache;
+  std::unordered_map<std::string, gl::ShaderPtr> m_cache;
 };
 
 class Mesh : public Object3D

@@ -266,14 +266,11 @@ int main(void)
   auto falcon_obj = gfx::load_obj("assets/models/falcon.obj");
   auto falcon_geo = std::make_shared<gfx::Geometry>(falcon_obj, gfx::Geometry::POS_NORM_UV);
 
-  auto basic = make_shared<gfx::Basic>(glm::vec3(1, 0, 0));
-  auto material = make_shared<gfx::Phong>(falcon_tex);
-  auto model = gfx::make_cube_geometry(2.0f);
 
-  gfx::Material2Ptr material2 = make_shared<gfx::Material2>("shaders/basic", falcon_tex);
+  gfx::Material2Ptr material = make_shared<gfx::Material2>("shaders/pbr", falcon_tex);
 
   std::vector<GameObject> objects = {{
-      .mesh = gfx::Mesh2(falcon_geo, material2),
+      .mesh = gfx::Mesh2(falcon_geo, material),
       .rigid_body = rigid_bodies[0],
   }};
 

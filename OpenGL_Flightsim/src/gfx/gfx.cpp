@@ -790,11 +790,17 @@ void ScreenMaterial::bind()
 void ShaderCache::add_shader(const std::string& path)
 {
   if (!m_cache.contains(path)) {
-    m_cache.insert(std::make_pair(path, new gl::Shader(path)));
+    m_cache.insert(std::make_pair(path, std::make_shared<gl::Shader>(path)));
   }
 }
 
-gl::Shader* ShaderCache::get_shader(const std::string& path) { return m_cache.at(path); }
+gl::ShaderPtr ShaderCache::get_shader(const std::string& path)
+{
+  if (!m_cache.contains(path)) {
+    add_shader(path);
+  }
+  return m_cache.at(path);
+}
 
 Renderer2::Renderer2(GLsizei width, GLsizei height) : m_width(width), m_height(height)
 {
@@ -837,15 +843,11 @@ Mesh2::Mesh2(const GeometryPtr& geometry, const Material2Ptr& material) : m_mate
 void Mesh2::draw_self(RenderContext& context)
 {
   if (!context.is_shadow_pass && context.shader_cache) {
-    auto& camera = context.camera;
+    auto camera = context.camera;
 
-#if 1
-    // std::string shader_name = m_material->get_shader_name();
-    std::string shader_name = "shaders/pbr";
+    // get shader from cache
+    std::string shader_name = m_material->get_shader_name();
     auto shader = context.shader_cache->get_shader(shader_name);
-#else
-    auto shader = m_material->get_shader();
-#endif
 
     shader->bind();
 
@@ -862,19 +864,13 @@ void Mesh2::draw_self(RenderContext& context)
 
     // textures
     gl::TexturePtr texture = m_material->get_texture();
-#if 0
-     int active_texture =  5;
-     glActiveTexture(GL_TEXTURE0 + active_texture);
-     glBindTexture(GL_TEXTURE_2D, texture->id());
-     shader->uniform("u_Texture1", active_texture);
-#else
-    assert(texture != nullptr);
-    int active_texture = 1;
-    texture->bind(active_texture);
-    shader->uniform("u_Texture1", active_texture);
-#endif
 
     shader->uniform("u_UseTexture", true);
+
+    int active_texture = 5;
+    glActiveTexture(GL_TEXTURE0 + active_texture);
+    glBindTexture(GL_TEXTURE_2D, texture->id());
+    shader->uniform("u_Texture1", active_texture);
 
     glm::vec3 rgb = glm::vec3(1.0f, 0.0f, 0.0f);
     shader->uniform("u_SolidObjectColor", rgb);
@@ -883,8 +879,6 @@ void Mesh2::draw_self(RenderContext& context)
     shader->uniform("kd", 1.0f);
     shader->uniform("ks", 0.4f);
     shader->uniform("alpha", 20.0f);
-
-    shader->uniform("u_Albedo", rgb);
 
     m_geometry->bind();
     glDrawArrays(GL_TRIANGLES, 0, m_geometry->triangle_count);
