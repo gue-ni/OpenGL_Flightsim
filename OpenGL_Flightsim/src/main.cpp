@@ -37,14 +37,14 @@ JK      control thrust
 )";
 
 #define CLIPMAP            1
-#define SKYBOX             1
+#define SKYBOX             0
 #define SMOOTH_CAMERA      1
 #define NPC_AIRCRAFT       0
 #define SHOW_MASS_ELEMENTS 0
 #define USE_PID            1
 #define PS1_RESOLUTION     0
 #define DEBUG_INFO         0
-#define TERRAIN_COLLISION  1
+#define TERRAIN_COLLISION  0
 
 /* select flightmodel */
 #define FAST_JET    0
@@ -71,7 +71,7 @@ struct Joystick {
 };
 
 struct GameObject {
-  gfx::Mesh mesh;
+  gfx::Mesh2 mesh;
   Airplane& rigid_body;
 };
 
@@ -193,20 +193,20 @@ int main(void)
     printf("found %d buttons, %d axis\n", joystick.num_buttons, joystick.num_axis);
   }
 
-  gfx::Renderer renderer(RESOLUTION.x, RESOLUTION.y);
+  gfx::Renderer2 renderer(RESOLUTION.x, RESOLUTION.y);
 
   gfx::gl::TextureParams params = {.flip_vertically = true, .texture_mag_filter = GL_LINEAR};
-  auto tex = make_shared<gfx::gl::Texture>("assets/textures/f16_256.jpg", params);
-  auto texture = make_shared<gfx::Phong>(tex);
+  auto texture = make_shared<gfx::gl::Texture>("assets/textures/f16_256.jpg", params);
+  auto material = make_shared<gfx::Phong>(texture);
+
+  auto basic = make_shared<gfx::Basic>(glm::vec3(1,0,0));
   auto obj = gfx::load_obj("assets/models/falcon.obj");
   auto model = std::make_shared<gfx::Geometry>(obj, gfx::Geometry::POS_NORM_UV);
 
-  gfx::Object3D scene;
+  gfx::Material2Ptr material2 = make_shared<gfx::Material2>("shaders/basic", texture);
 
-  gfx::Light sun(gfx::Light::DIRECTIONAL, glm::vec3(1.0f));
-  sun.set_position(glm::vec3(-2.0f, 4.0f, -1.0f));
-  sun.cast_shadow = false;
-  scene.add(&sun);
+
+  gfx::Object3D scene;
 
 #if SKYBOX
   const std::string skybox_path = "assets/textures/skybox/1/";
@@ -272,7 +272,7 @@ int main(void)
   };
 
   std::vector<GameObject> objects = {{
-      .mesh = gfx::Mesh(model, texture),
+      .mesh = gfx::Mesh2(model, basic),
       .rigid_body = rigid_bodies[0],
   }};
 
@@ -282,10 +282,13 @@ int main(void)
   terrain.active = false;
   terrain.mass = 10000.0f;
   terrain.set_inertia(phi::inertia::sphere(terrain.mass, 1000.0f));
-
+#if CLIPMAP
   terrain.collider = new Heightmap(&clipmap);
+#else
+  terrain.collider = nullptr;
+#endif
 
-  player.rigid_body.position = glm::vec3(clipmap.get_terrain_size() / 4.0f, 1500.0f, clipmap.get_terrain_size() / 4.0f);
+  player.rigid_body.position = glm::vec3(0.0f, 1500.0f, 0.0f);
   player.rigid_body.velocity = glm::vec3(phi::units::meter_per_second(300.0f), 0.0f, 0.0f);
   scene.add(&player.mesh);
 

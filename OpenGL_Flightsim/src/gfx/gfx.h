@@ -199,19 +199,17 @@ class Material
 class Material2
 {
  public:
-  float ka, kd, ks, alpha;
-  glm::vec3 albedo;
-
-  Material2(const std::string& shader_name)
-      : m_shader_name(shader_name), albedo(0.0f, 1.0f, 0.0f), ka(0.3f), kd(1.0f), ks(0.5f), alpha(20.0f)
+  Material2(const std::string& shader_name, const gl::TexturePtr& texture)
+      : m_shader_name(shader_name), m_texture(texture)
   {
   }
 
-  gl::TexturePtr texture = nullptr;
-
   std::string& get_shader_name() { return m_shader_name; }
 
+  gl::TexturePtr get_texture() const { return m_texture; }
+
  private:
+  gl::TexturePtr m_texture = nullptr;
   std::string m_shader_name;
 };
 
@@ -220,8 +218,10 @@ using Material2Ptr = std::shared_ptr<Material2>;
 class Mesh2 : public Object3D
 {
  public:
+  Mesh2(const GeometryPtr& geometry, const MaterialPtr& material);
+
  private:
-  Material2Ptr m_material;
+  MaterialPtr m_material;
   GeometryPtr m_geometry;
   void draw_self(RenderContext& context) override;
 };
@@ -306,10 +306,10 @@ class ShaderCache
 {
  public:
   void add_shader(const std::string& path);
-  gl::Shader& get_shader(const std::string& path);
+  gl::Shader* get_shader(const std::string& path);
 
  private:
-  std::unordered_map<std::string, gl::Shader> m_cache;
+  std::unordered_map<std::string, gl::Shader*> m_cache;
 };
 
 class Mesh : public Object3D
@@ -386,7 +386,12 @@ class Renderer
 class Renderer2
 {
  private:
+  GLsizei m_width, m_height;
+  ShaderCache m_shaders;
+
  public:
+  Renderer2(GLsizei width, GLsizei height);
+  ~Renderer2();
   void render(Camera& camera, Object3D& scene);
 };
 
