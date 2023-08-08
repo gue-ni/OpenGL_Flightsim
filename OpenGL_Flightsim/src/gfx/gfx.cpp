@@ -345,7 +345,7 @@ ShadowMap::ShadowMap(unsigned int shadow_width, unsigned int shadow_height)
     : width(shadow_width), height(shadow_height), shader("shaders/depth")
 {
   // glGenTextures(1, &depth_map_texture_id);
-  glBindTexture(GL_TEXTURE_2D, depth_map.id);
+  glBindTexture(GL_TEXTURE_2D, depth_map.m_id);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadow_width, shadow_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT,
                NULL);
 
@@ -356,7 +356,7 @@ ShadowMap::ShadowMap(unsigned int shadow_width, unsigned int shadow_height)
 
   glGenFramebuffers(1, &fbo);
   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_map.id, 0);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_map.m_id, 0);
   glDrawBuffer(GL_NONE);
   glReadBuffer(GL_NONE);
   glBindBuffer(GL_FRAMEBUFFER, 0);

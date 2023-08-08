@@ -21,10 +21,10 @@ namespace gl
 
 // abstract opengl object
 struct Object {
-  GLuint id = 0;
+  GLuint m_id = 0;
   Object() = default;
   // cast to GLuint
-  inline operator GLuint() const noexcept { return id; };
+  inline operator GLuint() const noexcept { return m_id; };
 };
 
 struct VertexBuffer : public Object {
@@ -99,8 +99,8 @@ struct TextureParams {
 };
 
 struct Texture : public Object {
-  Texture() { glGenTextures(1, &id); }
-  Texture(GLuint texture_id) { id = texture_id; }
+  Texture() { glGenTextures(1, &m_id); }
+  Texture(GLuint texture_id) { m_id = texture_id; }
   Texture(const std::string& path);
   Texture(const std::string& path, const TextureParams& params);
   Texture(const Image& image, const TextureParams& params);

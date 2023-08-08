@@ -9,11 +9,11 @@ namespace gfx
 {
 namespace gl
 {
-VertexBuffer::VertexBuffer() { glGenBuffers(1, &id); }
+VertexBuffer::VertexBuffer() { glGenBuffers(1, &m_id); }
 
-VertexBuffer::~VertexBuffer() { glDeleteBuffers(1, &id); }
+VertexBuffer::~VertexBuffer() { glDeleteBuffers(1, &m_id); }
 
-void VertexBuffer::bind() const { glBindBuffer(GL_ARRAY_BUFFER, id); }
+void VertexBuffer::bind() const { glBindBuffer(GL_ARRAY_BUFFER, m_id); }
 
 void VertexBuffer::unbind() const { glBindBuffer(GL_ARRAY_BUFFER, 0); }
 
@@ -23,27 +23,27 @@ void VertexBuffer::buffer(const void* data, size_t size)
   glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
 }
 
-FrameBuffer::FrameBuffer() { glGenFramebuffers(1, &id); }
+FrameBuffer::FrameBuffer() { glGenFramebuffers(1, &m_id); }
 
-FrameBuffer::~FrameBuffer() { glDeleteFramebuffers(1, &id); }
+FrameBuffer::~FrameBuffer() { glDeleteFramebuffers(1, &m_id); }
 
-void FrameBuffer::bind() const { glBindFramebuffer(GL_FRAMEBUFFER, id); }
+void FrameBuffer::bind() const { glBindFramebuffer(GL_FRAMEBUFFER, m_id); }
 
 void FrameBuffer::unbind() const { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
 
-VertexArrayObject::VertexArrayObject() { glGenVertexArrays(1, &id); }
+VertexArrayObject::VertexArrayObject() { glGenVertexArrays(1, &m_id); }
 
-VertexArrayObject::~VertexArrayObject() { glDeleteVertexArrays(1, &id); }
+VertexArrayObject::~VertexArrayObject() { glDeleteVertexArrays(1, &m_id); }
 
-void VertexArrayObject::bind() const { glBindVertexArray(id); }
+void VertexArrayObject::bind() const { glBindVertexArray(m_id); }
 
 void VertexArrayObject::unbind() const { glBindVertexArray(0); }
 
-ElementBufferObject::ElementBufferObject() { glGenBuffers(1, &id); }
+ElementBufferObject::ElementBufferObject() { glGenBuffers(1, &m_id); }
 
-ElementBufferObject::~ElementBufferObject() { glDeleteBuffers(1, &id); }
+ElementBufferObject::~ElementBufferObject() { glDeleteBuffers(1, &m_id); }
 
-void ElementBufferObject::bind() const { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, id); }
+void ElementBufferObject::bind() const { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_id); }
 
 void ElementBufferObject::unbind() const { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); }
 
@@ -85,51 +85,51 @@ Shader::Shader(const std::string& vertShader, const std::string& fragShader)
     std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
   }
   // link shaders
-  id = glCreateProgram();
-  glAttachShader(id, vertexShader);
-  glAttachShader(id, fragmentShader);
-  glLinkProgram(id);
+  m_id = glCreateProgram();
+  glAttachShader(m_id, vertexShader);
+  glAttachShader(m_id, fragmentShader);
+  glLinkProgram(m_id);
   // check for linking errors
-  glGetProgramiv(id, GL_LINK_STATUS, &success);
+  glGetProgramiv(m_id, GL_LINK_STATUS, &success);
   if (!success) {
-    glGetProgramInfoLog(id, 512, NULL, infoLog);
+    glGetProgramInfoLog(m_id, 512, NULL, infoLog);
     std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
   }
   glDeleteShader(vertexShader);
   glDeleteShader(fragmentShader);
 }
 
-Shader::~Shader() { glDeleteProgram(id); }
+Shader::~Shader() { glDeleteProgram(m_id); }
 
-void Shader::bind() const { glUseProgram(id); }
+void Shader::bind() const { glUseProgram(m_id); }
 
 void Shader::unbind() const { glUseProgram(0); }
 
-void Shader::uniform(const std::string& name, int value) { glUniform1i(glGetUniformLocation(id, name.c_str()), value); }
+void Shader::uniform(const std::string& name, int value) { glUniform1i(glGetUniformLocation(m_id, name.c_str()), value); }
 
 void Shader::uniform(const std::string& name, unsigned int value)
 {
-  glUniform1ui(glGetUniformLocation(id, name.c_str()), value);
+  glUniform1ui(glGetUniformLocation(m_id, name.c_str()), value);
 }
 
 void Shader::uniform(const std::string& name, float value)
 {
-  glUniform1f(glGetUniformLocation(id, name.c_str()), value);
+  glUniform1f(glGetUniformLocation(m_id, name.c_str()), value);
 }
 
 void Shader::uniform(const std::string& name, const glm::vec3& value)
 {
-  glUniform3fv(glGetUniformLocation(id, name.c_str()), 1, &value[0]);
+  glUniform3fv(glGetUniformLocation(m_id, name.c_str()), 1, &value[0]);
 }
 
 void Shader::uniform(const std::string& name, const glm::vec4& value)
 {
-  glUniform4fv(glGetUniformLocation(id, name.c_str()), 1, &value[0]);
+  glUniform4fv(glGetUniformLocation(m_id, name.c_str()), 1, &value[0]);
 }
 
 void Shader::uniform(const std::string& name, const glm::mat4& value)
 {
-  glUniformMatrix4fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE, &value[0][0]);
+  glUniformMatrix4fv(glGetUniformLocation(m_id, name.c_str()), 1, GL_FALSE, &value[0][0]);
 }
 
 Image::Image(const std::string& path, bool flip_vertically)
@@ -158,7 +158,7 @@ Texture::Texture(const std::string& path, const TextureParams& params)
 
 Texture::Texture(const Image& image, const TextureParams& params) : Texture()
 {
-  glBindTexture(GL_TEXTURE_2D, id);
+  glBindTexture(GL_TEXTURE_2D, m_id);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, params.texture_wrap);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, params.texture_wrap);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, params.texture_min_filter);
@@ -169,12 +169,12 @@ Texture::Texture(const Image& image, const TextureParams& params) : Texture()
   glGenerateMipmap(GL_TEXTURE_2D);
 }
 
-Texture::~Texture() { glDeleteTextures(1, &id); }
+Texture::~Texture() { glDeleteTextures(1, &m_id); }
 
 void Texture::bind(GLuint active_texture) const
 {
   glActiveTexture(GL_TEXTURE0 + active_texture);
-  glBindTexture(GL_TEXTURE_2D, id);
+  glBindTexture(GL_TEXTURE_2D, m_id);
 }
 
 void Texture::unbind() const { glBindTexture(GL_TEXTURE_2D, 0); }
@@ -206,8 +206,8 @@ void Texture::set_parameteri(GLenum target, GLenum pname, GLint param) { glTexPa
 
 CubemapTexture::CubemapTexture(const std::array<std::string, 6>& paths, bool flip_vertically)
 {
-  glGenTextures(1, &id);
-  glBindTexture(GL_TEXTURE_CUBE_MAP, id);
+  glGenTextures(1, &m_id);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, m_id);
 
   for (int i = 0; i < 6; i++) {
     Image image(paths[i], flip_vertically);
@@ -230,7 +230,7 @@ CubemapTexture::CubemapTexture(const std::array<std::string, 6>& paths, bool fli
 void CubemapTexture::bind(GLuint texture) const
 {
   glActiveTexture(GL_TEXTURE0 + texture);
-  glBindTexture(GL_TEXTURE_CUBE_MAP, id);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, m_id);
 }
 
 void CubemapTexture::unbind() const { glBindTexture(GL_TEXTURE_CUBE_MAP, 0); }
