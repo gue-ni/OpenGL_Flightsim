@@ -1,13 +1,17 @@
 #version 330 core
 out vec4 FragColor;
 
-uniform sampler2D u_Texture1;
-uniform vec3 u_Albedo;
+uniform vec3 u_SolidObjectColor;
 
-in vec2 TexCoord;
+uniform sampler2D u_Texture1;
+
+in vec2 TexCoords;
 
 void main()
 {
-  //FragColor = texture(u_Texture1, TexCoord);
-  FragColor = vec4(u_Albedo,1);
+#if 0
+  FragColor = vec4(u_SolidObjectColor, 1.0);
+#else
+  FragColor = texture(u_Texture1, TexCoords);
+ #endif
 }

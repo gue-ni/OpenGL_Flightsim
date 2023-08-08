@@ -184,7 +184,6 @@ class Geometry
   gl::VertexArrayObject vao;
 
  private:
-  // unsigned int m_vao, m_vbo;
   gl::VertexBuffer vbo;
   static int get_stride(const VertexLayout& layout);
 };
@@ -218,10 +217,10 @@ using Material2Ptr = std::shared_ptr<Material2>;
 class Mesh2 : public Object3D
 {
  public:
-  Mesh2(const GeometryPtr& geometry, const MaterialPtr& material);
+  Mesh2(const GeometryPtr& geometry, const Material2Ptr& material);
 
  private:
-  MaterialPtr m_material;
+  Material2Ptr m_material;
   GeometryPtr m_geometry;
   void draw_self(RenderContext& context) override;
 };

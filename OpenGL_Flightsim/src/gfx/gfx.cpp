@@ -12,7 +12,6 @@ Geometry::Geometry(const std::vector<float>& vertices, const VertexLayout& layou
     : triangle_count(static_cast<int>(vertices.size()) / (get_stride(layout)))
 {
   const int stride = get_stride(layout);
-
   vao.bind();
   vbo.buffer(vertices);
 
@@ -801,6 +800,7 @@ Renderer2::Renderer2(GLsizei width, GLsizei height) : m_width(width), m_height(h
 {
   m_shaders.add_shader("shaders/pbr");
   m_shaders.add_shader("shaders/basic");
+  m_shaders.add_shader("shaders/phong");
 }
 
 Renderer2::~Renderer2() {}
@@ -832,7 +832,7 @@ void Renderer2::render(Camera& camera, Object3D& scene)
   scene.draw(context);
 }
 
-Mesh2::Mesh2(const GeometryPtr& geometry, const MaterialPtr& material) : m_material(material), m_geometry(geometry) {}
+Mesh2::Mesh2(const GeometryPtr& geometry, const Material2Ptr& material) : m_material(material), m_geometry(geometry) {}
 
 void Mesh2::draw_self(RenderContext& context)
 {
@@ -840,7 +840,7 @@ void Mesh2::draw_self(RenderContext& context)
     auto& camera = context.camera;
 
 #if 1
-    //std::string shader_name = m_material->get_shader_name();
+    // std::string shader_name = m_material->get_shader_name();
     std::string shader_name = "shaders/pbr";
     auto shader = context.shader_cache->get_shader(shader_name);
 #else
@@ -860,23 +860,35 @@ void Mesh2::draw_self(RenderContext& context)
     // shader.uniform("u_DirectionalLight_Direction", light.direction);
     // shader.uniform("u_DirectionalLight_Color", light.color);
 
-
     // textures
-#if 1
-    shader->uniform("u_Albedo", glm::vec3(1.0f, 0.5f, 0.0f));
+    gl::TexturePtr texture = m_material->get_texture();
+#if 0
+     int active_texture =  5;
+     glActiveTexture(GL_TEXTURE0 + active_texture);
+     glBindTexture(GL_TEXTURE_2D, texture->id());
+     shader->uniform("u_Texture1", active_texture);
 #else
-     int active_texture = GL_TEXTURE5;
-     glActiveTexture(active_texture);
-     glBindTexture(GL_TEXTURE_2D, m_material->get_texture()->id());
-    // m_material->get_texture()->bind(active_texture);
-     shader.uniform("u_Texture1", active_texture);
+    assert(texture != nullptr);
+    int active_texture = 1;
+    texture->bind(active_texture);
+    shader->uniform("u_Texture1", active_texture);
 #endif
 
+    shader->uniform("u_UseTexture", true);
 
+    glm::vec3 rgb = glm::vec3(1.0f, 0.0f, 0.0f);
+    shader->uniform("u_SolidObjectColor", rgb);
 
-    m_geometry->vao.bind();
+    shader->uniform("ka", 0.5f);
+    shader->uniform("kd", 1.0f);
+    shader->uniform("ks", 0.4f);
+    shader->uniform("alpha", 20.0f);
+
+    shader->uniform("u_Albedo", rgb);
+
+    m_geometry->bind();
     glDrawArrays(GL_TRIANGLES, 0, m_geometry->triangle_count);
-    m_geometry->vao.unbind();
+    m_geometry->unbind();
 
     shader->unbind();
   }

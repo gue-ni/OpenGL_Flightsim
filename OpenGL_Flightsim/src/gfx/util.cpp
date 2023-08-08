@@ -3,9 +3,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "../../lib/stb_image.h"
 
-
-
-
 namespace gfx
 {
 std::string load_text_file(const std::string& path)
@@ -21,19 +18,26 @@ std::string load_text_file(const std::string& path)
 Image::Image(const std::string& path, bool flip_vertically)
 {
   stbi_set_flip_vertically_on_load(flip_vertically);
-  data = stbi_load(path.c_str(), &width, &height, &channels, 0);
-  assert(data != nullptr);
+  m_data = stbi_load(path.c_str(), &m_width, &m_height, &m_channels, 0);
+  assert(m_data != nullptr);
 }
 
-Image::~Image() { stbi_image_free(data); }
+Image::~Image() { stbi_image_free(m_data); }
 
 glm::vec3 Image::sample(const glm::vec2 uv) const
 {
   // nearest pixel
-  glm::ivec2 pixel_coord = uv * glm::vec2(width, height);
-  int index = (height * pixel_coord.y + pixel_coord.x) * channels;
-  return gfx::rgb(data[index + 0], data[index + 1], data[index + 2]);
+  glm::ivec2 pixel_coord = uv * glm::vec2(m_width, m_height);
+  int index = (m_height * pixel_coord.y + pixel_coord.x) * m_channels;
+  return gfx::rgb(m_data[index + 0], m_data[index + 1], m_data[index + 2]);
 }
 
+unsigned char* Image::data() const { return m_data; }
+
+int Image::width() const { return m_width; }
+
+int Image::height() const { return m_height; }
+
+int Image::channels() const { return m_channels; }
 
 }  // namespace gfx

@@ -195,17 +195,6 @@ int main(void)
 
   gfx::Renderer2 renderer(RESOLUTION.x, RESOLUTION.y);
 
-  gfx::gl::TextureParams params = {.flip_vertically = true, .texture_mag_filter = GL_LINEAR};
-  auto texture = make_shared<gfx::gl::Texture>("assets/textures/f16_256.jpg", params);
-  auto material = make_shared<gfx::Phong>(texture);
-
-  auto basic = make_shared<gfx::Basic>(glm::vec3(1,0,0));
-  auto obj = gfx::load_obj("assets/models/falcon.obj");
-  auto model = std::make_shared<gfx::Geometry>(obj, gfx::Geometry::POS_NORM_UV);
-
-  gfx::Material2Ptr material2 = make_shared<gfx::Material2>("shaders/basic", texture);
-
-
   gfx::Object3D scene;
 
 #if SKYBOX
@@ -271,8 +260,20 @@ int main(void)
       Airplane(mass, inertia, wings, {engine}, &landing_gear),
   };
 
+  gfx::gl::TextureParams params = {.flip_vertically = true, .texture_mag_filter = GL_LINEAR};
+
+  auto falcon_tex = make_shared<gfx::gl::Texture>("assets/textures/falcon.jpg", params);
+  auto falcon_obj = gfx::load_obj("assets/models/falcon.obj");
+  auto falcon_geo = std::make_shared<gfx::Geometry>(falcon_obj, gfx::Geometry::POS_NORM_UV);
+
+  auto basic = make_shared<gfx::Basic>(glm::vec3(1, 0, 0));
+  auto material = make_shared<gfx::Phong>(falcon_tex);
+  auto model = gfx::make_cube_geometry(2.0f);
+
+  gfx::Material2Ptr material2 = make_shared<gfx::Material2>("shaders/basic", falcon_tex);
+
   std::vector<GameObject> objects = {{
-      .mesh = gfx::Mesh2(model, basic),
+      .mesh = gfx::Mesh2(falcon_geo, material2),
       .rigid_body = rigid_bodies[0],
   }};
 
@@ -289,7 +290,7 @@ int main(void)
 #endif
 
   player.rigid_body.position = glm::vec3(0.0f, 1500.0f, 0.0f);
-  player.rigid_body.velocity = glm::vec3(phi::units::meter_per_second(300.0f), 0.0f, 0.0f);
+  player.rigid_body.velocity = glm::vec3(phi::units::meter_per_second(500.0f), 0.0f, 0.0f);
   scene.add(&player.mesh);
 
 #if 0

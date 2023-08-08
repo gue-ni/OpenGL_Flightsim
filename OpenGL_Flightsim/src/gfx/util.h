@@ -34,12 +34,20 @@ constexpr glm::vec3 rgb(uint32_t hex)
   return rgb(r, g, b);
 }
 
-struct Image {
-  unsigned char* data = nullptr;
-  int width, height, channels;
+class Image
+{
+ public:
   Image(const std::string& path, bool flip_vertically = false);
   ~Image();
   glm::vec3 sample(const glm::vec2 uv) const;
+  unsigned char* data() const;
+  int width() const;
+  int height() const;
+  int channels() const;
+
+ private:
+  unsigned char* m_data = nullptr;
+  int m_width, m_height, m_channels;
 };
 
 }  // namespace gfx

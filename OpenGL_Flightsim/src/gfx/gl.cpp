@@ -104,8 +104,8 @@ Texture::Texture(const Image& image, const TextureParams& params) : Texture()
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, params.texture_min_filter);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, params.texture_mag_filter);
 
-  auto format = get_format(image.channels);
-  glTexImage2D(GL_TEXTURE_2D, 0, format, image.width, image.height, 0, format, GL_UNSIGNED_BYTE, image.data);
+  auto format = get_format(image.channels());
+  glTexImage2D(GL_TEXTURE_2D, 0, format, image.width(), image.height(), 0, format, GL_UNSIGNED_BYTE, image.data());
   glGenerateMipmap(GL_TEXTURE_2D);
 }
 
@@ -152,10 +152,10 @@ CubemapTexture::CubemapTexture(const std::array<std::string, 6>& paths, bool fli
   for (int i = 0; i < 6; i++) {
     Image image(paths[i], flip_vertically);
 
-    if (image.data) {
-      auto format = get_format(image.channels);
-      glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, image.width, image.height, 0, format,
-                   GL_UNSIGNED_BYTE, image.data);
+    if (image.data()) {
+      auto format = get_format(image.channels());
+      glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, image.width(), image.height(), 0, format,
+                   GL_UNSIGNED_BYTE, image.data());
     } else {
       std::cout << "Cubemap tex failed to load at path: " << paths[i] << std::endl;
     }
