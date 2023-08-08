@@ -289,7 +289,7 @@ int main(void)
   player.rigid_body.velocity = glm::vec3(phi::units::meter_per_second(300.0f), 0.0f, 0.0f);
   scene.add(&player.mesh);
 
-#if 1
+#if 0
   auto wheel_texture = make_shared<gfx::Phong>(glm::vec3(0.0f, 0.0f, 1.0f));
   auto wheel_geometry = gfx::make_cube_geometry(0.5f);
 
@@ -319,7 +319,7 @@ int main(void)
   }
 #endif
 
-#if 1
+#if 0
   auto cross_texture = make_shared<gfx::gl::Texture>("assets/textures/sprites/cross.png");
   auto screen_geometry = gfx::make_quad_geometry();
 

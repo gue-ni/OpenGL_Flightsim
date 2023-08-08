@@ -787,4 +787,63 @@ void ScreenMaterial::bind()
   shader->bind();
   shader->uniform("u_ShadowMap", 0);
 }
+void ShaderCache::add_shader(const std::string& path)
+{
+  if (!m_cache.contains(path)) {
+    m_cache.insert(std::make_pair(path, gl::Shader(path)));
+  }
+}
+
+gl::Shader& ShaderCache::get_shader(const std::string& path) { return m_cache.at(path); }
+
+void Renderer2::render(Camera& camera, Object3D& scene) {}
+
+void Mesh2::draw_self(RenderContext& context)
+{
+  if (!context.is_shadow_pass && context.shader_cache) {
+    auto& shader = context.shader_cache->get_shader(m_material->get_shader_name());
+    auto& camera = context.camera;
+    // auto& light = context.directional_light;
+
+    shader.bind();
+
+    // transform
+    shader.uniform("u_Model", get_transform());
+
+    // camera
+    shader.uniform("u_View", camera->get_view_matrix());
+    shader.uniform("u_Projection", camera->get_projection_matrix());
+    shader.uniform("u_CameraPosition", camera->get_world_position());
+
+    // lights
+    // shader.uniform("u_DirectionalLight_Direction", light.direction);
+    // shader.uniform("u_DirectionalLight_Color", light.color);
+
+    // textures
+#if 0
+        for (GLuint i = 0; i < m_material->textures.size(); i++)
+        {
+            if (m_material->textures[i] != nullptr)
+            {
+                glActiveTexture(GL_TEXTURE4 + i);
+                glBindTexture(GL_TEXTURE_2D, m_material->textures[i]->id());
+                shader.uniform("u_Texture_" + std::to_string(i), static_cast<int>(GL_TEXTURE4 + i));
+            }
+        }
+#else
+    GLenum active_texture = GL_TEXTURE5;
+    glActiveTexture(active_texture);
+    glBindTexture(GL_TEXTURE_2D, m_material->texture->id());
+    shader.uniform("u_Texture", active_texture);
+
+#endif
+
+    m_geometry->vao.bind();
+    glDrawArrays(GL_TRIANGLES, 0, m_geometry->triangle_count);
+    m_geometry->vao.unbind();
+
+    shader.unbind();
+  }
+}
+
 }  // namespace gfx

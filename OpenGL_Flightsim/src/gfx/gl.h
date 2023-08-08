@@ -56,7 +56,6 @@ struct Object {
 
 struct VertexBuffer : public Object {
   VertexBuffer() { glGenBuffers(1, &m_id); }
-
   ~VertexBuffer() { glDeleteBuffers(1, &m_id); }
   void bind() const { glBindBuffer(GL_ARRAY_BUFFER, m_id); }
   void unbind() const { glBindBuffer(GL_ARRAY_BUFFER, 0); }
@@ -93,6 +92,7 @@ struct ElementBufferObject : public Object {
   ~ElementBufferObject() { glDeleteBuffers(1, &m_id); }
   void bind() const { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_id); }
   void unbind() const { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); }
+
   void buffer(const void* data, size_t size)
   {
     bind();
@@ -107,6 +107,7 @@ struct ElementBufferObject : public Object {
 };
 
 struct Shader : public Object {
+ public:
   Shader(const std::string& path);
   Shader(const std::string& vert_shader, const std::string& frag_shader);
   ~Shader();
@@ -119,6 +120,8 @@ struct Shader : public Object {
   void uniform(const std::string& name, const glm::vec4& value);
   void uniform(const std::string& name, const glm::mat4& value);
 };
+
+using ShaderPtr = std::shared_ptr<Shader>;
 
 struct TextureParams {
   bool flip_vertically = false;
@@ -140,6 +143,8 @@ struct Texture : public Object {
   GLint get_format(int channels);
   void set_parameteri(GLenum target, GLenum pname, GLint param);
 };
+
+using TexturePtr = std::shared_ptr<Texture>;
 
 struct CubemapTexture : public Texture {
   CubemapTexture(const std::array<std::string, 6>& paths, bool flip_vertically = false);

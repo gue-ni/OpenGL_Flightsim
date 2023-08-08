@@ -31,6 +31,10 @@ class Camera;
 class Skybox;
 class Material;
 class Geometry;
+class ShaderCache;
+
+using MaterialPtr = std::shared_ptr<Material>;
+using GeometryPtr = std::shared_ptr<Geometry>;
 
 std::vector<float> load_obj(const std::string path);
 std::shared_ptr<Geometry> make_cube_geometry(float size);
@@ -49,6 +53,7 @@ struct RenderContext {
   Camera* camera;
   Light* shadow_caster;
   ShadowMap* shadow_map;
+  ShaderCache* shader_cache = nullptr;
 
   std::vector<Light*> lights;
   bool is_shadow_pass;
@@ -176,10 +181,11 @@ class Geometry
   void unbind();
   int triangle_count;
 
- private:
-  unsigned int m_vao, m_vbo;
-  gl::VertexBuffer vbo;
   gl::VertexArrayObject vao;
+
+ private:
+  // unsigned int m_vao, m_vbo;
+  gl::VertexBuffer vbo;
   static int get_stride(const VertexLayout& layout);
 };
 
@@ -188,6 +194,36 @@ class Material
  public:
   virtual gl::Shader* get_shader() { return nullptr; }
   virtual void bind() {}
+};
+
+class Material2
+{
+ public:
+  float ka, kd, ks, alpha;
+  glm::vec3 albedo;
+
+  Material2(const std::string& shader_name)
+      : m_shader_name(shader_name), albedo(0.0f, 1.0f, 0.0f), ka(0.3f), kd(1.0f), ks(0.5f), alpha(20.0f)
+  {
+  }
+
+  gl::TexturePtr texture = nullptr;
+
+  std::string& get_shader_name() { return m_shader_name; }
+
+ private:
+  std::string m_shader_name;
+};
+
+using Material2Ptr = std::shared_ptr<Material2>;
+
+class Mesh2 : public Object3D
+{
+ public:
+ private:
+  Material2Ptr m_material;
+  GeometryPtr m_geometry;
+  void draw_self(RenderContext& context) override;
 };
 
 template <class Derived>
@@ -266,18 +302,25 @@ class SkyboxMaterial : public MaterialX<SkyboxMaterial>
   void bind() override;
 };
 
+class ShaderCache
+{
+ public:
+  void add_shader(const std::string& path);
+  gl::Shader& get_shader(const std::string& path);
+
+ private:
+  std::unordered_map<std::string, gl::Shader> m_cache;
+};
+
 class Mesh : public Object3D
 {
  public:
-  Mesh(std::shared_ptr<Geometry> geometry, std::shared_ptr<Material> material)
-      : m_geometry(geometry), m_material(material)
-  {
-  }
+  Mesh(GeometryPtr geometry, MaterialPtr material) : m_geometry(geometry), m_material(material) {}
   void draw_self(RenderContext& context) override;
 
  protected:
-  std::shared_ptr<Geometry> m_geometry;
-  std::shared_ptr<Material> m_material;
+  GeometryPtr m_geometry;
+  MaterialPtr m_material;
 };
 
 class Billboard : public Object3D
@@ -338,6 +381,13 @@ class Renderer
   unsigned int m_width, m_height;
   ShadowMap* shadow_map = nullptr;
   std::shared_ptr<Mesh> screen_quad;
+};
+
+class Renderer2
+{
+ private:
+ public:
+  void render(Camera& camera, Object3D& scene);
 };
 
 class FirstPersonController
