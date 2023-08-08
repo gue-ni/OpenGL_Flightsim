@@ -28,9 +28,9 @@ constexpr glm::vec3 rgb(T r, T g, T b)
 constexpr glm::vec3 rgb(uint32_t hex)
 {
   assert(hex <= 0xffffffU);
-  auto r = (hex & 0xff0000U) >> 16;
-  auto g = (hex & 0x00ff00U) >> 8;
-  auto b = (hex & 0xff00ffU) >> 0;
+  uint32_t r = (hex & 0xff0000U) >> 16;
+  uint32_t g = (hex & 0x00ff00U) >> 8;
+  uint32_t b = (hex & 0x0000ffU) >> 0;
   return rgb(r, g, b);
 }
 
