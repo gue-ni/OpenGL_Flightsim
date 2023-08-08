@@ -21,18 +21,49 @@ namespace gl
 
 // abstract opengl object
 struct Object {
+ protected:
   GLuint m_id = 0;
   Object() = default;
-  // cast to GLuint
+  ~Object() = default;
+
+#if 0
+  // move semantics
+  Object(Object&& src) noexcept : m_id(src.m_id) {
+        src.m_id = 0;
+    }
+
+    Object& operator=(Object&& rhs) noexcept {
+        if (this != &rhs) {
+            std::swap(m_id, rhs.m_id);
+        }
+        return *this;
+    }
+#endif
+
+ public:
   inline operator GLuint() const noexcept { return m_id; };
+  inline GLuint id() const { return m_id; }
+
+ private:
+#if 0
+     // delete copy constructor/assignment
+  Object(const Object& src) = delete;
+  Object& operator=(const Object& rhs) = delete;
+#endif
 };
 
 struct VertexBuffer : public Object {
-  VertexBuffer();
-  ~VertexBuffer();
-  void bind() const;
-  void unbind() const;
-  void buffer(const void* data, size_t size);
+  VertexBuffer() { glGenBuffers(1, &m_id); }
+
+  ~VertexBuffer() { glDeleteBuffers(1, &m_id); }
+  void bind() const { glBindBuffer(GL_ARRAY_BUFFER, m_id); }
+  void unbind() const { glBindBuffer(GL_ARRAY_BUFFER, 0); }
+
+  void buffer(const void* data, size_t size)
+  {
+    bind();
+    glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
+  }
 
   template <typename T>
   void buffer(const std::vector<T>& data)
@@ -42,25 +73,29 @@ struct VertexBuffer : public Object {
 };
 
 struct FrameBuffer : public Object {
-  FrameBuffer();
-  ~FrameBuffer();
-  void bind() const;
-  void unbind() const;
+  FrameBuffer() { glGenFramebuffers(1, &m_id); }
+  ~FrameBuffer() { glDeleteFramebuffers(1, &m_id); }
+  void bind() const { glBindFramebuffer(GL_FRAMEBUFFER, m_id); }
+  void unbind() const { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
 };
 
 struct VertexArrayObject : public Object {
-  VertexArrayObject();
-  ~VertexArrayObject();
-  void bind() const;
-  void unbind() const;
+  VertexArrayObject() { glGenVertexArrays(1, &m_id); }
+  ~VertexArrayObject() { glDeleteVertexArrays(1, &m_id); }
+  void bind() const { glBindVertexArray(m_id); }
+  void unbind() const { glBindVertexArray(0); }
 };
 
 struct ElementBufferObject : public Object {
-  ElementBufferObject();
-  ~ElementBufferObject();
-  void bind() const;
-  void unbind() const;
-  void buffer(const void* data, size_t size);
+  ElementBufferObject() { glGenBuffers(1, &m_id); }
+  ~ElementBufferObject() { glDeleteBuffers(1, &m_id); }
+  void bind() const { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_id); }
+  void unbind() const { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); }
+  void buffer(const void* data, size_t size)
+  {
+    bind();
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
+  }
 
   template <typename T>
   void buffer(const std::vector<T>& data)

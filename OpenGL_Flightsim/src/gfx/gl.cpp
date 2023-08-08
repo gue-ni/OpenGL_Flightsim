@@ -9,49 +9,6 @@ namespace gfx
 {
 namespace gl
 {
-VertexBuffer::VertexBuffer() { glGenBuffers(1, &m_id); }
-
-VertexBuffer::~VertexBuffer() { glDeleteBuffers(1, &m_id); }
-
-void VertexBuffer::bind() const { glBindBuffer(GL_ARRAY_BUFFER, m_id); }
-
-void VertexBuffer::unbind() const { glBindBuffer(GL_ARRAY_BUFFER, 0); }
-
-void VertexBuffer::buffer(const void* data, size_t size)
-{
-  bind();
-  glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
-}
-
-FrameBuffer::FrameBuffer() { glGenFramebuffers(1, &m_id); }
-
-FrameBuffer::~FrameBuffer() { glDeleteFramebuffers(1, &m_id); }
-
-void FrameBuffer::bind() const { glBindFramebuffer(GL_FRAMEBUFFER, m_id); }
-
-void FrameBuffer::unbind() const { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
-
-VertexArrayObject::VertexArrayObject() { glGenVertexArrays(1, &m_id); }
-
-VertexArrayObject::~VertexArrayObject() { glDeleteVertexArrays(1, &m_id); }
-
-void VertexArrayObject::bind() const { glBindVertexArray(m_id); }
-
-void VertexArrayObject::unbind() const { glBindVertexArray(0); }
-
-ElementBufferObject::ElementBufferObject() { glGenBuffers(1, &m_id); }
-
-ElementBufferObject::~ElementBufferObject() { glDeleteBuffers(1, &m_id); }
-
-void ElementBufferObject::bind() const { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_id); }
-
-void ElementBufferObject::unbind() const { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); }
-
-void ElementBufferObject::buffer(const void* data, size_t size)
-{
-  bind();
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
-}
 
 Shader::Shader(const std::string& path) : Shader(load_text_file(path + ".vert"), load_text_file(path + ".frag")) {}
 
@@ -105,7 +62,10 @@ void Shader::bind() const { glUseProgram(m_id); }
 
 void Shader::unbind() const { glUseProgram(0); }
 
-void Shader::uniform(const std::string& name, int value) { glUniform1i(glGetUniformLocation(m_id, name.c_str()), value); }
+void Shader::uniform(const std::string& name, int value)
+{
+  glUniform1i(glGetUniformLocation(m_id, name.c_str()), value);
+}
 
 void Shader::uniform(const std::string& name, unsigned int value)
 {

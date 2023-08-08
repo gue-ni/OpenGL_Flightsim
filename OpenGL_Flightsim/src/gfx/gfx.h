@@ -321,7 +321,7 @@ class Renderer
     };
 
     auto geometry = std::make_shared<Geometry>(quad_vertices, Geometry::POS_UV);
-    auto texture = std::make_shared<gfx::gl::Texture>(shadow_map->depth_map.m_id);
+    auto texture = std::make_shared<gfx::gl::Texture>(shadow_map->depth_map);
     auto material = std::make_shared<ScreenMaterial>(texture);
     screen_quad = std::make_shared<Mesh>(geometry, material);
   }
