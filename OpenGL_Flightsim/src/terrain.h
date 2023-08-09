@@ -27,7 +27,7 @@ const int ZOOM_FACTOR = 5;
 #error Unknown DATA_SRC
 #endif
 
-constexpr gfx::gl::TextureParams params = {.texture_wrap = GL_REPEAT, .texture_mag_filter = GL_LINEAR};
+constexpr gfx::gl::Texture::Params params = {.texture_wrap = GL_REPEAT, .texture_mag_filter = GL_LINEAR};
 
 // pixel value in range [0, 1]
 float height_from_pixel(const glm::vec3& rgb)

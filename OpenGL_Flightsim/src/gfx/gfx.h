@@ -16,8 +16,8 @@
 
 #include "controller.h"
 #include "gl.h"
-#include "util.h"
 #include "object3d.h"
+#include "util.h"
 
 namespace gfx
 {
@@ -32,11 +32,15 @@ class Light;
 class Camera;
 class Skybox;
 class Geometry;
+class Material;
 class ShaderCache;
 
 using GeometryPtr = std::shared_ptr<Geometry>;
+using MaterialPtr = std::shared_ptr<Material>;
+using MeshPtr = std::shared_ptr<Mesh>;
 
 std::vector<float> load_obj(const std::string path);
+
 GeometryPtr make_cube_geometry(float size);
 GeometryPtr make_plane_geometry(int x_elements, int y_elements, float size);
 GeometryPtr make_quad_geometry();
@@ -59,7 +63,6 @@ struct RenderContext {
   bool is_shadow_pass;
   glm::vec3 background_color;
 };
-
 
 class Camera : public Object3D
 {
@@ -111,7 +114,6 @@ class Geometry
   };
 
   Geometry(const std::vector<float>& vertices, const VertexLayout& layout);
-  Geometry(const Geometry& geometry);
   ~Geometry();
   void bind();
   void unbind();
@@ -127,24 +129,21 @@ class Geometry
 class Material
 {
  public:
-  glm::vec3 emissive, ambient, duffuse, specular;
-  float alpha, shininess;
+  //glm::vec3 emissive, ambient, duffuse, specular;
+  //float alpha, shininess;
 
   Material(const std::string& shader_name, const gl::TexturePtr& texture)
       : m_shader_name(shader_name), m_texture(texture)
   {
   }
 
-  std::string& get_shader_name() { return m_shader_name; }
-
   gl::TexturePtr get_texture() const { return m_texture; }
+  std::string& get_shader_name() { return m_shader_name; }
 
  private:
   gl::TexturePtr m_texture = nullptr;
   std::string m_shader_name;
 };
-
-using MaterialPtr = std::shared_ptr<Material>;
 
 class Mesh : public Object3D
 {
@@ -187,11 +186,16 @@ class Skybox : public Mesh
 {
  public:
   Skybox(const std::array<std::string, 6>& faces);
-  // Skybox(const Material2Ptr& material);
   void draw_self(RenderContext& context) override;
   Object3D& add(Object3D* child) = delete;
 };
 
+// TODO
+class RenderTarget
+{
+};
+
+#if 0
 class Renderer
 {
  public:
@@ -229,18 +233,39 @@ class Renderer
   ShadowMap* shadow_map = nullptr;
   std::shared_ptr<Mesh> screen_quad;
 };
+#endif
 
 class Renderer2
 {
  private:
   GLsizei m_width, m_height;
   ShaderCache m_shaders;
+  // For the future:
+  //MeshPtr m_screen_quad;
   // std::optional<gl::FrameBuffer> m_framebuffer;
+  // ShadowMap m_shadowmap;
+
 
  public:
+
+  MeshPtr skybox = nullptr;
+
   Renderer2(GLsizei width, GLsizei height);
   ~Renderer2();
+
+  void render_skybox();
+
+  // void render_shadow_pass(Camera& camera, Object3D& scene);
+
+  void render_with_texture(Camera& camera, gl::ShaderPtr shader, std::vector<MeshPtr> objects);
+
+  // render scene
   void render(Camera& camera, Object3D& scene);
+
+
+  void render2(Camera& camera, Object3D& scene);
+
+  // void render(Camera& camera, Object3D& scene, RenderTarget& render_target);
 };
 
 };  // namespace gfx

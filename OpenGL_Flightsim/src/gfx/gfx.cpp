@@ -38,8 +38,6 @@ Geometry::Geometry(const std::vector<float>& vertices, const VertexLayout& layou
   vao.bind();
 }
 
-Geometry::Geometry(const Geometry& geometry) { triangle_count = geometry.triangle_count; }
-
 Geometry::~Geometry() {}
 
 void Geometry::bind() { vao.bind(); }
@@ -72,7 +70,6 @@ void Camera::look_at(const glm::vec3& target)
   override_transform(glm::inverse(glm::lookAt(m_position, target, m_up)));
 }
 
-
 Object3D::Type Light::get_type() const { return Object3D::Type::LIGHT; }
 
 glm::mat4 Light::light_space_matrix()
@@ -84,6 +81,7 @@ glm::mat4 Light::light_space_matrix()
   return light_projection * light_view;
 }
 
+#if 0
 void Renderer::render(Camera& camera, Object3D& scene)
 {
   scene.update_world_matrix(false);
@@ -128,6 +126,7 @@ void Renderer::render(Camera& camera, Object3D& scene)
   screen_quad->draw(context);
 #endif
 }
+#endif
 
 ShadowMap::ShadowMap(unsigned int shadow_width, unsigned int shadow_height)
     : width(shadow_width), height(shadow_height), shader("shaders/depth")
@@ -427,7 +426,7 @@ void Billboard::draw_self(RenderContext& context)
 
 Skybox::Skybox(const std::array<std::string, 6>& faces)
     : Mesh(make_cube_geometry(1.0f),
-            std::make_shared<Material>("shaders/skybox", std::make_shared<gl::CubemapTexture>(faces)))
+           std::make_shared<Material>("shaders/skybox", std::make_shared<gl::CubemapTexture>(faces)))
 {
 }
 
@@ -437,32 +436,23 @@ void Skybox::draw_self(RenderContext& context)
     glDepthMask(GL_FALSE);
 
     std::string shader_name = m_material->get_shader_name();
-    auto shader = context.shader_cache->get_shader(shader_name);
+    gl::ShaderPtr shader = context.shader_cache->get_shader(shader_name);
 
     shader->bind();
 
-    // auto view = context.camera->get_view_matrix();
-
-    // view matrix without transform
-    auto view = glm::mat4(glm::mat3(context.camera->get_view_matrix()));
-    shader->set_uniform("u_View", view);
-    shader->set_uniform("u_Model", get_transform());
+    shader->set_uniform("u_View", glm::mat4(glm::mat3(context.camera->get_view_matrix())));
+    shader->set_uniform("u_Model", get_local_transform());  // only scale needed
     shader->set_uniform("u_Projection", context.camera->get_projection_matrix());
 
     gl::TexturePtr texture = m_material->get_texture();
-#if 1
-    int unit = 2;
-    texture->bind(unit);
-    shader->set_uniform("u_Texture1", unit);
-#else
-    int active_texture = 10;
-    glActiveTexture(GL_TEXTURE0 + active_texture);
-    glBindTexture(GL_TEXTURE_2D, texture->id());
+
+    int active_texture = 2;
+    texture->bind(active_texture);
     shader->set_uniform("u_Texture1", active_texture);
-#endif
 
     m_geometry->bind();
     glDrawArrays(GL_TRIANGLES, 0, m_geometry->triangle_count);
+    m_geometry->unbind();
 
     glDepthMask(GL_TRUE);
   }
@@ -483,43 +473,6 @@ gl::ShaderPtr ShaderCache::get_shader(const std::string& path)
   return m_cache.at(path);
 }
 
-Renderer2::Renderer2(GLsizei width, GLsizei height) : m_width(width), m_height(height)
-{
-  m_shaders.add_shader("shaders/pbr");
-  m_shaders.add_shader("shaders/basic");
-  m_shaders.add_shader("shaders/phong");
-  m_shaders.add_shader("shaders/skybox");
-}
-
-Renderer2::~Renderer2() {}
-
-void Renderer2::render(Camera& camera, Object3D& scene)
-{
-  // bind default framebuffer
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-  glViewport(0, 0, m_width, m_height);
-
-  glm::vec3 clear_color = gfx::rgb(222, 253, 255);
-  glClearColor(clear_color.r, clear_color.g, clear_color.b, 1.0f);
-
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-  RenderContext context;
-  context.is_shadow_pass = false;
-  context.camera = &camera;
-  context.shadow_map = nullptr;
-  context.shadow_caster = nullptr;
-  context.background_color = gfx::rgb(222, 253, 255);
-  context.shader_cache = &m_shaders;
-
-  // update transforms
-  scene.update_world_matrix(false);
-
-  // draw scene
-  scene.draw(context);
-}
-
 Mesh::Mesh(const GeometryPtr& geometry, const MaterialPtr& material) : m_material(material), m_geometry(geometry) {}
 
 void Mesh::draw_self(RenderContext& context)
@@ -529,7 +482,7 @@ void Mesh::draw_self(RenderContext& context)
 
     // get shader from cache
     std::string shader_name = m_material->get_shader_name();
-    auto shader = context.shader_cache->get_shader(shader_name);
+    gl::ShaderPtr shader = context.shader_cache->get_shader(shader_name);
 
     shader->bind();
 
@@ -550,8 +503,7 @@ void Mesh::draw_self(RenderContext& context)
     shader->set_uniform("u_UseTexture", true);
 
     int active_texture = 5;
-    glActiveTexture(GL_TEXTURE0 + active_texture);
-    glBindTexture(GL_TEXTURE_2D, texture->id());
+    texture->bind(active_texture);
     shader->set_uniform("u_Texture1", active_texture);
 
     glm::vec3 rgb = glm::vec3(1.0f, 0.0f, 0.0f);
@@ -569,5 +521,48 @@ void Mesh::draw_self(RenderContext& context)
     shader->unbind();
   }
 }
+
+Renderer2::Renderer2(GLsizei width, GLsizei height) : m_width(width), m_height(height)
+{
+  m_shaders.add_shader("shaders/pbr");
+  m_shaders.add_shader("shaders/basic");
+  m_shaders.add_shader("shaders/phong");
+  m_shaders.add_shader("shaders/skybox");
+
+  // init renderer
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glClearColor(1.0f, 1.0f, 0.0f, 1.0f);
+  glViewport(0, 0, m_width, m_height);
+}
+
+Renderer2::~Renderer2() {}
+
+void Renderer2::render_skybox()
+{
+  glDepthMask(GL_FALSE);
+  // skybox->draw_self(context)
+  glDepthMask(GL_TRUE);
+}
+
+void Renderer2::render(Camera& camera, Object3D& scene)
+{
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  RenderContext context;
+  context.is_shadow_pass = false;
+  context.camera = &camera;
+  context.shadow_map = nullptr;
+  context.shadow_caster = nullptr;
+  context.background_color = gfx::rgb(222, 253, 255);
+  context.shader_cache = &m_shaders;
+
+  // update transforms
+  scene.update_world_matrix(false);
+
+  // draw scene
+  scene.draw(context);
+}
+
+void Renderer2::render2(Camera& camera, Object3D& scene) { scene.update_world_matrix(false); }
 
 }  // namespace gfx

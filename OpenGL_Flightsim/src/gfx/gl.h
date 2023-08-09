@@ -106,7 +106,7 @@ struct ElementBufferObject : public Object {
   }
 };
 
-struct Shader : public Object {
+class Shader : public Object {
  public:
   Shader(const std::string& path);
   Shader(const std::string& vert_shader, const std::string& frag_shader);
@@ -123,20 +123,21 @@ struct Shader : public Object {
 
 using ShaderPtr = std::shared_ptr<Shader>;
 
-struct TextureParams {
-  bool flip_vertically = false;
-  GLint texture_wrap = GL_REPEAT;
-  GLint texture_min_filter = GL_LINEAR_MIPMAP_LINEAR;
-  GLint texture_mag_filter = GL_NEAREST;
-};
+class Texture : public Object {
+public:
+  struct Params {
+    bool flip_vertically = false;
+    GLint texture_wrap = GL_REPEAT;
+    GLint texture_min_filter = GL_LINEAR_MIPMAP_LINEAR;
+    GLint texture_mag_filter = GL_NEAREST;
+  };
 
-struct Texture : public Object {
   Texture() { glGenTextures(1, &m_id); }
   ~Texture() { glDeleteTextures(1, &m_id); }
   Texture(GLuint texture_id) { m_id = texture_id; }
   Texture(const std::string& path);
-  Texture(const std::string& path, const TextureParams& params);
-  Texture(const Image& image, const TextureParams& params);
+  Texture(const std::string& path, const Params& params);
+  Texture(const Image& image, const Params& params);
 
   virtual void bind(GLuint active_texture = 0U) const;
   virtual void unbind() const;
@@ -146,7 +147,8 @@ struct Texture : public Object {
 
 using TexturePtr = std::shared_ptr<Texture>;
 
-struct CubemapTexture : public Texture {
+class CubemapTexture : public Texture {
+public:
   CubemapTexture(const std::array<std::string, 6>& paths, bool flip_vertically = false);
   void bind(GLuint texture) const override;
   void unbind() const override;

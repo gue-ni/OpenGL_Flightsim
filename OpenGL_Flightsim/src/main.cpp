@@ -209,6 +209,8 @@ int main(void)
 
   skybox.set_scale(glm::vec3(3.0f));
   scene.add(&skybox);
+
+  renderer.skybox = std::make_shared<gfx::Skybox>(faces);
 #endif
 
 #if CLIPMAP
@@ -260,7 +262,7 @@ int main(void)
       Airplane(mass, inertia, wings, {engine}, &landing_gear),
   };
 
-  gfx::gl::TextureParams params = {.flip_vertically = true, .texture_mag_filter = GL_LINEAR};
+  gfx::gl::Texture::Params params = {.flip_vertically = true, .texture_mag_filter = GL_LINEAR};
 
   auto falcon_tex = make_shared<gfx::gl::Texture>("assets/textures/falcon.jpg", params);
   auto falcon_obj = gfx::load_obj("assets/models/falcon.obj");
@@ -319,11 +321,10 @@ int main(void)
   }
 #endif
 
-#if 0
+#if 1  // screen quad
   auto cross_texture = make_shared<gfx::gl::Texture>("assets/textures/sprites/cross.png");
-  auto screen_geometry = gfx::make_quad_geometry();
-
-  auto screen_material = std::make_shared<gfx::ScreenMaterial>(cross_texture);
+  gfx::GeometryPtr screen_geometry = gfx::make_quad_geometry();
+  gfx::MaterialPtr screen_material = std::make_shared<gfx::Material>("shaders/screen", cross_texture);
   auto screen_quad = gfx::Mesh(screen_geometry, screen_material);
   scene.add(&screen_quad);
 #endif

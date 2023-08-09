@@ -23,6 +23,7 @@ struct RenderContext;
 #define OBJ3D_ROTATE    1U << 1U
 #define OBJ3D_SCALE     1U << 2U
 
+// basic 3d object
 class Object3D
 {
  public:
@@ -35,12 +36,14 @@ class Object3D
 
   const int id;
   static int counter;
+
   // which transform to inherit from parent
   unsigned transform_flags = OBJ3D_TRANSFORM | OBJ3D_ROTATE | OBJ3D_SCALE;
 
-  Object3D* parent;
+  Object3D* parent = nullptr;
   std::vector<Object3D*> children;
   glm::mat4 transform;
+
   bool receive_shadow = true;
   bool visible = true;
   bool wireframe = false;
@@ -58,6 +61,7 @@ class Object3D
   void set_position(const glm::vec3& position);
   void set_transform(const Object3D& transform);
   void set_transform(const glm::vec3& position, const glm::quat& rotation);
+  void override_transform(const glm::mat4& matrix);
 
   glm::vec3 get_scale() const;
   glm::vec3 get_rotation() const;
@@ -68,11 +72,11 @@ class Object3D
 
   virtual Object3D::Type get_type() const;
 
-  void override_transform(const glm::mat4& matrix);
   void update_world_matrix(bool dirty_parent);
   glm::mat4 get_local_transform() const;
   glm::mat4 get_parent_transform() const;
   glm::mat4 get_transform() const;
+
   void traverse(const std::function<bool(Object3D*)>& func);
 
  protected:
