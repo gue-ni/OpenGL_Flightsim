@@ -37,7 +37,7 @@ JK      control thrust
 )";
 
 #define CLIPMAP            1
-#define SKYBOX             0
+#define SKYBOX             1
 #define SMOOTH_CAMERA      1
 #define NPC_AIRCRAFT       0
 #define SHOW_MASS_ELEMENTS 0
@@ -199,14 +199,18 @@ int main(void)
 
 #if SKYBOX
   const std::string skybox_path = "assets/textures/skybox/1/";
-  gfx::Skybox skybox({
-      skybox_path + "right.jpg",
+  const std::array<std::string, 6>& faces = {
+     skybox_path + "right.jpg",
       skybox_path + "left.jpg",
       skybox_path + "top.jpg",
       skybox_path + "bottom.jpg",
       skybox_path + "front.jpg",
       skybox_path + "back.jpg",
-  });
+
+  };
+
+  gfx::Skybox skybox(faces);
+
   skybox.set_scale(glm::vec3(3.0f));
   scene.add(&skybox);
 #endif

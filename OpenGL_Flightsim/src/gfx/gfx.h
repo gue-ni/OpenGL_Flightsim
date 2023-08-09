@@ -219,7 +219,7 @@ class Mesh2 : public Object3D
  public:
   Mesh2(const GeometryPtr& geometry, const Material2Ptr& material);
 
- private:
+protected:
   Material2Ptr m_material;
   GeometryPtr m_geometry;
   void draw_self(RenderContext& context) override;
@@ -237,69 +237,8 @@ class MaterialX : public Material
   static std::shared_ptr<gl::Shader> shader;
 };
 
-class Phong : public MaterialX<Phong>
-{
- public:
-  RGB rgb{};
-  float ka, kd, ks, alpha;
-  std::shared_ptr<gl::Texture> texture = nullptr;
 
-  Phong(const glm::vec3& color_, float ka_, float kd_, float ks_, float alpha_)
-      : MaterialX<Phong>("shaders/phong"), rgb(color_), ka(ka_), kd(kd_), ks(ks_), alpha(alpha_)
-  {
-  }
 
-  Phong(const glm::vec3& color_)
-      : MaterialX<Phong>("shaders/phong"), rgb(color_), ka(0.3f), kd(1.0f), ks(0.5f), alpha(10.0f)
-  {
-  }
-
-  Phong(std::shared_ptr<gl::Texture> tex)
-      : MaterialX<Phong>("shaders/phong"),
-        texture(tex),
-        rgb(0.0f, 1.0f, 0.0f),
-        ka(0.3f),
-        kd(1.0f),
-        ks(0.5f),
-        alpha(20.0f)
-  {
-  }
-
-  void bind() override;
-};
-
-class Basic : public MaterialX<Basic>
-{
- public:
-  glm::vec3 rgb;
-  Basic(const glm::vec3& color_) : MaterialX<Basic>("shaders/basic"), rgb(color_) {}
-  void bind();
-};
-
-class ShaderMaterial : public MaterialX<ShaderMaterial>
-{
- public:
-  ShaderMaterial(const std::string& path) : MaterialX<ShaderMaterial>(path) {}
-};
-
-class ScreenMaterial : public MaterialX<ScreenMaterial>
-{
- private:
-  std::shared_ptr<gl::Texture> texture = nullptr;
-
- public:
-  ScreenMaterial(std::shared_ptr<gl::Texture> t) : MaterialX<ScreenMaterial>("shaders/screen"), texture(t) {}
-  void bind() override;
-};
-
-class SkyboxMaterial : public MaterialX<SkyboxMaterial>
-{
- public:
-  std::shared_ptr<gl::CubemapTexture> cubemap = nullptr;
-  SkyboxMaterial(std::shared_ptr<gl::CubemapTexture> map) : MaterialX<SkyboxMaterial>("shaders/skybox"), cubemap(map) {}
-
-  void bind() override;
-};
 
 class ShaderCache
 {
@@ -338,10 +277,11 @@ class Billboard : public Object3D
   gl::ElementBufferObject ebo;
 };
 
-class Skybox : public Mesh
+class Skybox : public Mesh2
 {
  public:
   Skybox(const std::array<std::string, 6>& faces);
+  //Skybox(const Material2Ptr& material);
   void draw_self(RenderContext& context) override;
   Object3D& add(Object3D* child) = delete;
 };
@@ -362,10 +302,12 @@ class Renderer
         1.0f,  -1.0f, 0.0f, 1.0f, 0.0f,  // bottom right
     };
 
+#if 0
     auto geometry = std::make_shared<Geometry>(quad_vertices, Geometry::POS_UV);
     auto texture = std::make_shared<gfx::gl::Texture>(shadow_map->depth_map);
     auto material = std::make_shared<ScreenMaterial>(texture);
     screen_quad = std::make_shared<Mesh>(geometry, material);
+#endif
   }
 
   ~Renderer()
@@ -387,6 +329,7 @@ class Renderer2
  private:
   GLsizei m_width, m_height;
   ShaderCache m_shaders;
+  //std::optional<gl::FrameBuffer> m_framebuffer;
 
  public:
   Renderer2(GLsizei width, GLsizei height);

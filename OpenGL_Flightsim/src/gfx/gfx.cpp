@@ -443,7 +443,7 @@ void OrbitController::move_mouse(float x, float y)
 
   m_pitch = glm::clamp(m_pitch, -89.0f, 89.0f);
 }
-
+#if 0
 void Phong::bind()
 {
   if (texture != nullptr) {
@@ -474,7 +474,7 @@ void Basic::bind()
   shader->uniform("u_UseTexture", false);
   shader->uniform("u_SolidObjectColor", rgb);
 }
-
+#endif
 std::vector<float> load_obj(const std::string path)
 {
   std::vector<float> vertices;
@@ -746,7 +746,8 @@ void Billboard::draw_self(RenderContext& context)
 }
 
 Skybox::Skybox(const std::array<std::string, 6>& faces)
-    : Mesh(make_cube_geometry(1.0f), std::make_shared<SkyboxMaterial>(std::make_shared<gl::CubemapTexture>(faces)))
+    : Mesh2(make_cube_geometry(1.0f),
+            std::make_shared<Material2>("shaders/skybox", std::make_shared<gl::CubemapTexture>(faces)))
 {
 }
 
@@ -755,13 +756,30 @@ void Skybox::draw_self(RenderContext& context)
   if (!context.is_shadow_pass) {
     glDepthMask(GL_FALSE);
 
-    m_material->bind();
-    gl::Shader* shader = m_material->get_shader();
+    std::string shader_name = m_material->get_shader_name();
+    auto shader = context.shader_cache->get_shader(shader_name);
 
+    shader->bind();
+
+    // auto view = context.camera->get_view_matrix();
+
+    // view matrix without transform
     auto view = glm::mat4(glm::mat3(context.camera->get_view_matrix()));
     shader->uniform("u_View", view);
-    shader->uniform("u_Model", transform);
+    shader->uniform("u_Model", get_transform());
     shader->uniform("u_Projection", context.camera->get_projection_matrix());
+
+    gl::TexturePtr texture = m_material->get_texture();
+#if 1
+    int unit = 2;
+    texture->bind(unit);
+    shader->uniform("u_Texture1", unit);
+#else
+    int active_texture = 10;
+    glActiveTexture(GL_TEXTURE0 + active_texture);
+    glBindTexture(GL_TEXTURE_2D, texture->id());
+    shader->uniform("u_Texture1", active_texture);
+#endif
 
     m_geometry->bind();
     glDrawArrays(GL_TRIANGLES, 0, m_geometry->triangle_count);
@@ -770,15 +788,9 @@ void Skybox::draw_self(RenderContext& context)
   }
 }
 
-void SkyboxMaterial::bind()
-{
-  gl::Shader* shader = get_shader();
-  int unit = 2;
-  cubemap->bind(unit);
-  shader->bind();
-  shader->uniform("u_Skybox", unit);
-}
 
+
+#if 0
 void ScreenMaterial::bind()
 {
   gl::Shader* shader = get_shader();
@@ -786,6 +798,7 @@ void ScreenMaterial::bind()
   shader->bind();
   shader->uniform("u_ShadowMap", 0);
 }
+#endif
 
 void ShaderCache::add_shader(const std::string& path)
 {
@@ -807,6 +820,7 @@ Renderer2::Renderer2(GLsizei width, GLsizei height) : m_width(width), m_height(h
   m_shaders.add_shader("shaders/pbr");
   m_shaders.add_shader("shaders/basic");
   m_shaders.add_shader("shaders/phong");
+  m_shaders.add_shader("shaders/skybox");
 }
 
 Renderer2::~Renderer2() {}
@@ -818,7 +832,7 @@ void Renderer2::render(Camera& camera, Object3D& scene)
 
   glViewport(0, 0, m_width, m_height);
 
-  glm::vec3 clear_color = gfx::rgb(0xe97451U);
+  glm::vec3 clear_color = gfx::rgb(222, 253, 255);
   glClearColor(clear_color.r, clear_color.g, clear_color.b, 1.0f);
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
