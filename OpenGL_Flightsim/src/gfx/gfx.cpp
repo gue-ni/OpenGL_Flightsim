@@ -401,7 +401,7 @@ void Billboard::draw_self(RenderContext& context)
   shader.bind();
   shader.set_uniform("u_View", view);
   shader.set_uniform("u_Projection", camera->get_projection_matrix());
-  shader.set_uniform("u_Texture", 5);
+  shader.set_uniform("u_Texture_01", 5);
   shader.set_uniform("u_Color", color);
   shader.set_uniform("u_Position", get_world_position());
   shader.set_uniform("u_Scale", get_scale());
@@ -448,7 +448,7 @@ void Skybox::draw_self(RenderContext& context)
 
     int active_texture = 2;
     texture->bind(active_texture);
-    shader->set_uniform("u_Texture1", active_texture);
+    shader->set_uniform("u_Texture_01", active_texture);
 
     m_geometry->bind();
     glDrawArrays(GL_TRIANGLES, 0, m_geometry->triangle_count);
@@ -504,7 +504,7 @@ void Mesh::draw_self(RenderContext& context)
 
     int active_texture = 5;
     texture->bind(active_texture);
-    shader->set_uniform("u_Texture1", active_texture);
+    shader->set_uniform("u_Texture_01", active_texture);
 
     glm::vec3 rgb = glm::vec3(1.0f, 0.0f, 0.0f);
     shader->set_uniform("u_SolidObjectColor", rgb);

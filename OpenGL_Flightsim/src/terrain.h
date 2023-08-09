@@ -192,7 +192,7 @@ class Clipmap : public gfx::Object3D
     shader.bind();
     shader.set_uniform("u_Heightmap", 2);
     shader.set_uniform("u_Normalmap", 3);
-    shader.set_uniform("u_Texture", 4);
+    shader.set_uniform("u_Texture_01", 4);
     shader.set_uniform("u_Background", context.background_color);
     shader.set_uniform("u_View", context.camera->get_view_matrix());
     shader.set_uniform("u_CameraPos", context.camera->get_world_position());

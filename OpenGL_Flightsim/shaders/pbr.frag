@@ -3,7 +3,7 @@ out vec4 FragColor;
 
 uniform vec3 u_SolidObjectColor;
 
-uniform sampler2D u_Texture1;
+uniform sampler2D u_Texture_01;
 
 in vec2 TexCoords;
 
@@ -12,6 +12,6 @@ void main()
 #if 0
   FragColor = vec4(u_SolidObjectColor, 1.0);
 #else
-  FragColor = texture(u_Texture1, TexCoords);
+  FragColor = texture(u_Texture_01, TexCoords);
  #endif
 }

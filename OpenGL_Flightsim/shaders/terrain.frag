@@ -8,7 +8,7 @@ uniform vec3 u_CameraPos;
 
 uniform sampler2D u_Heightmap;
 uniform sampler2D u_Normalmap;
-uniform sampler2D u_Texture;
+uniform sampler2D u_Texture_01;
 
 in vec3 Color;
 in vec3 Normal;
@@ -46,7 +46,7 @@ void main()
   float fogscaleFactor = (fogMaxdist - distFromCamera) / (fogMaxdist - fogMindist);
   fogscaleFactor = clamp(fogscaleFactor, 0.0, 1.0);
 
-  vec4 terrainColor = vec4(calculateDirLight(lightDir, Normal, texture(u_Texture, TexCoord).rgb), 1.0);
+  vec4 terrainColor = vec4(calculateDirLight(lightDir, Normal, texture(u_Texture_01, TexCoord).rgb), 1.0);
 
 #if 1
   FragColor = mix(fogColor, terrainColor, fogscaleFactor);

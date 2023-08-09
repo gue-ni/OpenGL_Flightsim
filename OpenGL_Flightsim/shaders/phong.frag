@@ -18,7 +18,7 @@ uniform bool u_ReceiveShadow;
 uniform sampler2D u_ShadowMap;
 
 uniform bool u_UseTexture;
-uniform sampler2D u_Texture1;
+uniform sampler2D u_Texture_01;
 
 uniform vec3 u_SolidObjectColor;
 uniform vec3 u_BackgroundColor;
@@ -35,7 +35,7 @@ uniform Light u_Lights[MAX_LIGHTS];
 
 vec3 getColor()
 {
-	return u_UseTexture ? vec3(texture(u_Texture1, TexCoords)) : u_SolidObjectColor;
+	return u_UseTexture ? vec3(texture(u_Texture_01, TexCoords)) : u_SolidObjectColor;
 	//return vec3(1, 0, 0);
 
 }
