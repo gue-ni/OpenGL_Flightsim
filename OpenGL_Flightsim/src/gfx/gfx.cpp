@@ -375,7 +375,7 @@ std::vector<float> load_obj(const std::string path)
   return vertices;
 }
 
-std::shared_ptr<Geometry> make_cube_geometry(float size)
+GeometryPtr make_cube_geometry(float size)
 {
   float s = size / 2;
 
@@ -454,7 +454,7 @@ void push_back(std::vector<float>& vector, const glm::vec3& pos, const glm::vec3
   push_back(vector, uv);
 }
 
-std::shared_ptr<Geometry> make_plane_geometry(int x_elements, int y_elements, float size)
+GeometryPtr make_plane_geometry(int x_elements, int y_elements, float size)
 {
   // TODO
   const float width = size, height = size;
@@ -488,7 +488,7 @@ std::shared_ptr<Geometry> make_plane_geometry(int x_elements, int y_elements, fl
   return std::make_shared<Geometry>(vertices, Geometry::POS_NORM_UV);
 }
 
-std::shared_ptr<Geometry> make_quad_geometry()
+GeometryPtr make_quad_geometry()
 {
   const std::vector<float> quad_vertices = {
       -1.0f, 1.0f,  0.0f, 0.0f, 1.0f,  // top left
@@ -503,7 +503,7 @@ std::shared_ptr<Geometry> make_quad_geometry()
   return std::make_shared<Geometry>(quad_vertices, Geometry::POS_UV);
 }
 
-Billboard::Billboard(std::shared_ptr<gl::Texture> sprite, glm::vec3 color)
+Billboard::Billboard(gl::TexturePtr sprite, glm::vec3 color)
     : texture(sprite), shader("shaders/billboard"), color(color)
 {
   // clang-format off
@@ -556,14 +556,14 @@ void Billboard::draw_self(RenderContext& context)
   glm::vec3 right = {view[0][0], view[1][0], view[2][0]};
 
   shader.bind();
-  shader.uniform("u_View", view);
-  shader.uniform("u_Projection", camera->get_projection_matrix());
-  shader.uniform("u_Texture", 5);
-  shader.uniform("u_Color", color);
-  shader.uniform("u_Position", get_world_position());
-  shader.uniform("u_Scale", get_scale());
-  shader.uniform("u_Right", right);
-  shader.uniform("u_Up", up);
+  shader.set_uniform("u_View", view);
+  shader.set_uniform("u_Projection", camera->get_projection_matrix());
+  shader.set_uniform("u_Texture", 5);
+  shader.set_uniform("u_Color", color);
+  shader.set_uniform("u_Position", get_world_position());
+  shader.set_uniform("u_Scale", get_scale());
+  shader.set_uniform("u_Right", right);
+  shader.set_uniform("u_Up", up);
   texture->bind(5);
 
   vao.bind();
@@ -601,20 +601,20 @@ void Skybox::draw_self(RenderContext& context)
 
     // view matrix without transform
     auto view = glm::mat4(glm::mat3(context.camera->get_view_matrix()));
-    shader->uniform("u_View", view);
-    shader->uniform("u_Model", get_transform());
-    shader->uniform("u_Projection", context.camera->get_projection_matrix());
+    shader->set_uniform("u_View", view);
+    shader->set_uniform("u_Model", get_transform());
+    shader->set_uniform("u_Projection", context.camera->get_projection_matrix());
 
     gl::TexturePtr texture = m_material->get_texture();
 #if 1
     int unit = 2;
     texture->bind(unit);
-    shader->uniform("u_Texture1", unit);
+    shader->set_uniform("u_Texture1", unit);
 #else
     int active_texture = 10;
     glActiveTexture(GL_TEXTURE0 + active_texture);
     glBindTexture(GL_TEXTURE_2D, texture->id());
-    shader->uniform("u_Texture1", active_texture);
+    shader->set_uniform("u_Texture1", active_texture);
 #endif
 
     m_geometry->bind();
@@ -690,33 +690,33 @@ void Mesh2::draw_self(RenderContext& context)
     shader->bind();
 
     // transform
-    shader->uniform("u_Model", get_transform());
+    shader->set_uniform("u_Model", get_transform());
 
     // camera
-    shader->uniform("u_View", camera->get_view_matrix());
-    shader->uniform("u_Projection", camera->get_projection_matrix());
+    shader->set_uniform("u_View", camera->get_view_matrix());
+    shader->set_uniform("u_Projection", camera->get_projection_matrix());
 
     // lights
-    // shader.uniform("u_DirectionalLight_Direction", light.direction);
-    // shader.uniform("u_DirectionalLight_Color", light.color);
+    // shader.set_uniform("u_DirectionalLight_Direction", light.direction);
+    // shader.set_uniform("u_DirectionalLight_Color", light.color);
 
     // textures
     gl::TexturePtr texture = m_material->get_texture();
 
-    shader->uniform("u_UseTexture", true);
+    shader->set_uniform("u_UseTexture", true);
 
     int active_texture = 5;
     glActiveTexture(GL_TEXTURE0 + active_texture);
     glBindTexture(GL_TEXTURE_2D, texture->id());
-    shader->uniform("u_Texture1", active_texture);
+    shader->set_uniform("u_Texture1", active_texture);
 
     glm::vec3 rgb = glm::vec3(1.0f, 0.0f, 0.0f);
-    shader->uniform("u_SolidObjectColor", rgb);
+    shader->set_uniform("u_SolidObjectColor", rgb);
 
-    shader->uniform("ka", 0.5f);
-    shader->uniform("kd", 1.0f);
-    shader->uniform("ks", 0.4f);
-    shader->uniform("alpha", 20.0f);
+    shader->set_uniform("ka", 0.5f);
+    shader->set_uniform("kd", 1.0f);
+    shader->set_uniform("ks", 0.4f);
+    shader->set_uniform("alpha", 20.0f);
 
     m_geometry->bind();
     glDrawArrays(GL_TRIANGLES, 0, m_geometry->triangle_count);

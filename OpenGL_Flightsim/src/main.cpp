@@ -200,12 +200,8 @@ int main(void)
 #if SKYBOX
   const std::string skybox_path = "assets/textures/skybox/1/";
   const std::array<std::string, 6>& faces = {
-     skybox_path + "right.jpg",
-      skybox_path + "left.jpg",
-      skybox_path + "top.jpg",
-      skybox_path + "bottom.jpg",
-      skybox_path + "front.jpg",
-      skybox_path + "back.jpg",
+      skybox_path + "right.jpg",  skybox_path + "left.jpg",  skybox_path + "top.jpg",
+      skybox_path + "bottom.jpg", skybox_path + "front.jpg", skybox_path + "back.jpg",
 
   };
 
@@ -269,7 +265,6 @@ int main(void)
   auto falcon_tex = make_shared<gfx::gl::Texture>("assets/textures/falcon.jpg", params);
   auto falcon_obj = gfx::load_obj("assets/models/falcon.obj");
   auto falcon_geo = std::make_shared<gfx::Geometry>(falcon_obj, gfx::Geometry::POS_NORM_UV);
-
 
   gfx::Material2Ptr material = make_shared<gfx::Material2>("shaders/pbr", falcon_tex);
 

@@ -113,12 +113,12 @@ struct Shader : public Object {
   ~Shader();
   void bind() const;
   void unbind() const;
-  void uniform(const std::string& name, int value);
-  void uniform(const std::string& name, float value);
-  void uniform(const std::string& name, unsigned int value);
-  void uniform(const std::string& name, const glm::vec3& value);
-  void uniform(const std::string& name, const glm::vec4& value);
-  void uniform(const std::string& name, const glm::mat4& value);
+  void set_uniform(const std::string& name, int value) const;
+  void set_uniform(const std::string& name, float value) const;
+  void set_uniform(const std::string& name, unsigned int value) const;
+  void set_uniform(const std::string& name, const glm::vec3& value) const;
+  void set_uniform(const std::string& name, const glm::vec4& value) const;
+  void set_uniform(const std::string& name, const glm::mat4& value) const;
 };
 
 using ShaderPtr = std::shared_ptr<Shader>;

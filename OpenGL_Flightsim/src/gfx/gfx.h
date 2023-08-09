@@ -14,9 +14,9 @@
 #include <unordered_map>
 #include <vector>
 
+#include "controller.h"
 #include "gl.h"
 #include "util.h"
-#include "controller.h"
 
 namespace gfx
 {
@@ -36,9 +36,9 @@ class ShaderCache;
 using GeometryPtr = std::shared_ptr<Geometry>;
 
 std::vector<float> load_obj(const std::string path);
-std::shared_ptr<Geometry> make_cube_geometry(float size);
-std::shared_ptr<Geometry> make_plane_geometry(int x_elements, int y_elements, float size);
-std::shared_ptr<Geometry> make_quad_geometry();
+GeometryPtr make_cube_geometry(float size);
+GeometryPtr make_plane_geometry(int x_elements, int y_elements, float size);
+GeometryPtr make_quad_geometry();
 
 struct ShadowMap {
   ShadowMap(unsigned int shadow_width, unsigned int shadow_height);
@@ -230,14 +230,14 @@ class ShaderCache
 class Billboard : public Object3D
 {
  public:
-  Billboard(std::shared_ptr<gl::Texture> sprite, glm::vec3 color = glm::vec3(1.0f));
+  Billboard(gl::TexturePtr sprite, glm::vec3 color = glm::vec3(1.0f));
   void draw_self(RenderContext& context) override;
   Object3D& add(Object3D* child) = delete;
 
  private:
   glm::vec3 color;
   gl::Shader shader;
-  std::shared_ptr<gl::Texture> texture;
+  gl::TexturePtr texture;
   gl::VertexArrayObject vao;
   gl::VertexBuffer vbo;
   gl::ElementBufferObject ebo;
@@ -302,6 +302,5 @@ class Renderer2
   ~Renderer2();
   void render(Camera& camera, Object3D& scene);
 };
-
 
 };  // namespace gfx
