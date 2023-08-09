@@ -524,15 +524,23 @@ void Mesh::draw_self(RenderContext& context)
 
 Renderer2::Renderer2(GLsizei width, GLsizei height) : m_width(width), m_height(height)
 {
-  m_shaders.add_shader("shaders/pbr");
-  m_shaders.add_shader("shaders/basic");
-  m_shaders.add_shader("shaders/phong");
-  m_shaders.add_shader("shaders/skybox");
-
   // init renderer
+    
+  glewInit();
+
+  std::cout << glGetString(GL_VERSION) << std::endl;
+  std::cout << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
+  std::cout << glGetString(GL_VENDOR) << std::endl;
+  std::cout << glGetString(GL_RENDERER) << std::endl;
+
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glClearColor(1.0f, 1.0f, 0.0f, 1.0f);
   glViewport(0, 0, m_width, m_height);
+
+  glEnable(GL_DEPTH_TEST);
+  glEnable(GL_MULTISAMPLE);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 Renderer2::~Renderer2() {}

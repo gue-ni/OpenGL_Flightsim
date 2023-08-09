@@ -1,3 +1,4 @@
+#if 0
 #define SDL_MAIN_HANDLED
 #include <GL/glew.h>
 #include <SDL.h>
@@ -152,21 +153,12 @@ int main(void)
 
   if (GLEW_OK != glewInit()) return -1;
 
-  std::cout << glGetString(GL_VERSION) << std::endl;
-  std::cout << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
-  std::cout << glGetString(GL_VENDOR) << std::endl;
-  std::cout << glGetString(GL_RENDERER) << std::endl;
 
   std::cout << USAGE << std::endl;
 
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
 
-  glViewport(0, 0, RESOLUTION.x, RESOLUTION.y);
-  glEnable(GL_DEPTH_TEST);
-  glEnable(GL_MULTISAMPLE);
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
   // SDL options
   SDL_ShowCursor(SDL_FALSE);
@@ -601,3 +593,17 @@ int main(void)
   }
   return 0;
 }
+#else
+#include <iostream>
+#include "app.h"
+#include "gfx/gfx.h"
+
+int main()
+{
+    std::cout << "hello world" << std::endl;
+
+    App app(640, 480, "Flightsim");
+    app.execute();
+    return 0;
+}
+#endif
