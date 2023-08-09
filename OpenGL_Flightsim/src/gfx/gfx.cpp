@@ -526,7 +526,6 @@ Renderer2::Renderer2(GLsizei width, GLsizei height) : m_width(width), m_height(h
 {
   // init renderer
     
-  glewInit();
 
   std::cout << glGetString(GL_VERSION) << std::endl;
   std::cout << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;

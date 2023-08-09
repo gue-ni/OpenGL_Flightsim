@@ -27,7 +27,7 @@ class App
   // graphics
   gfx::Camera* m_camera;
   gfx::Object3D* m_scene;
-  gfx::Renderer2 *m_renderer;
+  gfx::Renderer2* m_renderer;
 
   void init_app();
   void destroy_app();

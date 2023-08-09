@@ -15,6 +15,7 @@ App::App(int w, int h, const std::string& name) : m_width(w), m_height(h)
   m_context = SDL_GL_CreateContext(m_window);
   glewExperimental = GL_TRUE;
 
+  glewInit();
 
   init_app();
 }
