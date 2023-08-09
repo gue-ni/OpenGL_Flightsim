@@ -72,9 +72,6 @@ void Camera::look_at(const glm::vec3& target)
   override_transform(glm::inverse(glm::lookAt(m_position, target, m_up)));
 }
 
-template <class Derived>
-std::shared_ptr<gl::Shader> MaterialX<Derived>::shader = nullptr;
-
 int Object3D::counter = 0;
 
 void Object3D::draw(RenderContext& context)
@@ -288,58 +285,6 @@ void Renderer::render(Camera& camera, Object3D& scene)
 #endif
 }
 
-void Mesh::draw_self(RenderContext& context)
-{
-  glm::mat4 lightSpaceMatrix(1.0f);
-
-  if (context.is_shadow_pass) {
-    assert(context.shadow_caster);
-
-    gl::Shader* shader = &context.shadow_map->shader;
-
-    shader->bind();
-    shader->uniform("u_Model", transform);
-    shader->uniform("u_LightSpaceMatrix", context.shadow_caster->light_space_matrix());
-  } else {
-    gl::Shader* shader = m_material->get_shader();
-
-    shader->bind();
-    shader->uniform("u_Model", transform);
-    shader->uniform("u_View", context.camera->get_view_matrix());
-    shader->uniform("u_Projection", context.camera->get_projection_matrix());
-
-    if (context.shadow_caster) {
-      shader->uniform("u_LightSpaceMatrix", context.shadow_caster->light_space_matrix());
-    }
-
-    shader->uniform("u_BackgroundColor", context.background_color);
-    shader->uniform("u_NumLights", static_cast<int>(context.lights.size()));
-    shader->uniform("u_CameraPosition", context.camera->get_world_position());
-    shader->uniform("u_ReceiveShadow", (receive_shadow && context.shadow_caster));
-
-    for (int i = 0; i < context.lights.size(); i++) {
-      auto index = std::to_string(i);
-      auto type = context.lights[i]->type;
-
-      shader->uniform("u_Lights[" + index + "].type", type);
-      shader->uniform("u_Lights[" + index + "].color", context.lights[i]->rgb);
-      shader->uniform("u_Lights[" + index + "].position", context.lights[i]->get_world_position());
-    }
-
-    context.shadow_map->depth_map.bind(0);
-    shader->uniform("u_ShadowMap", 0);
-
-    m_material->bind();
-  }
-
-  m_geometry->bind();
-
-  glDrawArrays(GL_TRIANGLES, 0, m_geometry->triangle_count);
-  m_geometry->unbind();
-
-  draw_children(context);
-}
-
 ShadowMap::ShadowMap(unsigned int shadow_width, unsigned int shadow_height)
     : width(shadow_width), height(shadow_height), shader("shaders/depth")
 {
@@ -443,38 +388,7 @@ void OrbitController::move_mouse(float x, float y)
 
   m_pitch = glm::clamp(m_pitch, -89.0f, 89.0f);
 }
-#if 0
-void Phong::bind()
-{
-  if (texture != nullptr) {
-    int texture_unit = 1;
-    texture->bind(texture_unit);
-    shader->uniform("u_UseTexture", true);
-    shader->uniform("u_Texture1", texture_unit);
-  } else {
-    shader->uniform("u_UseTexture", false);
-    shader->uniform("u_SolidObjectColor", rgb);
-  }
 
-  gl::Shader* shader = get_shader();
-  shader->bind();
-  shader->uniform("ka", ka);
-  shader->uniform("kd", kd);
-  shader->uniform("ks", ks);
-  shader->uniform("alpha", alpha);
-}
-
-void Basic::bind()
-{
-  gl::Shader* shader = get_shader();
-  shader->uniform("ka", 0.6f);
-  shader->uniform("kd", 0.8f);
-  shader->uniform("ks", 0.2f);
-  shader->uniform("alpha", 10.0f);
-  shader->uniform("u_UseTexture", false);
-  shader->uniform("u_SolidObjectColor", rgb);
-}
-#endif
 std::vector<float> load_obj(const std::string path)
 {
   std::vector<float> vertices;
@@ -787,18 +701,6 @@ void Skybox::draw_self(RenderContext& context)
     glDepthMask(GL_TRUE);
   }
 }
-
-
-
-#if 0
-void ScreenMaterial::bind()
-{
-  gl::Shader* shader = get_shader();
-  texture->bind(0);
-  shader->bind();
-  shader->uniform("u_ShadowMap", 0);
-}
-#endif
 
 void ShaderCache::add_shader(const std::string& path)
 {

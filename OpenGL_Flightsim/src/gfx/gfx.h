@@ -29,11 +29,9 @@ class Mesh;
 class Light;
 class Camera;
 class Skybox;
-class Material;
 class Geometry;
 class ShaderCache;
 
-using MaterialPtr = std::shared_ptr<Material>;
 using GeometryPtr = std::shared_ptr<Geometry>;
 
 std::vector<float> load_obj(const std::string path);
@@ -188,13 +186,6 @@ class Geometry
   static int get_stride(const VertexLayout& layout);
 };
 
-class Material
-{
- public:
-  virtual gl::Shader* get_shader() { return nullptr; }
-  virtual void bind() {}
-};
-
 class Material2
 {
  public:
@@ -219,46 +210,20 @@ class Mesh2 : public Object3D
  public:
   Mesh2(const GeometryPtr& geometry, const Material2Ptr& material);
 
-protected:
+ protected:
   Material2Ptr m_material;
   GeometryPtr m_geometry;
   void draw_self(RenderContext& context) override;
 };
 
-template <class Derived>
-class MaterialX : public Material
-{
- public:
-  MaterialX(const std::string& path)
-  {
-    if (shader == nullptr) shader = std::make_shared<gl::Shader>(path);
-  }
-  gl::Shader* get_shader() { return shader.get(); }
-  static std::shared_ptr<gl::Shader> shader;
-};
-
-
-
-
 class ShaderCache
 {
  public:
   void add_shader(const std::string& path);
-  gl::ShaderPtr get_shader(const std::string& path) ;
+  gl::ShaderPtr get_shader(const std::string& path);
 
  private:
   std::unordered_map<std::string, gl::ShaderPtr> m_cache;
-};
-
-class Mesh : public Object3D
-{
- public:
-  Mesh(GeometryPtr geometry, MaterialPtr material) : m_geometry(geometry), m_material(material) {}
-  void draw_self(RenderContext& context) override;
-
- protected:
-  GeometryPtr m_geometry;
-  MaterialPtr m_material;
 };
 
 class Billboard : public Object3D
@@ -281,7 +246,7 @@ class Skybox : public Mesh2
 {
  public:
   Skybox(const std::array<std::string, 6>& faces);
-  //Skybox(const Material2Ptr& material);
+  // Skybox(const Material2Ptr& material);
   void draw_self(RenderContext& context) override;
   Object3D& add(Object3D* child) = delete;
 };
@@ -329,7 +294,7 @@ class Renderer2
  private:
   GLsizei m_width, m_height;
   ShaderCache m_shaders;
-  //std::optional<gl::FrameBuffer> m_framebuffer;
+  // std::optional<gl::FrameBuffer> m_framebuffer;
 
  public:
   Renderer2(GLsizei width, GLsizei height);
