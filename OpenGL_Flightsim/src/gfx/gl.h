@@ -132,11 +132,11 @@ struct TextureParams {
 
 struct Texture : public Object {
   Texture() { glGenTextures(1, &m_id); }
+  ~Texture() { glDeleteTextures(1, &m_id); }
   Texture(GLuint texture_id) { m_id = texture_id; }
   Texture(const std::string& path);
   Texture(const std::string& path, const TextureParams& params);
   Texture(const Image& image, const TextureParams& params);
-  ~Texture();
 
   virtual void bind(GLuint active_texture = 0U) const;
   virtual void unbind() const;

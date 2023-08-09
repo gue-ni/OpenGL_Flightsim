@@ -109,7 +109,6 @@ Texture::Texture(const Image& image, const TextureParams& params) : Texture()
   glGenerateMipmap(GL_TEXTURE_2D);
 }
 
-Texture::~Texture() { glDeleteTextures(1, &m_id); }
 
 void Texture::bind(GLuint active_texture) const
 {

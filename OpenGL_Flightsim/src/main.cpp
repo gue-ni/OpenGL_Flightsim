@@ -71,7 +71,7 @@ struct Joystick {
 };
 
 struct GameObject {
-  gfx::Mesh2 mesh;
+  gfx::Mesh mesh;
   Airplane& rigid_body;
 };
 
@@ -266,10 +266,10 @@ int main(void)
   auto falcon_obj = gfx::load_obj("assets/models/falcon.obj");
   auto falcon_geo = std::make_shared<gfx::Geometry>(falcon_obj, gfx::Geometry::POS_NORM_UV);
 
-  gfx::Material2Ptr material = make_shared<gfx::Material2>("shaders/pbr", falcon_tex);
+  gfx::MaterialPtr material = make_shared<gfx::Material>("shaders/pbr", falcon_tex);
 
   std::vector<GameObject> objects = {{
-      .mesh = gfx::Mesh2(falcon_geo, material),
+      .mesh = gfx::Mesh(falcon_geo, material),
       .rigid_body = rigid_bodies[0],
   }};
 
