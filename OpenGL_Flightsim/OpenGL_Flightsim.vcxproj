@@ -154,6 +154,7 @@ xcopy /y /i /s $(ProjectDir)..\lib\glew-2.2.0\bin\Release\x64\*.dll $(OutDir)</C
     <ClCompile Include="lib\imgui\imgui_impl_sdl2.cpp" />
     <ClCompile Include="lib\imgui\imgui_tables.cpp" />
     <ClCompile Include="lib\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="src\gfx\controller.cpp" />
     <ClCompile Include="src\gfx\gl.cpp" />
     <ClCompile Include="src\gfx\object3d.cpp" />
     <ClCompile Include="src\gfx\util.cpp" />
@@ -185,6 +186,7 @@ xcopy /y /i /s $(ProjectDir)..\lib\glew-2.2.0\bin\Release\x64\*.dll $(OutDir)</C
     <ClInclude Include="src\app.h" />
     <ClInclude Include="src\collider.h" />
     <ClInclude Include="src\data.h" />
+    <ClInclude Include="src\gfx\controller.h" />
     <ClInclude Include="src\gfx\gl.h" />
     <ClInclude Include="src\gfx\object3d.h" />
     <ClInclude Include="src\gfx\util.h" />
