@@ -142,7 +142,8 @@ public:
   virtual void bind(GLuint active_texture = 0U) const;
   virtual void unbind() const;
   GLint get_format(int channels);
-  void set_parameteri(GLenum target, GLenum pname, GLint param);
+  void set_parameter(GLenum target, GLenum pname, GLint param);
+  void set_parameter(GLenum target, GLenum pname, GLfloat param);
 };
 
 using TexturePtr = std::shared_ptr<Texture>;
@@ -150,7 +151,7 @@ using TexturePtr = std::shared_ptr<Texture>;
 class CubemapTexture : public Texture {
 public:
   CubemapTexture(const std::array<std::string, 6>& paths, bool flip_vertically = false);
-  void bind(GLuint texture) const override;
+  void bind(GLuint active_texture) const override;
   void unbind() const override;
 };
 
