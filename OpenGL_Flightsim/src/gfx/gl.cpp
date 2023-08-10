@@ -115,6 +115,11 @@ void Texture::bind(GLuint active_texture) const
   glBindTexture(GL_TEXTURE_2D, m_id);
 }
 
+void Texture::bind() const
+{
+  glBindTexture(GL_TEXTURE_2D, m_id);
+}
+
 void Texture::unbind() const { glBindTexture(GL_TEXTURE_2D, 0); }
 
 GLint Texture::get_format(int channels)
@@ -161,9 +166,14 @@ CubemapTexture::CubemapTexture(const std::array<std::string, 6>& paths, bool fli
   set_parameter(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 }
 
-void CubemapTexture::bind(GLuint texture) const
+void CubemapTexture::bind() const
 {
-  glActiveTexture(GL_TEXTURE0 + texture);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, m_id);
+}
+
+void CubemapTexture::bind(GLuint active_texture) const
+{
+  glActiveTexture(GL_TEXTURE0 + active_texture);
   glBindTexture(GL_TEXTURE_CUBE_MAP, m_id);
 }
 
