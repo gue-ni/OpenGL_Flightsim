@@ -35,8 +35,7 @@ App::App(int w, int h, const std::string& name) : m_width(w), m_height(h), m_con
   SDL_CaptureMouse(SDL_TRUE);
   SDL_SetRelativeMouseMode(SDL_TRUE);
 
-  if (SDL_NumJoysticks()) {
-    std::cout << "found joystick\n";
+  if (SDL_NumJoysticks() > 0) {
     SDL_JoystickEventState(SDL_ENABLE);
     m_sdljoystick = SDL_JoystickOpen(0);
   }
@@ -130,12 +129,10 @@ void App::init_app()
   m_airplane->position = glm::vec3(0, 800, 0);
   m_airplane->velocity = glm::vec3(300, 0, 0);
 
-
-  //m_camera->set_position({-25.0f, 5, 0});
-  //m_camera->set_rotation({0, glm::radians(-90.0f), 0.0f});
-  //m_falcon->add(m_camera);
-
-
+  m_camera_attachment = new gfx::Object3D();
+  m_camera_attachment->set_position({-25.0f, 5, 0});
+  m_camera_attachment->set_rotation({0, glm::radians(-90.0f), 0.0f});
+  m_falcon->add(m_camera_attachment);
 }
 
 void App::destroy_app()
@@ -155,7 +152,7 @@ void App::poll_events()
         break;
       }
       case SDL_MOUSEMOTION: {
-        event_mousemotion(static_cast<float>(event.motion.xrel), static_cast<float>(event.motion.yrel));
+        event_mousemotion(event.motion.xrel, event.motion.yrel);
         break;
       }
       case SDL_KEYDOWN: {
@@ -176,7 +173,7 @@ void App::poll_events()
   }
 }
 
-void App::event_mousewheel(int32_t value) { m_controller.radius *= (1.0 + glm::sign(value) * 0.1f); }
+void App::event_mousewheel(float value) { m_controller.radius *= (1.0 + glm::sign(value) * 0.1f); }
 
 void App::event_keydown(SDL_Keycode key)
 {
@@ -185,6 +182,9 @@ void App::event_keydown(SDL_Keycode key)
       m_quit = true;
       break;
     }
+    case SDLK_o:
+      m_orbitcamera = !m_orbitcamera;
+      break;
   }
 }
 
@@ -244,15 +244,12 @@ void App::execute()
 
     m_falcon->set_transform(m_airplane->position, m_airplane->rotation);
 
-#if 1
-    if (m_orbitcamera)
-    {
-        m_controller.update(*m_camera, m_falcon->get_position(), dt);
+    if (m_orbitcamera) {
+      m_controller.update(*m_camera, m_falcon->get_position(), dt);
+    } else {
+      m_camera->set_transform(m_camera_attachment->get_world_position(),
+                              m_camera_attachment->get_world_rotation_quat());
     }
-#endif
-
-
-    gfx::Camera* active_camera = m_camera;
 
     // render scene
     m_renderer->render(*m_camera, *m_scene);

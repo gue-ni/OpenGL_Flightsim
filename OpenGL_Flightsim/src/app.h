@@ -39,6 +39,8 @@ class App
 
   gfx::OrbitController m_controller;
 
+  gfx::Object3D* m_camera_attachment;
+
   // physics
   Airplane* m_airplane;
   phi::RigidBody *m_terrain;
@@ -52,7 +54,7 @@ class App
   // user input
   void poll_events();
   void event_keydown(SDL_Keycode sim);
-  void event_mousewheel(int32_t value);
+  void event_mousewheel(float value);
   void event_mousemotion(float xrel, float yrel);
   void event_joyaxis(uint8_t axis, int16_t value);
 
