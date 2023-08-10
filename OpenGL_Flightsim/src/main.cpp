@@ -596,7 +596,6 @@ int main(void)
 #else
 #include <iostream>
 #include "app.h"
-#include "gfx/gfx.h"
 
 int main()
 {

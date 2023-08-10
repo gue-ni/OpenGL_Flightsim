@@ -538,9 +538,11 @@ void step_physics(std::vector<RB>& objects, phi::Seconds dt)
 
 };  // namespace phi
 
+#if 0
 // debug print
 std::ostream& operator<<(std::ostream& os, const phi::RigidBody& rb)
 {
   return os << "RigidBody { p = " << rb.position << ", r = " << rb.get_euler_angles() << ", v = " << rb.velocity
             << ", av = " << rb.angular_velocity << " }";
 }
+#endif

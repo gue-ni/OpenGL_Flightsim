@@ -1,4 +1,8 @@
 #pragma once
+#ifndef  FLIGHTMODEL_H
+#define  FLIGHTMODEL_H
+
+
 
 #include <algorithm>
 #include <cmath>
@@ -70,7 +74,7 @@ struct Airfoil {
   // lift_coeff, drag_coeff
   std::tuple<float, float> sample(float alpha) const
   {
-    alpha = glm::clamp(alpha, min_alpha, max_alpha);
+    alpha = glm::clamp(alpha, min_alpha, max_alpha - 1);
     float t = phi::inverse_lerp(min_alpha, max_alpha, alpha) * max_index;
     float integer = std::floor(t);
     float fractional = t - integer;
@@ -310,3 +314,5 @@ struct Airplane : public phi::RigidBody {
     return std::sqrt(2 * dynamic_pressure / isa::sea_level_air_density);
   }
 };
+
+#endif // ! FLIGHTMODEL_H

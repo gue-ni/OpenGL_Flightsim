@@ -5,7 +5,15 @@
 #include <SDL.h>
 #include <SDL_opengl.h>
 
+
 #include "gfx/gfx.h"
+
+class Airplane;
+
+struct GameObject {
+  gfx::Mesh* mesh;
+  Airplane* rigid_body;
+};
 
 class App
 {
@@ -28,6 +36,13 @@ class App
   gfx::Camera* m_camera;
   gfx::Object3D* m_scene;
   gfx::Renderer2* m_renderer;
+
+
+  gfx::OrbitController m_controller;
+
+  // physics
+  Airplane* m_rigidbody;
+  gfx::Mesh* m_falcon;
 
   void init_app();
   void destroy_app();
