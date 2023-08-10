@@ -599,8 +599,6 @@ int main(void)
 
 int main()
 {
-    std::cout << "hello world" << std::endl;
-
     App app(640, 480, "Flightsim");
     app.execute();
     return 0;

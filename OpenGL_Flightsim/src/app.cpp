@@ -129,6 +129,13 @@ void App::init_app()
   m_airplane = new Airplane(mass, inertia, wings, {engine}, collider);
   m_airplane->position = glm::vec3(0, 800, 0);
   m_airplane->velocity = glm::vec3(300, 0, 0);
+
+
+  //m_camera->set_position({-25.0f, 5, 0});
+  //m_camera->set_rotation({0, glm::radians(-90.0f), 0.0f});
+  //m_falcon->add(m_camera);
+
+
 }
 
 void App::destroy_app()
@@ -237,7 +244,15 @@ void App::execute()
 
     m_falcon->set_transform(m_airplane->position, m_airplane->rotation);
 
-    m_controller.update(*m_camera, m_falcon->get_position(), dt);
+#if 1
+    if (m_orbitcamera)
+    {
+        m_controller.update(*m_camera, m_falcon->get_position(), dt);
+    }
+#endif
+
+
+    gfx::Camera* active_camera = m_camera;
 
     // render scene
     m_renderer->render(*m_camera, *m_scene);

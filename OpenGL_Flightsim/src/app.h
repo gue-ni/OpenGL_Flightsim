@@ -20,6 +20,7 @@ class App
 
   bool m_quit = false;
   bool m_paused = false;
+  bool m_orbitcamera = true;
 
   unsigned int m_frames = 0;
   float m_seconds = 0.0f;
