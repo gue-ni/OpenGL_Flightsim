@@ -1,8 +1,6 @@
 #pragma once
-#ifndef  FLIGHTMODEL_H
-#define  FLIGHTMODEL_H
-
-
+#ifndef FLIGHTMODEL_H
+#define FLIGHTMODEL_H
 
 #include <algorithm>
 #include <cmath>
@@ -11,8 +9,9 @@
 #include <vector>
 
 #include "data.h"
-#include "gfx/gfx.h"
+//#include "gfx/gfx.h"
 #include "phi.h"
+#include "collider.h"
 
 //  International Standard Atmosphere (ISA)
 namespace isa
@@ -315,4 +314,4 @@ struct Airplane : public phi::RigidBody {
   }
 };
 
-#endif // ! FLIGHTMODEL_H
+#endif  // ! FLIGHTMODEL_H

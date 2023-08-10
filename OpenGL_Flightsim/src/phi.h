@@ -28,6 +28,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE. */
 #pragma once
+#ifndef PHI_H
+#define PHI_H
 
 #include <glm/glm.hpp>
 #include <glm/gtx/matrix_operation.hpp>
@@ -546,3 +548,6 @@ std::ostream& operator<<(std::ostream& os, const phi::RigidBody& rb)
             << ", av = " << rb.angular_velocity << " }";
 }
 #endif
+
+
+#endif /* PHI_H */

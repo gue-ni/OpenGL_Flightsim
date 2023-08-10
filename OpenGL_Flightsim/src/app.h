@@ -5,8 +5,8 @@
 #include <SDL.h>
 #include <SDL_opengl.h>
 
-
 #include "gfx/gfx.h"
+//#include "flightmodel.h"
 
 class Airplane;
 
@@ -31,23 +31,32 @@ class App
   // SDL
   SDL_Window* m_window;
   SDL_GLContext m_context;
+  SDL_Joystick* m_sdljoystick;
 
   // graphics
   gfx::Camera* m_camera;
   gfx::Object3D* m_scene;
   gfx::Renderer2* m_renderer;
 
-
   gfx::OrbitController m_controller;
 
   // physics
-  Airplane* m_rigidbody;
+  Airplane* m_airplane;
+  //phi::RigidBody *m_terrain;
+
   gfx::Mesh* m_falcon;
 
+  // setup/teardown
   void init_app();
   void destroy_app();
+
+  // user input
   void poll_events();
-  void handle_keydown(SDL_Keycode sim);
+  void event_keydown(SDL_Keycode sim);
+  void event_mousewheel(int32_t value);
+  void event_mousemotion(float xrel, float yrel);
+  void event_joyaxis(uint8_t axis, int16_t value);
+
   float delta_time();
 
  public:
