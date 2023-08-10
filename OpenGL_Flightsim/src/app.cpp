@@ -4,6 +4,7 @@
 
 #include "data.h"
 #include "flightmodel.h"
+#include "terrain.h"
 
 const Airfoil NACA_0012(NACA_0012_data);
 const Airfoil NACA_2412(NACA_2412_data);
@@ -78,7 +79,7 @@ void App::init_app()
   m_scene->add(clipmap);
 #endif
 
-#if 0
+#if 1
   m_terrain = new phi::RigidBody();
   m_terrain->active = false;
   m_terrain->mass = 10000.0f;
@@ -122,11 +123,10 @@ void App::init_app()
 
   Engine* engine = new SimpleEngine(thrust);
 
-  Sphere sphere(15.0f);
-  LandingGear landing_gear(glm::vec3(4.0f, -1.5f, 0.0f), glm::vec3(-1.0f, -1.5f, +2.0f),
-                           glm::vec3(-1.0f, -1.5f, -2.0f));
+  LandingGear* collider =
+      new LandingGear(glm::vec3(4.0f, -1.5f, 0.0f), glm::vec3(-1.0f, -1.5f, +2.0f), glm::vec3(-1.0f, -1.5f, -2.0f));
 
-  m_airplane = new Airplane(mass, inertia, wings, {engine}, &landing_gear);
+  m_airplane = new Airplane(mass, inertia, wings, {engine}, collider);
   m_airplane->position = glm::vec3(0, 800, 0);
   m_airplane->velocity = glm::vec3(300, 0, 0);
 }
@@ -228,11 +228,11 @@ void App::execute()
 
     m_airplane->update(dt);
 
-#if 0
+#if 1
     phi::CollisionInfo collision;
-   if (test_collision(m_airplane, m_terrain, &collision)) {
-        phi::RigidBody::impulse_collision(collision);
-      }
+    if (test_collision(m_airplane, m_terrain, &collision)) {
+      phi::RigidBody::impulse_collision(collision);
+    }
 #endif
 
     m_falcon->set_transform(m_airplane->position, m_airplane->rotation);

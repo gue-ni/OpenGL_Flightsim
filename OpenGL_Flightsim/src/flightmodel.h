@@ -8,8 +8,6 @@
 #include <tuple>
 #include <vector>
 
-#include "data.h"
-//#include "gfx/gfx.h"
 #include "phi.h"
 #include "collider.h"
 
@@ -24,7 +22,7 @@ inline float get_air_temperature(float altitude)
 }
 
 // only accurate for altitudes < 11km
-float get_air_density(float altitude)
+inline float get_air_density(float altitude)
 {
   assert(0.0f <= altitude && altitude <= 11000.0f);
   float temperature = get_air_temperature(altitude);
@@ -39,7 +37,7 @@ const float sea_level_air_density = get_air_density(0.0f);
 namespace wgs84
 {
 // origin is degrees lat/lon, offset in meters
-glm::vec2 coordinates(const glm::vec2& origin, const glm::vec2& offset)
+inline glm::vec2 coordinates(const glm::vec2& origin, const glm::vec2& offset)
 {
   float latitude = origin.x, longitude = origin.y;
   float new_latitude = latitude + glm::degrees(offset.y / phi::EARTH_RADIUS);

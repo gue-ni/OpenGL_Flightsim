@@ -549,5 +549,4 @@ std::ostream& operator<<(std::ostream& os, const phi::RigidBody& rb)
 }
 #endif
 
-
 #endif /* PHI_H */

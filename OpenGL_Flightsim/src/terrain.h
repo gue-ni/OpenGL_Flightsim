@@ -30,18 +30,18 @@ const int ZOOM_FACTOR = 5;
 constexpr gfx::gl::Texture::Params params = {.texture_wrap = GL_REPEAT, .texture_mag_filter = GL_LINEAR};
 
 // pixel value in range [0, 1]
-float height_from_pixel(const glm::vec3& rgb)
+inline float height_from_pixel(const glm::vec3& rgb)
 {
   glm::vec3 pixel = rgb * 255.0f;
   return (pixel.r * 256.0f + pixel.g + pixel.b / 256.0f) - 32768.0f;
 }
 
-float scale(float input_val, float in_min, float in_max, float out_min, float out_max)
+inline float scale(float input_val, float in_min, float in_max, float out_min, float out_max)
 {
   return (input_val - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
-float sample_heightmap(const gfx::Image& heightmap, const glm::vec2& pos, float terrain_size)
+inline float sample_heightmap(const gfx::Image& heightmap, const glm::vec2& pos, float terrain_size)
 {
   glm::vec2 coord = pos / (terrain_size / 2.0f);
   coord.x = scale(coord.x, -1.0, 1.0, 0.0, 1.0);

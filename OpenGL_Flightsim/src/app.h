@@ -6,9 +6,7 @@
 #include <SDL_opengl.h>
 
 #include "gfx/gfx.h"
-//#include "flightmodel.h"
-
-class Airplane;
+#include "flightmodel.h"
 
 struct GameObject {
   gfx::Mesh* mesh;
@@ -42,7 +40,7 @@ class App
 
   // physics
   Airplane* m_airplane;
-  //phi::RigidBody *m_terrain;
+  phi::RigidBody *m_terrain;
 
   gfx::Mesh* m_falcon;
 

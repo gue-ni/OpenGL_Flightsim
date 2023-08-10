@@ -218,7 +218,7 @@ inline bool LandingGear::test(const phi::Transform* tf, const LandingGear* other
 }
 
 // collision detection
-bool test_collision(phi::RigidBody* a, phi::RigidBody* b, phi::CollisionInfo* info)
+inline bool test_collision(phi::RigidBody* a, phi::RigidBody* b, phi::CollisionInfo* info)
 {
   assert((a && b) && (a->collider && b->collider));
 
