@@ -21,6 +21,12 @@ namespace gfx
 namespace gl
 {
 
+struct Vertex {
+ glm::vec3 pos;
+ glm::vec3 normal;
+ glm::vec2 texcoord;
+};
+
 // abstract opengl object
 struct Object {
  protected:
