@@ -40,4 +40,11 @@ int Image::height() const { return m_height; }
 
 int Image::channels() const { return m_channels; }
 
+GLint Image::format() const {
+  assert(1 <= m_channels && m_channels <= 4);
+  static GLint formats[] = { GL_RED, GL_RG, GL_RGB, GL_RGBA };
+  return formats[m_channels - 1];
+} 
+
+
 }  // namespace gfx

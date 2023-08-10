@@ -44,6 +44,7 @@ class Image
   int width() const;
   int height() const;
   int channels() const;
+  GLint format() const; 
 
  private:
   unsigned char* m_data = nullptr;

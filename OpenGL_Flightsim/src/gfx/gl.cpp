@@ -99,19 +99,24 @@ Texture::Texture(const std::string& path, const Params& params)
 Texture::Texture(const Image& image, const Params& params) : Texture()
 {
   glBindTexture(GL_TEXTURE_2D, m_id);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, params.texture_wrap);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, params.texture_wrap);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, params.texture_min_filter);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, params.texture_mag_filter);
+  
+  set_parameter(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, params.texture_wrap);
+  set_parameter(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, params.texture_wrap);
+  set_parameter(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, params.texture_min_filter);
+  set_parameter(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, params.texture_mag_filter);
 
-  auto format = get_format(image.channels());
-  glTexImage2D(GL_TEXTURE_2D, 0, format, image.width(), image.height(), 0, format, GL_UNSIGNED_BYTE, image.data());
+  glTexImage2D(GL_TEXTURE_2D, 0, image.format(), image.width(), image.height(), 0, image.format(), GL_UNSIGNED_BYTE, image.data());
   glGenerateMipmap(GL_TEXTURE_2D);
 }
 
 void Texture::bind(GLuint active_texture) const
 {
   glActiveTexture(GL_TEXTURE0 + active_texture);
+  glBindTexture(GL_TEXTURE_2D, m_id);
+}
+
+void Texture::bind() const
+{
   glBindTexture(GL_TEXTURE_2D, m_id);
 }
 
@@ -140,7 +145,9 @@ GLint Texture::get_format(int channels)
   return format;
 }
 
-void Texture::set_parameteri(GLenum target, GLenum pname, GLint param) { glTexParameteri(target, pname, param); }
+void Texture::set_parameter(GLenum target, GLenum pname, GLint param) { glTexParameteri(target, pname, param); }
+
+void Texture::set_parameter(GLenum target, GLenum pname, GLfloat param) { glTexParameterf(target, pname, param); }
 
 CubemapTexture::CubemapTexture(const std::array<std::string, 6>& paths, bool flip_vertically)
 {
@@ -149,26 +156,24 @@ CubemapTexture::CubemapTexture(const std::array<std::string, 6>& paths, bool fli
 
   for (int i = 0; i < 6; i++) {
     Image image(paths[i], flip_vertically);
-
-    if (image.data()) {
-      auto format = get_format(image.channels());
-      glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, image.width(), image.height(), 0, format,
-                   GL_UNSIGNED_BYTE, image.data());
-    } else {
-      std::cout << "Cubemap tex failed to load at path: " << paths[i] << std::endl;
-    }
+    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, image.format(), image.width(), image.height(), 0, image.format(), GL_UNSIGNED_BYTE, image.data());
   }
 
-  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+  set_parameter(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  set_parameter(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  set_parameter(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  set_parameter(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  set_parameter(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 }
 
-void CubemapTexture::bind(GLuint texture) const
+void CubemapTexture::bind() const
 {
-  glActiveTexture(GL_TEXTURE0 + texture);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, m_id);
+}
+
+void CubemapTexture::bind(GLuint active_texture) const
+{
+  glActiveTexture(GL_TEXTURE0 + active_texture);
   glBindTexture(GL_TEXTURE_CUBE_MAP, m_id);
 }
 
