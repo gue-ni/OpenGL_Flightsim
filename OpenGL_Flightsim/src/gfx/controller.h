@@ -54,15 +54,14 @@ class FirstPersonController
 class OrbitController
 {
  public:
-  OrbitController(float radius) : radius(radius) {}
+  OrbitController(float radius) : radius(radius), m_pitch(25.0f), m_yaw(120.0f) {}
 
   float radius;
   void update(Object3D& object, const glm::vec3& center, float dt);
   void move_mouse(float x, float y);
 
  private:
-  float m_yaw = 0.0f;
-  float m_pitch = 0.0f;
+  float m_yaw, m_pitch;
 };
 
 }  // namespace gfx
