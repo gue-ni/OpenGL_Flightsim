@@ -8,6 +8,10 @@
 #include "flightmodel.h"
 #include "gfx/gfx.h"
 
+#include "../lib/imgui/imgui.h"
+#include "../lib/imgui/imgui_impl_opengl3.h"
+#include "../lib/imgui/imgui_impl_sdl2.h"
+
 struct GameObject {
   gfx::Mesh* mesh;
   Airplane* rigid_body;
@@ -35,7 +39,7 @@ class App
   SDL_Joystick* m_sdljoystick;
 
   // graphics
-  gfx::Camera* m_cameras[3];
+  std::array<gfx::Camera*, 3> m_cameras;
   gfx::Object3D* m_scene;
   gfx::Renderer2* m_renderer;
 
@@ -53,6 +57,10 @@ class App
   void init();
   void destroy();
 
+  void draw_imgui();
+
+  void game_loop(float dt);
+
   // user input
   void poll_events();
   void event_keydown(SDL_Keycode sim);
@@ -65,5 +73,5 @@ class App
  public:
   App(int w, int h, const std::string& name = "App");
   ~App();
-  void execute();
+  int run();
 };

@@ -31,6 +31,11 @@ App::App(int w, int h, const std::string& name) : m_width(w), m_height(h), m_con
 
   glewInit();
 
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGui_ImplSDL2_InitForOpenGL(m_window, m_context);
+  ImGui_ImplOpenGL3_Init();
+
   SDL_ShowCursor(SDL_FALSE);
   SDL_CaptureMouse(SDL_TRUE);
   SDL_SetRelativeMouseMode(SDL_TRUE);
@@ -136,7 +141,7 @@ void App::init()
   m_airplane->velocity = glm::vec3(300, 0, 0);
 
   m_camera_attachment = new gfx::Object3D();
-  m_camera_attachment->set_position({-25.0f, 5, 0});
+  m_camera_attachment->set_position({-20.0f, 4.5f, 0.0f});
   m_camera_attachment->set_rotation({0, glm::radians(-90.0f), 0.0f});
   m_falcon->add(m_camera_attachment);
 
@@ -145,7 +150,7 @@ void App::init()
   m_camera_attachment->add(m_camera);
 #endif
 
-  m_cameras[1]->set_position({-20.0f, 3.5f, 0.0f});
+  m_cameras[1]->set_position({-10.0f, 1.5f, 3.0f});
   m_cameras[1]->set_rotation({0, glm::radians(-90.0f), 0.0f});
   m_falcon->add(m_cameras[1]);
 }
@@ -198,7 +203,7 @@ void App::event_keydown(SDL_Keycode key)
       break;
     }
     case SDLK_o:
-      m_cameratype = (m_cameratype + 1) % 3;
+      m_cameratype = (m_cameratype + 1) % m_cameras.size();
       break;
   }
 }
@@ -236,17 +241,31 @@ float App::delta_time()
   return static_cast<float>(now - last) / frequency;
 }
 
-void App::execute()
-{
-  now = SDL_GetPerformanceCounter();
 
-  while (!m_quit) {
-    const float dt = delta_time();
-    m_frames++;
-    m_seconds += dt;
+void App::draw_imgui(){
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplSDL2_NewFrame();
+    ImGui::NewFrame();
 
-    // get input events
-    poll_events();
+    ImGuiWindowFlags window_flags = 0;
+    window_flags |= ImGuiWindowFlags_NoTitleBar;
+    window_flags |= ImGuiWindowFlags_NoMove;
+    window_flags |= ImGuiWindowFlags_NoResize;
+
+    ImGui::SetNextWindowPos(ImVec2(10, 10));
+    ImGui::SetNextWindowSize(ImVec2(145, 160));
+    ImGui::SetNextWindowBgAlpha(0.35f);
+    ImGui::Begin("Flightsim", nullptr, window_flags);
+    ImGui::Text("ALT:   %.0f m", m_airplane->position.y);
+    ImGui::Text("SPD:   %.0f km/h", m_airplane->get_speed());
+    ImGui::Text("THR:   %.0f %%", std::abs(m_airplane->throttle * 100.0f));
+    ImGui::Text("G:     %.1f", m_airplane->get_g());
+    ImGui::Text("AoA:   %.2f", m_airplane->get_aoa());
+    ImGui::End();
+}
+
+
+void App::game_loop(float dt){
 
     m_airplane->update(dt);
 
@@ -259,21 +278,35 @@ void App::execute()
 
     m_falcon->set_transform(m_airplane->position, m_airplane->rotation);
 
-    gfx::Camera* camera = nullptr;
-
-    float speed = 10.1f;
+    float speed = 25.0f;
     m_cameras[2]->set_transform(
         glm::mix(m_cameras[2]->get_world_position(), m_camera_attachment->get_world_position(), dt * speed),
         glm::mix(m_cameras[2]->get_world_rotation_quat(), m_camera_attachment->get_world_rotation_quat(), dt * speed));
 
     m_controller.update(*m_cameras[0], m_falcon->get_position(), dt);
 
-    camera = m_cameras[m_cameratype];
+    m_renderer->render(*m_cameras[m_cameratype], *m_scene);
+}
 
+int App::run()
+{
+  now = SDL_GetPerformanceCounter();
 
-    // render scene
-    m_renderer->render(*camera, *m_scene);
+  while (!m_quit) {
+    float dt = delta_time();
+    m_frames++;
+    m_seconds += dt;
 
+    draw_imgui();
+
+    poll_events();
+
+    game_loop(dt);
+
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     SDL_GL_SwapWindow(m_window);
   }
+
+  return 0;
 }

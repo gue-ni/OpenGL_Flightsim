@@ -600,7 +600,6 @@ int main(void)
 int main()
 {
     App app(640, 480, "Flightsim");
-    app.execute();
-    return 0;
+    return app.run();
 }
 #endif
