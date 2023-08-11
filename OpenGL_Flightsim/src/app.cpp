@@ -85,8 +85,8 @@ void App::init()
   m_scene->add(skybox);
 #endif
 #if 1
-  Clipmap* clipmap = new Clipmap();
-  m_scene->add(clipmap);
+  m_clipmap = new Clipmap();
+  m_scene->add(m_clipmap);
 #endif
 
 #if 1
@@ -94,9 +94,31 @@ void App::init()
   m_terrain->active = false;
   m_terrain->mass = 10000.0f;
   m_terrain->set_inertia(phi::inertia::sphere(m_terrain->mass, 1000.0f));
-  m_terrain->collider = new Heightmap(clipmap);
+  m_terrain->collider = new Heightmap(m_clipmap);
 #endif
 
+  init_airplane();
+
+  glm::vec3 look_forward = glm::vec3(0, glm::radians(-90.0f), 0.0f);
+
+  // smooth follow camera
+  m_camera_attachment = new gfx::Object3D();
+  m_camera_attachment->set_position({-20.0f, 4.5f, 0.0f});
+  m_camera_attachment->set_rotation({0, glm::radians(-90.0f), 0.0f});
+  m_falcon->add(m_camera_attachment);
+  m_cameras[2]->set_transform(m_camera_attachment->get_world_position(), glm::quat(look_forward));
+
+  // attached camera
+  m_cameras[1]->set_position({-10.0f, 1.5f, 3.0f});
+  m_cameras[1]->set_rotation(look_forward);
+  m_falcon->add(m_cameras[1]);
+
+  // setup all transforms
+  m_scene->update_world_matrix(false);
+}
+
+void App::init_airplane()
+{
   // objects
   {
     gfx::gl::Texture::Params params = {.flip_vertically = true, .texture_mag_filter = GL_LINEAR};
@@ -137,22 +159,9 @@ void App::init()
       new LandingGear(glm::vec3(4.0f, -1.5f, 0.0f), glm::vec3(-1.0f, -1.5f, +2.0f), glm::vec3(-1.0f, -1.5f, -2.0f));
 
   m_airplane = new Airplane(mass, inertia, wings, {engine}, collider);
-  m_airplane->position = glm::vec3(0, 800, 0);
+  float height = m_clipmap->get_terrain_height(glm::vec2(0, 0));
+  m_airplane->position = glm::vec3(0, height + 500.0f, 0);
   m_airplane->velocity = glm::vec3(300, 0, 0);
-
-  m_camera_attachment = new gfx::Object3D();
-  m_camera_attachment->set_position({-20.0f, 4.5f, 0.0f});
-  m_camera_attachment->set_rotation({0, glm::radians(-90.0f), 0.0f});
-  m_falcon->add(m_camera_attachment);
-
-  m_cameras[2]->set_transform(m_airplane->position, m_airplane->rotation);
-#if 0
-  m_camera_attachment->add(m_camera);
-#endif
-
-  m_cameras[1]->set_position({-10.0f, 1.5f, 3.0f});
-  m_cameras[1]->set_rotation({0, glm::radians(-90.0f), 0.0f});
-  m_falcon->add(m_cameras[1]);
 }
 
 void App::destroy()
@@ -241,51 +250,53 @@ float App::delta_time()
   return static_cast<float>(now - last) / frequency;
 }
 
+void App::draw_imgui(float dt)
+{
+  ImGui_ImplOpenGL3_NewFrame();
+  ImGui_ImplSDL2_NewFrame();
+  ImGui::NewFrame();
 
-void App::draw_imgui(){
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplSDL2_NewFrame();
-    ImGui::NewFrame();
+  ImGuiWindowFlags window_flags = 0;
+  window_flags |= ImGuiWindowFlags_NoTitleBar;
+  window_flags |= ImGuiWindowFlags_NoMove;
+  window_flags |= ImGuiWindowFlags_NoResize;
 
-    ImGuiWindowFlags window_flags = 0;
-    window_flags |= ImGuiWindowFlags_NoTitleBar;
-    window_flags |= ImGuiWindowFlags_NoMove;
-    window_flags |= ImGuiWindowFlags_NoResize;
-
-    ImGui::SetNextWindowPos(ImVec2(10, 10));
-    ImGui::SetNextWindowSize(ImVec2(145, 160));
-    ImGui::SetNextWindowBgAlpha(0.35f);
-    ImGui::Begin("Flightsim", nullptr, window_flags);
-    ImGui::Text("ALT:   %.0f m", m_airplane->position.y);
-    ImGui::Text("SPD:   %.0f km/h", m_airplane->get_speed());
-    ImGui::Text("THR:   %.0f %%", std::abs(m_airplane->throttle * 100.0f));
-    ImGui::Text("G:     %.1f", m_airplane->get_g());
-    ImGui::Text("AoA:   %.2f", m_airplane->get_aoa());
-    ImGui::End();
+  ImGui::SetNextWindowPos(ImVec2(10, 10));
+  ImGui::SetNextWindowSize(ImVec2(145, 135));
+  ImGui::SetNextWindowBgAlpha(0.35f);
+  ImGui::Begin("Flightsim", nullptr, window_flags);
+  ImGui::Text("ALT:   %.0f m", m_airplane->position.y);
+  ImGui::Text("SPD:   %.0f km/h", m_airplane->get_speed());
+  ImGui::Text("IAS:   %.0f km/h", m_airplane->get_ias());
+  ImGui::Text("THR:   %.0f %%", std::abs(m_airplane->throttle * 100.0f));
+  ImGui::Text("G:     %.1f", m_airplane->get_g());
+  ImGui::Text("AoA:   %.2f", m_airplane->get_aoa());
+  ImGui::Text("FPS:   %.1f", 1.0f / dt);
+  ImGui::End();
 }
 
-
-void App::game_loop(float dt){
-
-    m_airplane->update(dt);
+void App::game_loop(float dt)
+{
+  m_airplane->update(dt);
 
 #if 1
-    phi::CollisionInfo collision;
-    if (test_collision(m_airplane, m_terrain, &collision)) {
-      phi::RigidBody::impulse_collision(collision);
-    }
+  phi::CollisionInfo collision;
+  if (test_collision(m_airplane, m_terrain, &collision)) {
+    phi::RigidBody::impulse_collision(collision);
+  }
 #endif
 
-    m_falcon->set_transform(m_airplane->position, m_airplane->rotation);
+  m_falcon->set_transform(m_airplane->position, m_airplane->rotation);
 
-    float speed = 25.0f;
-    m_cameras[2]->set_transform(
-        glm::mix(m_cameras[2]->get_world_position(), m_camera_attachment->get_world_position(), dt * speed),
-        glm::mix(m_cameras[2]->get_world_rotation_quat(), m_camera_attachment->get_world_rotation_quat(), dt * speed));
+  float speed = 25.0f;
+  m_cameras[2]->set_transform(
+      glm::mix(m_cameras[2]->get_world_position(), m_camera_attachment->get_world_position(), dt * speed),
+      glm::mix(m_cameras[2]->get_world_rotation_quat(), m_camera_attachment->get_world_rotation_quat(), dt * speed)
+  );
 
-    m_controller.update(*m_cameras[0], m_falcon->get_position(), dt);
+  m_controller.update(*m_cameras[0], m_falcon->get_position(), dt);
 
-    m_renderer->render(*m_cameras[m_cameratype], *m_scene);
+  m_renderer->render(*m_cameras[m_cameratype], *m_scene);
 }
 
 int App::run()
@@ -297,7 +308,7 @@ int App::run()
     m_frames++;
     m_seconds += dt;
 
-    draw_imgui();
+    draw_imgui(dt);
 
     poll_events();
 

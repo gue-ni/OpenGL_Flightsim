@@ -196,8 +196,15 @@ struct Wing {
     auto [lift_coeff, drag_coeff] = airfoil->sample(angle_of_attack);
 
     if (flap_ratio > 0.0f) {
-      // lift coefficient changes based on flap deflection ie control input
-      float delta_lift_coeff = sqrt(flap_ratio) * airfoil->cl_max * control_input;
+      // at high speed there is lower max deflection
+      
+#if 0
+      float deflection_ratio = std::tanh(control_input) * (1.0f / (speed / 200));
+#else 
+      float deflection_ratio = control_input;
+#endif
+      // lift coefficient changes based on flap deflection
+      float delta_lift_coeff = sqrt(flap_ratio) * airfoil->cl_max * deflection_ratio;
       lift_coeff += delta_lift_coeff;
     }
 

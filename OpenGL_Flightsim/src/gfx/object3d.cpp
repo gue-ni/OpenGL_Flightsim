@@ -67,7 +67,11 @@ void Object3D::set_rotation(const glm::vec3& rot)
 
 void Object3D::rotate_by(const glm::vec3& rot) { set_rotation(get_rotation() + rot); }
 
-void Object3D::set_rotation_quat(const glm::quat& quat) { m_rotation = quat; }
+void Object3D::set_rotation_quat(const glm::quat& quat)
+{
+  m_rotation = quat;
+  m_dirty_dof = true;
+}
 
 glm::mat4 Object3D::get_local_transform() const
 {
@@ -158,7 +162,15 @@ glm::quat Object3D::get_world_rotation_quat() const
     return parent->get_world_rotation_quat() * m_rotation;
 }
 
-glm::vec3 Object3D::get_world_position() const { return glm::vec3(transform * glm::vec4(glm::vec3(0.0f), 1.0f)); }
+glm::vec3 Object3D::get_world_position() const { 
+    
+    if (m_dirty_dof)
+    {
+        // TODO: update
+        //update_world_matrix(true);
+    }
+    return glm::vec3(transform * glm::vec4(glm::vec3(0.0f), 1.0f));
+ }
 
 Object3D::Type Object3D::get_type() const { return Type::OBJECT3D; }
 

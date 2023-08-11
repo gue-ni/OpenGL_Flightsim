@@ -26,7 +26,7 @@ class App
   bool m_paused = false;
   bool m_orbitcamera = false;
 
-  int m_cameratype = 0;
+  int m_cameratype = 2;
 
   unsigned int m_frames = 0;
   float m_seconds = 0.0f;
@@ -50,14 +50,17 @@ class App
   // physics
   Airplane* m_airplane;
   phi::RigidBody* m_terrain;
+  Clipmap* m_clipmap;
 
   gfx::Mesh* m_falcon;
+
+  void init_airplane();
 
   // setup/teardown
   void init();
   void destroy();
 
-  void draw_imgui();
+  void draw_imgui(float dt);
 
   void game_loop(float dt);
 
