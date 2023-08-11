@@ -30,7 +30,7 @@ class Object3D
   enum Type { OBJECT3D, LIGHT, CAMERA };
 
   Object3D()
-      : id(counter++), parent(nullptr), transform(1.0), m_position(0.0f), m_rotation(glm::vec3(0.0f)), m_scale(1.0f)
+      : id(counter++), parent(nullptr), m_transform(1.0), m_position(0.0f), m_rotation(glm::vec3(0.0f)), m_scale(1.0f)
   {
   }
 
@@ -38,11 +38,10 @@ class Object3D
   static int counter;
 
   // which transform to inherit from parent
-  unsigned transform_flags = OBJ3D_TRANSFORM | OBJ3D_ROTATE | OBJ3D_SCALE;
+  unsigned transform_flags = (OBJ3D_TRANSFORM | OBJ3D_ROTATE | OBJ3D_SCALE);
 
   Object3D* parent = nullptr;
   std::vector<Object3D*> children;
-  glm::mat4 transform;
 
   bool receive_shadow = true;
   bool visible = true;
@@ -54,6 +53,7 @@ class Object3D
   void draw_children(RenderContext& context);
   virtual void draw_self(RenderContext& context);
 
+  // set local transform
   void set_scale(const glm::vec3& scale);
   void set_rotation(const glm::vec3& rotation);
   void rotate_by(const glm::vec3& rotation);
@@ -61,7 +61,10 @@ class Object3D
   void set_position(const glm::vec3& position);
   void set_transform(const Object3D& transform);
   void set_transform(const glm::vec3& position, const glm::quat& rotation);
-  void override_transform(const glm::mat4& matrix);
+  void set_transform(const glm::mat4& matrix);
+
+  bool is_dirty() const;
+  void update_transform(bool force_update = false); // must only be called on root
 
   glm::vec3 get_scale() const;
   glm::vec3 get_rotation() const;
@@ -72,7 +75,6 @@ class Object3D
 
   virtual Object3D::Type get_type() const;
 
-  void update_world_matrix(bool dirty_parent);
   glm::mat4 get_local_transform() const;
   glm::mat4 get_parent_transform() const;
   glm::mat4 get_transform() const;
@@ -80,12 +82,12 @@ class Object3D
   void traverse(const std::function<bool(Object3D*)>& func);
 
  protected:
-  bool m_dirty_dof = false;
-  bool m_dirty_transform = false;
+  bool m_dirty = false; // transform matrix has to be recalculated
 
   glm::vec3 m_position;
   glm::vec3 m_scale;
   glm::quat m_rotation;
+  glm::mat4 m_transform;
 };
 
 }  // namespace gfx

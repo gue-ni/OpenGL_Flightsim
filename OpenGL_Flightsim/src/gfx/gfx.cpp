@@ -61,13 +61,13 @@ int Geometry::get_stride(const VertexLayout& layout)
 
 Object3D::Type Camera::get_type() const { return Object3D::Type::CAMERA; }
 
-glm::mat4 Camera::get_view_matrix() const { return glm::inverse(transform); }
+glm::mat4 Camera::get_view_matrix() const { return glm::inverse(m_transform); }
 
 glm::mat4 Camera::get_projection_matrix() const { return m_projection; }
 
 void Camera::look_at(const glm::vec3& target)
 {
-  override_transform(glm::inverse(glm::lookAt(m_position, target, m_up)));
+  set_transform(glm::inverse(glm::lookAt(m_position, target, m_up)));
 }
 
 Object3D::Type Light::get_type() const { return Object3D::Type::LIGHT; }
@@ -564,7 +564,7 @@ void Renderer2::render(Camera& camera, Object3D& scene)
   context.shader_cache = &m_shaders;
 
   // update transforms
-  scene.update_world_matrix(false);
+  scene.update_transform();
 
   // draw scene
   scene.draw(context);

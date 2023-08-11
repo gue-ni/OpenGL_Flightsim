@@ -1,5 +1,7 @@
 #include "object3d.h"
 
+#include <glm/gtx/matrix_decompose.hpp>
+
 #include "gfx.h"
 
 namespace gfx
@@ -37,13 +39,13 @@ glm::vec3 Object3D::get_scale() const { return m_scale; }
 void Object3D::set_scale(const glm::vec3& scale)
 {
   m_scale = scale;
-  m_dirty_dof = true;
+  m_dirty = true;
 }
 
 void Object3D::set_position(const glm::vec3& pos)
 {
   m_position = pos;
-  m_dirty_dof = true;
+  m_dirty = true;
 }
 
 void Object3D::set_transform(const Object3D& transform)
@@ -62,7 +64,7 @@ void Object3D::set_transform(const glm::vec3& position, const glm::quat& rotatio
 void Object3D::set_rotation(const glm::vec3& rot)
 {
   m_rotation = glm::quat(rot);
-  m_dirty_dof = true;
+  m_dirty = true;
 }
 
 void Object3D::rotate_by(const glm::vec3& rot) { set_rotation(get_rotation() + rot); }
@@ -70,7 +72,7 @@ void Object3D::rotate_by(const glm::vec3& rot) { set_rotation(get_rotation() + r
 void Object3D::set_rotation_quat(const glm::quat& quat)
 {
   m_rotation = quat;
-  m_dirty_dof = true;
+  m_dirty = true;
 }
 
 glm::mat4 Object3D::get_local_transform() const
@@ -90,38 +92,50 @@ void Object3D::traverse(const std::function<bool(Object3D*)>& func)
   }
 }
 
-void Object3D::override_transform(const glm::mat4& matrix)
+void Object3D::set_transform(const glm::mat4& matrix)
 {
-  m_dirty_transform = true;
-  m_dirty_dof = true;
-  transform = matrix;
-  // TODO: relcalculate position, rotation etc
+  glm::vec3 scale;
+  glm::quat rotation;
+  glm::vec3 translation;
+  glm::vec3 skew;
+  glm::vec4 perspective;
+
+  glm::decompose(matrix, scale, rotation, translation, skew, perspective);
+
+  set_scale(scale);
+  set_rotation_quat(rotation);
+  set_position(translation);
 }
+
+bool Object3D::is_dirty() const { return m_dirty; }
 
 glm::mat4 Object3D::get_transform() const
 {
-  if (parent)
-    return get_parent_transform() * get_local_transform();
-  else
-    return get_local_transform();
+  // this function must only be called after updating the transform
+  if (m_dirty) {
+    assert(!m_dirty);
+  }
+  return m_transform;
 }
 
-void Object3D::update_world_matrix(bool dirty_parent)
+void Object3D::update_transform(bool force_update)
 {
-  bool dirty = m_dirty_dof || dirty_parent;
+  bool updated = false;
 
-  if (dirty && !m_dirty_transform) {
-    if (parent)
-      transform = get_parent_transform() * get_local_transform();
-    else
-      transform = get_local_transform();
+  if (m_dirty || (parent && parent->is_dirty()) || force_update) {
+    if (parent) {
+      m_transform = get_parent_transform() * get_local_transform();
+    } else {
+      m_transform = get_local_transform();
+    }
+
+    updated = true;
+    m_dirty = false;
   }
 
   for (auto child : children) {
-    child->update_world_matrix(dirty || m_dirty_transform);
+    child->update_transform(updated);
   }
-
-  m_dirty_dof = m_dirty_transform = false;
 }
 
 glm::mat4 Object3D::get_parent_transform() const
@@ -129,7 +143,7 @@ glm::mat4 Object3D::get_parent_transform() const
   assert(parent != nullptr);
 
   if (transform_flags == (OBJ3D_TRANSFORM | OBJ3D_ROTATE | OBJ3D_SCALE)) {
-    return parent->transform;
+    return parent->get_transform();
   }
 
   glm::mat4 parent_transform(1.0f);
@@ -162,15 +176,7 @@ glm::quat Object3D::get_world_rotation_quat() const
     return parent->get_world_rotation_quat() * m_rotation;
 }
 
-glm::vec3 Object3D::get_world_position() const { 
-    
-    if (m_dirty_dof)
-    {
-        // TODO: update
-        //update_world_matrix(true);
-    }
-    return glm::vec3(transform * glm::vec4(glm::vec3(0.0f), 1.0f));
- }
+glm::vec3 Object3D::get_world_position() const { return glm::vec3(get_transform() * glm::vec4(glm::vec3(0.0f), 1.0f)); }
 
 Object3D::Type Object3D::get_type() const { return Type::OBJECT3D; }
 

@@ -106,7 +106,7 @@ void App::init()
   m_camera_attachment->set_position({-20.0f, 4.5f, 0.0f});
   m_camera_attachment->set_rotation({0, glm::radians(-90.0f), 0.0f});
   m_falcon->add(m_camera_attachment);
-  m_cameras[2]->set_transform(m_camera_attachment->get_world_position(), glm::quat(look_forward));
+  m_cameras[2]->set_transform(m_airplane->position, glm::quat(look_forward));
 
   // attached camera
   m_cameras[1]->set_position({-10.0f, 1.5f, 3.0f});
@@ -114,7 +114,7 @@ void App::init()
   m_falcon->add(m_cameras[1]);
 
   // setup all transforms
-  m_scene->update_world_matrix(false);
+  m_scene->update_transform();
 }
 
 void App::init_airplane()

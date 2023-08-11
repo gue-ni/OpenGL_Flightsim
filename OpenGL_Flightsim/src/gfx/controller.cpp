@@ -9,7 +9,7 @@ void FirstPersonController::update(Object3D& target, float dt)
 {
   const auto pos = target.get_position();
   target.set_position(pos + m_velocity * dt);
-  target.override_transform(glm::inverse(glm::lookAt(pos, pos + m_front, m_up)));
+  target.set_transform(glm::inverse(glm::lookAt(pos, pos + m_front, m_up)));
   m_velocity = glm::vec3(0.0f);
 }
 
@@ -67,7 +67,8 @@ void OrbitController::update(Object3D& target, const glm::vec3& center, float dt
 
   const auto pos = center + offset;
   target.set_position(pos);
-  target.override_transform(glm::inverse(glm::lookAt(pos, pos - front, glm::vec3(0, 1, 0))));
+  target.set_transform(glm::inverse(glm::lookAt(pos, pos - front, glm::vec3(0, 1, 0))));
+  target.update_transform();
 }
 
 void OrbitController::move_mouse(float x, float y)
