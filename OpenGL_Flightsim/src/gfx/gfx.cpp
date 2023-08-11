@@ -525,12 +525,12 @@ void Mesh::draw_self(RenderContext& context)
 Renderer2::Renderer2(GLsizei width, GLsizei height) : m_width(width), m_height(height)
 {
   // init renderer
-    
-
+  std::cout << "========== OpenGL ==========\n";
   std::cout << glGetString(GL_VERSION) << std::endl;
   std::cout << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
   std::cout << glGetString(GL_VENDOR) << std::endl;
   std::cout << glGetString(GL_RENDERER) << std::endl;
+  std::cout << "============================\n";
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glClearColor(1.0f, 1.0f, 0.0f, 1.0f);
@@ -570,6 +570,5 @@ void Renderer2::render(Camera& camera, Object3D& scene)
   scene.draw(context);
 }
 
-void Renderer2::render2(Camera& camera, Object3D& scene) { scene.update_world_matrix(false); }
 
 }  // namespace gfx

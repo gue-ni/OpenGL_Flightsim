@@ -5,8 +5,8 @@
 #include <SDL.h>
 #include <SDL_opengl.h>
 
-#include "gfx/gfx.h"
 #include "flightmodel.h"
+#include "gfx/gfx.h"
 
 struct GameObject {
   gfx::Mesh* mesh;
@@ -20,7 +20,9 @@ class App
 
   bool m_quit = false;
   bool m_paused = false;
-  bool m_orbitcamera = true;
+  bool m_orbitcamera = false;
+
+  int m_cameratype = 0;
 
   unsigned int m_frames = 0;
   float m_seconds = 0.0f;
@@ -33,7 +35,7 @@ class App
   SDL_Joystick* m_sdljoystick;
 
   // graphics
-  gfx::Camera* m_camera;
+  gfx::Camera* m_cameras[3];
   gfx::Object3D* m_scene;
   gfx::Renderer2* m_renderer;
 
@@ -43,13 +45,13 @@ class App
 
   // physics
   Airplane* m_airplane;
-  phi::RigidBody *m_terrain;
+  phi::RigidBody* m_terrain;
 
   gfx::Mesh* m_falcon;
 
   // setup/teardown
-  void init_app();
-  void destroy_app();
+  void init();
+  void destroy();
 
   // user input
   void poll_events();

@@ -257,13 +257,8 @@ class Renderer2
 
   // void render_shadow_pass(Camera& camera, Object3D& scene);
 
-  void render_with_texture(Camera& camera, gl::ShaderPtr shader, std::vector<MeshPtr> objects);
-
   // render scene
   void render(Camera& camera, Object3D& scene);
-
-
-  void render2(Camera& camera, Object3D& scene);
 
   // void render(Camera& camera, Object3D& scene, RenderTarget& render_target);
 };

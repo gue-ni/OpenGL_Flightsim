@@ -40,27 +40,33 @@ App::App(int w, int h, const std::string& name) : m_width(w), m_height(h), m_con
     m_sdljoystick = SDL_JoystickOpen(0);
   }
 
-  init_app();
+  init();
 }
 
 App::~App()
 {
+  destroy();
   SDL_GL_DeleteContext(m_context);
   SDL_DestroyWindow(m_window);
   SDL_Quit();
-  destroy_app();
 }
 
-void App::init_app()
+void App::init()
 {
   m_renderer = new gfx::Renderer2(m_width, m_height);
 
   m_scene = new gfx::Object3D();
 
-  m_camera = new gfx::Camera(glm::radians(45.0f), (float)m_width / (float)m_height, 1.0f, 150000.0f);
+  float fov = glm::radians(45.0f);
+  float aspect_ratio = (float)m_width / (float)m_height;
+  float near = 0.1f, far = 150000.0f;
 
-  m_camera->set_position(glm::vec3(0, 0, 20));
-  m_scene->add(m_camera);
+  m_cameras[0] = new gfx::Camera(fov, aspect_ratio, near, far);
+  m_scene->add(m_cameras[0]);
+
+  m_cameras[1] = new gfx::Camera(fov, aspect_ratio, near, far);
+  m_cameras[2] = new gfx::Camera(fov, aspect_ratio, near, far);
+  m_scene->add(m_cameras[2]);
 
 #if 1
   const std::string skybox_path = "assets/textures/skybox/1/";
@@ -133,11 +139,20 @@ void App::init_app()
   m_camera_attachment->set_position({-25.0f, 5, 0});
   m_camera_attachment->set_rotation({0, glm::radians(-90.0f), 0.0f});
   m_falcon->add(m_camera_attachment);
+
+  m_cameras[2]->set_transform(m_airplane->position, m_airplane->rotation);
+#if 0
+  m_camera_attachment->add(m_camera);
+#endif
+
+  m_cameras[1]->set_position({-20.0f, 3.5f, 0.0f});
+  m_cameras[1]->set_rotation({0, glm::radians(-90.0f), 0.0f});
+  m_falcon->add(m_cameras[1]);
 }
 
-void App::destroy_app()
+void App::destroy()
 {
-  delete m_camera;
+  delete m_cameras[0];
   delete m_renderer;
   delete m_scene;
 }
@@ -183,7 +198,7 @@ void App::event_keydown(SDL_Keycode key)
       break;
     }
     case SDLK_o:
-      m_orbitcamera = !m_orbitcamera;
+      m_cameratype = (m_cameratype + 1) % 3;
       break;
   }
 }
@@ -218,7 +233,7 @@ float App::delta_time()
   last = now;
   now = SDL_GetPerformanceCounter();
   float frequency = static_cast<float>(SDL_GetPerformanceFrequency());
-  return static_cast<float>((now - last) / frequency);
+  return static_cast<float>(now - last) / frequency;
 }
 
 void App::execute()
@@ -244,15 +259,20 @@ void App::execute()
 
     m_falcon->set_transform(m_airplane->position, m_airplane->rotation);
 
-    if (m_orbitcamera) {
-      m_controller.update(*m_camera, m_falcon->get_position(), dt);
-    } else {
-      m_camera->set_transform(m_camera_attachment->get_world_position(),
-                              m_camera_attachment->get_world_rotation_quat());
-    }
+    gfx::Camera* camera = nullptr;
+
+    float speed = 10.1f;
+    m_cameras[2]->set_transform(
+        glm::mix(m_cameras[2]->get_world_position(), m_camera_attachment->get_world_position(), dt * speed),
+        glm::mix(m_cameras[2]->get_world_rotation_quat(), m_camera_attachment->get_world_rotation_quat(), dt * speed));
+
+    m_controller.update(*m_cameras[0], m_falcon->get_position(), dt);
+
+    camera = m_cameras[m_cameratype];
+
 
     // render scene
-    m_renderer->render(*m_camera, *m_scene);
+    m_renderer->render(*camera, *m_scene);
 
     SDL_GL_SwapWindow(m_window);
   }

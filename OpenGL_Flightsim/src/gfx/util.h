@@ -39,7 +39,7 @@ class Image
  public:
   Image(const std::string& path, bool flip_vertically = false);
   ~Image();
-  glm::vec3 sample(const glm::vec2 uv) const;
+  glm::vec3 sample(const glm::vec2 uv, GLint filter = GL_NEAREST) const;
   unsigned char* data() const;
   int width() const;
   int height() const;
