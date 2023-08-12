@@ -1,43 +1,48 @@
 #version 330 core
 
 uniform vec3 u_SolidObjectColor;
-
+uniform vec3 u_CameraPos;
 uniform sampler2D u_Texture_01;
+uniform samplerCube u_EnvironmentMap;
 
+in vec3 FragPos;
 in vec2 TexCoords;
 in vec3 Normal;
-
+in vec3 ReflectedVector;
 
 vec3 phongLighting(vec3 texColor, vec3 lightDir, vec3 lightColor)
 {
-  // ambient
+  // TODO: remove hardcoded values
   float ka = 0.5;
+  float kd = 0.5;
+  float ks = 0.1;
+  float alpha = 20.0;
+
+  // ambient
   vec3 ambient = ka * lightColor;
   
   // diffuse 
-  float kd = 0.5f;
   vec3 diffuse = kd * max(dot(Normal, lightDir), 0.0) * lightColor;
   
   // specular
-#if 0
-  vec3 u_ViewDir = normalize(u_CameraPosition - FragPos);
-  vec3 reflectDir = reflect(-lightDir, norm);  
-  vec3 specular = ks * pow(max(dot(u_ViewDir, reflectDir), 0.0), alpha) * light.color;
-#endif
+  vec3 viewDir = normalize(u_CameraPos - FragPos);
+  vec3 reflectDir = reflect(-lightDir, Normal);  
+  vec3 specular = ks * pow(max(dot(viewDir, reflectDir), 0.0), alpha) * lightColor;
 
   return (ambient + diffuse) * texColor;
 }
 
 void main()
 {
-#if 0
-  gl_FragColor = vec4(u_SolidObjectColor, 1.0);
-#else
-
   vec3 texColor = texture(u_Texture_01, TexCoords).rgb;
+  vec3 reflectedColor = texture(u_EnvironmentMap, ReflectedVector).rgb;
 
-  vec3 color = phongLighting(texColor, vec3(0,1,0), vec3(1,1,1));
+  vec3 lightDir = vec3(0,1,0);
+  vec3 lightColor = vec3(1,1,1);
 
-  gl_FragColor = vec4(color, 1);
- #endif
+  float shininess = 0.3;
+
+  vec3 color = phongLighting(mix(texColor, reflectedColor, shininess), lightDir, lightColor);
+
+  gl_FragColor = vec4(color, 1.0);
 }

@@ -489,6 +489,7 @@ void Mesh::draw_self(RenderContext& context)
     // camera
     shader->set_uniform("u_View", camera->get_view_matrix());
     shader->set_uniform("u_Projection", camera->get_projection_matrix());
+    shader->set_uniform("u_CameraPos", camera->get_world_position());
 
     // lights
     // shader.set_uniform("u_DirectionalLight_Direction", light.direction);
