@@ -199,12 +199,17 @@ void App::event_mousewheel(float value) { m_controller.radius *= (1.0 + glm::sig
 void App::event_keydown(SDL_Keycode key)
 {
   switch (key) {
-    case SDLK_ESCAPE: {
+    case SDLK_ESCAPE:
       m_quit = true;
       break;
-    }
     case SDLK_o:
       m_cameratype = (m_cameratype + 1) % m_cameras.size();
+      break;
+    case SDLK_i:
+      m_clipmap->wireframe = !m_clipmap->wireframe;
+      break;
+    case SDLK_p:
+      m_paused = !m_paused;
       break;
   }
 }
@@ -269,21 +274,21 @@ void App::draw_imgui(float dt)
 
 void App::game_loop(float dt)
 {
-  m_airplane->update(dt);
+  if (!m_paused) {
+    m_airplane->update(dt);
 
-#if 1
-  phi::CollisionInfo collision;
-  if (test_collision(m_airplane, m_terrain, &collision)) {
-    phi::RigidBody::impulse_collision(collision);
+    phi::CollisionInfo collision;
+    if (test_collision(m_airplane, m_terrain, &collision)) {
+      phi::RigidBody::impulse_collision(collision);
+    }
+
+    m_falcon->set_transform(m_airplane->position, m_airplane->rotation);
+
+    const float speed = 25.0f;
+    m_cameras[2]->set_transform(
+        glm::mix(m_cameras[2]->get_world_position(), m_camera_attachment->get_world_position(), dt * speed),
+        glm::mix(m_cameras[2]->get_world_rotation_quat(), m_camera_attachment->get_world_rotation_quat(), dt * speed));
   }
-#endif
-
-  m_falcon->set_transform(m_airplane->position, m_airplane->rotation);
-
-  float speed = 25.0f;
-  m_cameras[2]->set_transform(
-      glm::mix(m_cameras[2]->get_world_position(), m_camera_attachment->get_world_position(), dt * speed),
-      glm::mix(m_cameras[2]->get_world_rotation_quat(), m_camera_attachment->get_world_rotation_quat(), dt * speed));
 
   m_controller.update(*m_cameras[0], m_falcon->get_position(), dt);
 
