@@ -85,8 +85,8 @@ void App::init()
   m_terrain = new phi::RigidBody();
   m_terrain->active = false;
   m_terrain->mass = 10000.0f;
-  m_terrain->set_inertia(phi::inertia::sphere(m_terrain->mass, 1000.0f));
   m_terrain->collider = new Heightmap(m_clipmap);
+  m_terrain->set_inertia(phi::inertia::sphere(m_terrain->mass, 1000.0f));
 #endif
 
   init_airplane();
@@ -95,15 +95,21 @@ void App::init()
 
   // smooth follow camera
   m_camera_attachment = new gfx::Object3D();
-  m_camera_attachment->set_position({-20.0f, 4.5f, 0.0f});
+  glm::vec3 offset(-20.0f, 4.5f, 0.0f);
+  m_camera_attachment->set_position(offset);
   m_camera_attachment->set_rotation({0, glm::radians(-90.0f), 0.0f});
   m_falcon->add(m_camera_attachment);
-  m_cameras[2]->set_transform(m_airplane->position, glm::quat(look_forward));
 
   // attached camera
   m_cameras[1]->set_position({-10.0f, 1.5f, 3.0f});
   m_cameras[1]->set_rotation(look_forward);
   m_falcon->add(m_cameras[1]);
+
+  float height = m_clipmap->get_terrain_height(glm::vec2(0));
+  m_airplane->position = glm::vec3(0, height + 2500.0f, 0);
+  m_airplane->velocity = glm::vec3(300, 0, 0);
+
+  m_cameras[2]->set_transform(m_airplane->position - offset, glm::quat(look_forward));
 
   // setup all transforms
   m_scene->update_transform();
@@ -114,10 +120,10 @@ void App::init_airplane()
   const std::string obj = "assets/models/falcon.obj";
   const std::string jpg = "assets/textures/falcon.jpg";
 
-  gfx::gl::Texture::Params params = {.flip_vertically = true, .texture_mag_filter = GL_LINEAR};
-  auto texture = std::make_shared<gfx::gl::Texture>(jpg, params);
-  auto geometry = std::make_shared<gfx::Geometry>(gfx::load_obj(obj), gfx::Geometry::POS_NORM_UV);
-  auto material = make_shared<gfx::Material>("shaders/mesh", texture);
+  const gfx::gl::Texture::Params params = {.flip_vertically = true, .texture_mag_filter = GL_LINEAR};
+  const auto texture = std::make_shared<gfx::gl::Texture>(jpg, params);
+  const auto geometry = std::make_shared<gfx::Geometry>(gfx::load_obj(obj), gfx::Geometry::POS_NORM_UV);
+  const auto material = make_shared<gfx::Material>("shaders/mesh", texture);
 
   m_falcon = new gfx::Mesh(geometry, material);
   m_scene->add(m_falcon);
@@ -151,9 +157,6 @@ void App::init_airplane()
       new LandingGear(glm::vec3(4.0f, -1.5f, 0.0f), glm::vec3(-1.0f, -1.5f, +2.0f), glm::vec3(-1.0f, -1.5f, -2.0f));
 
   m_airplane = new Airplane(mass, inertia, wings, {engine}, collider);
-  float height = m_clipmap->get_terrain_height(glm::vec2(0, 0));
-  m_airplane->position = glm::vec3(0, height + 500.0f, 0);
-  m_airplane->velocity = glm::vec3(300, 0, 0);
 }
 
 void App::destroy()
@@ -280,14 +283,20 @@ void App::game_loop(float dt)
     phi::CollisionInfo collision;
     if (test_collision(m_airplane, m_terrain, &collision)) {
       phi::RigidBody::impulse_collision(collision);
+
+      float ke = phi::calc::kinetic_energy(m_airplane->mass, m_airplane->get_speed());
+      if (ke > 10000.0f) {
+        m_paused = true;
+      }
     }
 
     m_falcon->set_transform(m_airplane->position, m_airplane->rotation);
+    m_falcon->update_transform(true);
 
-    const float speed = 25.0f;
+    const float speed = glm::clamp(25.0f * dt, 0.0f, 1.0f);
     m_cameras[2]->set_transform(
-        glm::mix(m_cameras[2]->get_world_position(), m_camera_attachment->get_world_position(), dt * speed),
-        glm::mix(m_cameras[2]->get_world_rotation_quat(), m_camera_attachment->get_world_rotation_quat(), dt * speed));
+        glm::mix(m_cameras[2]->get_world_position(), m_camera_attachment->get_world_position(), speed),
+        glm::mix(m_cameras[2]->get_world_rotation_quat(), m_camera_attachment->get_world_rotation_quat(), speed));
   }
 
   m_controller.update(*m_cameras[0], m_falcon->get_position(), dt);
