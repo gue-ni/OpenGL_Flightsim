@@ -73,53 +73,6 @@ glm::mat4 Light::light_space_matrix()
   return light_projection * light_view;
 }
 
-#if 0
-void Renderer::render(Camera& camera, Object3D& scene)
-{
-  scene.update_world_matrix(false);
-
-  RenderContext context;
-  context.camera = &camera;
-  context.shadow_map = shadow_map;
-  context.shadow_caster = nullptr;
-  context.background_color = background;
-
-  scene.traverse([&context](Object3D* obj) {
-    if (obj->get_type() == Object3D::Type::LIGHT) {
-      Light* light = dynamic_cast<Light*>(obj);
-      context.lights.push_back(light);
-
-      if (light->cast_shadow) {
-        context.shadow_caster = light;
-      }
-    }
-
-    return true;
-  });
-
-  if (shadow_map && context.shadow_caster) {
-    context.shadow_pass = true;
-    glViewport(0, 0, shadow_map->width, shadow_map->height);
-    glBindFramebuffer(GL_FRAMEBUFFER, shadow_map->fbo);
-    glClear(GL_DEPTH_BUFFER_BIT);
-    scene.draw(context);
-  }
-
-  context.shadow_pass = false;
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  glViewport(0, 0, m_width, m_height);
-  glClearColor(background.x, background.y, background.z, 1.0f);
-  // glClearColor(1, 0, 1, 1);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-#if 1
-  scene.draw(context);
-#else
-  screen_quad->draw(context);
-#endif
-}
-#endif
-
 ShadowMap::ShadowMap(unsigned int shadow_width, unsigned int shadow_height)
     : width(shadow_width), height(shadow_height), shader("shaders/depth")
 {
@@ -520,14 +473,26 @@ Renderer::Renderer(GLsizei width, GLsizei height) : m_width(width), m_height(hei
   glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
   // init skybox
+#if 1
+  const std::string skybox_path = "assets/textures/skybox/2/";
+  const std::array<std::string, 6>& faces = {
+      skybox_path + "right.png",  skybox_path + "left.png",  skybox_path + "top.png",
+      skybox_path + "bottom.png", skybox_path + "front.png", skybox_path + "back.png",
+  };
+  m_fog_color = gfx::rgb(0x5e5e6e);
+#else
   const std::string skybox_path = "assets/textures/skybox/1/";
   const std::array<std::string, 6>& faces = {
       skybox_path + "right.jpg",  skybox_path + "left.jpg",  skybox_path + "top.jpg",
       skybox_path + "bottom.jpg", skybox_path + "front.jpg", skybox_path + "back.jpg",
   };
+  m_fog_color = gfx::rgb(222, 253, 255);
+#endif
+
   m_skybox = std::make_shared<gfx::Skybox>(faces);
   m_skybox->set_scale(glm::vec3(10.0f));
   m_skybox->update_transform();
+
 }
 
 void Renderer::render_shadows(RenderContext& context)
@@ -549,11 +514,11 @@ void Renderer::render(Camera* camera, Object3D* scene)
   RenderContext context;
   context.camera = camera;
   context.shadow_pass = false;
-  context.shadow_map = nullptr;
-  context.shadow_caster = nullptr;
-  context.background_color = gfx::rgb(222, 253, 255);
   context.shaders = &m_shaders;
   context.env_map = m_skybox->get_material()->get_texture();
+
+  // depends on skybox
+  context.fog_color = m_fog_color;
 
   // update transforms
   scene->update_transform();

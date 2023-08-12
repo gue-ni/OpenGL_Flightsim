@@ -54,16 +54,11 @@ struct ShadowMap {
 };
 
 struct RenderContext {
-  Camera* camera;
-  Light* shadow_caster;
-  ShadowMap* shadow_map;
-  ShaderCache* shaders = nullptr;
-
-  gl::TexturePtr env_map = nullptr;
-
-  std::vector<Light*> lights;
   bool shadow_pass;
-  glm::vec3 background_color;
+  Camera* camera;
+  ShaderCache* shaders = nullptr;
+  gl::TexturePtr env_map = nullptr;
+  glm::vec3 fog_color;
 };
 
 class Camera : public Object3D
@@ -211,12 +206,14 @@ class Renderer
   GLsizei m_width, m_height;
   ShaderCache m_shaders;
   gfx::MeshPtr m_skybox;
+  glm::vec3 m_fog_color;
 
   // For the future:
   // MeshPtr m_screenquad;
   // ShadowMap m_shadowmap;
 
  public:
+
   Renderer(GLsizei width, GLsizei height);
 
   void render_skybox(RenderContext& context);

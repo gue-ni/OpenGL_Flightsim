@@ -19,6 +19,9 @@ Image::Image(const std::string& path, bool flip_vertically)
 {
   stbi_set_flip_vertically_on_load(flip_vertically);
   m_data = stbi_load(path.c_str(), &m_width, &m_height, &m_channels, 0);
+  if (m_data == nullptr) {
+    std::cerr << "Failed to open Image: " << path << std::endl;
+  }
   assert(m_data != nullptr);
 }
 
@@ -37,13 +40,15 @@ glm::vec3 Image::sample(const glm::vec2 uv, GLint filter) const
       break;
     }
     case GL_LINEAR: {
-      assert(false);
-
+#if 0
       glm::ivec2 lo = coord;
       glm::ivec2 hi = lo + glm::ivec2(1.0f);
       glm::vec2 t = glm::vec2(hi) - coord;
 
-      //glm::vec2 tmp = glm::mix()
+      // glm::vec2 tmp = glm::mix()
+#else
+      assert(false);
+#endif
       break;
     }
     default:

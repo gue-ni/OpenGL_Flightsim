@@ -21,7 +21,7 @@ uniform bool u_UseTexture;
 uniform sampler2D u_Texture_01;
 
 uniform vec3 u_SolidObjectColor;
-uniform vec3 u_BackgroundColor;
+uniform vec3 u_FogColor;
 
 struct Light {
 	int type; // POINT = 0, DIRECTIONAL = 1
@@ -162,7 +162,7 @@ void main()
 
 	float tmp = dot(vec3(0,1,0), u_CameraPosition - FragPos);
 
-	vec4 fogColor = vec4(u_BackgroundColor, 1.0);
+	vec4 fogColor = vec4(u_FogColor, 1.0);
 	float fogMin = 4.1;
 	float fogMax = 100.0;
 	float dist = length(u_CameraPosition - FragPos);
