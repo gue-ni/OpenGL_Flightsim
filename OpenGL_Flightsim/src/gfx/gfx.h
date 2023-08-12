@@ -57,12 +57,12 @@ struct RenderContext {
   Camera* camera;
   Light* shadow_caster;
   ShadowMap* shadow_map;
-  ShaderCache* shader_cache = nullptr;
+  ShaderCache* shaders = nullptr;
 
-  gl::TexturePtr environment_map = nullptr;
+  gl::TexturePtr env_map = nullptr;
 
   std::vector<Light*> lights;
-  bool is_shadow_pass;
+  bool shadow_pass;
   glm::vec3 background_color;
 };
 

@@ -179,7 +179,7 @@ class Clipmap : public gfx::Object3D
 
   void draw_self(gfx::RenderContext& context) override
   {
-    if (context.is_shadow_pass) {
+    if (context.shadow_pass) {
       return;
     }
     auto camera_pos = context.camera->get_world_position();

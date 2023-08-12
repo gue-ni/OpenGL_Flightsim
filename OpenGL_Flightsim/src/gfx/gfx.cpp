@@ -98,14 +98,14 @@ void Renderer::render(Camera& camera, Object3D& scene)
   });
 
   if (shadow_map && context.shadow_caster) {
-    context.is_shadow_pass = true;
+    context.shadow_pass = true;
     glViewport(0, 0, shadow_map->width, shadow_map->height);
     glBindFramebuffer(GL_FRAMEBUFFER, shadow_map->fbo);
     glClear(GL_DEPTH_BUFFER_BIT);
     scene.draw(context);
   }
 
-  context.is_shadow_pass = false;
+  context.shadow_pass = false;
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glViewport(0, 0, m_width, m_height);
   glClearColor(background.x, background.y, background.z, 1.0f);
@@ -372,7 +372,7 @@ Billboard::Billboard(gl::TexturePtr sprite, glm::vec3 color)
 
 void Billboard::draw_self(RenderContext& context)
 {
-  if (context.is_shadow_pass) return;
+  if (context.shadow_pass) return;
 
   auto camera = context.camera;
 
@@ -441,12 +441,12 @@ Mesh::Mesh(const GeometryPtr& geometry, const MaterialPtr& material) : m_materia
 
 void Mesh::draw_self(RenderContext& context)
 {
-  if (!context.is_shadow_pass && context.shader_cache) {
+  if (!context.shadow_pass && context.shaders) {
     auto camera = context.camera;
 
     // get shader from cache
     std::string shader_name = m_material->get_shader_name();
-    gl::ShaderPtr shader = context.shader_cache->get_shader(shader_name);
+    gl::ShaderPtr shader = context.shaders->get_shader(shader_name);
 
     shader->bind();
 
@@ -471,7 +471,7 @@ void Mesh::draw_self(RenderContext& context)
     shader->set_uniform("u_Texture_01", 5);
 
     // environment map
-    context.environment_map->bind(6);
+    context.env_map->bind(6);
     shader->set_uniform("u_EnvironmentMap", 6);
 
     glm::vec3 rgb = glm::vec3(1.0f, 0.0f, 0.0f);
@@ -548,12 +548,12 @@ void Renderer::render(Camera* camera, Object3D* scene)
 
   RenderContext context;
   context.camera = camera;
-  context.is_shadow_pass = false;
+  context.shadow_pass = false;
   context.shadow_map = nullptr;
   context.shadow_caster = nullptr;
   context.background_color = gfx::rgb(222, 253, 255);
-  context.shader_cache = &m_shaders;
-  context.environment_map = m_skybox->get_material()->get_texture();
+  context.shaders = &m_shaders;
+  context.env_map = m_skybox->get_material()->get_texture();
 
   // update transforms
   scene->update_transform();
