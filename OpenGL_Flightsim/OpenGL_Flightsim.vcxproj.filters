@@ -73,8 +73,8 @@
     <None Include="shaders\billboard.vert" />
     <None Include="shaders\phong.vert" />
     <None Include="shaders\terrain.vert" />
-    <None Include="shaders\pbr.frag" />
-    <None Include="shaders\pbr.vert" />
+    <None Include="shaders\mesh.frag" />
+    <None Include="shaders\mesh.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\gfx\gfx.h">

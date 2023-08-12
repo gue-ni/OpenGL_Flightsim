@@ -135,8 +135,8 @@ class Geometry : public BaseGeometry
 class Material
 {
  public:
-  // glm::vec3 emissive, ambient, diffuse, specular;
-  // float alpha, shininess;
+  glm::vec3 emissive, ambient, diffuse, specular;
+  float alpha, shininess;
 
   Material(const std::string& shader_name, const gl::TexturePtr& texture)
       : m_shader_name(shader_name), m_texture(texture)
@@ -201,49 +201,11 @@ class Skybox : public Mesh
 // TODO
 class RenderTarget
 {
-};
-
-#if 0
-class Renderer
-{
  public:
-  Renderer(unsigned int width, unsigned int height)
-      : shadow_map(new ShadowMap(1024, 1024)), m_width(width), m_height(height), background(rgb(222, 253, 255))
-  {
-    const std::vector<float> quad_vertices = {
-        -1.0f, 1.0f,  0.0f, 0.0f, 1.0f,  // top left
-        -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,  // bottom left
-        1.0f,  1.0f,  0.0f, 1.0f, 1.0f,  // top right
-
-        1.0f,  1.0f,  0.0f, 1.0f, 1.0f,  // top right
-        -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,  // bottom left
-        1.0f,  -1.0f, 0.0f, 1.0f, 0.0f,  // bottom right
-    };
-
-#if 0
-    auto geometry = std::make_shared<Geometry>(quad_vertices, Geometry::POS_UV);
-    auto texture = std::make_shared<gfx::gl::Texture>(shadow_map->depth_map);
-    auto material = std::make_shared<ScreenMaterial>(texture);
-    screen_quad = std::make_shared<Mesh>(geometry, material);
-#endif
-  }
-
-  ~Renderer()
-  {
-    if (shadow_map) delete shadow_map;
-  }
-
-  void render(Camera& camera, Object3D& scene);
-  glm::vec3 background;
-
- private:
-  unsigned int m_width, m_height;
-  ShadowMap* shadow_map = nullptr;
-  std::shared_ptr<Mesh> screen_quad;
+  gl::FrameBuffer fbo;
 };
-#endif
 
-class Renderer2
+class Renderer
 {
  private:
   GLsizei m_width, m_height;
@@ -253,20 +215,16 @@ class Renderer2
   // For the future:
   // MeshPtr m_screenquad;
   // ShadowMap m_shadowmap;
-  // std::optional<gl::FrameBuffer> m_framebuffer;
 
  public:
-
-  Renderer2(GLsizei width, GLsizei height);
-  ~Renderer2();
+  Renderer(GLsizei width, GLsizei height);
 
   void render_skybox(RenderContext& context);
-
-  // void render_shadow_pass(Camera& camera, Object3D& scene);
+  void render_shadows(RenderContext& context);
 
   // render scene
-  void render(Camera& camera, Object3D& scene);
-  void render(Camera& camera, Object3D& scene, RenderTarget& render_target);
+  void render(Camera* camera, Object3D* scene);
+  void render(Camera* camera, Object3D* scene, RenderTarget* target);
 };
 
 };  // namespace gfx

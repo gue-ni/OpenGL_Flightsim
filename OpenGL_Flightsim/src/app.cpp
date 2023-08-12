@@ -58,7 +58,7 @@ App::~App()
 
 void App::init()
 {
-  m_renderer = new gfx::Renderer2(m_width, m_height);
+  m_renderer = new gfx::Renderer(m_width, m_height);
 
   m_scene = new gfx::Object3D();
 
@@ -70,6 +70,7 @@ void App::init()
   m_scene->add(m_cameras[0]);
 
   m_cameras[1] = new gfx::Camera(fov, aspect_ratio, near, far);
+
   m_cameras[2] = new gfx::Camera(fov, aspect_ratio, near, far);
   m_scene->add(m_cameras[2]);
 
@@ -110,16 +111,16 @@ void App::init()
 
 void App::init_airplane()
 {
-  // objects
-  {
-    gfx::gl::Texture::Params params = {.flip_vertically = true, .texture_mag_filter = GL_LINEAR};
-    auto falcon_tex = std::make_shared<gfx::gl::Texture>("assets/textures/falcon.jpg", params);
-    auto falcon_geo =
-        std::make_shared<gfx::Geometry>(gfx::load_obj("assets/models/falcon.obj"), gfx::Geometry::POS_NORM_UV);
-    gfx::MaterialPtr falcon_material = make_shared<gfx::Material>("shaders/pbr", falcon_tex);
-    m_falcon = new gfx::Mesh(falcon_geo, falcon_material);
-    m_scene->add(m_falcon);
-  }
+  const std::string obj = "assets/models/falcon.obj";
+  const std::string jpg = "assets/textures/falcon.jpg";
+
+  gfx::gl::Texture::Params params = {.flip_vertically = true, .texture_mag_filter = GL_LINEAR};
+  auto texture = std::make_shared<gfx::gl::Texture>(jpg, params);
+  auto geometry = std::make_shared<gfx::Geometry>(gfx::load_obj(obj), gfx::Geometry::POS_NORM_UV);
+  auto material = make_shared<gfx::Material>("shaders/mesh", texture);
+
+  m_falcon = new gfx::Mesh(geometry, material);
+  m_scene->add(m_falcon);
 
   const float mass = 10000.0f;
   const float thrust = 75000.0f;
@@ -282,12 +283,11 @@ void App::game_loop(float dt)
   float speed = 25.0f;
   m_cameras[2]->set_transform(
       glm::mix(m_cameras[2]->get_world_position(), m_camera_attachment->get_world_position(), dt * speed),
-      glm::mix(m_cameras[2]->get_world_rotation_quat(), m_camera_attachment->get_world_rotation_quat(), dt * speed)
-  );
+      glm::mix(m_cameras[2]->get_world_rotation_quat(), m_camera_attachment->get_world_rotation_quat(), dt * speed));
 
   m_controller.update(*m_cameras[0], m_falcon->get_position(), dt);
 
-  m_renderer->render(*m_cameras[m_cameratype], *m_scene);
+  m_renderer->render(m_cameras[m_cameratype], m_scene);
 }
 
 int App::run()

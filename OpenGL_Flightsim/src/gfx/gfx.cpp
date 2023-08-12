@@ -459,8 +459,8 @@ void Mesh::draw_self(RenderContext& context)
     shader->set_uniform("u_CameraPos", camera->get_world_position());
 
     // lights
-    glm::vec3 light_dir = glm::vec3(0,1,0);
-    glm::vec3 light_color = glm::vec3(1,1,1);
+    glm::vec3 light_dir = glm::vec3(0, 1, 0);
+    glm::vec3 light_color = glm::vec3(1, 1, 1);
     shader->set_uniform("u_LightDir", light_dir);
     shader->set_uniform("u_LightColor", light_color);
 
@@ -500,7 +500,7 @@ void Mesh::draw_self(RenderContext& context)
   }
 }
 
-Renderer2::Renderer2(GLsizei width, GLsizei height) : m_width(width), m_height(height)
+Renderer::Renderer(GLsizei width, GLsizei height) : m_width(width), m_height(height)
 {
   // init renderer
   std::cout << "========== OpenGL ==========\n";
@@ -530,38 +530,42 @@ Renderer2::Renderer2(GLsizei width, GLsizei height) : m_width(width), m_height(h
   m_skybox->update_transform();
 }
 
-Renderer2::~Renderer2() {  }
+void Renderer::render_shadows(RenderContext& context)
+{
+  // TODO
+}
 
-void Renderer2::render_skybox(RenderContext& context)
+void Renderer::render_skybox(RenderContext& context)
 {
   glDepthMask(GL_FALSE);
   m_skybox->draw(context);
   glDepthMask(GL_TRUE);
 }
 
-void Renderer2::render(Camera& camera, Object3D& scene)
+void Renderer::render(Camera* camera, Object3D* scene)
 {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   RenderContext context;
+  context.camera = camera;
   context.is_shadow_pass = false;
-  context.camera = &camera;
   context.shadow_map = nullptr;
   context.shadow_caster = nullptr;
   context.background_color = gfx::rgb(222, 253, 255);
   context.shader_cache = &m_shaders;
-
-
   context.environment_map = m_skybox->get_material()->get_texture();
 
   // update transforms
-  scene.update_transform();
+  scene->update_transform();
 
-  // skybox cubemap
+  // render to shadowmap
+  render_shadows(context);
+
+  // render skybox 
   render_skybox(context);
 
   // draw scene
-  scene.draw(context);
+  scene->draw(context);
 }
 
 }  // namespace gfx

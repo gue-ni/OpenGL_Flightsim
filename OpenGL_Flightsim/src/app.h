@@ -41,7 +41,7 @@ class App
   // graphics
   std::array<gfx::Camera*, 3> m_cameras;
   gfx::Object3D* m_scene;
-  gfx::Renderer2* m_renderer;
+  gfx::Renderer* m_renderer;
 
   gfx::OrbitController m_controller;
 

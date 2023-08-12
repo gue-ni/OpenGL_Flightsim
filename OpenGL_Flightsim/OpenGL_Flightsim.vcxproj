@@ -167,8 +167,8 @@ xcopy /y /i /s $(ProjectDir)..\lib\glew-2.2.0\bin\Release\x64\*.dll $(OutDir)</C
     <None Include="shaders\basic.vert" />
     <None Include="shaders\billboard.frag" />
     <None Include="shaders\billboard.vert" />
-    <None Include="shaders\pbr.frag" />
-    <None Include="shaders\pbr.vert" />
+    <None Include="shaders\mesh.frag" />
+    <None Include="shaders\mesh.vert" />
     <None Include="shaders\terrain.frag" />
     <None Include="shaders\terrain.vert" />
     <None Include="shaders\depth.frag" />
