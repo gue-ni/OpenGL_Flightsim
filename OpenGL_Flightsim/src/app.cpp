@@ -62,7 +62,7 @@ void App::init()
 
   m_scene = new gfx::Object3D();
 
-  float fov = glm::radians(45.0f);
+  constexpr float fov = glm::radians(45.0f);
   float aspect_ratio = (float)m_width / (float)m_height;
   float near = 0.1f, far = 150000.0f;
 
@@ -74,15 +74,6 @@ void App::init()
   m_scene->add(m_cameras[2]);
 
 #if 1
-  const std::string skybox_path = "assets/textures/skybox/1/";
-  const std::array<std::string, 6>& faces = {
-      skybox_path + "right.jpg",  skybox_path + "left.jpg",  skybox_path + "top.jpg",
-      skybox_path + "bottom.jpg", skybox_path + "front.jpg", skybox_path + "back.jpg",
-  };
-
-  gfx::Skybox* skybox = new gfx::Skybox(faces);
-  skybox->set_scale(glm::vec3(3.0f));
-  m_scene->add(skybox);
 #endif
 #if 1
   m_clipmap = new Clipmap();
@@ -147,8 +138,8 @@ void App::init_airplane()
   const auto inertia = phi::inertia::tensor(masses, true);
 
   std::array<Wing, 4> wings = {
-      Wing({wing_offset, 0.0f, -2.7f}, 6.96f, 2.50f, &NACA_2412, phi::UP, 0.20f),    // left wing
-      Wing({wing_offset, 0.0f, +2.7f}, 6.96f, 2.50f, &NACA_2412, phi::UP, 0.20f),    // right wing
+      Wing({wing_offset, 0.0f, -2.7f}, 6.96f, 2.50f, &NACA_2412, phi::UP, 0.10f),    // left wing
+      Wing({wing_offset, 0.0f, +2.7f}, 6.96f, 2.50f, &NACA_2412, phi::UP, 0.10f),    // right wing
       Wing({tail_offset, -0.1f, 0.0f}, 6.54f, 2.70f, &NACA_0012, phi::UP, 1.0f),     // elevator
       Wing({tail_offset, 0.0f, 0.0f}, 5.31f, 3.10f, &NACA_0012, phi::RIGHT, 0.15f),  // rudder
   };

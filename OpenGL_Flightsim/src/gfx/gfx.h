@@ -59,6 +59,8 @@ struct RenderContext {
   ShadowMap* shadow_map;
   ShaderCache* shader_cache = nullptr;
 
+  gl::TexturePtr environment_map = nullptr;
+
   std::vector<Light*> lights;
   bool is_shadow_pass;
   glm::vec3 background_color;
@@ -103,9 +105,11 @@ class Light : public Object3D
   glm::vec3 rgb;
 };
 
-class Geometry
+class BaseGeometry
 {
  public:
+  enum DrawType { DRAW_ARRAYS, DRAW_ELEMENTS, /* TODO: instanced */ };
+
   enum VertexLayout {
     POS,         // pos
     POS_UV,      // pos, uv
@@ -113,13 +117,15 @@ class Geometry
     POS_NORM_UV  // pos, normal, uv
   };
 
-  Geometry(const std::vector<float>& vertices, const VertexLayout& layout);
-  ~Geometry();
-  void bind();
-  void unbind();
-  int triangle_count;
-
+  GLsizei count;
   gl::VertexArrayObject vao;
+  const DrawType draw_type = DRAW_ARRAYS;
+};
+
+class Geometry : public BaseGeometry
+{
+ public:
+  Geometry(const std::vector<float>& vertices, const VertexLayout& layout);
 
  private:
   gl::VertexBuffer vbo;
@@ -129,8 +135,8 @@ class Geometry
 class Material
 {
  public:
-  //glm::vec3 emissive, ambient, duffuse, specular;
-  //float alpha, shininess;
+  // glm::vec3 emissive, ambient, duffuse, specular;
+  // float alpha, shininess;
 
   Material(const std::string& shader_name, const gl::TexturePtr& texture)
       : m_shader_name(shader_name), m_texture(texture)
@@ -149,6 +155,9 @@ class Mesh : public Object3D
 {
  public:
   Mesh(const GeometryPtr& geometry, const MaterialPtr& material);
+
+  MaterialPtr get_material() { return m_material; }
+  GeometryPtr get_geometry() { return m_geometry; }
 
  protected:
   MaterialPtr m_material;
@@ -186,7 +195,7 @@ class Skybox : public Mesh
 {
  public:
   Skybox(const std::array<std::string, 6>& faces);
-  void draw_self(RenderContext& context) override;
+  // void draw_self(RenderContext& context) override;
   Object3D& add(Object3D* child) = delete;
 };
 
@@ -240,27 +249,25 @@ class Renderer2
  private:
   GLsizei m_width, m_height;
   ShaderCache m_shaders;
-  // For the future:
-  //MeshPtr m_screen_quad;
-  // std::optional<gl::FrameBuffer> m_framebuffer;
-  // ShadowMap m_shadowmap;
+  gfx::MeshPtr m_skybox;
 
+  // For the future:
+  // MeshPtr m_screenquad;
+  // ShadowMap m_shadowmap;
+  // std::optional<gl::FrameBuffer> m_framebuffer;
 
  public:
-
-  MeshPtr skybox = nullptr;
 
   Renderer2(GLsizei width, GLsizei height);
   ~Renderer2();
 
-  void render_skybox();
+  void render_skybox(RenderContext& context);
 
   // void render_shadow_pass(Camera& camera, Object3D& scene);
 
   // render scene
   void render(Camera& camera, Object3D& scene);
-
-  // void render(Camera& camera, Object3D& scene, RenderTarget& render_target);
+  void render(Camera& camera, Object3D& scene, RenderTarget& render_target);
 };
 
 };  // namespace gfx

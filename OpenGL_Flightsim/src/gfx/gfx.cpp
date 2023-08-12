@@ -9,9 +9,10 @@ namespace gfx
 {
 
 Geometry::Geometry(const std::vector<float>& vertices, const VertexLayout& layout)
-    : triangle_count(static_cast<int>(vertices.size()) / (get_stride(layout)))
 {
   const int stride = get_stride(layout);
+  count = static_cast<int>(vertices.size()) / (get_stride(layout));
+
   vao.bind();
   vbo.buffer(vertices);
 
@@ -38,12 +39,6 @@ Geometry::Geometry(const std::vector<float>& vertices, const VertexLayout& layou
   vao.bind();
 }
 
-Geometry::~Geometry() {}
-
-void Geometry::bind() { vao.bind(); }
-
-void Geometry::unbind() { vao.unbind(); }
-
 int Geometry::get_stride(const VertexLayout& layout)
 {
   switch (layout) {
@@ -65,10 +60,7 @@ glm::mat4 Camera::get_view_matrix() const { return glm::inverse(m_transform); }
 
 glm::mat4 Camera::get_projection_matrix() const { return m_projection; }
 
-void Camera::look_at(const glm::vec3& target)
-{
-  set_transform(glm::inverse(glm::lookAt(m_position, target, m_up)));
-}
+void Camera::look_at(const glm::vec3& target) { set_transform(glm::inverse(glm::lookAt(m_position, target, m_up))); }
 
 Object3D::Type Light::get_type() const { return Object3D::Type::LIGHT; }
 
@@ -430,6 +422,7 @@ Skybox::Skybox(const std::array<std::string, 6>& faces)
 {
 }
 
+#if 0
 void Skybox::draw_self(RenderContext& context)
 {
   if (!context.is_shadow_pass) {
@@ -439,8 +432,11 @@ void Skybox::draw_self(RenderContext& context)
     gl::ShaderPtr shader = context.shader_cache->get_shader(shader_name);
 
     shader->bind();
-
+#if 0
     shader->set_uniform("u_View", glm::mat4(glm::mat3(context.camera->get_view_matrix())));
+#else
+    shader->set_uniform("u_View", context.camera->get_view_matrix());
+#endif
     shader->set_uniform("u_Model", get_local_transform());  // only scale needed
     shader->set_uniform("u_Projection", context.camera->get_projection_matrix());
 
@@ -450,13 +446,14 @@ void Skybox::draw_self(RenderContext& context)
     texture->bind(active_texture);
     shader->set_uniform("u_Texture_01", active_texture);
 
-    m_geometry->bind();
-    glDrawArrays(GL_TRIANGLES, 0, m_geometry->triangle_count);
-    m_geometry->unbind();
+    m_geometry->vao.bind();
+    glDrawArrays(GL_TRIANGLES, 0, m_geometry->count);
+    m_geometry->vao.unbind();
 
     glDepthMask(GL_TRUE);
   }
 }
+#endif
 
 void ShaderCache::add_shader(const std::string& path)
 {
@@ -502,9 +499,11 @@ void Mesh::draw_self(RenderContext& context)
 
     shader->set_uniform("u_UseTexture", true);
 
-    int active_texture = 5;
-    texture->bind(active_texture);
-    shader->set_uniform("u_Texture_01", active_texture);
+    texture->bind(5);
+    shader->set_uniform("u_Texture_01", 5);
+
+    context.environment_map->bind(6);
+    shader->set_uniform("u_EnvironmentMap", 6);
 
     glm::vec3 rgb = glm::vec3(1.0f, 0.0f, 0.0f);
     shader->set_uniform("u_SolidObjectColor", rgb);
@@ -514,9 +513,19 @@ void Mesh::draw_self(RenderContext& context)
     shader->set_uniform("ks", 0.4f);
     shader->set_uniform("alpha", 20.0f);
 
-    m_geometry->bind();
-    glDrawArrays(GL_TRIANGLES, 0, m_geometry->triangle_count);
-    m_geometry->unbind();
+    m_geometry->vao.bind();
+    switch (m_geometry->draw_type) {
+      case BaseGeometry::DRAW_ARRAYS:
+        glDrawArrays(GL_TRIANGLES, 0, m_geometry->count);
+        break;
+      case BaseGeometry::DRAW_ELEMENTS:
+        glDrawElements(GL_TRIANGLES, m_geometry->count, GL_UNSIGNED_INT, 0);
+        break;
+      default:
+        assert(false);
+        break;
+    }
+    m_geometry->vao.unbind();
 
     shader->unbind();
   }
@@ -540,14 +549,24 @@ Renderer2::Renderer2(GLsizei width, GLsizei height) : m_width(width), m_height(h
   glEnable(GL_MULTISAMPLE);
   glEnable(GL_BLEND);
   glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+  // init skybox
+  const std::string skybox_path = "assets/textures/skybox/1/";
+  const std::array<std::string, 6>& faces = {
+      skybox_path + "right.jpg",  skybox_path + "left.jpg",  skybox_path + "top.jpg",
+      skybox_path + "bottom.jpg", skybox_path + "front.jpg", skybox_path + "back.jpg",
+  };
+  m_skybox = std::make_shared<gfx::Skybox>(faces);
+  m_skybox->set_scale(glm::vec3(10.0f));
+  m_skybox->update_transform();
 }
 
-Renderer2::~Renderer2() {}
+Renderer2::~Renderer2() {  }
 
-void Renderer2::render_skybox()
+void Renderer2::render_skybox(RenderContext& context)
 {
   glDepthMask(GL_FALSE);
-  // skybox->draw_self(context)
+  m_skybox->draw(context);
   glDepthMask(GL_TRUE);
 }
 
@@ -563,12 +582,17 @@ void Renderer2::render(Camera& camera, Object3D& scene)
   context.background_color = gfx::rgb(222, 253, 255);
   context.shader_cache = &m_shaders;
 
+
+  context.environment_map = m_skybox->get_material()->get_texture();
+
   // update transforms
   scene.update_transform();
+
+  // skybox cubemap
+  render_skybox(context);
 
   // draw scene
   scene.draw(context);
 }
-
 
 }  // namespace gfx
