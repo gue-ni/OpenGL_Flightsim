@@ -135,7 +135,7 @@ class Geometry : public BaseGeometry
 class Material
 {
  public:
-  // glm::vec3 emissive, ambient, duffuse, specular;
+  // glm::vec3 emissive, ambient, diffuse, specular;
   // float alpha, shininess;
 
   Material(const std::string& shader_name, const gl::TexturePtr& texture)
@@ -195,7 +195,6 @@ class Skybox : public Mesh
 {
  public:
   Skybox(const std::array<std::string, 6>& faces);
-  // void draw_self(RenderContext& context) override;
   Object3D& add(Object3D* child) = delete;
 };
 

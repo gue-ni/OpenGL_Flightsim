@@ -2,6 +2,8 @@
 
 uniform vec3 u_SolidObjectColor;
 uniform vec3 u_CameraPos;
+uniform vec3 u_LightDir;
+uniform vec3 u_LightColor;
 uniform sampler2D u_Texture_01;
 uniform samplerCube u_EnvironmentMap;
 
@@ -29,7 +31,7 @@ vec3 phongLighting(vec3 texColor, vec3 lightDir, vec3 lightColor)
   vec3 reflectDir = reflect(-lightDir, Normal);  
   vec3 specular = ks * pow(max(dot(viewDir, reflectDir), 0.0), alpha) * lightColor;
 
-  return (ambient + diffuse) * texColor;
+  return (ambient + diffuse + specular) * texColor;
 }
 
 void main()
@@ -37,12 +39,9 @@ void main()
   vec3 texColor = texture(u_Texture_01, TexCoords).rgb;
   vec3 reflectedColor = texture(u_EnvironmentMap, ReflectedVector).rgb;
 
-  vec3 lightDir = vec3(0,1,0);
-  vec3 lightColor = vec3(1,1,1);
-
   float shininess = 0.3;
 
-  vec3 color = phongLighting(mix(texColor, reflectedColor, shininess), lightDir, lightColor);
+  vec3 color = phongLighting(mix(texColor, reflectedColor, shininess), u_LightDir, u_LightColor);
 
   gl_FragColor = vec4(color, 1.0);
 }

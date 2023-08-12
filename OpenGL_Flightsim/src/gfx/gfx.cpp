@@ -422,39 +422,6 @@ Skybox::Skybox(const std::array<std::string, 6>& faces)
 {
 }
 
-#if 0
-void Skybox::draw_self(RenderContext& context)
-{
-  if (!context.is_shadow_pass) {
-    glDepthMask(GL_FALSE);
-
-    std::string shader_name = m_material->get_shader_name();
-    gl::ShaderPtr shader = context.shader_cache->get_shader(shader_name);
-
-    shader->bind();
-#if 0
-    shader->set_uniform("u_View", glm::mat4(glm::mat3(context.camera->get_view_matrix())));
-#else
-    shader->set_uniform("u_View", context.camera->get_view_matrix());
-#endif
-    shader->set_uniform("u_Model", get_local_transform());  // only scale needed
-    shader->set_uniform("u_Projection", context.camera->get_projection_matrix());
-
-    gl::TexturePtr texture = m_material->get_texture();
-
-    int active_texture = 2;
-    texture->bind(active_texture);
-    shader->set_uniform("u_Texture_01", active_texture);
-
-    m_geometry->vao.bind();
-    glDrawArrays(GL_TRIANGLES, 0, m_geometry->count);
-    m_geometry->vao.unbind();
-
-    glDepthMask(GL_TRUE);
-  }
-}
-#endif
-
 void ShaderCache::add_shader(const std::string& path)
 {
   if (!m_cache.contains(path)) {
@@ -492,17 +459,18 @@ void Mesh::draw_self(RenderContext& context)
     shader->set_uniform("u_CameraPos", camera->get_world_position());
 
     // lights
-    // shader.set_uniform("u_DirectionalLight_Direction", light.direction);
-    // shader.set_uniform("u_DirectionalLight_Color", light.color);
-
-    // textures
-    gl::TexturePtr texture = m_material->get_texture();
+    glm::vec3 light_dir = glm::vec3(0,1,0);
+    glm::vec3 light_color = glm::vec3(1,1,1);
+    shader->set_uniform("u_LightDir", light_dir);
+    shader->set_uniform("u_LightColor", light_color);
 
     shader->set_uniform("u_UseTexture", true);
 
-    texture->bind(5);
+    // material texture
+    m_material->get_texture()->bind(5);
     shader->set_uniform("u_Texture_01", 5);
 
+    // environment map
     context.environment_map->bind(6);
     shader->set_uniform("u_EnvironmentMap", 6);
 
