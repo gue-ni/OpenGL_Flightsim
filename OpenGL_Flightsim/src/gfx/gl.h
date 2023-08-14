@@ -60,16 +60,23 @@ struct Object {
 #endif
 };
 
-struct VertexBuffer : public Object {
-  VertexBuffer() { glGenBuffers(1, &m_id); }
-  ~VertexBuffer() { glDeleteBuffers(1, &m_id); }
-  void bind() const { glBindBuffer(GL_ARRAY_BUFFER, m_id); }
-  void unbind() const { glBindBuffer(GL_ARRAY_BUFFER, 0); }
+struct Buffer : public Object {
+public:
+ Buffer(GLenum target_) : target(target_) { glGenBuffers(1, &m_id); }
+ ~Buffer() { glDeleteBuffers(1, &m_id); }
+ void bind() const { glBindBuffer(target, m_id); }
+ void unbind() const { glBindBuffer(target, 0); }
+protected:
+ const GLenum target;
+};
+
+struct VertexBuffer : public Buffer {
+  VertexBuffer() : Buffer(GL_ARRAY_BUFFER) {}
 
   void buffer(const void* data, size_t size)
   {
     bind();
-    glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
+    glBufferData(target, size, data, GL_STATIC_DRAW);
   }
 
   template <typename T>
@@ -77,6 +84,26 @@ struct VertexBuffer : public Object {
   {
     buffer(&data[0], sizeof(data[0]) * data.size());
   }
+};
+
+struct ElementBufferObject : public Buffer {
+  ElementBufferObject() : Buffer(GL_ELEMENT_ARRAY_BUFFER) {}
+
+  void buffer(const void* data, size_t size)
+  {
+    bind();
+    glBufferData(target, size, data, GL_STATIC_DRAW);
+  }
+
+  template <typename T>
+  void buffer(const std::vector<T>& data)
+  {
+    buffer(&data[0], sizeof(data[0]) * data.size());
+  }
+};
+
+struct UniformBuffer : public Buffer {
+ UniformBuffer() : Buffer(GL_UNIFORM_BUFFER) {}
 };
 
 struct FrameBuffer : public Object {
@@ -91,25 +118,6 @@ struct VertexArrayObject : public Object {
   ~VertexArrayObject() { glDeleteVertexArrays(1, &m_id); }
   void bind() const { glBindVertexArray(m_id); }
   void unbind() const { glBindVertexArray(0); }
-};
-
-struct ElementBufferObject : public Object {
-  ElementBufferObject() { glGenBuffers(1, &m_id); }
-  ~ElementBufferObject() { glDeleteBuffers(1, &m_id); }
-  void bind() const { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_id); }
-  void unbind() const { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); }
-
-  void buffer(const void* data, size_t size)
-  {
-    bind();
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
-  }
-
-  template <typename T>
-  void buffer(const std::vector<T>& data)
-  {
-    buffer(&data[0], sizeof(data[0]) * data.size());
-  }
 };
 
 class Shader : public Object {
