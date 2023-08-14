@@ -147,17 +147,15 @@ public:
     GLint texture_mag_filter = GL_NEAREST;
   };
 
-
   Texture(GLenum target_ = GL_TEXTURE_2D) : target(target_) { glGenTextures(1, &m_id); }
   ~Texture() { glDeleteTextures(1, &m_id); }
-  Texture(GLuint texture_id) { m_id = texture_id; }
   Texture(const std::string& path);
   Texture(const std::string& path, const Params& params);
   Texture(const Image& image, const Params& params);
 
-  virtual void bind() const;
-  virtual void bind(GLuint active_texture) const;
-  virtual void unbind() const;
+  void bind() const;
+  void bind(GLuint active_texture) const;
+  void unbind() const;
   GLint get_format(int channels);
   void set_parameter(GLenum target, GLenum pname, GLint param);
   void set_parameter(GLenum target, GLenum pname, GLfloat param);
@@ -171,9 +169,6 @@ using TexturePtr = std::shared_ptr<Texture>;
 class CubemapTexture : public Texture {
 public:
   CubemapTexture(const std::array<std::string, 6>& paths, bool flip_vertically = false);
-  void bind() const override;  
-  void bind(GLuint active_texture) const override;
-  void unbind() const override;
 };
 
 }  // namespace gl
