@@ -302,6 +302,7 @@ void App::game_loop(float dt)
   m_controller.update(*m_cameras[0], m_falcon->get_position(), dt);
 
   m_renderer->render(m_cameras[m_cameratype], m_scene);
+
 }
 
 int App::run()

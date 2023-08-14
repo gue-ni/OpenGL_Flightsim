@@ -193,33 +193,37 @@ class Skybox : public Mesh
   Object3D& add(Object3D* child) = delete;
 };
 
-// TODO
 class RenderTarget
 {
  public:
   RenderTarget(int width, int height);
   gl::FrameBuffer framebuffer;
-  gl:Texture texture;
+  gl::RenderBuffer depthbuffer;
+  gl::TexturePtr texture = nullptr;
+  void bind();
+  void unbind();
+private:
+    int m_width, m_height;
 };
 
 class Renderer
 {
  private:
   GLsizei m_width, m_height;
-  ShaderCache m_shaders;
-  gfx::MeshPtr m_skybox;
   glm::vec3 m_fog_color;
+  ShaderCache m_shaders;
+  MeshPtr m_skybox;
+  MeshPtr m_screenquad;
+  std::shared_ptr<RenderTarget> m_rendertarget;
 
-  // For the future:
-  // MeshPtr m_screenquad;
   // ShadowMap m_shadowmap;
 
  public:
-
   Renderer(GLsizei width, GLsizei height);
 
   void render_skybox(RenderContext& context);
   void render_shadows(RenderContext& context);
+  void render_screenquad(RenderContext& context);
 
   // render scene
   void render(Camera* camera, Object3D* scene);

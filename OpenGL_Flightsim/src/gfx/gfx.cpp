@@ -390,24 +390,38 @@ gl::ShaderPtr ShaderCache::get_shader(const std::string& path)
   return m_cache.at(path);
 }
 
-RenderTarget::RenderTarget(int width, int height)
+RenderTarget::RenderTarget(int width, int height) : m_width(width), m_height(height)
 {
+#if 1
   framebuffer.bind();
-  
-  texture.bind();
-  glTexImage2D(texture.target, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-  texture.set_parameter(GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-  texture.set_parameter(GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-  texture.unbind();
 
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture.target, texture.id(), 0);
-  
-  if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-	  std::cout << "Framebuffer is not complete!" << std::endl;
+  texture = std::make_shared<gl::Texture>();
+  texture->bind();
+  glTexImage2D(texture->target, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+  texture->set_parameter(GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  texture->set_parameter(GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  texture->unbind();
 
-  framebuffer.unbind();  
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture->target, texture->id(), 0);
+
+  depthbuffer.bind();
+  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthbuffer.id());
+
+  GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
+  glDrawBuffers(1, DrawBuffers);  // "1" is the size of DrawBuffers
+
+  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+    std::cout << "Framebuffer is not complete!" << std::endl;
+  }
+
+  framebuffer.unbind();
+#endif
 }
 
+void RenderTarget::bind() { framebuffer.bind(); }
+
+void RenderTarget::unbind() { framebuffer.unbind(); }
 
 Mesh::Mesh(const GeometryPtr& geometry, const MaterialPtr& material) : m_material(material), m_geometry(geometry) {}
 
@@ -512,6 +526,16 @@ Renderer::Renderer(GLsizei width, GLsizei height) : m_width(width), m_height(hei
   m_skybox->set_scale(glm::vec3(10.0f));
   m_skybox->update_transform();
 
+#if 0
+  m_rendertarget = std::make_shared<gfx::RenderTarget>(640, 480);
+  auto tex = std::make_shared<gl::Texture>("assets/textures/container.jpg");
+  auto geo = gfx::make_quad_geometry();
+  auto mat = std::make_shared<gfx::Material>("shaders/screen", m_rendertarget->texture);
+  m_screenquad = std::make_shared<gfx::Mesh>(geo, mat);
+#else
+  m_rendertarget = nullptr;
+  m_screenquad = nullptr;
+#endif
 }
 
 void Renderer::render_shadows(RenderContext& context)
@@ -526,9 +550,17 @@ void Renderer::render_skybox(RenderContext& context)
   glDepthMask(GL_TRUE);
 }
 
+void Renderer::render_screenquad(RenderContext& context)
+{
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glEnable(GL_DEPTH_TEST);
+  m_screenquad->draw(context);
+}
+
 void Renderer::render(Camera* camera, Object3D* scene)
 {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glEnable(GL_DEPTH_TEST);
 
   RenderContext context;
   context.camera = camera;
@@ -545,11 +577,21 @@ void Renderer::render(Camera* camera, Object3D* scene)
   // render to shadowmap
   render_shadows(context);
 
-  // render skybox 
+  // render skybox
   render_skybox(context);
 
-  // draw scene
-  scene->draw(context);
+  if (m_rendertarget && m_screenquad) {
+    // glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    //m_rendertarget->bind();
+    scene->draw(context);
+    //m_rendertarget->unbind();
+
+    render_screenquad(context);
+  } else {
+    scene->draw(context);
+  }
 }
 
 }  // namespace gfx

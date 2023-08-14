@@ -22,9 +22,9 @@ namespace gl
 {
 
 struct Vertex {
- glm::vec3 pos;
- glm::vec3 normal;
- glm::vec2 texcoord;
+  glm::vec3 pos;
+  glm::vec3 normal;
+  glm::vec2 texcoord;
 };
 
 // abstract opengl object
@@ -61,13 +61,14 @@ struct Object {
 };
 
 struct Buffer : public Object {
-public:
- Buffer(GLenum target_) : target(target_) { glGenBuffers(1, &m_id); }
- ~Buffer() { glDeleteBuffers(1, &m_id); }
- void bind() const { glBindBuffer(target, m_id); }
- void unbind() const { glBindBuffer(target, 0); }
-protected:
- const GLenum target;
+ public:
+  Buffer(GLenum target_) : target(target_) { glGenBuffers(1, &m_id); }
+  ~Buffer() { glDeleteBuffers(1, &m_id); }
+  void bind() const { glBindBuffer(target, m_id); }
+  void unbind() const { glBindBuffer(target, 0); }
+
+ protected:
+  const GLenum target;
 };
 
 struct VertexBuffer : public Buffer {
@@ -103,7 +104,7 @@ struct ElementBufferObject : public Buffer {
 };
 
 struct UniformBuffer : public Buffer {
- UniformBuffer() : Buffer(GL_UNIFORM_BUFFER) {}
+  UniformBuffer() : Buffer(GL_UNIFORM_BUFFER) {}
 };
 
 struct FrameBuffer : public Object {
@@ -120,7 +121,15 @@ struct VertexArrayObject : public Object {
   void unbind() const { glBindVertexArray(0); }
 };
 
-class Shader : public Object {
+struct RenderBuffer : public Object {
+  RenderBuffer() { glGenRenderbuffers(1, &m_id); }
+  ~RenderBuffer() { glDeleteRenderbuffers(1, &m_id); }
+  void bind() const { glBindRenderbuffer(GL_RENDERBUFFER, m_id); }
+  void unbind() const { glBindRenderbuffer(GL_RENDERBUFFER, 0); }
+};
+
+class Shader : public Object
+{
  public:
   Shader(const std::string& path);
   Shader(const std::string& vert_shader, const std::string& frag_shader);
@@ -137,8 +146,9 @@ class Shader : public Object {
 
 using ShaderPtr = std::shared_ptr<Shader>;
 
-class Texture : public Object {
-public:
+class Texture : public Object
+{
+ public:
   const GLenum target;
 
   struct Params {
@@ -163,8 +173,9 @@ public:
 
 using TexturePtr = std::shared_ptr<Texture>;
 
-class CubemapTexture : public Texture {
-public:
+class CubemapTexture : public Texture
+{
+ public:
   CubemapTexture(const std::array<std::string, 6>& paths, bool flip_vertically = false);
 };
 
