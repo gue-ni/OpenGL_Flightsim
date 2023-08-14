@@ -127,9 +127,9 @@ class Shader : public Object {
   ~Shader();
   void bind() const;
   void unbind() const;
-  void set_uniform(const std::string& name, int value) const;
-  void set_uniform(const std::string& name, float value) const;
-  void set_uniform(const std::string& name, unsigned int value) const;
+  void set_uniform(const std::string& name, GLint value) const;
+  void set_uniform(const std::string& name, GLuint value) const;
+  void set_uniform(const std::string& name, GLfloat value) const;
   void set_uniform(const std::string& name, const glm::vec3& value) const;
   void set_uniform(const std::string& name, const glm::vec4& value) const;
   void set_uniform(const std::string& name, const glm::mat4& value) const;
@@ -139,6 +139,8 @@ using ShaderPtr = std::shared_ptr<Shader>;
 
 class Texture : public Object {
 public:
+  const GLenum target;
+
   struct Params {
     bool flip_vertically = false;
     GLint texture_wrap = GL_REPEAT;
@@ -151,15 +153,12 @@ public:
   Texture(const std::string& path);
   Texture(const std::string& path, const Params& params);
   Texture(const Image& image, const Params& params);
-
   void bind() const;
   void bind(GLuint active_texture) const;
   void unbind() const;
   GLint get_format(int channels);
   void set_parameter(GLenum pname, GLint param);
   void set_parameter(GLenum pname, GLfloat param);
-
-  GLenum target;
 };
 
 using TexturePtr = std::shared_ptr<Texture>;
