@@ -22,9 +22,9 @@ namespace gl
 {
 
 struct Vertex {
- glm::vec3 pos;
- glm::vec3 normal;
- glm::vec2 texcoord;
+ glm::vec3 Position;
+ glm::vec3 Normal;
+ glm::vec2 TexCoords;
 };
 
 // abstract opengl object
@@ -60,16 +60,16 @@ struct Object {
 #endif
 };
 
-struct VertexBuffer : public Object {
-  VertexBuffer() { glGenBuffers(1, &m_id); }
-  ~VertexBuffer() { glDeleteBuffers(1, &m_id); }
-  void bind() const { glBindBuffer(GL_ARRAY_BUFFER, m_id); }
-  void unbind() const { glBindBuffer(GL_ARRAY_BUFFER, 0); }
-
+struct Buffer : public Object {
+public:
+ Buffer(GLenum target_) : target(target_) { glGenBuffers(1, &m_id); }
+ ~Buffer() { glDeleteBuffers(1, &m_id); }
+ void bind() const { glBindBuffer(target, m_id); }
+ void unbind() const { glBindBuffer(target, 0); }
   void buffer(const void* data, size_t size)
   {
     bind();
-    glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
+    glBufferData(target, size, data, GL_STATIC_DRAW);
   }
 
   template <typename T>
@@ -77,6 +77,21 @@ struct VertexBuffer : public Object {
   {
     buffer(&data[0], sizeof(data[0]) * data.size());
   }
+
+protected:
+ const GLenum target;
+};
+
+struct VertexBuffer : public Buffer {
+  VertexBuffer() : Buffer(GL_ARRAY_BUFFER) {}
+};
+
+struct ElementBufferObject : public Buffer {
+  ElementBufferObject() : Buffer(GL_ELEMENT_ARRAY_BUFFER) {}
+};
+
+struct UniformBuffer : public Buffer {
+ UniformBuffer() : Buffer(GL_UNIFORM_BUFFER) {}
 };
 
 struct FrameBuffer : public Object {
@@ -93,25 +108,6 @@ struct VertexArrayObject : public Object {
   void unbind() const { glBindVertexArray(0); }
 };
 
-struct ElementBufferObject : public Object {
-  ElementBufferObject() { glGenBuffers(1, &m_id); }
-  ~ElementBufferObject() { glDeleteBuffers(1, &m_id); }
-  void bind() const { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_id); }
-  void unbind() const { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); }
-
-  void buffer(const void* data, size_t size)
-  {
-    bind();
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
-  }
-
-  template <typename T>
-  void buffer(const std::vector<T>& data)
-  {
-    buffer(&data[0], sizeof(data[0]) * data.size());
-  }
-};
-
 class Shader : public Object {
  public:
   Shader(const std::string& path);
@@ -119,9 +115,9 @@ class Shader : public Object {
   ~Shader();
   void bind() const;
   void unbind() const;
-  void set_uniform(const std::string& name, int value) const;
-  void set_uniform(const std::string& name, float value) const;
-  void set_uniform(const std::string& name, unsigned int value) const;
+  void set_uniform(const std::string& name, GLint value) const;
+  void set_uniform(const std::string& name, GLuint value) const;
+  void set_uniform(const std::string& name, GLfloat value) const;
   void set_uniform(const std::string& name, const glm::vec3& value) const;
   void set_uniform(const std::string& name, const glm::vec4& value) const;
   void set_uniform(const std::string& name, const glm::mat4& value) const;
@@ -131,6 +127,8 @@ using ShaderPtr = std::shared_ptr<Shader>;
 
 class Texture : public Object {
 public:
+  const GLenum target;
+
   struct Params {
     bool flip_vertically = false;
     GLint texture_wrap = GL_REPEAT;
@@ -138,19 +136,17 @@ public:
     GLint texture_mag_filter = GL_NEAREST;
   };
 
-  Texture() { glGenTextures(1, &m_id); }
+  Texture(GLenum target_ = GL_TEXTURE_2D) : target(target_) { glGenTextures(1, &m_id); }
   ~Texture() { glDeleteTextures(1, &m_id); }
-  Texture(GLuint texture_id) { m_id = texture_id; }
   Texture(const std::string& path);
   Texture(const std::string& path, const Params& params);
   Texture(const Image& image, const Params& params);
-
-  virtual void bind() const;
-  virtual void bind(GLuint active_texture) const;
-  virtual void unbind() const;
+  void bind() const;
+  void bind(GLuint active_texture) const;
+  void unbind() const;
   GLint get_format(int channels);
-  void set_parameter(GLenum target, GLenum pname, GLint param);
-  void set_parameter(GLenum target, GLenum pname, GLfloat param);
+  void set_parameter(GLenum pname, GLint param);
+  void set_parameter(GLenum pname, GLfloat param);
 };
 
 using TexturePtr = std::shared_ptr<Texture>;
@@ -158,9 +154,6 @@ using TexturePtr = std::shared_ptr<Texture>;
 class CubemapTexture : public Texture {
 public:
   CubemapTexture(const std::array<std::string, 6>& paths, bool flip_vertically = false);
-  void bind() const override;  
-  void bind(GLuint active_texture) const override;
-  void unbind() const override;
 };
 
 }  // namespace gl

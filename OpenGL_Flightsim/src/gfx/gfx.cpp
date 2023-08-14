@@ -390,6 +390,27 @@ gl::ShaderPtr ShaderCache::get_shader(const std::string& path)
   return m_cache.at(path);
 }
 
+RenderTarget::RenderTarget(int width, int height)
+{
+#if 0
+  framebuffer.bind();
+  
+  texture.bind();
+  glTexImage2D(texture.target, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+  texture.set_parameter(GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+  texture.set_parameter(GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+  texture.unbind();
+
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture.target, texture.id(), 0);
+  
+  if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	  std::cout << "Framebuffer is not complete!" << std::endl;
+
+  framebuffer.unbind();  
+#endif
+}
+
+
 Mesh::Mesh(const GeometryPtr& geometry, const MaterialPtr& material) : m_material(material), m_geometry(geometry) {}
 
 void Mesh::draw_self(RenderContext& context)
@@ -531,6 +552,13 @@ void Renderer::render(Camera* camera, Object3D* scene)
 
   // draw scene
   scene->draw(context);
+}
+
+void Renderer::render(Camera* camera, Object3D* scene, RenderTarget* target)
+{
+	target->framebuffer.bind();
+	render(camera, scene);
+	target->framebuffer.unbind();
 }
 
 }  // namespace gfx
