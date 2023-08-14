@@ -111,6 +111,7 @@ struct FrameBuffer : public Object {
   ~FrameBuffer() { glDeleteFramebuffers(1, &m_id); }
   void bind() const { glBindFramebuffer(GL_FRAMEBUFFER, m_id); }
   void unbind() const { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
+  void attach_texture(const Texture& texture);
 };
 
 struct VertexArrayObject : public Object {
@@ -146,7 +147,8 @@ public:
     GLint texture_mag_filter = GL_NEAREST;
   };
 
-  Texture() { glGenTextures(1, &m_id); }
+
+  Texture(GLenum target_ = GL_TEXTURE_2D) : target(target_) { glGenTextures(1, &m_id); }
   ~Texture() { glDeleteTextures(1, &m_id); }
   Texture(GLuint texture_id) { m_id = texture_id; }
   Texture(const std::string& path);
@@ -159,6 +161,9 @@ public:
   GLint get_format(int channels);
   void set_parameter(GLenum target, GLenum pname, GLint param);
   void set_parameter(GLenum target, GLenum pname, GLfloat param);
+
+protected:
+  GLenum target;
 };
 
 using TexturePtr = std::shared_ptr<Texture>;
