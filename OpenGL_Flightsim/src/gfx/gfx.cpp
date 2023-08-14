@@ -392,6 +392,7 @@ gl::ShaderPtr ShaderCache::get_shader(const std::string& path)
 
 RenderTarget::RenderTarget(int width, int height)
 {
+#if 0
   framebuffer.bind();
   
   texture.bind();
@@ -406,6 +407,7 @@ RenderTarget::RenderTarget(int width, int height)
 	  std::cout << "Framebuffer is not complete!" << std::endl;
 
   framebuffer.unbind();  
+#endif
 }
 
 
