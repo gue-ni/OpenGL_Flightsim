@@ -106,10 +106,10 @@ class BaseGeometry
   enum DrawType { DRAW_ARRAYS, DRAW_ELEMENTS, /* TODO: instanced */ };
 
   enum VertexLayout {
-    POS,         // pos
-    POS_UV,      // pos, uv
-    POS_NORM,    // pos, normal
-    POS_NORM_UV  // pos, normal, uv
+    POS = 3,         // pos
+    POS_UV = 5,      // pos, uv
+    POS_NORM = 6,    // pos, normal
+    POS_NORM_UV = 8 // pos, normal, uv
   };
 
   GLsizei count;
