@@ -111,7 +111,6 @@ struct FrameBuffer : public Object {
   ~FrameBuffer() { glDeleteFramebuffers(1, &m_id); }
   void bind() const { glBindFramebuffer(GL_FRAMEBUFFER, m_id); }
   void unbind() const { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
-  void attach_texture(const Texture& texture);
 };
 
 struct VertexArrayObject : public Object {
@@ -157,10 +156,9 @@ public:
   void bind(GLuint active_texture) const;
   void unbind() const;
   GLint get_format(int channels);
-  void set_parameter(GLenum target, GLenum pname, GLint param);
-  void set_parameter(GLenum target, GLenum pname, GLfloat param);
+  void set_parameter(GLenum pname, GLint param);
+  void set_parameter(GLenum pname, GLfloat param);
 
-protected:
   GLenum target;
 };
 
