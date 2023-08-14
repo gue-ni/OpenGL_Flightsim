@@ -22,9 +22,9 @@ namespace gl
 {
 
 struct Vertex {
- glm::vec3 pos;
- glm::vec3 normal;
- glm::vec2 texcoord;
+ glm::vec3 Position;
+ glm::vec3 Normal;
+ glm::vec2 TexCoords;
 };
 
 // abstract opengl object
@@ -66,40 +66,28 @@ public:
  ~Buffer() { glDeleteBuffers(1, &m_id); }
  void bind() const { glBindBuffer(target, m_id); }
  void unbind() const { glBindBuffer(target, 0); }
+  void buffer(const void* data, size_t size)
+  {
+    bind();
+    glBufferData(target, size, data, GL_STATIC_DRAW);
+  }
+
+  template <typename T>
+  void buffer(const std::vector<T>& data)
+  {
+    buffer(&data[0], sizeof(data[0]) * data.size());
+  }
+
 protected:
  const GLenum target;
 };
 
 struct VertexBuffer : public Buffer {
   VertexBuffer() : Buffer(GL_ARRAY_BUFFER) {}
-
-  void buffer(const void* data, size_t size)
-  {
-    bind();
-    glBufferData(target, size, data, GL_STATIC_DRAW);
-  }
-
-  template <typename T>
-  void buffer(const std::vector<T>& data)
-  {
-    buffer(&data[0], sizeof(data[0]) * data.size());
-  }
 };
 
 struct ElementBufferObject : public Buffer {
   ElementBufferObject() : Buffer(GL_ELEMENT_ARRAY_BUFFER) {}
-
-  void buffer(const void* data, size_t size)
-  {
-    bind();
-    glBufferData(target, size, data, GL_STATIC_DRAW);
-  }
-
-  template <typename T>
-  void buffer(const std::vector<T>& data)
-  {
-    buffer(&data[0], sizeof(data[0]) * data.size());
-  }
 };
 
 struct UniformBuffer : public Buffer {
