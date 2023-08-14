@@ -197,7 +197,9 @@ class Skybox : public Mesh
 class RenderTarget
 {
  public:
-  gl::FrameBuffer fbo;
+  RenderTarget(int width, int height);
+  gl::FrameBuffer framebuffer;
+  gl:Texture texture;
 };
 
 class Renderer
