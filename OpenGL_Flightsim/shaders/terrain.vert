@@ -18,8 +18,18 @@ out vec3 Color;
 out vec3 Normal;
 out vec3 FragPos;
 out vec2 TexCoord;
+//noperspective out vec2 TexCoord;
 
 flat out float scaleFactor;
+
+vec4 snap(vec4 vertex, vec2 resolution)
+{
+    vec4 snappedPos = vertex;
+    snappedPos.xyz = vertex.xyz / vertex.w; // convert to normalised device coordinates (NDC)
+    snappedPos.xy = floor(resolution * snappedPos.xy) / resolution; // snap the vertex to the lower-resolution grid
+    snappedPos.xyz *= vertex.w; // convert back to projection-space
+    return snappedPos;
+}
 
 float scale(float input_val, float in_min, float in_max, float out_min, float out_max)
 {
@@ -60,6 +70,7 @@ void main()
     Color = vec3(1.0, u_Level, 0.0);
 
     gl_Position = u_Projection * u_View * vec4(FragPos, 1.0);
+    //gl_Position = snap(gl_Position, vec2(320, 180));
 }
 
 

@@ -13,8 +13,9 @@ uniform sampler2D u_Texture_01;
 in vec3 Color;
 in vec3 Normal;
 in vec3 FragPos;
-in vec2 TexCoord;
 flat in float scaleFactor;
+//noperspective in vec2 TexCoord;
+in vec2 TexCoord;
 
 vec3 calculateDirLight(vec3 lightDirection, vec3 normal, vec3 color)
 {

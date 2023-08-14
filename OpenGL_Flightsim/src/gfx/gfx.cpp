@@ -395,21 +395,36 @@ RenderTarget::RenderTarget(int width, int height) : m_width(width), m_height(hei
 #if 1
   framebuffer.bind();
 
+  // setup texture
   texture = std::make_shared<gl::Texture>();
   texture->bind();
-  glTexImage2D(texture->target, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+  glTexImage2D(texture->target, 0, GL_RGB, m_width, m_height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
   texture->set_parameter(GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   texture->set_parameter(GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   texture->unbind();
 
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture->target, texture->id(), 0);
 
-  depthbuffer.bind();
-  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
-  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthbuffer.id());
+#if 0
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, m_width, m_height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8,
+               NULL);
 
-  GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
-  glDrawBuffers(1, DrawBuffers);  // "1" is the size of DrawBuffers
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, texture->target, texture->id(), 0);
+#endif
+
+  glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+#if 1
+  // renderbuffer
+  depthbuffer.bind();
+  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 800, 600);
+  depthbuffer.unbind();
+
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depthbuffer.id());
+#endif
+
+  // GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
+  // glDrawBuffers(1, DrawBuffers);  // "1" is the size of DrawBuffers
 
   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
     std::cout << "Framebuffer is not complete!" << std::endl;
@@ -419,9 +434,20 @@ RenderTarget::RenderTarget(int width, int height) : m_width(width), m_height(hei
 #endif
 }
 
-void RenderTarget::bind() { framebuffer.bind(); }
+void RenderTarget::bind()
+{
+  framebuffer.bind();
+  glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);  // we're not using the stencil buffer now
+  glEnable(GL_DEPTH_TEST);
+}
 
-void RenderTarget::unbind() { framebuffer.unbind(); }
+void RenderTarget::unbind()
+{
+  framebuffer.unbind();  // back to default
+  glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT);
+}
 
 Mesh::Mesh(const GeometryPtr& geometry, const MaterialPtr& material) : m_material(material), m_geometry(geometry) {}
 
@@ -526,15 +552,12 @@ Renderer::Renderer(GLsizei width, GLsizei height) : m_width(width), m_height(hei
   m_skybox->set_scale(glm::vec3(10.0f));
   m_skybox->update_transform();
 
-#if 0
+#if 1
   m_rendertarget = std::make_shared<gfx::RenderTarget>(640, 480);
-  auto tex = std::make_shared<gl::Texture>("assets/textures/container.jpg");
-  auto geo = gfx::make_quad_geometry();
   auto mat = std::make_shared<gfx::Material>("shaders/screen", m_rendertarget->texture);
-  m_screenquad = std::make_shared<gfx::Mesh>(geo, mat);
+  m_screenquad = std::make_shared<gfx::Mesh>(gfx::make_quad_geometry(), mat);
 #else
-  m_rendertarget = nullptr;
-  m_screenquad = nullptr;
+  m_rendertarget = m_screenquad = nullptr;
 #endif
 }
 
@@ -550,12 +573,7 @@ void Renderer::render_skybox(RenderContext& context)
   glDepthMask(GL_TRUE);
 }
 
-void Renderer::render_screenquad(RenderContext& context)
-{
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glEnable(GL_DEPTH_TEST);
-  m_screenquad->draw(context);
-}
+void Renderer::render_screenquad(RenderContext& context) { m_screenquad->draw(context); }
 
 void Renderer::render(Camera* camera, Object3D* scene)
 {
@@ -578,18 +596,15 @@ void Renderer::render(Camera* camera, Object3D* scene)
   render_shadows(context);
 
   // render skybox
-  render_skybox(context);
 
   if (m_rendertarget && m_screenquad) {
-    // glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-    // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    //m_rendertarget->bind();
+    m_rendertarget->bind();
+    render_skybox(context);
     scene->draw(context);
-    //m_rendertarget->unbind();
-
+    m_rendertarget->unbind();
     render_screenquad(context);
-  } else {
+  } else {  // do not render to texture
+    render_skybox(context);
     scene->draw(context);
   }
 }
