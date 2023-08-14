@@ -552,4 +552,11 @@ void Renderer::render(Camera* camera, Object3D* scene)
   scene->draw(context);
 }
 
+void Renderer::render(Camera* camera, Object3D* scene, RenderTarget* target)
+{
+	target->framebuffer.bind();
+	render(camera, scene);
+	target->framebuffer.unbind();
+}
+
 }  // namespace gfx
