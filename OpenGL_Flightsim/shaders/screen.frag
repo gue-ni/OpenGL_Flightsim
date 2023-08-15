@@ -9,7 +9,7 @@ void main()
 {             
     vec4 originalColor = texture(u_Texture_01, TexCoords);
 
-#if 1
+#if 0
     int bits_per_color = 5;
     int numColors = 1 << bits_per_color;
 

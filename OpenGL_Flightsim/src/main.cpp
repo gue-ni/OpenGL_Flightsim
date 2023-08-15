@@ -599,7 +599,8 @@ int main(void)
 
 int main()
 {
-    App app(640, 480, "Flightsim");
+    glm::ivec2 resolution = glm::ivec2(640, 360) * 2;
+    App app(resolution.x, resolution.y, "Flightsim");
     return app.run();
 }
 #endif

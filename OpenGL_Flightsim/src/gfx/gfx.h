@@ -227,6 +227,7 @@ class Renderer
   MeshPtr m_screenquad;
   std::shared_ptr<RenderTarget> m_rendertarget;
   std::shared_ptr<ShadowMap> m_shadowmap;
+  Light* m_light;
 
  public:
   Renderer(GLsizei width, GLsizei height);

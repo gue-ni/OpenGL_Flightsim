@@ -261,12 +261,12 @@ struct Airplane : public phi::RigidBody {
     }
 
     for (auto& wing : wings) {
-      //wing.apply_forces(this, dt);
+      wing.apply_forces(this, dt);
     }
 
     for (auto engine : engines) {
       engine->throttle = throttle;
-      //engine->apply_forces(this, dt);
+      engine->apply_forces(this, dt);
     }
 
     phi::RigidBody::update(dt);

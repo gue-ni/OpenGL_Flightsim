@@ -106,11 +106,15 @@ void App::init()
   m_falcon->add(m_cameras[1]);
 
   float height = m_clipmap->get_terrain_height(glm::vec2(0));
-  m_airplane->position = glm::vec3(0, height + 10.0f, 0);
-  m_airplane->velocity = glm::vec3(0, 0, 0);
-  m_airplane->rotation = glm::quat(glm::vec3(0.1f, 0.0f, 0.1f));
+  m_airplane->position = glm::vec3(0, height + 100.0f, 0);
+  m_airplane->velocity = glm::vec3(150, 0, 0);
+  m_airplane->rotation = glm::quat(glm::vec3(0.0f, 0.0f, 0.0f));
 
   m_cameras[2]->set_transform(m_airplane->position - offset, glm::quat(look_forward));
+
+  gfx::Light* light = new gfx::Light(glm::vec3(1.0f));
+  light->set_position(glm::vec3(2, 8, 2));
+  m_falcon->add(light);
 
   // setup all transforms
   m_scene->update_transform();
@@ -155,7 +159,7 @@ void App::init_airplane()
   Engine* engine = new SimpleEngine(thrust);
 
   LandingGear* collider =
-      new LandingGear(glm::vec3(4.0f, -1.5f, 0.0f), glm::vec3(-1.0f, -1.5f, +2.0f), glm::vec3(-1.0f, -1.5f, -2.0f));
+      new LandingGear(glm::vec3(4.0f, -1.8f, 0.0f), glm::vec3(-1.0f, -1.8f, +2.0f), glm::vec3(-1.0f, -1.8f, -2.0f));
 
   m_airplane = new Airplane(mass, inertia, wings, {engine}, collider);
 
