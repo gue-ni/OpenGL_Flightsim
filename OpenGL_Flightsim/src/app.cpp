@@ -106,8 +106,9 @@ void App::init()
   m_falcon->add(m_cameras[1]);
 
   float height = m_clipmap->get_terrain_height(glm::vec2(0));
-  m_airplane->position = glm::vec3(0, height + 2500.0f, 0);
-  m_airplane->velocity = glm::vec3(300, 0, 0);
+  m_airplane->position = glm::vec3(0, height + 10.0f, 0);
+  m_airplane->velocity = glm::vec3(0, 0, 0);
+  m_airplane->rotation = glm::quat(glm::vec3(0.1f, 0.0f, 0.1f));
 
   m_cameras[2]->set_transform(m_airplane->position - offset, glm::quat(look_forward));
 
@@ -157,6 +158,21 @@ void App::init_airplane()
       new LandingGear(glm::vec3(4.0f, -1.5f, 0.0f), glm::vec3(-1.0f, -1.5f, +2.0f), glm::vec3(-1.0f, -1.5f, -2.0f));
 
   m_airplane = new Airplane(mass, inertia, wings, {engine}, collider);
+
+#if 1
+  gfx::Object3D* landing_gear = new gfx::Object3D();
+  m_falcon->add(landing_gear);
+
+  auto wheel_texture = std::make_shared<gfx::gl::Texture>("assets/textures/container.jpg");
+  auto wheel_material = std::make_shared<gfx::Material>("shaders/mesh", wheel_texture);
+  auto wheel_geometry = gfx::make_cube_geometry(0.5f);
+
+  for (auto wheel : collider->wheels()) {
+    gfx::Mesh* wheel_mesh = new gfx::Mesh(wheel_geometry, wheel_material);
+    wheel_mesh->set_position(wheel);
+    landing_gear->add(wheel_mesh);
+  }
+#endif
 }
 
 void App::destroy()
@@ -283,11 +299,12 @@ void App::game_loop(float dt)
     phi::CollisionInfo collision;
     if (test_collision(m_airplane, m_terrain, &collision)) {
       phi::RigidBody::impulse_collision(collision);
-
+#if 0
       float ke = phi::calc::kinetic_energy(m_airplane->mass, m_airplane->get_speed());
       if (ke > 10000.0f) {
         m_paused = true;
       }
+#endif
     }
 
     m_falcon->set_transform(m_airplane->position, m_airplane->rotation);
@@ -302,7 +319,6 @@ void App::game_loop(float dt)
   m_controller.update(*m_cameras[0], m_falcon->get_position(), dt);
 
   m_renderer->render(m_cameras[m_cameratype], m_scene);
-
 }
 
 int App::run()

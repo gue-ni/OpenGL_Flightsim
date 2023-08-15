@@ -44,7 +44,8 @@ float getHeight(vec2 uv)
 
 vec3 getNormal(vec2 uv)
 {
-    return normalize(texture(u_Normalmap, uv).rgb);
+    vec3 normal = texture(u_Normalmap, uv).rgb;
+    return normalize(normal * 2.0 - 1.0);   
 }
 
 vec2 getUV(vec2 pos)

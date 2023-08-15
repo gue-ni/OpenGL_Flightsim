@@ -10,8 +10,8 @@ namespace gfx
 
 Geometry::Geometry(const std::vector<float>& vertices, const VertexLayout& layout)
 {
-  const int stride = get_stride(layout);
-  count = static_cast<int>(vertices.size()) / (get_stride(layout));
+  const int stride = static_cast<int>(layout);
+  count = static_cast<int>(vertices.size()) / (stride);
 
   vao.bind();
   vbo.buffer(vertices);
@@ -39,21 +39,6 @@ Geometry::Geometry(const std::vector<float>& vertices, const VertexLayout& layou
   vao.bind();
 }
 
-int Geometry::get_stride(const VertexLayout& layout)
-{
-  switch (layout) {
-    case POS:
-      return 3;
-    case POS_UV:
-      return 5;
-    case POS_NORM:
-      return 6;
-    case POS_NORM_UV:
-      return 8;
-  }
-  return 0;
-}
-
 Object3D::Type Camera::get_type() const { return Object3D::Type::CAMERA; }
 
 glm::mat4 Camera::get_view_matrix() const { return glm::inverse(m_transform); }
@@ -71,32 +56,6 @@ glm::mat4 Light::light_space_matrix()
   glm::mat4 light_view = glm::lookAt(wp, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
   glm::mat4 light_projection = glm::ortho(-m, m, -m, m, near_plane, far_plane);
   return light_projection * light_view;
-}
-
-ShadowMap::ShadowMap(unsigned int shadow_width, unsigned int shadow_height)
-    : width(shadow_width), height(shadow_height), shader("shaders/depth")
-{
-  // glGenTextures(1, &depth_map_texture_id);
-  glBindTexture(GL_TEXTURE_2D, depth_map.id());
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadow_width, shadow_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT,
-               NULL);
-
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-  glGenFramebuffers(1, &fbo);
-  glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_map.id(), 0);
-  glDrawBuffer(GL_NONE);
-  glReadBuffer(GL_NONE);
-  glBindBuffer(GL_FRAMEBUFFER, 0);
-
-  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-    std::cout << "failure\n";
-    exit(-1);
-  }
 }
 
 std::vector<float> load_obj(const std::string path)
@@ -393,8 +352,6 @@ gl::ShaderPtr ShaderCache::get_shader(const std::string& path)
 RenderTarget::RenderTarget(int width, int height) : m_width(width), m_height(height)
 {
 #if 1
-  framebuffer.bind();
-
   // setup texture
   texture = std::make_shared<gl::Texture>();
   texture->bind();
@@ -403,31 +360,43 @@ RenderTarget::RenderTarget(int width, int height) : m_width(width), m_height(hei
   texture->set_parameter(GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   texture->unbind();
 
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture->target, texture->id(), 0);
-
-#if 0
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, m_width, m_height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8,
-               NULL);
-
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, texture->target, texture->id(), 0);
-#endif
-
-  glBindRenderbuffer(GL_RENDERBUFFER, 0);
-
-#if 1
-  // renderbuffer
+  // setup depthmap
   depthbuffer.bind();
-  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 800, 600);
+  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, m_width, m_height);
   depthbuffer.unbind();
 
+  framebuffer.bind();
+
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture->target, texture->id(), 0);
   glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depthbuffer.id());
-#endif
 
-  // GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
-  // glDrawBuffers(1, DrawBuffers);  // "1" is the size of DrawBuffers
-
-  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+  if (!framebuffer.complete()) {
     std::cout << "Framebuffer is not complete!" << std::endl;
+  }
+
+  framebuffer.unbind();
+#endif
+}
+
+ShadowMap::ShadowMap(int width, int height) : m_width(width), m_height(height)
+{
+#if 1
+  depthmap = std::make_shared<gl::Texture>();
+  depthmap->bind();
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, m_width, m_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  depthmap->unbind();
+
+  framebuffer.bind();
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthmap->id(), 0);
+  glDrawBuffer(GL_NONE);
+  glReadBuffer(GL_NONE);
+
+  if (!framebuffer.complete()) {
+    std::cout << "ShadowMap framebuffer is not complete\n";
   }
 
   framebuffer.unbind();
@@ -489,12 +458,13 @@ void Mesh::draw_self(RenderContext& context)
     glm::vec3 rgb = glm::vec3(1.0f, 0.0f, 0.0f);
     shader->set_uniform("u_SolidObjectColor", rgb);
 
-    shader->set_uniform("ka", 0.5f);
-    shader->set_uniform("kd", 1.0f);
-    shader->set_uniform("ks", 0.4f);
-    shader->set_uniform("alpha", 20.0f);
+    // shader->set_uniform("ka", 0.5f);
+    // shader->set_uniform("kd", 1.0f);
+    // shader->set_uniform("ks", 0.4f);
+    // shader->set_uniform("alpha", 20.0f);
 
     m_geometry->vao.bind();
+
     switch (m_geometry->draw_type) {
       case BaseGeometry::DRAW_ARRAYS:
         glDrawArrays(GL_TRIANGLES, 0, m_geometry->count);
@@ -553,6 +523,10 @@ Renderer::Renderer(GLsizei width, GLsizei height) : m_width(width), m_height(hei
   m_skybox->update_transform();
 
 #if 1
+  m_shadowmap = std::make_shared<ShadowMap>(1024, 1024);
+#endif
+
+#if 1
   m_rendertarget = std::make_shared<gfx::RenderTarget>(640, 480);
   auto mat = std::make_shared<gfx::Material>("shaders/screen", m_rendertarget->texture);
   m_screenquad = std::make_shared<gfx::Mesh>(gfx::make_quad_geometry(), mat);
@@ -560,6 +534,15 @@ Renderer::Renderer(GLsizei width, GLsizei height) : m_width(width), m_height(hei
   m_rendertarget = m_screenquad = nullptr;
 #endif
 }
+
+void ShadowMap::bind()
+{
+  glViewport(0, 0, m_width, m_height);
+  framebuffer.bind();
+  glClear(GL_DEPTH_BUFFER_BIT);
+}
+
+void ShadowMap::unbind() { framebuffer.unbind(); }
 
 void Renderer::render_shadows(RenderContext& context)
 {
@@ -585,6 +568,8 @@ void Renderer::render(Camera* camera, Object3D* scene)
   context.shadow_pass = false;
   context.shaders = &m_shaders;
   context.env_map = m_skybox->get_material()->get_texture();
+  context.depth_map = m_shadowmap->depthmap;
+  // context.light = new Light();
 
   // depends on skybox
   context.fog_color = m_fog_color;
@@ -593,16 +578,58 @@ void Renderer::render(Camera* camera, Object3D* scene)
   scene->update_transform();
 
   // render to shadowmap
-  render_shadows(context);
+#if 0
+  {
+    m_shadowmap->bind();
+
+    scene->traverse([&context](Object3D* obj) {
+      Mesh* mesh = dynamic_cast<Mesh*>(obj);
+
+      if (mesh != NULL) {
+        Camera* camera = context.camera;
+        gl::ShaderPtr shader = context.shaders->get_shader("shaders/depth");
+
+        float near_plane = 1.0f, far_plane = 20.0f;
+        glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+        glm::mat4 lightView =
+            glm::lookAt(glm::vec3(-2.0f, 18.0f, -1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 light_space_matrix = lightProjection * lightView;
+
+        shader->bind();
+
+        shader->set_uniform("u_Model", mesh->get_transform());
+        shader->set_uniform("u_CameraPos", camera->get_world_position());
+        shader->set_uniform("u_LightSpaceMatrix", light_space_matrix);
+
+        auto geo = mesh->get_geometry();
+
+        geo->vao.bind();
+        glDrawArrays(GL_TRIANGLES, 0, geo->count);
+        geo->vao.unbind();
+
+        shader->unbind();
+      }
+
+      return true;
+    });
+
+    m_shadowmap->unbind();
+  }
+#endif
 
   // render skybox
 
   if (m_rendertarget && m_screenquad) {
     m_rendertarget->bind();
+
     render_skybox(context);
+
     scene->draw(context);
+
     m_rendertarget->unbind();
+
     render_screenquad(context);
+
   } else {  // do not render to texture
     render_skybox(context);
     scene->draw(context);

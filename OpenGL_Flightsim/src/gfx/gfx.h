@@ -45,20 +45,14 @@ GeometryPtr make_cube_geometry(float size);
 GeometryPtr make_plane_geometry(int x_elements, int y_elements, float size);
 GeometryPtr make_quad_geometry();
 
-struct ShadowMap {
-  ShadowMap(unsigned int shadow_width, unsigned int shadow_height);
-  GLuint fbo;
-  gl::Texture depth_map;
-  gl::Shader shader;
-  GLuint width, height;
-};
-
 struct RenderContext {
   bool shadow_pass;
+  glm::vec3 fog_color;
   Camera* camera;
+  Light* light;
   ShaderCache* shaders = nullptr;
   gl::TexturePtr env_map = nullptr;
-  glm::vec3 fog_color;
+  gl::TexturePtr depth_map = nullptr;
 };
 
 class Camera : public Object3D
@@ -100,16 +94,23 @@ class Light : public Object3D
   glm::vec3 rgb;
 };
 
+class DirLight : public Object3D
+{
+ public:
+  glm::vec3 color = glm::vec3(1.0f);
+};
+
 class BaseGeometry
 {
  public:
   enum DrawType { DRAW_ARRAYS, DRAW_ELEMENTS, /* TODO: instanced */ };
 
-  enum VertexLayout {
-    POS,         // pos
-    POS_UV,      // pos, uv
-    POS_NORM,    // pos, normal
-    POS_NORM_UV  // pos, normal, uv
+  // stride
+  enum VertexLayout : int {
+    POS = 3,         // pos
+    POS_UV = 5,      // pos, uv
+    POS_NORM = 6,    // pos, normal
+    POS_NORM_UV = 8  // pos, normal, uv
   };
 
   GLsizei count;
@@ -124,14 +125,13 @@ class Geometry : public BaseGeometry
 
  private:
   gl::VertexBuffer vbo;
-  static int get_stride(const VertexLayout& layout);
 };
 
 class Material
 {
  public:
-  glm::vec3 emissive, ambient, diffuse, specular;
   float alpha, shininess;
+  glm::vec3 emissive, ambient, diffuse, specular;
 
   Material(const std::string& shader_name, const gl::TexturePtr& texture)
       : m_shader_name(shader_name), m_texture(texture)
@@ -202,8 +202,20 @@ class RenderTarget
   gl::TexturePtr texture = nullptr;
   void bind();
   void unbind();
-private:
-    int m_width, m_height;
+
+ private:
+  int m_width, m_height;
+};
+
+struct ShadowMap {
+  ShadowMap(int width, int height);
+  gl::FrameBuffer framebuffer;
+  gl::TexturePtr depthmap = nullptr;
+  void bind();
+  void unbind();
+
+ private:
+  GLuint m_width, m_height;
 };
 
 class Renderer
@@ -215,8 +227,7 @@ class Renderer
   MeshPtr m_skybox;
   MeshPtr m_screenquad;
   std::shared_ptr<RenderTarget> m_rendertarget;
-
-  // ShadowMap m_shadowmap;
+  std::shared_ptr<ShadowMap> m_shadowmap;
 
  public:
   Renderer(GLsizei width, GLsizei height);

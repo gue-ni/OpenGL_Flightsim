@@ -39,7 +39,7 @@ void main()
 
   // Calculate fog
   float fogMindist = 1000.0;
-  float fogMaxdist = 100000.0;
+  float fogMaxdist = 75000.0;
 
   vec4 fogColor = vec4(u_FogColor, 1.0);
 

@@ -9,14 +9,15 @@ void main()
 {             
     vec4 originalColor = texture(u_Texture_01, TexCoords);
 
-#if 1
-    float colors = 32.0;
+#if 0
+    int bits_per_color = 5;
+    int numColors = 1 << bits_per_color;
 
     // Scale to range
-    vec3 truncatedColor = floor(originalColor.rgb * colors);  
+    vec3 truncatedColor = floor(originalColor.rgb * numColors);  
     
     // Convert back to the 0.0-1.0 range
-    vec3 finalColor = truncatedColor / colors;
+    vec3 finalColor = truncatedColor / numColors;
     
     // Output the final color
     FragColor = vec4(finalColor, originalColor.a);

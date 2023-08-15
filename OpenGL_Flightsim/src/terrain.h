@@ -12,7 +12,8 @@ const std::string PATH = "assets/textures/terrain/data/9/268/178/";
 const int ZOOM_FACTOR = 1;
 #elif (DATA_SRC == 2)
 //const std::string PATH = "assets/textures/terrain/data/10/536/356/";
-const std::string PATH = "assets/textures/terrain/data/10/536/360/";
+//const std::string PATH = "assets/textures/terrain/data/10/536/360/";
+const std::string PATH = "assets/textures/terrain/debug/";
 const int ZOOM_FACTOR = 2;
 #elif (DATA_SRC == 3)
 const std::string PATH = "assets/textures/terrain/data/11/1072/712/";
