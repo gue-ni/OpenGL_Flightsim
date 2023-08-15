@@ -15,7 +15,7 @@ Shader::Shader(const std::string& vertShader, const std::string& fragShader)
   const char* vertexShaderSource = vertShader.c_str();
   const char* fragmentShaderSource = fragShader.c_str();
 
-  unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
+  GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
   glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
   glCompileShader(vertexShader);
 
@@ -29,7 +29,7 @@ Shader::Shader(const std::string& vertShader, const std::string& fragShader)
   }
 
   // fragment shader
-  unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+  GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
   glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
   glCompileShader(fragmentShader);
   // check for shader compile errors

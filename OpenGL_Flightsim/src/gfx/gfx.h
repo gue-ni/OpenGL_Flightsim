@@ -196,26 +196,24 @@ class Skybox : public Mesh
 class RenderTarget
 {
  public:
-  RenderTarget(int width, int height);
+  RenderTarget(int w, int h);
   gl::FrameBuffer framebuffer;
   gl::RenderBuffer depthbuffer;
   gl::TexturePtr texture = nullptr;
   void bind();
   void unbind();
 
- private:
-  int m_width, m_height;
+  GLuint width, height;
 };
 
 struct ShadowMap {
-  ShadowMap(int width, int height);
+  ShadowMap(int w, int h);
   gl::FrameBuffer framebuffer;
-  gl::TexturePtr depthmap = nullptr;
+  gl::TexturePtr texture = nullptr;
   void bind();
   void unbind();
 
- private:
-  GLuint m_width, m_height;
+  GLuint width, height;
 };
 
 class Renderer

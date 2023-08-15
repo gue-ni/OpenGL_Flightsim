@@ -349,20 +349,20 @@ gl::ShaderPtr ShaderCache::get_shader(const std::string& path)
   return m_cache.at(path);
 }
 
-RenderTarget::RenderTarget(int width, int height) : m_width(width), m_height(height)
+RenderTarget::RenderTarget(int w, int h) : width(w), height(h)
 {
 #if 1
   // setup texture
   texture = std::make_shared<gl::Texture>();
   texture->bind();
-  glTexImage2D(texture->target, 0, GL_RGB, m_width, m_height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+  glTexImage2D(texture->target, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
   texture->set_parameter(GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   texture->set_parameter(GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   texture->unbind();
 
   // setup depthmap
   depthbuffer.bind();
-  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, m_width, m_height);
+  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
   depthbuffer.unbind();
 
   framebuffer.bind();
@@ -378,20 +378,20 @@ RenderTarget::RenderTarget(int width, int height) : m_width(width), m_height(hei
 #endif
 }
 
-ShadowMap::ShadowMap(int width, int height) : m_width(width), m_height(height)
+ShadowMap::ShadowMap(int w, int h) : width(w), height(h)
 {
 #if 1
-  depthmap = std::make_shared<gl::Texture>();
-  depthmap->bind();
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, m_width, m_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+  texture = std::make_shared<gl::Texture>();
+  texture->bind();
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  depthmap->unbind();
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  texture->unbind();
 
   framebuffer.bind();
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthmap->id(), 0);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, texture->target, texture->id(), 0);
   glDrawBuffer(GL_NONE);
   glReadBuffer(GL_NONE);
 
@@ -405,17 +405,10 @@ ShadowMap::ShadowMap(int width, int height) : m_width(width), m_height(height)
 
 void RenderTarget::bind()
 {
-  framebuffer.bind();
-  glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);  // we're not using the stencil buffer now
-  glEnable(GL_DEPTH_TEST);
 }
 
 void RenderTarget::unbind()
 {
-  framebuffer.unbind();  // back to default
-  glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-  glClear(GL_COLOR_BUFFER_BIT);
 }
 
 Mesh::Mesh(const GeometryPtr& geometry, const MaterialPtr& material) : m_material(material), m_geometry(geometry) {}
@@ -523,13 +516,16 @@ Renderer::Renderer(GLsizei width, GLsizei height) : m_width(width), m_height(hei
   m_skybox->update_transform();
 
 #if 1
-  m_shadowmap = std::make_shared<ShadowMap>(1024, 1024);
+  m_shadowmap = std::make_shared<ShadowMap>(2048, 2048);
 #endif
 
 #if 1
   m_rendertarget = std::make_shared<gfx::RenderTarget>(640, 480);
-  auto mat = std::make_shared<gfx::Material>("shaders/screen", m_rendertarget->texture);
-  m_screenquad = std::make_shared<gfx::Mesh>(gfx::make_quad_geometry(), mat);
+
+  auto mat1 = std::make_shared<gfx::Material>("shaders/screen", m_rendertarget->texture);
+  auto mat2 = std::make_shared<gfx::Material>("shaders/shadow_debug", m_shadowmap->texture);
+
+  m_screenquad = std::make_shared<gfx::Mesh>(gfx::make_quad_geometry(), mat2);
 #else
   m_rendertarget = m_screenquad = nullptr;
 #endif
@@ -537,7 +533,7 @@ Renderer::Renderer(GLsizei width, GLsizei height) : m_width(width), m_height(hei
 
 void ShadowMap::bind()
 {
-  glViewport(0, 0, m_width, m_height);
+  glViewport(0, 0, width, height);
   framebuffer.bind();
   glClear(GL_DEPTH_BUFFER_BIT);
 }
@@ -560,15 +556,15 @@ void Renderer::render_screenquad(RenderContext& context) { m_screenquad->draw(co
 
 void Renderer::render(Camera* camera, Object3D* scene)
 {
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glEnable(GL_DEPTH_TEST);
+  // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  // glEnable(GL_DEPTH_TEST);
 
   RenderContext context;
   context.camera = camera;
   context.shadow_pass = false;
   context.shaders = &m_shaders;
   context.env_map = m_skybox->get_material()->get_texture();
-  context.depth_map = m_shadowmap->depthmap;
+  context.depth_map = m_shadowmap->texture;
   // context.light = new Light();
 
   // depends on skybox
@@ -578,27 +574,28 @@ void Renderer::render(Camera* camera, Object3D* scene)
   scene->update_transform();
 
   // render to shadowmap
-#if 0
+#if 1
   {
-    m_shadowmap->bind();
+    glViewport(0, 0, m_shadowmap->width, m_shadowmap->height);
+    m_shadowmap->framebuffer.bind();
+    //glClear(GL_DEPTH_BUFFER_BIT);
+     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     scene->traverse([&context](Object3D* obj) {
       Mesh* mesh = dynamic_cast<Mesh*>(obj);
 
       if (mesh != NULL) {
-        Camera* camera = context.camera;
         gl::ShaderPtr shader = context.shaders->get_shader("shaders/depth");
 
-        float near_plane = 1.0f, far_plane = 20.0f;
-        glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-        glm::mat4 lightView =
-            glm::lookAt(glm::vec3(-2.0f, 18.0f, -1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        float near_plane = 1.0f, far_plane = 100.0f;
+        glm::vec3 light_pos =  glm::vec3(-2.0f, 392.0f + 18.0f, -1.0f);
+        float m = 20.0f;
+        glm::mat4 lightProjection = glm::ortho(-m, m, -m, m, near_plane, far_plane);
+        glm::mat4 lightView = glm::lookAt(light_pos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         glm::mat4 light_space_matrix = lightProjection * lightView;
 
         shader->bind();
-
         shader->set_uniform("u_Model", mesh->get_transform());
-        shader->set_uniform("u_CameraPos", camera->get_world_position());
         shader->set_uniform("u_LightSpaceMatrix", light_space_matrix);
 
         auto geo = mesh->get_geometry();
@@ -613,20 +610,25 @@ void Renderer::render(Camera* camera, Object3D* scene)
       return true;
     });
 
-    m_shadowmap->unbind();
+    m_shadowmap->framebuffer.unbind();
   }
 #endif
 
   // render skybox
 
   if (m_rendertarget && m_screenquad) {
-    m_rendertarget->bind();
+    glViewport(0, 0, m_rendertarget->width, m_rendertarget->height);
+    m_rendertarget->framebuffer.bind();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     render_skybox(context);
 
     scene->draw(context);
 
-    m_rendertarget->unbind();
+    m_rendertarget->framebuffer.unbind();
+
+    glViewport(0, 0, m_width, m_height);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     render_screenquad(context);
 
