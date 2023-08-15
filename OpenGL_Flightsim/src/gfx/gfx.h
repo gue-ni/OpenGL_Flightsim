@@ -53,6 +53,7 @@ struct RenderContext {
   ShaderCache* shaders = nullptr;
   gl::TexturePtr env_map = nullptr;
   gl::TexturePtr depth_map = nullptr;
+  glm::mat4 light_space_matrix;
 };
 
 class Camera : public Object3D

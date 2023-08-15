@@ -4,6 +4,7 @@ layout (location = 0) in vec3 a_Pos;
 uniform mat4 u_View;
 uniform mat4 u_Model;
 uniform mat4 u_Projection;
+uniform mat4 u_LightSpaceMatrix;
 
 uniform sampler2D u_Heightmap;
 uniform sampler2D u_Normalmap;
@@ -19,6 +20,8 @@ out vec3 Normal;
 out vec3 FragPos;
 out vec2 TexCoord;
 //noperspective out vec2 TexCoord;
+out vec4 FragPosLightSpace;
+
 
 flat out float scaleFactor;
 
@@ -71,7 +74,13 @@ void main()
     Color = vec3(1.0, u_Level, 0.0);
 
     gl_Position = u_Projection * u_View * vec4(FragPos, 1.0);
-    //gl_Position = snap(gl_Position, vec2(320, 180));
+
+#if 0
+    gl_Position = snap(gl_Position, vec2(320, 180));
+#endif
+
+  FragPosLightSpace = u_LightSpaceMatrix * vec4(FragPos, 1.0);
+
 }
 
 

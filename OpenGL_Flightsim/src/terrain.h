@@ -199,6 +199,9 @@ class Clipmap : public gfx::Object3D
     shader.set_uniform("u_CameraPos", context.camera->get_world_position());
     shader.set_uniform("u_Projection", context.camera->get_projection_matrix());
     shader.set_uniform("u_TerrainSize", terrain_size);
+    shader.set_uniform("u_Shadowmap", 5);
+    shader.set_uniform("u_LightSpaceMatrix", context.light_space_matrix);
+
 
     glEnable(GL_CULL_FACE);
     glEnable(GL_PRIMITIVE_RESTART);
@@ -230,6 +233,7 @@ class Clipmap : public gfx::Object3D
       heightmap.bind(2);
       normalmap.bind(3);
       terrain.bind(4);
+      context.depth_map->bind(5);
 
 #if 1
       if (level == min_level) {
