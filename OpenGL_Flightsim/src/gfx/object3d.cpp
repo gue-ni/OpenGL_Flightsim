@@ -58,7 +58,7 @@ void Object3D::set_transform(const Object3D& transform)
 void Object3D::set_transform(const glm::vec3& position, const glm::quat& rotation)
 {
   set_position(position);
-  set_rotation_quat(rotation);
+  set_rotation(rotation);
 }
 
 void Object3D::set_rotation(const glm::vec3& rot)
@@ -69,7 +69,7 @@ void Object3D::set_rotation(const glm::vec3& rot)
 
 void Object3D::rotate_by(const glm::vec3& rot) { set_rotation(get_rotation() + rot); }
 
-void Object3D::set_rotation_quat(const glm::quat& quat)
+void Object3D::set_rotation(const glm::quat& quat)
 {
   m_rotation = quat;
   m_dirty = true;
@@ -103,7 +103,7 @@ void Object3D::set_transform(const glm::mat4& matrix)
   glm::decompose(matrix, scale, rotation, translation, skew, perspective);
 
   set_scale(scale);
-  set_rotation_quat(rotation);
+  set_rotation(rotation);
   set_position(translation);
 }
 

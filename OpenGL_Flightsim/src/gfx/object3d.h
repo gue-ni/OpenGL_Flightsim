@@ -57,7 +57,7 @@ class Object3D
   void set_scale(const glm::vec3& scale);
   void set_rotation(const glm::vec3& rotation);
   void rotate_by(const glm::vec3& rotation);
-  void set_rotation_quat(const glm::quat& rotation);
+  void set_rotation(const glm::quat& rotation);
   void set_position(const glm::vec3& position);
   void set_transform(const Object3D& transform);
   void set_transform(const glm::vec3& position, const glm::quat& rotation);
