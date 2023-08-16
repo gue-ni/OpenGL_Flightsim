@@ -349,7 +349,7 @@ gl::ShaderPtr ShaderCache::get_shader(const std::string& path)
   return m_cache.at(path);
 }
 
-RenderTarget::RenderTarget(int w, int h) : width(w), height(h)
+RenderTarget::RenderTarget(int w, int h) : RenderTargetBase(w, h)
 {
 #if 1
   // setup texture
@@ -378,7 +378,7 @@ RenderTarget::RenderTarget(int w, int h) : width(w), height(h)
 #endif
 }
 
-ShadowMap::ShadowMap(int w, int h) : width(w), height(h)
+ShadowMap::ShadowMap(int w, int h) : RenderTargetBase(w, h)
 {
   texture = std::make_shared<gl::Texture>();
   texture->bind();
@@ -401,10 +401,6 @@ ShadowMap::ShadowMap(int w, int h) : width(w), height(h)
 
   framebuffer.unbind();
 }
-
-void RenderTarget::bind() {}
-
-void RenderTarget::unbind() {}
 
 Mesh::Mesh(const GeometryPtr& geometry, const MaterialPtr& material) : m_material(material), m_geometry(geometry) {}
 
@@ -432,6 +428,8 @@ void Mesh::draw_self(RenderContext& context)
     glm::vec3 light_color = glm::vec3(1, 1, 1);
     shader->set_uniform("u_LightDir", light_dir);
     shader->set_uniform("u_LightColor", light_color);
+        
+    shader->set_uniform("u_ShadowPass", false);
 
     shader->set_uniform("u_UseTexture", true);
 
@@ -526,15 +524,6 @@ Renderer::Renderer(GLsizei width, GLsizei height) : m_width(width), m_height(hei
 #endif
 }
 
-void ShadowMap::bind()
-{
-  glViewport(0, 0, width, height);
-  framebuffer.bind();
-  glClear(GL_DEPTH_BUFFER_BIT);
-}
-
-void ShadowMap::unbind() { framebuffer.unbind(); }
-
 void Renderer::render_shadows(RenderContext& context)
 {
   // TODO
@@ -592,17 +581,17 @@ void Renderer::render(Camera* camera, Object3D* scene)
   {
     glViewport(0, 0, m_shadowmap->width, m_shadowmap->height);
     m_shadowmap->framebuffer.bind();
-     glClear(GL_DEPTH_BUFFER_BIT);
-    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    // glClear(GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     scene->traverse([&context](Object3D* obj) {
       Mesh* mesh = dynamic_cast<Mesh*>(obj);
 
       if (mesh != NULL) {
-        gl::ShaderPtr shader = context.shaders->get_shader("shaders/depth");
-
+        gl::ShaderPtr shader = context.shaders->get_shader("shaders/mesh");
         shader->bind();
         shader->set_uniform("u_Model", mesh->get_transform());
+        shader->set_uniform("u_ShadowPass", true);
         shader->set_uniform("u_LightSpaceMatrix", context.light_space_matrix);
 
         auto geo = mesh->get_geometry();
@@ -643,6 +632,15 @@ void Renderer::render(Camera* camera, Object3D* scene)
     render_skybox(context);
     scene->draw(context);
   }
+}
+
+void Renderer::render(Camera* camera, Object3D* scene, RenderTarget* target)
+{
+  glViewport(0, 0, target->width, target->height);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  target->framebuffer.bind();
+  render(camera, scene);
+  target->framebuffer.unbind();
 }
 
 }  // namespace gfx

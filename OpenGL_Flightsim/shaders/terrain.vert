@@ -18,7 +18,7 @@ uniform float   u_TerrainSize;
 out vec3 Color;
 out vec3 Normal;
 out vec3 FragPos;
-out vec2 TexCoord;
+out vec2 TexCoords;
 //noperspective out vec2 TexCoord;
 out vec4 FragPosLightSpace;
 
@@ -65,11 +65,11 @@ void main()
     scaleFactor = u_TerrainSize / 2.0;
 
     FragPos = vec3(u_Model * vec4(a_Pos, 1.0));
-    TexCoord = getUV(FragPos.xz);
+    TexCoords = getUV(FragPos.xz);
 
-    FragPos.y = getHeight(TexCoord);
+    FragPos.y = getHeight(TexCoords);
 
-    Normal = getNormal(TexCoord);
+    Normal = getNormal(TexCoords);
 
     Color = vec3(1.0, u_Level, 0.0);
 

@@ -2,9 +2,9 @@
 out vec4 FragColor;
 
 in vec3 Normal;  
-in vec3 FragPos;  
+in vec3 WorldPos;  
 in vec2 TexCoords;
-in vec4 FragPosLightSpace;
+in vec4 WorldPosLightSpace;
   
 uniform vec3 u_CameraPosition; 
 
@@ -45,9 +45,9 @@ float calculateAttenuation(float constant, float linear, float quadratic, float 
 	return 1.0 / (constant + linear * distance + quadratic * (distance * distance));
 }
 
-float calculateShadow(vec4 fragPosLightSpace)
+float calculateShadow(vec4 WorldPosLightSpace)
 {
-    vec3 projectionCoords = (fragPosLightSpace.xyz / fragPosLightSpace.w) * 0.5 + 0.5;
+    vec3 projectionCoords = (WorldPosLightSpace.xyz / WorldPosLightSpace.w) * 0.5 + 0.5;
     float closestDepth = texture(u_ShadowMap, projectionCoords.xy).r; 
     float currentDepth = projectionCoords.z;
 	float bias = 0.005;
@@ -69,14 +69,14 @@ vec3 calculateDirLight(Light light)
     vec3 diffuse = kd * max(dot(norm, lightDir), 0.0) * light.color;
     
     // specular
-    vec3 u_ViewDir = normalize(u_CameraPosition - FragPos);
+    vec3 u_ViewDir = normalize(u_CameraPosition - WorldPos);
     vec3 reflectDir = reflect(-lightDir, norm);  
     vec3 specular = ks * pow(max(dot(u_ViewDir, reflectDir), 0.0), alpha) * light.color;
 
 	float shadow = 0.0;
 	if (u_ReceiveShadow)
 	{
-		shadow = calculateShadow(FragPosLightSpace);       
+		shadow = calculateShadow(WorldPosLightSpace);       
 	}
 
     return (ambient + (1.0 - shadow) * (diffuse + specular)) * color;
@@ -95,11 +95,11 @@ vec3 calculatePointLight(Light light)
   	
     // diffuse 
     vec3 norm = normalize(Normal);
-    vec3 lightDir = normalize(position - FragPos);
+    vec3 lightDir = normalize(position - WorldPos);
     vec3 diffuse = kd * max(dot(norm, lightDir), 0.0) * light.color;
     
     // specular
-    vec3 u_ViewDir = normalize(u_CameraPosition - FragPos);
+    vec3 u_ViewDir = normalize(u_CameraPosition - WorldPos);
     vec3 reflectDir = reflect(-lightDir, norm);  
     vec3 specular = ks * pow(max(dot(u_ViewDir, reflectDir), 0.0), alpha) * light.color;
 
@@ -107,14 +107,14 @@ vec3 calculatePointLight(Light light)
 	float constant		= 1.0;
 	float linear		= 0.09;
 	float quadratic		= 0.032;
-	float distance		= length(position - FragPos);
+	float distance		= length(position - WorldPos);
 	float attenuation	= calculateAttenuation(constant, linear, quadratic, distance);  
 	
     result += (ambient + diffuse + specular) * attenuation * color;
 
 #if 0
 	// https://ijdykeman.github.io/graphics/simple_fog_shader
-	vec3 cameraDir = u_CameraPosition - FragPos;
+	vec3 cameraDir = u_CameraPosition - WorldPos;
 	vec3 cameraDir = -u_ViewDir;
 	float b = length(light.position - u_CameraPosition);
 
@@ -160,12 +160,12 @@ void main()
 #if 0	
 	// fog
 
-	float tmp = dot(vec3(0,1,0), u_CameraPosition - FragPos);
+	float tmp = dot(vec3(0,1,0), u_CameraPosition - WorldPos);
 
 	vec4 fogColor = vec4(u_FogColor, 1.0);
 	float fogMin = 4.1;
 	float fogMax = 100.0;
-	float dist = length(u_CameraPosition - FragPos);
+	float dist = length(u_CameraPosition - WorldPos);
 	float fogFactor = (fogMax - dist) / (fogMax - fogMin);
 
 	fogFactor = clamp(fogFactor, 0.0, 1.0);

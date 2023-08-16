@@ -113,6 +113,7 @@ void App::init()
   m_cameras[2]->set_transform(m_airplane->position - offset, glm::quat(look_forward));
 
   gfx::Light* light = new gfx::Light(glm::vec3(1.0f));
+  light->transform_flags = OBJ3D_TRANSFORM;
   light->set_position(glm::vec3(2, 8, 2));
   m_falcon->add(light);
 

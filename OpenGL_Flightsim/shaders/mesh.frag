@@ -6,14 +6,14 @@ uniform vec3 u_LightDir;
 uniform vec3 u_LightColor;
 uniform sampler2D u_Texture_01;
 uniform samplerCube u_EnvironmentMap;
+uniform bool u_ShadowPass;
 
-in vec3 FragPos;
-in vec2 TexCoords;
 in vec3 Normal;
+in vec3 WorldPos;
+in vec2 TexCoords;
 in vec3 ReflectedVector;
 
-vec3 phongLighting(vec3 texColor, vec3 lightDir, vec3 lightColor)
-{
+vec3 phongLighting(vec3 texColor, vec3 lightDir, vec3 lightColor) {
   // TODO: remove hardcoded values
   float ka = 0.5;
   float kd = 0.5;
@@ -27,15 +27,19 @@ vec3 phongLighting(vec3 texColor, vec3 lightDir, vec3 lightColor)
   vec3 diffuse = kd * max(dot(Normal, lightDir), 0.0) * lightColor;
   
   // specular
-  vec3 viewDir = normalize(u_CameraPos - FragPos);
+  vec3 viewDir = normalize(u_CameraPos - WorldPos);
   vec3 reflectDir = reflect(-lightDir, Normal);  
   vec3 specular = ks * pow(max(dot(viewDir, reflectDir), 0.0), alpha) * lightColor;
 
   return (ambient + diffuse + specular) * texColor;
 }
 
-void main()
-{
+void main() {
+  if (u_ShadowPass) {
+    // only write to depth buffer
+    return;
+  }
+
   vec3 texColor = texture(u_Texture_01, TexCoords).rgb;
   vec3 reflectedColor = texture(u_EnvironmentMap, ReflectedVector).rgb;
 

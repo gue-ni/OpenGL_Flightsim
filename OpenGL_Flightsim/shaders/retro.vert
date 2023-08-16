@@ -3,7 +3,7 @@ layout (location = 0) in vec3 a_Pos;
 layout (location = 1) in vec3 a_Normal;
 layout (location = 2) in vec2 a_TexCoord;
 
-out vec3 FragPos;
+out vec3 WorldPos;
 noperspective out vec2 TexCoords;
 out vec3 Normal;
 out vec3 ReflectedVector;
@@ -25,7 +25,7 @@ vec4 snap(vec4 vertex, vec2 resolution)
 void main()
 {
   vec4 worldPosition = u_Model * vec4(a_Pos, 1.0f);
-  FragPos = worldPosition.xyz;
+  WorldPos = worldPosition.xyz;
   gl_Position = u_Projection * u_View * worldPosition;
 
   gl_Position = snap(gl_Position, vec2(320, 180));

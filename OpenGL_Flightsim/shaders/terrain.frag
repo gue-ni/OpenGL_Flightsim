@@ -16,7 +16,7 @@ uniform sampler2D u_Shadowmap;
 in vec3 Color;
 in vec3 Normal;
 in vec3 FragPos;
-in vec2 TexCoord;
+in vec2 TexCoords;
 in vec4 FragPosLightSpace;
 
 
@@ -112,7 +112,8 @@ void main()
 
   vec3 LightDir = vec3(0,1,0);
   vec3 LightColor = vec3(1.0);
-  vec3 texColor = texture(u_Texture_01, TexCoord).rgb;
+  
+  vec3 texColor = texture(u_Texture_01, TexCoords).rgb;
   vec4 terrainColor = vec4(phongLighting(texColor, LightDir, LightColor), 1.0);
 
 #if 1

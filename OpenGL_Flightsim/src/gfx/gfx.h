@@ -194,27 +194,21 @@ class Skybox : public Mesh
   Object3D& add(Object3D* child) = delete;
 };
 
-class RenderTarget
-{
- public:
-  RenderTarget(int w, int h);
+struct RenderTargetBase {
+  RenderTargetBase(int w, int h) : width(w), height(h) {}
   gl::FrameBuffer framebuffer;
-  gl::RenderBuffer depthbuffer;
-  gl::TexturePtr texture = nullptr;
-  void bind();
-  void unbind();
-
   GLuint width, height;
 };
 
-struct ShadowMap {
-  ShadowMap(int w, int h);
-  gl::FrameBuffer framebuffer;
+struct RenderTarget : public RenderTargetBase {
+  RenderTarget(int w, int h);
+  gl::RenderBuffer depthbuffer;
   gl::TexturePtr texture = nullptr;
-  void bind();
-  void unbind();
+};
 
-  GLuint width, height;
+struct ShadowMap : public RenderTargetBase {
+  ShadowMap(int w, int h);
+  gl::TexturePtr texture = nullptr;
 };
 
 class Renderer

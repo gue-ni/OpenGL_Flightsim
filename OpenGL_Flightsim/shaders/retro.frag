@@ -7,7 +7,7 @@ uniform vec3 u_LightColor;
 uniform sampler2D u_Texture_01;
 uniform samplerCube u_EnvironmentMap;
 
-in vec3 FragPos;
+in vec3 WorldPos;
 noperspective in vec2 TexCoords;
 in vec3 Normal;
 in vec3 ReflectedVector;
@@ -27,7 +27,7 @@ vec3 phongLighting(vec3 texColor, vec3 lightDir, vec3 lightColor)
   vec3 diffuse = kd * max(dot(Normal, lightDir), 0.0) * lightColor;
   
   // specular
-  vec3 viewDir = normalize(u_CameraPos - FragPos);
+  vec3 viewDir = normalize(u_CameraPos - WorldPos);
   vec3 reflectDir = reflect(-lightDir, Normal);  
   vec3 specular = ks * pow(max(dot(viewDir, reflectDir), 0.0), alpha) * lightColor;
 
