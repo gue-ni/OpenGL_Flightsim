@@ -14,8 +14,16 @@ add_executable(flightsim
     src/data.h
     src/collider.h
     src/flightmodel.h
-    src/gfx.cpp
-    src/gfx.h
+    src/gfx/gfx.cpp
+    src/gfx/gfx.h
+    src/gfx/gl.cpp
+    src/gfx/gl.h
+    src/gfx/util.cpp
+    src/gfx/util.h
+    src/gfx/controller.cpp
+    src/gfx/controller.h
+    src/gfx/object3d.cpp
+    src/gfx/object3d.h
     src/main.cpp
     src/phi.h
     src/pid.h
