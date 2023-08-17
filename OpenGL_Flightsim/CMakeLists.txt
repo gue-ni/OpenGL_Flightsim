@@ -9,6 +9,8 @@ find_package(SDL2 REQUIRED)
 
 add_executable(flightsim
     # Source files
+    src/app.h
+    src/app.cpp
     src/ai.h
     src/terrain.h
     src/data.h
