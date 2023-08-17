@@ -276,6 +276,12 @@ inline float fall_time(float height, float acceleration = EARTH_GRAVITY)
 // kinetic energy in joules
 constexpr inline float kinetic_energy(float mass, float speed) { return 0.5f * mass * sq(speed); }
 
+// normal force (weight), needed for friction
+inline float normal_force(const RigidBody* rb) 
+{
+  return rb->mass * EARTH_GRAVITY * glm::clamp(glm::dot(rb->up(), phi::UP), 0.0f, 1.0f);
+}
+
 };  // namespace calc
 
 // default rigid body is a sphere with radius 1 meter and a mass of 100 kg
