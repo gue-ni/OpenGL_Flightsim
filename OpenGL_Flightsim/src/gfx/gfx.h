@@ -60,11 +60,10 @@ class Camera : public Object3D
 {
  public:
   Camera(float fov, float aspect, float near, float far)
-      : m_projection(glm::perspective(fov, aspect, near, far)), m_up(0.0f, 1.0f, 0.0f), m_front(0.0f, 0.0f, 1.0f)
+      : m_projection(glm::perspective(fov, aspect, near, far)), m_up(0.0f, 1.0f, 0.0f), m_front(0.0f, 0.0f, 1.0f), Object3D(CAMERA)
   {
   }
 
-  Object3D::Type get_type() const override;
   glm::mat4 get_view_matrix() const;
   glm::mat4 get_projection_matrix() const;
   void look_at(const glm::vec3& target);
@@ -77,28 +76,11 @@ class Camera : public Object3D
 class Light : public Object3D
 {
  public:
-  enum LightType {
-    POINT = 0,
-    DIRECTIONAL = 1,
-  };
-
-  Light(glm::vec3 color_) : rgb(color_), type(POINT), cast_shadow(false), Object3D() {}
-
-  Light(LightType type_, glm::vec3 color_) : rgb(color_), type(type_), cast_shadow(false), Object3D() {}
-
-  Object3D::Type get_type() const override;
-
-  glm::mat4 light_space_matrix();
-
-  LightType type;
+  glm::vec3 color;
+  glm::vec3 direction;
   bool cast_shadow;
-  glm::vec3 rgb;
-};
-
-class DirLight : public Object3D
-{
- public:
-  glm::vec3 color = glm::vec3(1.0f);
+  Light(const glm::vec3& color_) : color(color_), cast_shadow(false), Object3D(LIGHT) {}
+  glm::mat4 light_space_matrix();
 };
 
 class BaseGeometry
@@ -123,7 +105,6 @@ class Geometry : public BaseGeometry
 {
  public:
   Geometry(const std::vector<float>& vertices, const VertexLayout& layout);
-
  private:
   gl::VertexBuffer vbo;
 };
@@ -166,7 +147,6 @@ class ShaderCache
  public:
   void add_shader(const std::string& path);
   gl::ShaderPtr get_shader(const std::string& path);
-
  private:
   std::unordered_map<std::string, gl::ShaderPtr> m_cache;
 };
