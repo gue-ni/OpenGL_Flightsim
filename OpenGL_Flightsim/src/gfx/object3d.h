@@ -75,19 +75,20 @@ class Object3D
 
   virtual Object3D::Type get_type() const;
 
+  glm::mat4 get_transform() const;
   glm::mat4 get_local_transform() const;
   glm::mat4 get_parent_transform() const;
-  glm::mat4 get_transform() const;
+  glm::mat3 get_normal_transform() const; // TODO glm::mat3(glm::transpose(glm::inverse(get_transform())))
 
   void traverse(const std::function<bool(Object3D*)>& func);
 
  protected:
-  bool m_dirty = false; // transform matrix has to be recalculated
+  bool m_dirty = false; // cached transform matrix has to be recalculated
 
   glm::vec3 m_position;
   glm::vec3 m_scale;
   glm::quat m_rotation;
-  glm::mat4 m_transform;
+  glm::mat4 m_transform; // cached transform
 };
 
 }  // namespace gfx
