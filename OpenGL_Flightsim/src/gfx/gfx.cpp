@@ -42,6 +42,7 @@ Geometry::Geometry(const std::vector<float>& vertices, const VertexLayout& layou
 #if 0
 Geometry::Geometry(const std::vector<gl::Vertex>& vertices)
 {
+    count = vertices.size();
     vao.bind();
   
     glEnableVertexAttribArray(0);
