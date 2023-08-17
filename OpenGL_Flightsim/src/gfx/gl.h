@@ -68,6 +68,11 @@ struct Buffer : public Object {
   void bind() const { glBindBuffer(target, m_id); }
   void unbind() const { glBindBuffer(target, 0); }
 
+  void buffer_data(const void* data, size_t size, GLenum usage = GL_STATIC_DRAW)
+  {
+     glNamedBufferData(m_id, size, data, usage);
+  }
+
   void buffer(const void* data, size_t size, GLenum usage = GL_STATIC_DRAW)
   {
     bind();
@@ -77,7 +82,7 @@ struct Buffer : public Object {
   template <typename T>
   void buffer(const std::vector<T>& data, GLenum usage = GL_STATIC_DRAW)
   {
-    buffer(&data[0], sizeof(data[0]) * data.size(), usage);
+    buffer_data(&data[0], sizeof(data[0]) * data.size(), usage);
   }
 
  protected:
@@ -132,6 +137,7 @@ class Shader : public Object
   void set_uniform(const std::string& name, const glm::vec3& value) const;
   void set_uniform(const std::string& name, const glm::vec4& value) const;
   void set_uniform(const std::string& name, const glm::mat4& value) const;
+  void set_uniform_buffer(const std::string& name, GLuint binding = 0U);
 };
 
 using ShaderPtr = std::shared_ptr<Shader>;
