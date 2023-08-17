@@ -89,6 +89,12 @@ void Shader::set_uniform(const std::string& name, const glm::mat4& value) const
   glUniformMatrix4fv(glGetUniformLocation(m_id, name.c_str()), 1, GL_FALSE, glm::value_ptr(value));
 }
 
+void Shader::set_uniform_buffer(const std::string& name, GLuint binding)
+{
+  GLuint index = glGetUniformBlockIndex(m_id, name.c_str());
+  glUniformBlockBinding(m_id, index, binding);
+}
+
 Texture::Texture(const std::string& path) : Texture(path, {}) {}
 
 Texture::Texture(const std::string& path, const Params& params) : Texture(Image(path, params.flip_vertically), params)
