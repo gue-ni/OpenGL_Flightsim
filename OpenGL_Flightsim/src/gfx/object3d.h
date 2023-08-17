@@ -27,14 +27,20 @@ struct RenderContext;
 class Object3D
 {
  public:
-  enum Type { OBJECT3D, LIGHT, CAMERA };
+  enum Type { OBJECT3D, LIGHT, CAMERA, MESH };
 
   Object3D()
-      : id(counter++), parent(nullptr), m_transform(1.0), m_position(0.0f), m_rotation(glm::vec3(0.0f)), m_scale(1.0f)
+      : id(counter++), parent(nullptr), m_transform(1.0), m_position(0.0f), m_rotation(glm::vec3(0.0f)), m_scale(1.0f), type(OBJECT3D)
+  {
+  }
+
+  Object3D(Type type_)
+      : type(type_), Object3D()
   {
   }
 
   const int id;
+  const Type type;
   static int counter;
 
   // which transform to inherit from parent
