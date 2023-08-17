@@ -39,6 +39,28 @@ Geometry::Geometry(const std::vector<float>& vertices, const VertexLayout& layou
   vao.bind();
 }
 
+#if 0
+Geometry::Geometry(const std::vector<gl::Vertex>& vertices)
+{
+    vao.bind();
+  
+    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
+    glEnableVertexAttribArray(2);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(gl::Vertex), (void*)offsetof(gl::Vertex, Position));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(gl::Vertex), (void*)offsetof(gl::Vertex, Normal));
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(gl::Vertex), (void*)offsetof(gl::Vertex, TexCoords));
+
+    vbo.bind();
+    vbo.buffer_data(&vertices[0], sizeof(gl::Vertex) * vertices.size());
+    vbo.unbind();
+    
+    vao.unbind();
+}
+#endif
+
+
 Object3D::Type Camera::get_type() const { return Object3D::Type::CAMERA; }
 
 glm::mat4 Camera::get_view_matrix() const { return glm::inverse(m_transform); }
@@ -551,9 +573,11 @@ void Renderer::render(Camera* camera, Object3D* scene)
   context.depth_map = m_shadowmap->texture;
 
   glm::vec3 center;
-
+  glm::mat4 light_space_matrix;
+  
   // find the light
   scene->traverse([&center](Object3D* obj) {
+    // if (obj->type == Object3D::LIGHT)
     Light* light = dynamic_cast<Light*>(obj);
     if (light != NULL) {
       center = light->get_world_position();
@@ -566,7 +590,7 @@ void Renderer::render(Camera* camera, Object3D* scene)
   glm::vec3 light_pos = center + glm::vec3(-2.0f, 18.0f, -1.0f);
   glm::mat4 light_proj = glm::ortho(-m, m, -m, m, near_plane, far_plane);
   glm::mat4 light_view = glm::lookAt(light_pos, center, glm::vec3(0.0f, 1.0f, 0.0f));
-  glm::mat4 light_space_matrix = light_proj * light_view;
+  light_space_matrix = light_proj * light_view;
 
   context.light_space_matrix = light_space_matrix;
 
@@ -636,10 +660,15 @@ void Renderer::render(Camera* camera, Object3D* scene)
 
 void Renderer::render(Camera* camera, Object3D* scene, RenderTarget* target)
 {
+  
+  RenderContext context;
+  
+
+  
   glViewport(0, 0, target->width, target->height);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   target->framebuffer.bind();
-  render(camera, scene);
+  scene->draw(context);
   target->framebuffer.unbind();
 }
 
