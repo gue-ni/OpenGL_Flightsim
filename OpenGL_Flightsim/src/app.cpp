@@ -106,7 +106,7 @@ void App::init()
   m_falcon->add(m_cameras[1]);
 
   float height = m_clipmap->get_terrain_height(glm::vec2(0));
-  m_airplane->position = glm::vec3(0, height + 100.0f, 0);
+  m_airplane->position = glm::vec3(0, height + 3500.0f, 0);
   m_airplane->velocity = glm::vec3(150, 0, 0);
   m_airplane->rotation = glm::quat(glm::vec3(0.0f, 0.0f, 0.0f));
 
@@ -131,11 +131,11 @@ void App::init_airplane()
   const auto geometry = gfx::Geometry::load(obj);
   const auto material = make_shared<gfx::Material>("shaders/mesh", texture);
 
-  //m_falcon = new gfx::Mesh(geometry, material);
+  // m_falcon = new gfx::Mesh(geometry, material);
   m_falcon = gfx::Mesh::load(obj);
   m_scene->add(m_falcon);
 
-  //m_falcon->children[4]->set_rotation(glm::vec3(0.0f, 0.0f, 0.5f));
+  // m_falcon->children[4]->set_rotation(glm::vec3(0.0f, 0.0f, 0.5f));
 
   const float mass = 10000.0f;
   const float thrust = 75000.0f;
@@ -167,7 +167,7 @@ void App::init_airplane()
 
   m_airplane = new Airplane(mass, inertia, wings, {engine}, collider);
 
-#if 1
+#if 0
   gfx::Object3D* landing_gear = new gfx::Object3D();
   m_falcon->add(landing_gear);
 
@@ -304,26 +304,23 @@ void App::game_loop(float dt)
   if (!m_paused) {
     m_airplane->update(dt);
 
+#if 1
     phi::CollisionInfo collision;
     if (test_collision(m_airplane, m_terrain, &collision)) {
       phi::RigidBody::impulse_collision(collision);
-#if 0
-      float ke = phi::calc::kinetic_energy(m_airplane->mass, m_airplane->get_speed());
-      if (ke > 10000.0f) {
-        m_paused = true;
-      }
-#endif
     }
+#endif
 
+    // airplane model
     m_falcon->set_transform(m_airplane->position, m_airplane->rotation);
 
+    // control surfaces
     m_falcon->children[2]->set_rotation(glm::vec3(0.0f, 0.0f, m_airplane->joystick.z));
     m_falcon->children[6]->set_rotation(glm::vec3(0.0f, 0.0f, -m_airplane->joystick.x * 0.1f));
     m_falcon->children[5]->set_rotation(glm::vec3(0.0f, 0.0f, +m_airplane->joystick.x * 0.1f));
 
-    m_falcon->update_transform(true);
-
-    const float speed = glm::clamp(25.0f * dt, 0.0f, 1.0f);
+    // smooth following camera
+    const float speed = 15.0f * dt;
     m_cameras[2]->set_transform(
         glm::mix(m_cameras[2]->get_world_position(), m_camera_attachment->get_world_position(), speed),
         glm::mix(m_cameras[2]->get_world_rotation_quat(), m_camera_attachment->get_world_rotation_quat(), speed));

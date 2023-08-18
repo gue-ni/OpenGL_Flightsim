@@ -10,6 +10,7 @@ out vec3 ReflectedVector;
 
 uniform mat4 u_View;
 uniform mat4 u_Model;
+uniform mat3 u_Normal;
 uniform vec3 u_CameraPos;
 uniform mat4 u_Projection;
 uniform mat4 u_LightSpaceMatrix;
@@ -29,7 +30,7 @@ void main() {
 
   TexCoords = a_TexCoord;
 
-  Normal = normalize(mat3(transpose(inverse(u_Model))) * a_Normal);
+  Normal = normalize(u_Normal * a_Normal);
 
   vec3 viewDir = normalize(worldPosition.xyz - u_CameraPos);
 

@@ -35,6 +35,13 @@ vec3 phongLighting(vec3 texColor, vec3 lightDir, vec3 lightColor) {
 }
 
 void main() {
+
+#if 0
+  // Debug, Normal as color
+  gl_FragColor = vec4((normalize(Normal) * 0.5) + 0.5, 1.0);
+  return;
+#endif
+
   if (u_ShadowPass) {
     // only write to depth buffer
     return;
@@ -43,7 +50,7 @@ void main() {
   vec3 texColor = texture(u_Texture_01, TexCoords).rgb;
   vec3 reflectedColor = texture(u_EnvMap, ReflectedVector).rgb;
 
-  float shininess = 0.3;
+  float shininess = 0.9;
 
   vec3 color = phongLighting(mix(texColor, reflectedColor, shininess), u_LightDir, u_LightColor);
 

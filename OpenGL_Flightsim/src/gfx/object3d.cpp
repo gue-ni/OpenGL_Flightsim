@@ -118,7 +118,7 @@ glm::mat4 Object3D::get_transform() const
   return m_transform;
 }
 
-glm::mat3 Object3D::get_normal_transform() const { return glm::mat3(glm::transpose(glm::inverse(get_transform()))); }
+glm::mat3 Object3D::get_normal_transform() const { return glm::inverseTranspose(glm::mat3(get_transform())); }
 
 void Object3D::update_transform(bool force_update)
 {

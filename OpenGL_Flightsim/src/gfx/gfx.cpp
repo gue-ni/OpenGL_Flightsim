@@ -445,6 +445,7 @@ void Mesh::draw_self(RenderContext& context)
 
     // transform
     shader->set_uniform("u_Model", get_transform());
+    shader->set_uniform("u_Normal", get_normal_transform());
 
     // camera
     shader->set_uniform("u_View", camera->get_view_matrix());

@@ -148,6 +148,7 @@ class Shader : public Object
   void set_uniform(const std::string& name, GLfloat value) const;
   void set_uniform(const std::string& name, const glm::vec3& value) const;
   void set_uniform(const std::string& name, const glm::vec4& value) const;
+  void set_uniform(const std::string& name, const glm::mat3& value) const;
   void set_uniform(const std::string& name, const glm::mat4& value) const;
   void set_uniform_buffer(const std::string& name, GLuint binding = 0U);
 };

@@ -7,6 +7,7 @@
 #include <functional>
 #include <glm/glm.hpp>
 #include <glm/gtx/io.hpp>
+#include <glm/gtc/matrix_inverse.hpp>
 #include <iostream>
 #include <memory>
 #include <sstream>
@@ -85,7 +86,7 @@ class Object3D
   glm::mat4 get_transform() const;
   glm::mat4 get_local_transform() const;
   glm::mat4 get_parent_transform() const;
-  glm::mat3 get_normal_transform() const;  // TODO glm::mat3(glm::transpose(glm::inverse(get_transform())))
+  glm::mat3 get_normal_transform() const;
 
   void traverse(const std::function<bool(Object3D*)>& func);
 

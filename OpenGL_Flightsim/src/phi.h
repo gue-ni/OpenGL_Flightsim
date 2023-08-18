@@ -494,6 +494,7 @@ class RigidBody : public Transform
   }
 
   // impulse collision response with angular effects
+  // TODO: friction (coulomb model)
   static void impulse_collision(const CollisionInfo& collision)
   {
     RigidBody *a = collision.a, *b = collision.b;
