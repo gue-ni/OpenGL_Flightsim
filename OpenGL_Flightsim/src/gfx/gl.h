@@ -177,10 +177,8 @@ class Texture : public Object
   GLint get_format(int channels);
   void set_parameter(GLenum pname, GLint param);
   void set_parameter(GLenum pname, GLfloat param);
-
   static TexturePtr load(const std::string& path, const Params& params);
 };
-
 
 class CubemapTexture : public Texture
 {

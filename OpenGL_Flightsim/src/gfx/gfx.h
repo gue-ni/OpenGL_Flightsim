@@ -58,7 +58,10 @@ class Camera : public Object3D
 {
  public:
   Camera(float fov, float aspect, float near, float far)
-      : m_projection(glm::perspective(fov, aspect, near, far)), m_up(0.0f, 1.0f, 0.0f), m_front(0.0f, 0.0f, 1.0f), Object3D(CAMERA)
+      : m_projection(glm::perspective(fov, aspect, near, far)),
+        m_up(0.0f, 1.0f, 0.0f),
+        m_front(0.0f, 0.0f, 1.0f),
+        Object3D(CAMERA)
   {
   }
 
@@ -109,6 +112,7 @@ class Geometry : public BaseGeometry
   static GeometryPtr quad();
   static GeometryPtr plane();
   static GeometryPtr box();
+
  private:
   gl::VertexBuffer vbo;
 };
@@ -151,6 +155,7 @@ class ShaderCache
  public:
   void add_shader(const std::string& path);
   gl::ShaderPtr get_shader(const std::string& path);
+
  private:
   std::unordered_map<std::string, gl::ShaderPtr> m_cache;
 };
