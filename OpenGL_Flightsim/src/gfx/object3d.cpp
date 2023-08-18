@@ -118,6 +118,8 @@ glm::mat4 Object3D::get_transform() const
   return m_transform;
 }
 
+glm::mat3 Object3D::get_normal_transform() const { return glm::mat3(glm::transpose(glm::inverse(get_transform()))); }
+
 void Object3D::update_transform(bool force_update)
 {
   bool updated = false;
@@ -177,7 +179,5 @@ glm::quat Object3D::get_world_rotation_quat() const
 }
 
 glm::vec3 Object3D::get_world_position() const { return glm::vec3(get_transform() * glm::vec4(glm::vec3(0.0f), 1.0f)); }
-
-Object3D::Type Object3D::get_type() const { return Type::OBJECT3D; }
 
 }  // namespace gfx

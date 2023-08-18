@@ -61,16 +61,11 @@ Geometry::Geometry(const std::vector<gl::Vertex>& vertices)
 }
 #endif
 
-
-Object3D::Type Camera::get_type() const { return Object3D::Type::CAMERA; }
-
 glm::mat4 Camera::get_view_matrix() const { return glm::inverse(m_transform); }
 
 glm::mat4 Camera::get_projection_matrix() const { return m_projection; }
 
 void Camera::look_at(const glm::vec3& target) { set_transform(glm::inverse(glm::lookAt(m_position, target, m_up))); }
-
-Object3D::Type Light::get_type() const { return Object3D::Type::LIGHT; }
 
 glm::mat4 Light::light_space_matrix()
 {
@@ -425,7 +420,7 @@ ShadowMap::ShadowMap(int w, int h) : RenderTargetBase(w, h)
   framebuffer.unbind();
 }
 
-Mesh::Mesh(const GeometryPtr& geometry, const MaterialPtr& material) : m_material(material), m_geometry(geometry) {}
+Mesh::Mesh(const GeometryPtr& geometry, const MaterialPtr& material) : m_material(material), m_geometry(geometry), Object3D(MESH) {}
 
 void Mesh::draw_self(RenderContext& context)
 {

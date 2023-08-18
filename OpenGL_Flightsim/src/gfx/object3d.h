@@ -29,13 +29,16 @@ class Object3D
  public:
   enum Type { OBJECT3D, LIGHT, CAMERA, MESH };
 
-  Object3D()
-      : id(counter++), parent(nullptr), m_transform(1.0), m_position(0.0f), m_rotation(glm::vec3(0.0f)), m_scale(1.0f), type(OBJECT3D)
-  {
-  }
+  Object3D() : Object3D(OBJECT3D) {}
 
   Object3D(Type type_)
-      : type(type_), Object3D()
+      : id(counter++),
+        parent(nullptr),
+        type(OBJECT3D),
+        m_transform(1.0),
+        m_position(0.0f),
+        m_rotation(glm::vec3(0.0f)),
+        m_scale(1.0f)
   {
   }
 
@@ -70,7 +73,7 @@ class Object3D
   void set_transform(const glm::mat4& matrix);
 
   bool is_dirty() const;
-  void update_transform(bool force_update = false); // must only be called on root
+  void update_transform(bool force_update = false);  // must only be called on root
 
   glm::vec3 get_scale() const;
   glm::vec3 get_rotation() const;
@@ -79,22 +82,20 @@ class Object3D
   glm::quat get_world_rotation_quat() const;
   glm::vec3 get_world_position() const;
 
-  virtual Object3D::Type get_type() const;
-
   glm::mat4 get_transform() const;
   glm::mat4 get_local_transform() const;
   glm::mat4 get_parent_transform() const;
-  glm::mat3 get_normal_transform() const; // TODO glm::mat3(glm::transpose(glm::inverse(get_transform())))
+  glm::mat3 get_normal_transform() const;  // TODO glm::mat3(glm::transpose(glm::inverse(get_transform())))
 
   void traverse(const std::function<bool(Object3D*)>& func);
 
  protected:
-  bool m_dirty = false; // cached transform matrix has to be recalculated
+  bool m_dirty = false;  // cached transform matrix has to be recalculated
 
   glm::vec3 m_position;
   glm::vec3 m_scale;
   glm::quat m_rotation;
-  glm::mat4 m_transform; // cached transform
+  glm::mat4 m_transform;  // cached transform
 };
 
 }  // namespace gfx

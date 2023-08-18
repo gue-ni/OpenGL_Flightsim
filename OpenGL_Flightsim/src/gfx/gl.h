@@ -70,15 +70,13 @@ struct Buffer : public Object {
 
   void buffer_data(const void* data, size_t size, GLenum usage = GL_STATIC_DRAW)
   {
-     glNamedBufferData(m_id, size, data, usage);
+    bind();
+    glNamedBufferData(m_id, size, data, usage);
   }
 
-  void buffer_sub_data(size_t offset, size_t size, const void* data) 
-  {
-    glNamedBufferSubData(m_id, offset, size, data);
-  }
+  void buffer_sub_data(size_t offset, size_t size, const void* data) { glNamedBufferSubData(m_id, offset, size, data); }
 
-  void bind_buffer_range(GLuint index, size_t offset, size_t size) 
+  void bind_buffer_range(GLuint index, size_t offset, size_t size)
   {
     glBindBufferRange(target, index, m_id, offset, size);
   }
