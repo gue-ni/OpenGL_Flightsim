@@ -127,8 +127,7 @@ void App::init_airplane()
   const std::string jpg = "assets/textures/falcon.jpg";
 
   const gfx::gl::Texture::Params params = {.flip_vertically = true, .texture_mag_filter = GL_LINEAR};
-  const auto texture = std::make_shared<gfx::gl::Texture>(jpg, params);
-  //const auto geometry = std::make_shared<gfx::Geometry>(gfx::load_obj(obj), gfx::Geometry::POS_NORM_UV);
+  const auto texture = gfx::gl::Texture::load(jpg, params);
   const auto geometry = gfx::Geometry::load(obj);
   const auto material = make_shared<gfx::Material>("shaders/mesh", texture);
 

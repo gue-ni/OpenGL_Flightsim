@@ -129,6 +129,12 @@ void Texture::set_parameter(GLenum pname, GLint param) { glTexParameteri(target,
 
 void Texture::set_parameter(GLenum pname, GLfloat param) { glTexParameterf(target, pname, param); }
 
+
+  TexturePtr Texture::load(const std::string& path, const Params& params)
+  {
+      return std::make_shared<Texture>(path, params);
+  }
+
 CubemapTexture::CubemapTexture(const std::array<std::string, 6>& paths, bool flip_vertically)
     : Texture(GL_TEXTURE_CUBE_MAP)
 {

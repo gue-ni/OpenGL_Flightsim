@@ -116,6 +116,12 @@ GeometryPtr Geometry::load(const std::string& path)
   return std::make_shared<Geometry>(vertices);
 }
 
+GeometryPtr Geometry::quad() { return nullptr; }
+
+GeometryPtr Geometry::plane() { return nullptr; }
+
+GeometryPtr Geometry::box() { return nullptr; }
+
 glm::mat4 Camera::get_view_matrix() const { return glm::inverse(m_transform); }
 
 glm::mat4 Camera::get_projection_matrix() const { return m_projection; }

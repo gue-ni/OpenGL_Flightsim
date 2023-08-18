@@ -104,7 +104,11 @@ class Geometry : public BaseGeometry
  public:
   Geometry(const std::vector<float>& vertices, const VertexLayout& layout);
   Geometry(const std::vector<gl::Vertex>& vertices);
+
   static GeometryPtr load(const std::string& path);
+  static GeometryPtr quad();
+  static GeometryPtr plane();
+  static GeometryPtr box();
  private:
   gl::VertexBuffer vbo;
 };
