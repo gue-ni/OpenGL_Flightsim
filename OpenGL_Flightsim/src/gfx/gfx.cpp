@@ -39,46 +39,28 @@ Geometry::Geometry(const std::vector<float>& vertices, const VertexLayout& layou
   vao.bind();
 }
 
-#if 0
 Geometry::Geometry(const std::vector<gl::Vertex>& vertices)
 {
-    count = vertices.size();
-    vao.bind();
-  
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
-    glEnableVertexAttribArray(2);
+  count = vertices.size();
+  vao.bind();
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(gl::Vertex), (void*)offsetof(gl::Vertex, Position));
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(gl::Vertex), (void*)offsetof(gl::Vertex, Normal));
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(gl::Vertex), (void*)offsetof(gl::Vertex, TexCoords));
+  vbo.bind();
+  vbo.buffer(vertices);
 
-    vbo.bind();
-    vbo.buffer_data(&vertices[0], sizeof(gl::Vertex) * vertices.size());
-    vbo.unbind();
-    
-    vao.unbind();
-}
-#endif
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(gl::Vertex), (void*)offsetof(gl::Vertex, Position));
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(gl::Vertex), (void*)offsetof(gl::Vertex, Normal));
+  glEnableVertexAttribArray(1);
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(gl::Vertex), (void*)offsetof(gl::Vertex, TexCoords));
+  glEnableVertexAttribArray(2);
 
-glm::mat4 Camera::get_view_matrix() const { return glm::inverse(m_transform); }
-
-glm::mat4 Camera::get_projection_matrix() const { return m_projection; }
-
-void Camera::look_at(const glm::vec3& target) { set_transform(glm::inverse(glm::lookAt(m_position, target, m_up))); }
-
-glm::mat4 Light::light_space_matrix()
-{
-  float near_plane = 0.1f, far_plane = 10.0f, m = 10.0f;
-  auto wp = get_world_position();
-  glm::mat4 light_view = glm::lookAt(wp, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-  glm::mat4 light_projection = glm::ortho(-m, m, -m, m, near_plane, far_plane);
-  return light_projection * light_view;
+  vbo.unbind();
+  vao.unbind();
 }
 
-std::vector<float> load_obj(const std::string path)
+GeometryPtr Geometry::load(const std::string& path)
 {
-  std::vector<float> vertices;
+  std::vector<gl::Vertex> vertices;
 
   std::istringstream source(load_text_file(path));
 
@@ -89,15 +71,15 @@ std::vector<float> load_obj(const std::string path)
 
   if (!tinyobj::LoadObj(&attributes, &shapes, &materials, &warning, &error, &source)) {
     std::cout << "loadObj::Error: " << warning << error << std::endl;
-    return {};
+    return nullptr;
   }
 
-#if 0
-        printf("# of vertices  = %d\n", (int)(attributes.vertices.size()) / 3);
-        printf("# of normals   = %d\n", (int)(attributes.normals.size()) / 3);
-        printf("# of texcoords = %d\n", (int)(attributes.texcoords.size()) / 2);
-        printf("# of materials = %d\n", (int)materials.size());
-        printf("# of shapes    = %d\n", (int)shapes.size());
+#if 1
+  printf("# of vertices  = %d\n", (int)(attributes.vertices.size()) / 3);
+  printf("# of normals   = %d\n", (int)(attributes.normals.size()) / 3);
+  printf("# of texcoords = %d\n", (int)(attributes.texcoords.size()) / 2);
+  printf("# of materials = %d\n", (int)materials.size());
+  printf("# of shapes    = %d\n", (int)shapes.size());
 #endif
 
   for (size_t s = 0; s < shapes.size(); s++) {
@@ -112,32 +94,41 @@ std::vector<float> load_obj(const std::string path)
         // access to vertex
         tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
 
+        gl::Vertex vertex;
         // vertex position
-        tinyobj::real_t vx = attributes.vertices[3 * idx.vertex_index + 0];
-        tinyobj::real_t vy = attributes.vertices[3 * idx.vertex_index + 1];
-        tinyobj::real_t vz = attributes.vertices[3 * idx.vertex_index + 2];
+        vertex.Position.x = attributes.vertices[3 * idx.vertex_index + 0];
+        vertex.Position.y = attributes.vertices[3 * idx.vertex_index + 1];
+        vertex.Position.z = attributes.vertices[3 * idx.vertex_index + 2];
         // vertex normal
-        tinyobj::real_t nx = attributes.normals[3 * idx.normal_index + 0];
-        tinyobj::real_t ny = attributes.normals[3 * idx.normal_index + 1];
-        tinyobj::real_t nz = attributes.normals[3 * idx.normal_index + 2];
+        vertex.Normal.x = attributes.normals[3 * idx.normal_index + 0];
+        vertex.Normal.y = attributes.normals[3 * idx.normal_index + 1];
+        vertex.Normal.z = attributes.normals[3 * idx.normal_index + 2];
 
-        tinyobj::real_t tx = attributes.texcoords[2 * idx.texcoord_index + 0];
-        tinyobj::real_t ty = attributes.texcoords[2 * idx.texcoord_index + 1];
+        vertex.TexCoords.x = attributes.texcoords[2 * idx.texcoord_index + 0];
+        vertex.TexCoords.y = attributes.texcoords[2 * idx.texcoord_index + 1];
 
-        vertices.push_back(vx);
-        vertices.push_back(vy);
-        vertices.push_back(vz);
-        vertices.push_back(nx);
-        vertices.push_back(ny);
-        vertices.push_back(nz);
-        vertices.push_back(tx);
-        vertices.push_back(ty);
+        vertices.push_back(vertex);
       }
       index_offset += fv;
     }
   }
 
-  return vertices;
+  return std::make_shared<Geometry>(vertices);
+}
+
+glm::mat4 Camera::get_view_matrix() const { return glm::inverse(m_transform); }
+
+glm::mat4 Camera::get_projection_matrix() const { return m_projection; }
+
+void Camera::look_at(const glm::vec3& target) { set_transform(glm::inverse(glm::lookAt(m_position, target, m_up))); }
+
+glm::mat4 Light::light_space_matrix()
+{
+  float near_plane = 0.1f, far_plane = 10.0f, m = 10.0f;
+  auto wp = get_world_position();
+  glm::mat4 light_view = glm::lookAt(wp, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+  glm::mat4 light_projection = glm::ortho(-m, m, -m, m, near_plane, far_plane);
+  return light_projection * light_view;
 }
 
 GeometryPtr make_cube_geometry(float size)
@@ -420,7 +411,10 @@ ShadowMap::ShadowMap(int w, int h) : RenderTargetBase(w, h)
   framebuffer.unbind();
 }
 
-Mesh::Mesh(const GeometryPtr& geometry, const MaterialPtr& material) : m_material(material), m_geometry(geometry), Object3D(MESH) {}
+Mesh::Mesh(const GeometryPtr& geometry, const MaterialPtr& material)
+    : m_material(material), m_geometry(geometry), Object3D(MESH)
+{
+}
 
 void Mesh::draw_self(RenderContext& context)
 {
@@ -446,7 +440,7 @@ void Mesh::draw_self(RenderContext& context)
     glm::vec3 light_color = glm::vec3(1, 1, 1);
     shader->set_uniform("u_LightDir", light_dir);
     shader->set_uniform("u_LightColor", light_color);
-        
+
     shader->set_uniform("u_ShadowPass", false);
 
     shader->set_uniform("u_UseTexture", true);
@@ -570,7 +564,7 @@ void Renderer::render(Camera* camera, Object3D* scene)
 
   glm::vec3 center;
   glm::mat4 light_space_matrix;
-  
+
   // find the light
   scene->traverse([&center](Object3D* obj) {
     // if (obj->type == Object3D::LIGHT)
@@ -656,11 +650,8 @@ void Renderer::render(Camera* camera, Object3D* scene)
 
 void Renderer::render(Camera* camera, Object3D* scene, RenderTarget* target)
 {
-  
   RenderContext context;
-  
 
-  
   glViewport(0, 0, target->width, target->height);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   target->framebuffer.bind();

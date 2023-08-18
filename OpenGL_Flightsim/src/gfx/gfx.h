@@ -39,8 +39,6 @@ using GeometryPtr = std::shared_ptr<Geometry>;
 using MaterialPtr = std::shared_ptr<Material>;
 using MeshPtr = std::shared_ptr<Mesh>;
 
-std::vector<float> load_obj(const std::string path);
-
 GeometryPtr make_cube_geometry(float size);
 GeometryPtr make_plane_geometry(int x_elements, int y_elements, float size);
 GeometryPtr make_quad_geometry();
@@ -105,6 +103,8 @@ class Geometry : public BaseGeometry
 {
  public:
   Geometry(const std::vector<float>& vertices, const VertexLayout& layout);
+  Geometry(const std::vector<gl::Vertex>& vertices);
+  static GeometryPtr load(const std::string& path);
  private:
   gl::VertexBuffer vbo;
 };
