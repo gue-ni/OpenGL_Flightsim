@@ -131,8 +131,11 @@ void App::init_airplane()
   const auto geometry = gfx::Geometry::load(obj);
   const auto material = make_shared<gfx::Material>("shaders/mesh", texture);
 
-  m_falcon = new gfx::Mesh(geometry, material);
+  //m_falcon = new gfx::Mesh(geometry, material);
+  m_falcon = gfx::Mesh::load(obj);
   m_scene->add(m_falcon);
+
+  //m_falcon->children[4]->set_rotation(glm::vec3(0.0f, 0.0f, 0.5f));
 
   const float mass = 10000.0f;
   const float thrust = 75000.0f;
@@ -313,6 +316,11 @@ void App::game_loop(float dt)
     }
 
     m_falcon->set_transform(m_airplane->position, m_airplane->rotation);
+
+    m_falcon->children[2]->set_rotation(glm::vec3(0.0f, 0.0f, m_airplane->joystick.z));
+    m_falcon->children[6]->set_rotation(glm::vec3(0.0f, 0.0f, -m_airplane->joystick.x * 0.1f));
+    m_falcon->children[5]->set_rotation(glm::vec3(0.0f, 0.0f, +m_airplane->joystick.x * 0.1f));
+
     m_falcon->update_transform(true);
 
     const float speed = glm::clamp(25.0f * dt, 0.0f, 1.0f);

@@ -5,7 +5,7 @@ uniform vec3 u_CameraPos;
 uniform vec3 u_LightDir;
 uniform vec3 u_LightColor;
 uniform sampler2D u_Texture_01;
-uniform samplerCube u_EnvironmentMap;
+uniform samplerCube u_EnvMap;
 uniform bool u_ShadowPass;
 
 in vec3 Normal;
@@ -41,7 +41,7 @@ void main() {
   }
 
   vec3 texColor = texture(u_Texture_01, TexCoords).rgb;
-  vec3 reflectedColor = texture(u_EnvironmentMap, ReflectedVector).rgb;
+  vec3 reflectedColor = texture(u_EnvMap, ReflectedVector).rgb;
 
   float shininess = 0.3;
 

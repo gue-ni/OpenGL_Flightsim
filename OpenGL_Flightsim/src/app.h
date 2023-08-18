@@ -52,7 +52,7 @@ class App
   phi::RigidBody* m_terrain;
   Clipmap* m_clipmap;
 
-  gfx::Mesh* m_falcon;
+  gfx::Object3D* m_falcon;
 
   void init_airplane();
 

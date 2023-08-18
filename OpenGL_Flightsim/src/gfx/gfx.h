@@ -128,6 +128,11 @@ class Material
   {
   }
 
+  Material(const std::string& shader_name, const std::string& texture)
+      : m_shader_name(shader_name), m_texture(gl::Texture::load(texture, {.flip_vertically = true}))
+  {
+  }
+
   gl::TexturePtr get_texture() const { return m_texture; }
   std::string& get_shader_name() { return m_shader_name; }
 
@@ -143,6 +148,9 @@ class Mesh : public Object3D
 
   MaterialPtr get_material() { return m_material; }
   GeometryPtr get_geometry() { return m_geometry; }
+
+  // TODO: return shared ptr
+  static Object3D* load(const std::string& path);
 
  protected:
   MaterialPtr m_material;

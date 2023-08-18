@@ -75,6 +75,7 @@ GeometryPtr Geometry::load(const std::string& path)
   }
 
 #if 1
+  printf("path = %s\n", path.c_str());
   printf("# of vertices  = %d\n", (int)(attributes.vertices.size()) / 3);
   printf("# of normals   = %d\n", (int)(attributes.normals.size()) / 3);
   printf("# of texcoords = %d\n", (int)(attributes.texcoords.size()) / 2);
@@ -87,10 +88,9 @@ GeometryPtr Geometry::load(const std::string& path)
     size_t index_offset = 0;
     for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
       // hardcode loading to triangles
-      int fv = 3;
 
       // Loop over vertices in the face.
-      for (size_t v = 0; v < fv; v++) {
+      for (size_t v = 0; v < 3; v++) {
         // access to vertex
         tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
 
@@ -109,18 +109,28 @@ GeometryPtr Geometry::load(const std::string& path)
 
         vertices.push_back(vertex);
       }
-      index_offset += fv;
+      index_offset += 3;
     }
   }
 
   return std::make_shared<Geometry>(vertices);
 }
 
-GeometryPtr Geometry::quad() { return nullptr; }
+GeometryPtr Geometry::quad()
+{
+  const std::vector<gl::Vertex> vertices = {
+
+  };
+  return std::make_shared<Geometry>(vertices);
+}
 
 GeometryPtr Geometry::plane() { return nullptr; }
 
-GeometryPtr Geometry::box() { return nullptr; }
+GeometryPtr Geometry::box()
+{
+  const std::vector<gl::Vertex> vertices = {};
+  return std::make_shared<Geometry>(vertices);
+}
 
 glm::mat4 Camera::get_view_matrix() const { return glm::inverse(m_transform); }
 
@@ -457,7 +467,7 @@ void Mesh::draw_self(RenderContext& context)
 
     // environment map
     context.env_map->bind(6);
-    shader->set_uniform("u_EnvironmentMap", 6);
+    shader->set_uniform("u_EnvMap", 6);
 
     glm::vec3 rgb = glm::vec3(1.0f, 0.0f, 0.0f);
     shader->set_uniform("u_SolidObjectColor", rgb);
@@ -484,6 +494,84 @@ void Mesh::draw_self(RenderContext& context)
 
     shader->unbind();
   }
+}
+
+Object3D* Mesh::load(const std::string& path)
+{
+  Object3D* root = new Object3D;
+
+  // TODO: load obj, but load every shape in its own Mesh
+
+  std::istringstream source(load_text_file(path));
+  std::string warning, error;
+
+  tinyobj::attrib_t attributes;
+  std::vector<tinyobj::shape_t> shapes;
+  std::vector<tinyobj::material_t> materials;
+
+  for (auto& material : materials)
+  {
+      std::cout << material.name << std::endl;
+  }
+
+
+  const gfx::gl::Texture::Params params = {.flip_vertically = true, .texture_mag_filter = GL_LINEAR};
+  MaterialPtr material = std::make_shared<Material>("shaders/mesh", "assets/textures/falcon.jpg"); // TODO: Fix this
+
+  if (!tinyobj::LoadObj(&attributes, &shapes, &materials, &warning, &error, &source)) {
+    std::cout << "Error: " << warning << error << std::endl;
+    return nullptr;
+  }
+
+#if 1
+  printf("path = %s\n", path.c_str());
+  printf("# of vertices  = %d\n", (int)(attributes.vertices.size()) / 3);
+  printf("# of normals   = %d\n", (int)(attributes.normals.size()) / 3);
+  printf("# of texcoords = %d\n", (int)(attributes.texcoords.size()) / 2);
+  printf("# of materials = %d\n", (int)materials.size());
+  printf("# of shapes    = %d\n", (int)shapes.size());
+#endif
+
+
+  for (size_t s = 0; s < shapes.size(); s++) {
+    // Loop over faces(polygon)
+    size_t index_offset = 0;
+    std::vector<gl::Vertex> vertices;
+
+    for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
+      // hardcode loading to triangles
+
+      // Loop over vertices in the face.
+      for (size_t v = 0; v < 3; v++) {
+        // access to vertex
+        tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
+
+        gl::Vertex vertex;
+        // vertex position
+        vertex.Position.x = attributes.vertices[3 * idx.vertex_index + 0];
+        vertex.Position.y = attributes.vertices[3 * idx.vertex_index + 1];
+        vertex.Position.z = attributes.vertices[3 * idx.vertex_index + 2];
+        // vertex normal
+        vertex.Normal.x = attributes.normals[3 * idx.normal_index + 0];
+        vertex.Normal.y = attributes.normals[3 * idx.normal_index + 1];
+        vertex.Normal.z = attributes.normals[3 * idx.normal_index + 2];
+        // uv coords
+        vertex.TexCoords.x = attributes.texcoords[2 * idx.texcoord_index + 0];
+        vertex.TexCoords.y = attributes.texcoords[2 * idx.texcoord_index + 1];
+
+        vertices.push_back(vertex);
+      }
+      index_offset += 3;
+    }
+
+    GeometryPtr geometry = std::make_shared<Geometry>(vertices);
+
+    Mesh* mesh = new Mesh(geometry, material);
+    root->add(mesh);
+  }
+
+
+  return root;
 }
 
 Renderer::Renderer(GLsizei width, GLsizei height) : m_width(width), m_height(height)

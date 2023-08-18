@@ -98,4 +98,6 @@ class Object3D
   glm::mat4 m_transform;  // cached transform
 };
 
+using Object3dPtr = std::shared_ptr<Object3D>;
+
 }  // namespace gfx
