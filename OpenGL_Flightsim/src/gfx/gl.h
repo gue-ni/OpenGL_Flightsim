@@ -105,8 +105,8 @@ struct VertexBuffer : public Buffer {
   VertexBuffer() : Buffer(GL_ARRAY_BUFFER) {}
 };
 
-struct ElementBufferObject : public Buffer {
-  ElementBufferObject() : Buffer(GL_ELEMENT_ARRAY_BUFFER) {}
+struct ElementBuffer : public Buffer {
+  ElementBuffer() : Buffer(GL_ELEMENT_ARRAY_BUFFER) {}
 };
 
 struct UniformBuffer : public Buffer {

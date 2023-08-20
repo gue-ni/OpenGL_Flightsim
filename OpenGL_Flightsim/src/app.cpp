@@ -107,7 +107,7 @@ void App::init()
 
   float height = m_clipmap->get_terrain_height(glm::vec2(0));
   m_airplane->position = glm::vec3(0, height + 3500.0f, 0);
-  m_airplane->velocity = glm::vec3(150, 0, 0);
+  m_airplane->velocity = glm::vec3(200, 0, 0);
   m_airplane->rotation = glm::quat(glm::vec3(0.0f, 0.0f, 0.0f));
 
   m_cameras[2]->set_transform(m_airplane->position - offset, glm::quat(look_forward));
@@ -116,6 +116,7 @@ void App::init()
   light->transform_flags = OBJ3D_TRANSFORM;
   light->set_position(glm::vec3(2, 8, 2));
   m_falcon->add(light);
+
 
   // setup all transforms
   m_scene->update_transform();
@@ -130,6 +131,10 @@ void App::init_airplane()
   const auto texture = gfx::gl::Texture::load(jpg, params);
   const auto geometry = gfx::Geometry::load(obj);
   const auto material = make_shared<gfx::Material>("shaders/mesh", texture);
+
+
+
+  gfx::Object3D* mesh = gfx::Mesh::load_mesh(obj);
 
   // m_falcon = new gfx::Mesh(geometry, material);
   m_falcon = gfx::Mesh::load(obj);

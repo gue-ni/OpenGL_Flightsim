@@ -32,10 +32,11 @@ class Light;
 class Camera;
 class Skybox;
 class Geometry;
+class BaseGeometry;
 class Material;
 class ShaderCache;
 
-using GeometryPtr = std::shared_ptr<Geometry>;
+using GeometryPtr = std::shared_ptr<BaseGeometry>;
 using MaterialPtr = std::shared_ptr<Material>;
 using MeshPtr = std::shared_ptr<Mesh>;
 
@@ -99,7 +100,7 @@ class BaseGeometry
 
   GLsizei count;
   gl::VertexArrayObject vao;
-  const DrawType draw_type = DRAW_ARRAYS;
+  DrawType draw_type = DRAW_ARRAYS;
 };
 
 class Geometry : public BaseGeometry
@@ -115,6 +116,18 @@ class Geometry : public BaseGeometry
 
  private:
   gl::VertexBuffer vbo;
+};
+
+
+class IndexedGeometry : public BaseGeometry
+{
+public:
+
+  IndexedGeometry(const std::vector<gl::Vertex>& vertices, const std::vector<GLuint> indices);
+ private:
+  gl::VertexBuffer vbo;
+  gl::ElementBuffer ebo;
+
 };
 
 class Material
@@ -152,6 +165,8 @@ class Mesh : public Object3D
   // TODO: return shared ptr
   static Object3D* load(const std::string& path);
 
+  static Object3D* load_mesh(const std::string& path);
+
  protected:
   MaterialPtr m_material;
   GeometryPtr m_geometry;
@@ -181,7 +196,7 @@ class Billboard : public Object3D
   gl::TexturePtr texture;
   gl::VertexArrayObject vao;
   gl::VertexBuffer vbo;
-  gl::ElementBufferObject ebo;
+  gl::ElementBuffer ebo;
 };
 
 class Skybox : public Mesh

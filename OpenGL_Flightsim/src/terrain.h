@@ -97,7 +97,7 @@ struct Seam {
 
 struct Block {
   gfx::gl::VertexBuffer vbo;
-  gfx::gl::ElementBufferObject ebo;
+  gfx::gl::ElementBuffer ebo;
   gfx::gl::VertexArrayObject vao;
   size_t index_count;
 

@@ -5,6 +5,13 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "../../lib/tiny_obj_loader.h"
 
+#if 0
+#include <assimp/postprocess.h>
+#include <assimp/scene.h>
+
+#include <assimp/Importer.hpp>
+#endif
+
 namespace gfx
 {
 
@@ -55,6 +62,31 @@ Geometry::Geometry(const std::vector<gl::Vertex>& vertices)
   glEnableVertexAttribArray(2);
 
   vbo.unbind();
+  vao.unbind();
+}
+
+IndexedGeometry::IndexedGeometry(const std::vector<gl::Vertex>& vertices, const std::vector<GLuint> indices)
+{
+  draw_type = DRAW_ELEMENTS;
+  count = indices.size();
+
+  vao.bind();
+
+  vbo.bind();
+  vbo.buffer(vertices);
+
+  ebo.bind();
+  ebo.buffer(indices);
+
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(gl::Vertex), (void*)offsetof(gl::Vertex, Position));
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(gl::Vertex), (void*)offsetof(gl::Vertex, Normal));
+  glEnableVertexAttribArray(1);
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(gl::Vertex), (void*)offsetof(gl::Vertex, TexCoords));
+  glEnableVertexAttribArray(2);
+
+  vbo.unbind();
+  ebo.unbind();
   vao.unbind();
 }
 
@@ -510,14 +542,12 @@ Object3D* Mesh::load(const std::string& path)
   std::vector<tinyobj::shape_t> shapes;
   std::vector<tinyobj::material_t> materials;
 
-  for (auto& material : materials)
-  {
-      std::cout << material.name << std::endl;
+  for (auto& material : materials) {
+    std::cout << material.name << std::endl;
   }
 
-
   const gfx::gl::Texture::Params params = {.flip_vertically = true, .texture_mag_filter = GL_LINEAR};
-  MaterialPtr material = std::make_shared<Material>("shaders/mesh", "assets/textures/falcon.jpg"); // TODO: Fix this
+  MaterialPtr material = std::make_shared<Material>("shaders/mesh", "assets/textures/falcon.jpg");  // TODO: Fix this
 
   if (!tinyobj::LoadObj(&attributes, &shapes, &materials, &warning, &error, &source)) {
     std::cout << "Error: " << warning << error << std::endl;
@@ -532,7 +562,6 @@ Object3D* Mesh::load(const std::string& path)
   printf("# of materials = %d\n", (int)materials.size());
   printf("# of shapes    = %d\n", (int)shapes.size());
 #endif
-
 
   for (size_t s = 0; s < shapes.size(); s++) {
     // Loop over faces(polygon)
@@ -571,7 +600,78 @@ Object3D* Mesh::load(const std::string& path)
     root->add(mesh);
   }
 
+  return root;
+}
 
+Mesh* process_assimp_mesh(aiMesh* mesh, const aiScene* scene)
+{
+  std::vector<GLuint> indices;
+  std::vector<gl::Vertex> vertices;
+
+  for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
+    gl::Vertex vertex;
+    vertex.Position.x = mesh->mVertices[i].x;
+    vertex.Position.y = mesh->mVertices[i].y;
+    vertex.Position.z = mesh->mVertices[i].z;
+
+    vertex.Normal.x = mesh->mNormals[i].x;
+    vertex.Normal.y = mesh->mNormals[i].y;
+    vertex.Normal.z = mesh->mNormals[i].z;
+
+    if (mesh->mTextureCoords[0]) {
+      vertex.TexCoords.x = mesh->mTextureCoords[0][i].x;
+      vertex.TexCoords.y = mesh->mTextureCoords[0][i].y;
+    } else {
+      vertex.TexCoords = glm::vec2(0.0f);
+    }
+
+    vertices.push_back(vertex);
+  }
+
+  for (unsigned int i = 0; i < mesh->mNumFaces; i++) {
+    aiFace face = mesh->mFaces[i];
+    for (unsigned int j = 0; j < face.mNumIndices; j++) {
+      indices.push_back(face.mIndices[j]);
+    }
+  }
+
+  auto geometry = std::make_shared<IndexedGeometry>(vertices, indices);
+
+  if (mesh->mMaterialIndex >= 0) {
+    aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+  } else {
+  }
+  // TODO
+  return new Mesh(geometry, nullptr);
+}
+
+void process_assimp_node(aiNode* node, const aiScene* scene, Object3D* result)
+{
+  assert(node->mNumMeshes <= 1);
+
+  for (unsigned int i = 0; i < node->mNumMeshes; i++) {
+    aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
+    Mesh* parsed = process_assimp_mesh(mesh, scene);
+    result->add(parsed);
+  }
+
+  for (unsigned int i = 0; i < node->mNumChildren; i++) {
+    process_assimp_node(node->mChildren[i], scene, result);
+  }
+}
+
+Object3D* Mesh::load_mesh(const std::string& path)
+{
+  Assimp::Importer importer;
+  unsigned int flags = aiProcess_JoinIdenticalVertices | aiProcess_Triangulate | aiProcess_FlipUVs;
+  const aiScene* scene = importer.ReadFile(path, flags);
+
+  if (!scene || scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
+    printf("Failed to load %s: %s\n", path.c_str(), importer.GetErrorString());
+  }
+
+  Object3D* root = new Object3D;
+  process_assimp_node(scene->mRootNode, scene, root);
   return root;
 }
 

@@ -2,6 +2,12 @@
 
 #include <GL/glew.h>
 
+#if 1
+#include <assimp/postprocess.h>  // Post processing flags
+#include <assimp/scene.h>        // Output data structure
+#include <assimp/Importer.hpp>  // C++ importer interface
+#endif
+
 #include <array>
 #include <fstream>
 #include <functional>
@@ -18,7 +24,7 @@ namespace gfx
 {
 std::string load_text_file(const std::string& path);
 
-// value [0, 255]
+// [0, 255] -> [0, 1]
 template <typename T>
 constexpr glm::vec3 rgb(T r, T g, T b)
 {
@@ -34,6 +40,17 @@ constexpr glm::vec3 rgb(uint32_t hex)
   return rgb(r, g, b);
 }
 
+// TODO
+inline void import(const std::string& path)
+{
+#if 1
+  Assimp::Importer importer;
+  const aiScene* scene =
+      importer.ReadFile(path, aiProcess_JoinIdenticalVertices | aiProcess_Triangulate | aiProcess_FlipUVs);
+#endif
+
+}
+
 class Image
 {
  public:
@@ -44,7 +61,7 @@ class Image
   int width() const;
   int height() const;
   int channels() const;
-  GLint format() const; 
+  GLint format() const;
 
  private:
   unsigned char* m_data = nullptr;
