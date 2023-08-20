@@ -15,7 +15,7 @@
 namespace gfx
 {
 
-Geometry::Geometry(const std::vector<float>& vertices, const VertexLayout& layout)
+Geometry::Geometry(const std::vector<float>& vertices, const VertexLayout& layout) : BaseGeometry(DRAW_ARRAYS)
 {
   const int stride = static_cast<int>(layout);
   count = static_cast<int>(vertices.size()) / (stride);
@@ -46,9 +46,10 @@ Geometry::Geometry(const std::vector<float>& vertices, const VertexLayout& layou
   vao.bind();
 }
 
-Geometry::Geometry(const std::vector<gl::Vertex>& vertices)
+Geometry::Geometry(const std::vector<gl::Vertex>& vertices) : BaseGeometry(DRAW_ARRAYS)
 {
   count = vertices.size();
+
   vao.bind();
 
   vbo.bind();
@@ -61,13 +62,12 @@ Geometry::Geometry(const std::vector<gl::Vertex>& vertices)
   glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(gl::Vertex), (void*)offsetof(gl::Vertex, TexCoords));
   glEnableVertexAttribArray(2);
 
-  vbo.unbind();
   vao.unbind();
 }
 
-IndexedGeometry::IndexedGeometry(const std::vector<gl::Vertex>& vertices, const std::vector<GLuint> indices)
+IndexedGeometry::IndexedGeometry(const std::vector<gl::Vertex>& vertices, const std::vector<GLuint>& indices)
+    : BaseGeometry(DRAW_ELEMENTS)
 {
-  draw_type = DRAW_ELEMENTS;
   count = indices.size();
 
   vao.bind();
@@ -85,8 +85,6 @@ IndexedGeometry::IndexedGeometry(const std::vector<gl::Vertex>& vertices, const 
   glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(gl::Vertex), (void*)offsetof(gl::Vertex, TexCoords));
   glEnableVertexAttribArray(2);
 
-  vbo.unbind();
-  ebo.unbind();
   vao.unbind();
 }
 
@@ -523,6 +521,12 @@ void Mesh::draw_self(RenderContext& context)
         assert(false);
         break;
     }
+
+    GLenum err = glGetError();  
+    if (err != GL_NO_ERROR)
+    {
+        std::cout << "Error: " << err << std::endl;
+    }
     m_geometry->vao.unbind();
 
     shader->unbind();
@@ -636,13 +640,14 @@ Mesh* process_assimp_mesh(aiMesh* mesh, const aiScene* scene)
   }
 
   auto geometry = std::make_shared<IndexedGeometry>(vertices, indices);
+  auto material = std::make_shared<Material>("shaders/mesh", "assets/textures/falcon.jpg");
 
   if (mesh->mMaterialIndex >= 0) {
     aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
   } else {
   }
   // TODO
-  return new Mesh(geometry, nullptr);
+  return new Mesh(geometry, material);
 }
 
 void process_assimp_node(aiNode* node, const aiScene* scene, Object3D* result)

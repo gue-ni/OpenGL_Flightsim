@@ -117,7 +117,6 @@ void App::init()
   light->set_position(glm::vec3(2, 8, 2));
   m_falcon->add(light);
 
-
   // setup all transforms
   m_scene->update_transform();
 }
@@ -130,17 +129,41 @@ void App::init_airplane()
   const gfx::gl::Texture::Params params = {.flip_vertically = true, .texture_mag_filter = GL_LINEAR};
   const auto texture = gfx::gl::Texture::load(jpg, params);
   const auto geometry = gfx::Geometry::load(obj);
+  const auto cube = gfx::make_cube_geometry(1.0f);
   const auto material = make_shared<gfx::Material>("shaders/mesh", texture);
 
+  std::vector<gfx::gl::Vertex> vertices1 = {
+      {{ 0.5f,  0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f },  { 1.0f, 1.0f}},   // top right
+      {{ 0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f },  { 1.0f, 0.0f}},   // bottom right
+      {{-0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f },  { 0.0f, 0.0f}},   // bottom left
+      {{-0.5f,  0.5f, 0.0f }, { 1.0f, 1.0f, 0.0f },  { 0.0f, 1.0f}},   // top left 
+  };
 
+  std::vector<GLuint> indices = {
+      0, 1, 3,
+      1, 2, 3
+  };
 
-  gfx::Object3D* mesh = gfx::Mesh::load_mesh(obj);
+  std::vector<gfx::gl::Vertex> vertices2 = {
+      {{ 0.5f,  0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f },  { 1.0f, 1.0f}},   // top right
+      {{ 0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f },  { 1.0f, 0.0f}},   // bottom right
+      {{-0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f },  { 0.0f, 0.0f}},   // bottom left
 
-  // m_falcon = new gfx::Mesh(geometry, material);
-  m_falcon = gfx::Mesh::load(obj);
+      {{-0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f },  { 0.0f, 0.0f}},   // bottom left
+      {{-0.5f,  0.5f, 0.0f }, { 1.0f, 1.0f, 0.0f },  { 0.0f, 1.0f}},   // top left 
+      {{ 0.5f,  0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f },  { 1.0f, 1.0f}},   // top right
+  };
+
+  const auto tmp1 = std::make_shared<gfx::IndexedGeometry>(vertices1, indices);
+  const auto tmp2 = std::make_shared<gfx::Geometry>(vertices2);
+
+  //m_falcon = new gfx::Mesh(tmp2, material);
+
+  m_falcon = gfx::Mesh::load_mesh(obj);
+
+  //m_falcon = new gfx::Mesh(geometry, material);
+  //m_falcon = gfx::Mesh::load(obj);
   m_scene->add(m_falcon);
-
-  // m_falcon->children[4]->set_rotation(glm::vec3(0.0f, 0.0f, 0.5f));
 
   const float mass = 10000.0f;
   const float thrust = 75000.0f;
@@ -319,10 +342,12 @@ void App::game_loop(float dt)
     // airplane model
     m_falcon->set_transform(m_airplane->position, m_airplane->rotation);
 
+#if 0
     // control surfaces
     m_falcon->children[2]->set_rotation(glm::vec3(0.0f, 0.0f, m_airplane->joystick.z));
     m_falcon->children[6]->set_rotation(glm::vec3(0.0f, 0.0f, -m_airplane->joystick.x * 0.1f));
     m_falcon->children[5]->set_rotation(glm::vec3(0.0f, 0.0f, +m_airplane->joystick.x * 0.1f));
+#endif
 
     // smooth following camera
     const float speed = 15.0f * dt;

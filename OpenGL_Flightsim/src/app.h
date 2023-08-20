@@ -55,6 +55,7 @@ class App
   gfx::Object3D* m_falcon;
 
   void init_airplane();
+  void init_flightmodel();
 
   // setup/teardown
   void init();

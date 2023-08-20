@@ -88,6 +88,7 @@ class Light : public Object3D
 class BaseGeometry
 {
  public:
+
   enum DrawType { DRAW_ARRAYS, DRAW_ELEMENTS, /* TODO: instanced */ };
 
   // stride
@@ -98,9 +99,11 @@ class BaseGeometry
     POS_NORM_UV = 8  // pos, normal, uv
   };
 
+  BaseGeometry(DrawType type) : draw_type(type) {}
+
   GLsizei count;
   gl::VertexArrayObject vao;
-  DrawType draw_type = DRAW_ARRAYS;
+  const DrawType draw_type;
 };
 
 class Geometry : public BaseGeometry
@@ -122,12 +125,10 @@ class Geometry : public BaseGeometry
 class IndexedGeometry : public BaseGeometry
 {
 public:
-
-  IndexedGeometry(const std::vector<gl::Vertex>& vertices, const std::vector<GLuint> indices);
+  IndexedGeometry(const std::vector<gl::Vertex>& vertices, const std::vector<GLuint>& indices);
  private:
   gl::VertexBuffer vbo;
   gl::ElementBuffer ebo;
-
 };
 
 class Material

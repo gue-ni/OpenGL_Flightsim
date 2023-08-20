@@ -17,10 +17,22 @@
 
 #include "util.h"
 
+#if 0
+#define GL_CALL(stmt)                            \
+  do {                                           \
+    stmt;                                        \
+    CheckError(#stmt, __FILE__, __LINE__); \
+  } while (0)
+#else
+#define GL_CALL(stmt) stmt
+#endif
+
 namespace gfx
 {
 namespace gl
 {
+
+void CheckError(const char* stmt, const char* fname, int line);
 
 struct Object;
 class Texture;
@@ -67,7 +79,7 @@ struct Object {
 
 struct Buffer : public Object {
  public:
-  Buffer(GLenum target_) : target(target_) { glGenBuffers(1, &m_id); }
+  Buffer(GLenum target_) : target(target_) { GL_CALL(glGenBuffers(1, &m_id)); }
   ~Buffer() { glDeleteBuffers(1, &m_id); }
   void bind() const { glBindBuffer(target, m_id); }
   void unbind() const { glBindBuffer(target, 0); }
