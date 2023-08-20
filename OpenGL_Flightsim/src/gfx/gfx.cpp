@@ -522,11 +522,6 @@ void Mesh::draw_self(RenderContext& context)
         break;
     }
 
-    GLenum err = glGetError();  
-    if (err != GL_NO_ERROR)
-    {
-        std::cout << "Error: " << err << std::endl;
-    }
     m_geometry->vao.unbind();
 
     shader->unbind();
@@ -650,13 +645,30 @@ Mesh* process_assimp_mesh(aiMesh* mesh, const aiScene* scene)
   return new Mesh(geometry, material);
 }
 
+glm::mat4 convert_matrix(const aiMatrix4x4& aiMat)
+{
+return {
+aiMat.a1, aiMat.b1, aiMat.c1, aiMat.d1,
+aiMat.a2, aiMat.b2, aiMat.c2, aiMat.d2,
+aiMat.a3, aiMat.b3, aiMat.c3, aiMat.d3,
+aiMat.a4, aiMat.b4, aiMat.c4, aiMat.d4
+};
+}
+
 void process_assimp_node(aiNode* node, const aiScene* scene, Object3D* result)
 {
   assert(node->mNumMeshes <= 1);
 
+  aiMatrix4x4 m = node->mTransformation;
+
+
+  //glm::mat4 transformation = AiMatrix4x4ToGlm(&node->mTransformation);
+  //glm::mat4 globalTransformation = transformation * parentTransformation;
+
   for (unsigned int i = 0; i < node->mNumMeshes; i++) {
     aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
     Mesh* parsed = process_assimp_mesh(mesh, scene);
+    parsed->set_transform(convert_matrix(m));
     result->add(parsed);
   }
 
@@ -669,6 +681,9 @@ Object3D* Mesh::load_mesh(const std::string& path)
 {
   Assimp::Importer importer;
   unsigned int flags = aiProcess_JoinIdenticalVertices | aiProcess_Triangulate | aiProcess_FlipUVs;
+
+  //flags |= aiProcess_PreTransformVertices;
+
   const aiScene* scene = importer.ReadFile(path, flags);
 
   if (!scene || scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {

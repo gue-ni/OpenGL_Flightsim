@@ -124,6 +124,7 @@ void App::init()
 void App::init_airplane()
 {
   const std::string obj = "assets/models/falcon.obj";
+  const std::string glb = "assets/models/Falcon.glb";
   const std::string jpg = "assets/textures/falcon.jpg";
 
   const gfx::gl::Texture::Params params = {.flip_vertically = true, .texture_mag_filter = GL_LINEAR};
@@ -159,7 +160,9 @@ void App::init_airplane()
 
   //m_falcon = new gfx::Mesh(tmp2, material);
 
-  m_falcon = gfx::Mesh::load_mesh(obj);
+  m_falcon = gfx::Mesh::load_mesh(glb);
+
+  m_falcon->update_transform();
 
   //m_falcon = new gfx::Mesh(geometry, material);
   //m_falcon = gfx::Mesh::load(obj);
@@ -342,11 +345,15 @@ void App::game_loop(float dt)
     // airplane model
     m_falcon->set_transform(m_airplane->position, m_airplane->rotation);
 
-#if 0
+#if 1
     // control surfaces
-    m_falcon->children[2]->set_rotation(glm::vec3(0.0f, 0.0f, m_airplane->joystick.z));
-    m_falcon->children[6]->set_rotation(glm::vec3(0.0f, 0.0f, -m_airplane->joystick.x * 0.1f));
-    m_falcon->children[5]->set_rotation(glm::vec3(0.0f, 0.0f, +m_airplane->joystick.x * 0.1f));
+    glm::vec3 r;
+    r = m_falcon->children[2]->get_rotation();
+   m_falcon->children[2]->set_rotation(glm::vec3(r.x, r.y, phi::PI + m_airplane->joystick.z * 0.1f));
+
+    r = m_falcon->children[6]->get_rotation();
+    //m_falcon->children[6]->set_rotation(glm::vec3(r.x, r.y, -m_airplane->joystick.x * 0.5f));
+    //m_falcon->children[5]->set_rotation(glm::vec3(r.x, r.y, +m_airplane->joystick.x * 0.5f));
 #endif
 
     // smooth following camera

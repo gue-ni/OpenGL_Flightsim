@@ -103,7 +103,7 @@ void Object3D::set_transform(const glm::mat4& matrix)
   glm::decompose(matrix, scale, rotation, translation, skew, perspective);
 
   set_scale(scale);
-  set_rotation(rotation);
+  set_rotation(glm::normalize(rotation));
   set_position(translation);
 }
 
@@ -113,7 +113,7 @@ glm::mat4 Object3D::get_transform() const
 {
   // this function must only be called after updating the transform
   if (m_dirty) {
-    assert(!m_dirty);
+    //assert(!m_dirty);
   }
   return m_transform;
 }

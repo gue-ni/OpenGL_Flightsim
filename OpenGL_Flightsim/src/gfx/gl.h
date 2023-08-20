@@ -17,10 +17,10 @@
 
 #include "util.h"
 
-#if 0
-#define GL_CALL(stmt)                            \
-  do {                                           \
-    stmt;                                        \
+#if 1
+#define GL_CALL(stmt)                      \
+  do {                                     \
+    stmt;                                  \
     CheckError(#stmt, __FILE__, __LINE__); \
   } while (0)
 #else
@@ -51,56 +51,54 @@ struct Object {
   Object() = default;
   ~Object() = default;
 
-#if 0
   // move semantics
-  Object(Object&& src) noexcept : m_id(src.m_id) {
-        src.m_id = 0;
-    }
+  Object(Object&& src) noexcept : m_id(src.m_id) { src.m_id = 0; }
 
-    Object& operator=(Object&& rhs) noexcept {
-        if (this != &rhs) {
-            std::swap(m_id, rhs.m_id);
-        }
-        return *this;
+  Object& operator=(Object&& rhs) noexcept
+  {
+    if (this != &rhs) {
+      std::swap(m_id, rhs.m_id);
     }
-#endif
+    return *this;
+  }
 
  public:
   inline operator GLuint() const noexcept { return m_id; };
   inline GLuint id() const { return m_id; }
 
  private:
-#if 0
-     // delete copy constructor/assignment
+  // delete copy constructor/assignment
   Object(const Object& src) = delete;
   Object& operator=(const Object& rhs) = delete;
-#endif
 };
 
 struct Buffer : public Object {
  public:
   Buffer(GLenum target_) : target(target_) { GL_CALL(glGenBuffers(1, &m_id)); }
-  ~Buffer() { glDeleteBuffers(1, &m_id); }
-  void bind() const { glBindBuffer(target, m_id); }
-  void unbind() const { glBindBuffer(target, 0); }
+  ~Buffer() { GL_CALL(glDeleteBuffers(1, &m_id)); }
+  void bind() const { GL_CALL(glBindBuffer(target, m_id)); }
+  void unbind() const { GL_CALL(glBindBuffer(target, 0)); }
 
   void buffer_data(const void* data, size_t size, GLenum usage = GL_STATIC_DRAW)
   {
     bind();
-    glNamedBufferData(m_id, size, data, usage);
+    GL_CALL(glNamedBufferData(m_id, size, data, usage));
   }
 
-  void buffer_sub_data(size_t offset, size_t size, const void* data) { glNamedBufferSubData(m_id, offset, size, data); }
+  void buffer_sub_data(size_t offset, size_t size, const void* data)
+  {
+    GL_CALL(glNamedBufferSubData(m_id, offset, size, data));
+  }
 
   void bind_buffer_range(GLuint index, size_t offset, size_t size)
   {
-    glBindBufferRange(target, index, m_id, offset, size);
+    GL_CALL(glBindBufferRange(target, index, m_id, offset, size));
   }
 
   void buffer(const void* data, size_t size, GLenum usage = GL_STATIC_DRAW)
   {
     bind();
-    glBufferData(target, size, data, usage);
+    GL_CALL(glBufferData(target, size, data, usage));
   }
 
   template <typename T>
