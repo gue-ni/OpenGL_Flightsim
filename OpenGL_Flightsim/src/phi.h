@@ -528,9 +528,9 @@ class RigidBody : public Transform
 
     float angular_effect = glm::dot(a_inertia + b_inertia, collision.normal);
 
-    float j = (-(1 + collision.restitution_coeff) * impulse_force) / (total_inverse_mass + angular_effect);
+    float j_r = (-(1 + collision.restitution_coeff) * impulse_force) / (total_inverse_mass + angular_effect);
 
-    glm::vec3 impulse = j * collision.normal;
+    glm::vec3 impulse = j_r * collision.normal;
 
     a->add_impulse_at_world_point(-impulse, collision.point);
     b->add_impulse_at_world_point(+impulse, collision.point);
@@ -541,11 +541,16 @@ class RigidBody : public Transform
     float dynamic_friction_coeff = 0.005f;
     assert(static_friction_coeff > dynamic_friction_coeff);
 
-    float j_s = static_friction_coeff * j;
-    float j_d = dynamic_friction_coeff * j;
+    float j_s = static_friction_coeff * j_r;
+    float j_d = dynamic_friction_coeff * j_r;
 
     glm::vec3 a_tangent = glm::normalize(a_relative - glm::dot(a_relative, collision.normal) * collision.normal);
     glm::vec3 b_tangent = glm::normalize(b_relative - glm::dot(b_relative, collision.normal) * collision.normal);
+
+    float j_f = j_d; // TODO
+  
+    a->add_impulse_at_world_point(-j_f * a_tangent, collision.point);
+    b->add_impulse_at_world_point(+j_f * b_tangent, collision.point);
 #endif
   }
 };
