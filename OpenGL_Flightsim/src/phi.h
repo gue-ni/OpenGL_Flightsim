@@ -534,6 +534,19 @@ class RigidBody : public Transform
 
     a->add_impulse_at_world_point(-impulse, collision.point);
     b->add_impulse_at_world_point(+impulse, collision.point);
+
+#if 0
+    // friction
+    float static_friction_coeff = 0.01f;
+    float dynamic_friction_coeff = 0.005f;
+    assert(static_friction_coeff > dynamic_friction_coeff);
+
+    float j_s = static_friction_coeff * j;
+    float j_d = dynamic_friction_coeff * j;
+
+    glm::vec3 a_tangent = glm::normalize(a_relative - glm::dot(a_relative, collision.normal) * collision.normal);
+    glm::vec3 b_tangent = glm::normalize(b_relative - glm::dot(b_relative, collision.normal) * collision.normal);
+#endif
   }
 };
 
