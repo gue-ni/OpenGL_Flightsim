@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 find_package(GLEW REQUIRED)
 find_package(SDL2 REQUIRED)
-find_package(ASSIMP REQUIRED)
+find_package(assimp REQUIRED)
 
 add_executable(flightsim
     # Source files
@@ -59,7 +59,7 @@ target_link_libraries(flightsim
     GLEW
     GL
     GLU
-    ASSIMP
+    assimp
 )
 
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/assets DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
