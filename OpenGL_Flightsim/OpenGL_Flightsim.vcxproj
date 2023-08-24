@@ -105,14 +105,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\jakob\Documents\libraries\glew-2.1.0\include;C:\Users\jakob\Documents\libraries\SDL2\include;C:\Users\jakob\Documents\libraries\glm-0.9.9.8\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\jakob\Documents\libraries\glew-2.1.0\include;C:\Users\jakob\Documents\libraries\SDL2\include;C:\Users\jakob\Documents\libraries\assimp-5.2.5\include;C:\Users\jakob\Documents\libraries\glm-0.9.9.8\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\jakob\Documents\libraries\glew-2.1.0\lib\Release\x64;C:\Users\jakob\Documents\libraries\SDL2\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>SDL2.lib;SDL2main.lib;glew32.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\Users\jakob\Documents\libraries\glew-2.1.0\lib\Release\x64;C:\Users\jakob\Documents\libraries\assimp-5.2.5\lib\Debug;C:\Users\jakob\Documents\libraries\SDL2\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>SDL2.lib;SDL2main.lib;glew32.lib;opengl32.lib;assimp-vc143-mtd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /y /i /s $(ProjectDir)assets  $(OutDir)assets

@@ -12,7 +12,7 @@ void CheckError(const char* stmt, const char* fname, int line)
   GLenum err = glGetError();
   if (err != GL_NO_ERROR) {
     printf("OpenGL error %d, at %s:%i - for %s\n", err, fname, line, stmt);
-    //abort();
+    // abort();
   }
 }
 
@@ -142,6 +142,8 @@ void Texture::unbind() const { glBindTexture(target, 0); }
 void Texture::set_parameter(GLenum pname, GLint param) { glTexParameteri(target, pname, param); }
 
 void Texture::set_parameter(GLenum pname, GLfloat param) { glTexParameterf(target, pname, param); }
+
+void Texture::set_parameter(GLenum pname, const GLfloat* param) { glTexParameterfv(target, pname, param); }
 
 TexturePtr Texture::load(const std::string& path, const Params& params)
 {

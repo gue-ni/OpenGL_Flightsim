@@ -88,7 +88,6 @@ class Light : public Object3D
 class BaseGeometry
 {
  public:
-
   enum DrawType { DRAW_ARRAYS, DRAW_ELEMENTS, /* TODO: instanced */ };
 
   // stride
@@ -121,11 +120,11 @@ class Geometry : public BaseGeometry
   gl::VertexBuffer vbo;
 };
 
-
 class IndexedGeometry : public BaseGeometry
 {
-public:
+ public:
   IndexedGeometry(const std::vector<gl::Vertex>& vertices, const std::vector<GLuint>& indices);
+
  private:
   gl::VertexBuffer vbo;
   gl::ElementBuffer ebo;
@@ -164,7 +163,7 @@ class Mesh : public Object3D
   GeometryPtr get_geometry() { return m_geometry; }
 
   // TODO: return shared ptr
-  static Object3D* load(const std::string& path);
+  static Object3D* load(const std::string& path, const std::string& texture);
 
   static Object3D* load_mesh(const std::string& path);
 

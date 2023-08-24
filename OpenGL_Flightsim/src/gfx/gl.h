@@ -35,7 +35,7 @@ namespace gl
 void CheckError(const char* stmt, const char* fname, int line);
 
 struct Object;
-class Texture;
+struct Texture;
 using TexturePtr = std::shared_ptr<Texture>;
 
 struct Vertex {
@@ -46,30 +46,26 @@ struct Vertex {
 
 // abstract opengl object
 struct Object {
- protected:
-  GLuint m_id = 0;
   Object() = default;
   ~Object() = default;
 
-  // move semantics
-  Object(Object&& src) noexcept : m_id(src.m_id) { src.m_id = 0; }
+  // copy
+  Object(const Object& src) = delete;
+  Object& operator=(const Object& rhs) = delete;
 
+  // move
+  Object(Object&& src) noexcept : m_id(src.m_id) { src.m_id = 0; }
   Object& operator=(Object&& rhs) noexcept
   {
-    if (this != &rhs) {
-      std::swap(m_id, rhs.m_id);
-    }
+    if (this != &rhs) std::swap(m_id, rhs.m_id);
     return *this;
   }
 
- public:
   inline operator GLuint() const noexcept { return m_id; };
   inline GLuint id() const { return m_id; }
 
- private:
-  // delete copy constructor/assignment
-  Object(const Object& src) = delete;
-  Object& operator=(const Object& rhs) = delete;
+ protected:
+  GLuint m_id = 0;
 };
 
 struct Buffer : public Object {
@@ -145,9 +141,7 @@ struct RenderBuffer : public Object {
   void unbind() const { glBindRenderbuffer(GL_RENDERBUFFER, 0); }
 };
 
-class Shader : public Object
-{
- public:
+struct Shader : public Object {
   Shader(const std::string& path);
   Shader(const std::string& vert_shader, const std::string& frag_shader);
   ~Shader();
@@ -165,9 +159,7 @@ class Shader : public Object
 
 using ShaderPtr = std::shared_ptr<Shader>;
 
-class Texture : public Object
-{
- public:
+struct Texture : public Object {
   const GLenum target;
 
   struct Params {
@@ -188,12 +180,11 @@ class Texture : public Object
   GLint get_format(int channels);
   void set_parameter(GLenum pname, GLint param);
   void set_parameter(GLenum pname, GLfloat param);
+  void set_parameter(GLenum pname, const GLfloat* param);
   static TexturePtr load(const std::string& path, const Params& params);
 };
 
-class CubemapTexture : public Texture
-{
- public:
+struct CubemapTexture : public Texture {
   CubemapTexture(const std::array<std::string, 6>& paths, bool flip_vertically = false);
 };
 

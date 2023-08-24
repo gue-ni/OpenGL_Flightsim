@@ -26,7 +26,7 @@ class App
   bool m_paused = false;
   bool m_orbitcamera = false;
 
-  int m_cameratype = 2;
+  int m_cameratype = 0;
 
   unsigned int m_frames = 0;
   float m_seconds = 0.0f;
@@ -46,6 +46,7 @@ class App
   gfx::OrbitController m_controller;
 
   gfx::Object3D* m_camera_attachment;
+  gfx::Object3D* m_runway;
 
   // physics
   Airplane* m_airplane;

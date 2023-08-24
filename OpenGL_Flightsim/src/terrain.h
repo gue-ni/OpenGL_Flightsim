@@ -12,8 +12,8 @@ const std::string PATH = "assets/textures/terrain/data/9/268/178/";
 const int ZOOM_FACTOR = 1;
 #elif (DATA_SRC == 2)
 //const std::string PATH = "assets/textures/terrain/data/10/536/356/";
-const std::string PATH = "assets/textures/terrain/data/10/536/360/";
-//const std::string PATH = "assets/textures/terrain/debug/";
+//const std::string PATH = "assets/textures/terrain/data/10/536/360/";
+const std::string PATH = "assets/textures/terrain/debug/";
 const int ZOOM_FACTOR = 2;
 #elif (DATA_SRC == 3)
 const std::string PATH = "assets/textures/terrain/data/11/1072/712/";
@@ -38,6 +38,23 @@ inline float height_from_pixel(const glm::vec3& rgb)
 {
   glm::vec3 pixel = rgb * 255.0f;
   return (pixel.r * 256.0f + pixel.g + pixel.b / 256.0f) - 32768.0f;
+}
+
+
+inline glm::vec3 pixel_from_height(float height)
+{
+    // TODO
+    const float c =  32768.0f;
+    glm::vec3 pixel(0.0f);
+
+    double decodedHeight = height + 32768;
+    int redDec = static_cast<int>(decodedHeight / 256);
+    int greenDec = static_cast<int>(decodedHeight) % 256;
+    //int blueDec = static_cast<int>((decodedHeight * 256 - greenDec - redDec * 256) / 65536);
+    int blueDec = static_cast<int>(((decodedHeight * 256) - (greenDec * 256) - (redDec * 65536)) / 256);
+
+
+    return pixel / 256.0f;
 }
 
 inline float scale(float input_val, float in_min, float in_max, float out_min, float out_max)
@@ -156,7 +173,7 @@ struct Block {
 class Clipmap : public gfx::Object3D
 {
  public:
-  Clipmap(int levels_ = 16, int segments_ = 16)
+  Clipmap(int levels_ = 12, int segments_ = 16)
       : segment_size(2.0f),
         levels(levels_),
         segments(segments_),
@@ -175,6 +192,25 @@ class Clipmap : public gfx::Object3D
         center(2 * segments + 2, 2 * segments + 2, segment_size),
         seam(2 * segments + 2, segment_size * 2)
   {
+      std::cout << "terrain_size = " << terrain_size << " m" << std::endl;
+
+      auto fog = gfx::rgb(0x5e5e6e);
+      auto color = glm::vec4(fog, 1.0f);
+
+      auto p = pixel_from_height(2561.0f);
+
+      terrain.bind();
+      terrain.set_parameter(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+      terrain.set_parameter(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+      terrain.set_parameter(GL_TEXTURE_BORDER_COLOR, glm::value_ptr(color));
+
+      heightmap.bind();
+      heightmap.set_parameter(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+      heightmap.set_parameter(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+      heightmap.set_parameter(GL_TEXTURE_BORDER_COLOR, glm::value_ptr(glm::vec4(pixel_from_height(0.0f), 1.0f)));
+
+
+
   }
 
   float get_terrain_height(const glm::vec2 pos) const { return sample_heightmap(heightmap_image, pos, terrain_size); }

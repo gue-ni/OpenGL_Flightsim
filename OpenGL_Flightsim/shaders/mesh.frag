@@ -4,14 +4,47 @@ uniform vec3 u_SolidObjectColor;
 uniform vec3 u_CameraPos;
 uniform vec3 u_LightDir;
 uniform vec3 u_LightColor;
-uniform sampler2D u_Texture_01;
+
 uniform samplerCube u_EnvMap;
+uniform sampler2D u_ShadowMap;
+uniform sampler2D u_Texture_01;
+
 uniform bool u_ShadowPass;
+uniform bool u_ReceiveShadow;
 
 in vec3 Normal;
 in vec3 WorldPos;
 in vec2 TexCoords;
 in vec3 ReflectedVector;
+in vec4 FragPosLightSpace;
+
+float ShadowCalculation(vec4 fragPosLightSpace)
+{
+    // perform perspective divide
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    // transform to [0,1] range
+    projCoords = projCoords * 0.5 + 0.5;
+
+    // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
+    float closestDepth = texture(u_ShadowMap, projCoords.xy).r; 
+    // get depth of current fragment from light's perspective
+
+
+    float bias = max(0.05 * (1.0 - dot(Normal, u_LightDir)), 0.001);  
+    bias = 0.00001;
+
+
+    float currentDepth = projCoords.z;
+    // check whether current frag pos is in shadow
+    float shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
+
+    if(projCoords.z > 1.0)
+    {
+        shadow = 0.0;
+    }
+
+    return shadow;
+}
 
 vec3 phongLighting(vec3 texColor, vec3 lightDir, vec3 lightColor) {
   // TODO: remove hardcoded values
@@ -31,7 +64,13 @@ vec3 phongLighting(vec3 texColor, vec3 lightDir, vec3 lightColor) {
   vec3 reflectDir = reflect(-lightDir, Normal);  
   vec3 specular = ks * pow(max(dot(viewDir, reflectDir), 0.0), alpha) * lightColor;
 
-  return (ambient + diffuse + specular) * texColor;
+
+  if (u_ReceiveShadow) {
+    float shadow = ShadowCalculation(FragPosLightSpace);                      
+    return (ambient + (1.0 - shadow) * (diffuse + specular)) * texColor;
+  } else {
+    return (ambient + diffuse + specular) * texColor;
+  }
 }
 
 void main() {
@@ -50,7 +89,7 @@ void main() {
   vec3 texColor = texture(u_Texture_01, TexCoords).rgb;
   vec3 reflectedColor = texture(u_EnvMap, ReflectedVector).rgb;
 
-  float shininess = 0.9;
+  float shininess = 0.0;
 
   vec3 color = phongLighting(mix(texColor, reflectedColor, shininess), u_LightDir, u_LightColor);
 

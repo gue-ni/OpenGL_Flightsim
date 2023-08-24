@@ -418,6 +418,7 @@ RenderTarget::RenderTarget(int w, int h) : RenderTargetBase(w, h)
   // setup depthmap
   depthbuffer.bind();
   glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+  //glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH32F_STENCIL8_NV, width, height);
   depthbuffer.unbind();
 
   framebuffer.bind();
@@ -488,17 +489,20 @@ void Mesh::draw_self(RenderContext& context)
     shader->set_uniform("u_LightDir", light_dir);
     shader->set_uniform("u_LightColor", light_color);
 
-    shader->set_uniform("u_ShadowPass", false);
-
-    shader->set_uniform("u_UseTexture", true);
-
     // material texture
     m_material->get_texture()->bind(5);
     shader->set_uniform("u_Texture_01", 5);
+    shader->set_uniform("u_UseTexture", true);
 
     // environment map
     context.env_map->bind(6);
     shader->set_uniform("u_EnvMap", 6);
+
+    // shadows
+    context.depth_map->bind(7);
+    shader->set_uniform("u_ShadowMap", 7);
+    shader->set_uniform("u_ReceiveShadow", receive_shadow);
+    shader->set_uniform("u_ShadowPass", false);
 
     glm::vec3 rgb = glm::vec3(1.0f, 0.0f, 0.0f);
     shader->set_uniform("u_SolidObjectColor", rgb);
@@ -528,7 +532,7 @@ void Mesh::draw_self(RenderContext& context)
   }
 }
 
-Object3D* Mesh::load(const std::string& path)
+Object3D* Mesh::load(const std::string& path, const std::string& texture)
 {
   Object3D* root = new Object3D;
 
@@ -546,7 +550,7 @@ Object3D* Mesh::load(const std::string& path)
   }
 
   const gfx::gl::Texture::Params params = {.flip_vertically = true, .texture_mag_filter = GL_LINEAR};
-  MaterialPtr material = std::make_shared<Material>("shaders/mesh", "assets/textures/falcon.jpg");  // TODO: Fix this
+  MaterialPtr material = std::make_shared<Material>("shaders/mesh", texture);  // TODO: Fix this
 
   if (!tinyobj::LoadObj(&attributes, &shapes, &materials, &warning, &error, &source)) {
     std::cout << "Error: " << warning << error << std::endl;
@@ -647,12 +651,8 @@ Mesh* process_assimp_mesh(aiMesh* mesh, const aiScene* scene)
 
 glm::mat4 convert_matrix(const aiMatrix4x4& aiMat)
 {
-return {
-aiMat.a1, aiMat.b1, aiMat.c1, aiMat.d1,
-aiMat.a2, aiMat.b2, aiMat.c2, aiMat.d2,
-aiMat.a3, aiMat.b3, aiMat.c3, aiMat.d3,
-aiMat.a4, aiMat.b4, aiMat.c4, aiMat.d4
-};
+  return {aiMat.a1, aiMat.b1, aiMat.c1, aiMat.d1, aiMat.a2, aiMat.b2, aiMat.c2, aiMat.d2,
+          aiMat.a3, aiMat.b3, aiMat.c3, aiMat.d3, aiMat.a4, aiMat.b4, aiMat.c4, aiMat.d4};
 }
 
 void process_assimp_node(aiNode* node, const aiScene* scene, Object3D* result)
@@ -661,9 +661,8 @@ void process_assimp_node(aiNode* node, const aiScene* scene, Object3D* result)
 
   aiMatrix4x4 m = node->mTransformation;
 
-
-  //glm::mat4 transformation = AiMatrix4x4ToGlm(&node->mTransformation);
-  //glm::mat4 globalTransformation = transformation * parentTransformation;
+  // glm::mat4 transformation = AiMatrix4x4ToGlm(&node->mTransformation);
+  // glm::mat4 globalTransformation = transformation * parentTransformation;
 
   for (unsigned int i = 0; i < node->mNumMeshes; i++) {
     aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
@@ -682,7 +681,7 @@ Object3D* Mesh::load_mesh(const std::string& path)
   Assimp::Importer importer;
   unsigned int flags = aiProcess_JoinIdenticalVertices | aiProcess_Triangulate | aiProcess_FlipUVs;
 
-  //flags |= aiProcess_PreTransformVertices;
+  // flags |= aiProcess_PreTransformVertices;
 
   const aiScene* scene = importer.ReadFile(path, flags);
 
@@ -790,7 +789,7 @@ void Renderer::render(Camera* camera, Object3D* scene)
     return true;
   });
 
-  float m = 150.0f;
+  float m = 50.0f;
   float near_plane = 1.0f, far_plane = 5000.0f;
   glm::vec3 light_pos = center + glm::vec3(-2.0f, 18.0f, -1.0f);
   glm::mat4 light_proj = glm::ortho(-m, m, -m, m, near_plane, far_plane);

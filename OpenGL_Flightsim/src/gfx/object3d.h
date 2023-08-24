@@ -53,9 +53,9 @@ class Object3D
   Object3D* parent = nullptr;
   std::vector<Object3D*> children;
 
-  bool receive_shadow = true;
   bool visible = true;
   bool wireframe = false;
+  bool receive_shadow = true;
 
   Object3D& add(Object3D* child);
 

@@ -7,6 +7,7 @@ out vec3 Normal;
 out vec3 WorldPos;
 out vec2 TexCoords;
 out vec3 ReflectedVector;
+out vec4 FragPosLightSpace;
 
 uniform mat4 u_View;
 uniform mat4 u_Model;
@@ -35,4 +36,5 @@ void main() {
   vec3 viewDir = normalize(worldPosition.xyz - u_CameraPos);
 
   ReflectedVector = reflect(viewDir, Normal);
+  FragPosLightSpace = u_LightSpaceMatrix * vec4(WorldPos, 1.0);
 }

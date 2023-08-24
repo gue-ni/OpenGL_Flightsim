@@ -537,29 +537,29 @@ class RigidBody : public Transform
     a->add_impulse_at_world_point(-impulse, collision.point);
     b->add_impulse_at_world_point(+impulse, collision.point);
 
-#if 1
-    // friction
-    float static_friction_coeff = 0.01f;
-    float dynamic_friction_coeff = 0.005f;
+#if 0
+    // rubber on dry concrete
+    float static_friction_coeff = 0.9f; 
+    float dynamic_friction_coeff = 0.68f; 
     assert(static_friction_coeff > dynamic_friction_coeff);
 
     float j_s = static_friction_coeff * j_r;
     float j_d = dynamic_friction_coeff * j_r;
 
-    glm::vec3 a_tangent = glm::normalize(a_relative - glm::dot(a_relative, collision.normal) * collision.normal);
-    glm::vec3 b_tangent = glm::normalize(b_relative - glm::dot(b_relative, collision.normal) * collision.normal);
-
     glm::vec3 tangent;
     const float THRESHOLD = 0.001f;
-    
-    if(std::abs(glm::dot(relative_velocity, collision.normal)) > THRESHOLD) {
-      tangent = glm::normalize(relative_velocity - glm::dot(relative_velocity, collision.normal) * collision.normal);
+
+    if (std::abs(glm::dot(relative_velocity, collision.normal)) > THRESHOLD) {
+      tangent = relative_velocity - glm::dot(relative_velocity, collision.normal) * collision.normal;
+      if (glm::length(tangent) > 0) {
+        tangent = glm::normalize(tangent);
+      }
     } else {
       tangent = glm::vec3(0.0f);
     }
-    
-    float j_f = j_d; // TODO
-  
+
+    float j_f = j_d;  // TODO
+
     a->add_impulse_at_world_point(-j_f * tangent, collision.point);
     b->add_impulse_at_world_point(+j_f * tangent, collision.point);
 #endif

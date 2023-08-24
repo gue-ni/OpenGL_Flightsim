@@ -62,22 +62,24 @@ void App::init()
 
   m_scene = new gfx::Object3D();
 
-  constexpr float fov = glm::radians(45.0f);
-  float aspect_ratio = (float)m_width / (float)m_height;
-  float near = 0.1f, far = 150000.0f;
+  float aspect_ratio = (float)m_width / (float)m_height, near = 0.1f, far = 150000.0f;
 
-  m_cameras[0] = new gfx::Camera(fov, aspect_ratio, near, far);
+  // orbit camera
+  m_cameras[0] = new gfx::Camera(glm::radians(45.0f), aspect_ratio, near, far);
   m_scene->add(m_cameras[0]);
 
-  m_cameras[1] = new gfx::Camera(fov, aspect_ratio, near, far);
+  // attached
+  m_cameras[1] = new gfx::Camera(glm::radians(45.0f), aspect_ratio, near, far);
 
-  m_cameras[2] = new gfx::Camera(fov, aspect_ratio, near, far);
+  // following camera
+  m_cameras[2] = new gfx::Camera(glm::radians(45.0f), aspect_ratio, near, far);
   m_scene->add(m_cameras[2]);
 
 #if 1
 #endif
 #if 1
   m_clipmap = new Clipmap();
+  m_clipmap->visible = true;
   m_scene->add(m_clipmap);
 #endif
 
@@ -106,8 +108,8 @@ void App::init()
   m_falcon->add(m_cameras[1]);
 
   float height = m_clipmap->get_terrain_height(glm::vec2(0));
-  m_airplane->position = glm::vec3(0, height + 3500.0f, 0);
-  m_airplane->velocity = glm::vec3(200, 0, 0);
+  m_airplane->position = glm::vec3(0, height + 15.0f, 0);
+  m_airplane->velocity = glm::vec3(0, 0, 0);
   m_airplane->rotation = glm::quat(glm::vec3(0.0f, 0.0f, 0.0f));
 
   m_cameras[2]->set_transform(m_airplane->position - offset, glm::quat(look_forward));
@@ -116,6 +118,11 @@ void App::init()
   light->transform_flags = OBJ3D_TRANSFORM;
   light->set_position(glm::vec3(2, 8, 2));
   m_falcon->add(light);
+
+  m_runway = gfx::Mesh::load("assets/models/runway.obj", "assets/textures/runway.jpg");
+  m_runway->set_position(glm::vec3(0,height + 0.05f, 0));
+  m_runway->receive_shadow = true;
+  m_scene->add(m_runway);  
 
   // setup all transforms
   m_scene->update_transform();
@@ -133,39 +140,11 @@ void App::init_airplane()
   const auto cube = gfx::make_cube_geometry(1.0f);
   const auto material = make_shared<gfx::Material>("shaders/mesh", texture);
 
-  std::vector<gfx::gl::Vertex> vertices1 = {
-      {{ 0.5f,  0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f },  { 1.0f, 1.0f}},   // top right
-      {{ 0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f },  { 1.0f, 0.0f}},   // bottom right
-      {{-0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f },  { 0.0f, 0.0f}},   // bottom left
-      {{-0.5f,  0.5f, 0.0f }, { 1.0f, 1.0f, 0.0f },  { 0.0f, 1.0f}},   // top left 
-  };
-
-  std::vector<GLuint> indices = {
-      0, 1, 3,
-      1, 2, 3
-  };
-
-  std::vector<gfx::gl::Vertex> vertices2 = {
-      {{ 0.5f,  0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f },  { 1.0f, 1.0f}},   // top right
-      {{ 0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f },  { 1.0f, 0.0f}},   // bottom right
-      {{-0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f },  { 0.0f, 0.0f}},   // bottom left
-
-      {{-0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f },  { 0.0f, 0.0f}},   // bottom left
-      {{-0.5f,  0.5f, 0.0f }, { 1.0f, 1.0f, 0.0f },  { 0.0f, 1.0f}},   // top left 
-      {{ 0.5f,  0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f },  { 1.0f, 1.0f}},   // top right
-  };
-
-  const auto tmp1 = std::make_shared<gfx::IndexedGeometry>(vertices1, indices);
-  const auto tmp2 = std::make_shared<gfx::Geometry>(vertices2);
-
   //m_falcon = new gfx::Mesh(tmp2, material);
-
-  m_falcon = gfx::Mesh::load_mesh(glb);
-
-  m_falcon->update_transform();
-
+  //m_falcon = gfx::Mesh::load_mesh(glb);
   //m_falcon = new gfx::Mesh(geometry, material);
-  //m_falcon = gfx::Mesh::load(obj);
+  m_falcon = gfx::Mesh::load(obj, jpg);
+  m_falcon->receive_shadow = false;
   m_scene->add(m_falcon);
 
   const float mass = 10000.0f;
@@ -198,7 +177,7 @@ void App::init_airplane()
 
   m_airplane = new Airplane(mass, inertia, wings, {engine}, collider);
 
-#if 0
+#if 1
   gfx::Object3D* landing_gear = new gfx::Object3D();
   m_falcon->add(landing_gear);
 
@@ -345,7 +324,7 @@ void App::game_loop(float dt)
     // airplane model
     m_falcon->set_transform(m_airplane->position, m_airplane->rotation);
 
-#if 1
+#if 0
     // control surfaces
     glm::vec3 r;
     r = m_falcon->children[2]->get_rotation();

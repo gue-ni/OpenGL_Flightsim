@@ -121,4 +121,7 @@ void main()
 #else
   FragColor = mix(vec4(Color, 1.0), terrainColor, 0.5);
 #endif
+
+
+  //FragColor = terrainColor;
 }
