@@ -17,6 +17,7 @@ in vec3 WorldPos;
 in vec2 TexCoords;
 in vec3 ReflectedVector;
 in vec4 FragPosLightSpace;
+in float FragDepth;
 
 float ShadowCalculation(vec4 fragPosLightSpace)
 {
@@ -83,8 +84,13 @@ void main() {
 
   if (u_ShadowPass) {
     // only write to depth buffer
+    gl_FragDepth = gl_FragCoord.z;
     return;
   }
+
+  float farPlane = 150000.0;
+  float coeff = 2.0 / (log2(farPlane + 1.0) / 0.693);
+  gl_FragDepth = log2(FragDepth) * coeff * 0.5;
 
   vec3 texColor = texture(u_Texture_01, TexCoords).rgb;
   vec3 reflectedColor = texture(u_EnvMap, ReflectedVector).rgb;

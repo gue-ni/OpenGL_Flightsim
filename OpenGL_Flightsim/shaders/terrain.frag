@@ -18,6 +18,7 @@ in vec3 Normal;
 in vec3 FragPos;
 in vec2 TexCoords;
 in vec4 FragPosLightSpace;
+in float FragDepth;
 
 
 flat in float scaleFactor;
@@ -44,26 +45,6 @@ float ShadowCalculation(vec4 fragPosLightSpace)
     }
 
     return shadow;
-}
-
-vec3 calculateDirLight(vec3 lightDirection, vec3 normal, vec3 color)
-{
-  float ka = 0.6;
-  float kd = 1.0f;
-
-  vec3 lightColor = vec3(1.0);
-
-  // ambient
-  vec3 ambient = ka * lightColor;
-  
-  // diffuse 
-  vec3 diffuse = max(dot(normalize(normal), normalize(lightDirection)), 0.0) * lightColor;
-
- //float shadow = ShadowCalculation(FragPosLightSpace);                      
- float shadow = 0.0;
-
-  //return (ambient + (1.0 - shadow) * diffuse) * color;
-  return (ambient) + (diffuse) * color;
 }
 
 vec3 phongLighting(vec3 texColor, vec3 lightDir, vec3 lightColor)
@@ -122,6 +103,9 @@ void main()
   FragColor = mix(vec4(Color, 1.0), terrainColor, 0.5);
 #endif
 
+  float farPlane = 150000.0;
+  float coeff = 2.0 / (log2(farPlane + 1.0) / 0.693);
+  gl_FragDepth = log2(FragDepth) * coeff * 0.5;
 
   //FragColor = terrainColor;
 }

@@ -8,6 +8,7 @@ out vec3 WorldPos;
 out vec2 TexCoords;
 out vec3 ReflectedVector;
 out vec4 FragPosLightSpace;
+out float FragDepth;
 
 uniform mat4 u_View;
 uniform mat4 u_Model;
@@ -28,6 +29,8 @@ void main() {
   WorldPos = worldPosition.xyz;
 
   gl_Position = u_Projection * u_View * worldPosition;
+
+  FragDepth = 1.0 + gl_Position.w;
 
   TexCoords = a_TexCoord;
 

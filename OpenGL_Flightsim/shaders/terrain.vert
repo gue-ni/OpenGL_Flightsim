@@ -19,8 +19,8 @@ out vec3 Color;
 out vec3 Normal;
 out vec3 FragPos;
 out vec2 TexCoords;
-//noperspective out vec2 TexCoord;
 out vec4 FragPosLightSpace;
+out float FragDepth;
 
 
 flat out float scaleFactor;
@@ -79,6 +79,7 @@ void main()
     gl_Position = snap(gl_Position, vec2(320, 180));
 #endif
 
+  FragDepth = 1.0 + gl_Position.w;
   FragPosLightSpace = u_LightSpaceMatrix * vec4(FragPos, 1.0);
 
 }
