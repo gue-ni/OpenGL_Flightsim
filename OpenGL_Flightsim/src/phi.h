@@ -146,7 +146,9 @@ struct CollisionInfo {
   float restitution_coeff = 0.75f;  // coefficient of restitution, 0 = perfectly inelastic, 1 = perfectly elastic
   glm::vec3 point;                  // contact point
   glm::vec3 normal;                 // contact normal
-  float penetration;                // penetration depth
+  float penetration;  // penetration depth
+  float static_friction_coeff;
+  float kinetic_friction_coeff;
   RigidBody *a, *b;                 // the rigidbodies involved
 };
 
