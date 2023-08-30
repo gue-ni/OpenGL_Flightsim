@@ -32,6 +32,7 @@ SOFTWARE. */
 #define PHI_H
 
 #include <glm/glm.hpp>
+#include <glm/gtx/io.hpp>
 #include <glm/gtx/matrix_operation.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <iostream>
@@ -146,10 +147,10 @@ struct CollisionInfo {
   float restitution_coeff = 0.75f;  // coefficient of restitution, 0 = perfectly inelastic, 1 = perfectly elastic
   glm::vec3 point;                  // contact point
   glm::vec3 normal;                 // contact normal
-  float penetration;  // penetration depth
+  float penetration;                // penetration depth
   float static_friction_coeff;
   float kinetic_friction_coeff;
-  RigidBody *a, *b;                 // the rigidbodies involved
+  RigidBody *a, *b;  // the rigidbodies involved
 };
 
 // inertia tensor calculations
@@ -463,7 +464,7 @@ class RigidBody : public Transform
       position += velocity * dt;
 
       angular_velocity += inverse_inertia * (m_torque - glm::cross(angular_velocity, inertia * angular_velocity)) * dt;
-      rotation += (rotation * glm::quat(0.0f, angular_velocity)) * (0.5f * dt);
+      rotation += rotation * glm::quat(0.0f, angular_velocity) * 0.5f * dt;
       rotation = glm::normalize(rotation);
     }
 
@@ -539,7 +540,7 @@ class RigidBody : public Transform
     a->add_impulse_at_world_point(-impulse, collision.point);
     b->add_impulse_at_world_point(+impulse, collision.point);
 
-#if 1 
+#if 1
     float j_s = collision.static_friction_coeff * j_r;
     float j_d = collision.kinetic_friction_coeff * j_r;
 
@@ -548,9 +549,8 @@ class RigidBody : public Transform
 
     if (std::abs(glm::dot(relative_velocity, collision.normal)) > THRESHOLD) {
       tangent = relative_velocity - glm::dot(relative_velocity, collision.normal) * collision.normal;
-      if (glm::length(tangent) > 0) {
-        tangent = glm::normalize(tangent);
-      }
+      if (glm::length(tangent) > 0) tangent = glm::normalize(tangent);
+
     } else {
       tangent = glm::vec3(0.0f);
     }
@@ -573,13 +573,9 @@ void step_physics(std::vector<RB>& objects, phi::Seconds dt)
 
 };  // namespace phi
 
-#if 0
-// debug print
-std::ostream& operator<<(std::ostream& os, const phi::RigidBody& rb)
+inline std::ostream& operator<<(std::ostream& os, const phi::RigidBody& rb)
 {
-  return os << "RigidBody { p = " << rb.position << ", r = " << rb.get_euler_angles() << ", v = " << rb.velocity
-            << ", av = " << rb.angular_velocity << " }";
+  return os << rb.position << ", " << rb.rotation << ", " << rb.velocity << ", " << rb.angular_velocity;
 }
-#endif
 
 #endif /* PHI_H */

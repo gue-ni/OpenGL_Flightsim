@@ -507,11 +507,7 @@ void Mesh::draw_self(RenderContext& context)
     glm::vec3 rgb = glm::vec3(1.0f, 0.0f, 0.0f);
     shader->set_uniform("u_SolidObjectColor", rgb);
 
-    // shader->set_uniform("ka", 0.5f);
-    // shader->set_uniform("kd", 1.0f);
-    // shader->set_uniform("ks", 0.4f);
-    // shader->set_uniform("alpha", 20.0f);
-
+    // material pbr properties
     shader->set_uniform("u_Shininess", m_material->shininess);
 
     m_geometry->vao.bind();
@@ -867,6 +863,7 @@ void Renderer::render(Camera* camera, Object3D* scene)
 void Renderer::render(Camera* camera, Object3D* scene, RenderTarget* target)
 {
   RenderContext context;
+  context.shaders = &m_shaders;
 
   glViewport(0, 0, target->width, target->height);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

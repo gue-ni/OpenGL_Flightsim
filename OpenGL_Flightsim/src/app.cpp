@@ -120,9 +120,9 @@ void App::init()
   m_falcon->add(light);
 
   m_runway = gfx::Mesh::load("assets/models/runway.obj", "assets/textures/runway.jpg");
-  m_runway->set_position(glm::vec3(0,height + 0.05f, 0));
+  m_runway->set_position(glm::vec3(0, height + 0.05f, 0));
   m_runway->receive_shadow = true;
-  m_scene->add(m_runway);  
+  m_scene->add(m_runway);
 
   // setup all transforms
   m_scene->update_transform();
@@ -140,9 +140,9 @@ void App::init_airplane()
   const auto cube = gfx::make_cube_geometry(1.0f);
   const auto material = make_shared<gfx::Material>("shaders/mesh", texture);
 
-  //m_falcon = new gfx::Mesh(tmp2, material);
-  //m_falcon = gfx::Mesh::load_mesh(glb);
-  //m_falcon = new gfx::Mesh(geometry, material);
+  // m_falcon = new gfx::Mesh(tmp2, material);
+  // m_falcon = gfx::Mesh::load_mesh(glb);
+  // m_falcon = new gfx::Mesh(geometry, material);
   m_falcon = gfx::Mesh::load(obj, jpg);
   auto c = static_cast<gfx::Mesh*>(m_falcon->children[3]);
   c->get_material()->shininess = 1.0f;
@@ -178,6 +178,8 @@ void App::init_airplane()
       new LandingGear(glm::vec3(4.0f, -1.8f, 0.0f), glm::vec3(-1.0f, -1.8f, +2.0f), glm::vec3(-1.0f, -1.8f, -2.0f));
 
   m_airplane = new Airplane(mass, inertia, wings, {engine}, collider);
+
+  std::cout << *m_airplane << std::endl;
 
 #if 1
   gfx::Object3D* landing_gear = new gfx::Object3D();
@@ -231,6 +233,20 @@ void App::poll_events()
         break;
     }
   }
+
+  const uint8_t* state = SDL_GetKeyboardState(NULL);
+
+  if (state[SDL_SCANCODE_A] || state[SDL_SCANCODE_LEFT]) {
+  } else if (state[SDL_SCANCODE_D] || state[SDL_SCANCODE_RIGHT]) {
+  } else {
+  }
+
+ if (state[SDL_SCANCODE_W] || state[SDL_SCANCODE_UP]) {
+  } else if (state[SDL_SCANCODE_S] || state[SDL_SCANCODE_DOWN]) {
+  } else {
+  }
+
+
 }
 
 void App::event_mousewheel(float value) { m_controller.radius *= (1.0 + glm::sign(value) * 0.1f); }
