@@ -697,15 +697,9 @@ Object3D* Mesh::load_mesh(const std::string& path)
 
 Line2d::Line2d()
 {
-  std::vector<glm::vec3> points = {
-      {0.5, 0.0, 0.0},
-      {-0.5, 0.0, 0.0},
-  };
-
   vao.bind();
 
   vbo.bind();
-  vbo.buffer(points);
 
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
   glEnableVertexAttribArray(0);
@@ -713,17 +707,38 @@ Line2d::Line2d()
   vao.unbind();
 }
 
+
+void Line2d::batch_line(const Line& line)
+{
+   m_lines.push_back(line);
+}
+
+
+void Line2d::batch_line(const Line& line, float angle)
+{
+
+}
+
+void Line2d::batch_clear()
+{
+  m_lines.clear();
+}
+
 void Line2d::draw_self(RenderContext& context)
 {
   if (!context.shadow_pass && context.shaders) {
     auto camera = context.camera;
-
-    gl::ShaderPtr shader = context.shaders->get_shader("shaders/line");
+    auto shader = context.shaders->get_shader("shaders/line");
     shader->bind();
-    // shader->set_uniform("u_Model", get_transform());
 
     vao.bind();
-    glDrawArrays(GL_LINES, 0, 2);
+
+    vbo.bind();
+
+    vbo.buffer(m_lines);
+
+
+    glDrawArrays(GL_LINES, 0, m_lines.size() * 2);
     vao.unbind();
   }
 }

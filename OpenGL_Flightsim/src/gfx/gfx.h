@@ -198,12 +198,18 @@ class Billboard : public Object3D
   gl::ElementBuffer ebo;
 };
 
+using Line = std::tuple<glm::vec3, glm::vec3>;
+
 class Line2d : public Object3D 
 {
 public:
   Line2d();
   void draw_self(RenderContext& context) override;
+  void batch_line(const Line& line);
+  void batch_line(const Line& line, float angle);
+  void batch_clear();
 private:
+  std::vector<Line> m_lines;
   gl::VertexArrayObject vao;
   gl::VertexBuffer vbo;
 };

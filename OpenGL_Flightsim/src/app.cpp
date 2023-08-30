@@ -61,35 +61,33 @@ void App::init()
   m_renderer = new gfx::Renderer(m_width, m_height);
   m_hud_renderer = new gfx::Renderer(m_width, m_height);
 
-
   auto tex = gfx::gl::Texture::load("assets/textures/container.jpg", {});
   auto mat = std::make_shared<gfx::Material>("shaders/mesh", tex);
 
   m_scene = new gfx::Object3D();
 #if 1
   m_hud = new gfx::Line2d();
-  
+
 #else
   m_hud = new gfx::Mesh(gfx::make_cube_geometry(1.0f), mat);
-  m_hud->set_position({0,0,-5});
+  m_hud->set_position({0, 0, -5});
   m_hud->set_rotation({phi::PI / 2, 0, 0});
 #endif
   m_hud->update_transform();
-  m_hud_target = new gfx::RenderTarget(1024, 1024);
+  m_hud_target = new gfx::RenderTarget(m_width, m_height);
 
-  
-  auto mat1 = std::make_shared<gfx::Material>("shaders/default", m_hud_target->texture);
+  auto mat1 = std::make_shared<gfx::Material>("shaders/screen", m_hud_target->texture);
   auto mat2 = std::make_shared<gfx::Material>("shaders/screen", tex);
   m_screen = new gfx::Mesh(gfx::make_quad_geometry(), mat1);
 #if 1
   m_screen->set_scale(glm::vec3(15.0f));
-  m_screen->set_position({15, 0,0});
-  m_screen->set_rotation({0, phi::PI / 2.0,0});
+  m_screen->set_position({15, 0, 0});
+  m_screen->set_rotation({0, phi::PI / 2.0, 0});
 #endif
-  m_screen->cast_shadow = false; 
-  m_screen->disable_depth_test = false;
+  m_screen->cast_shadow = false;
+  m_screen->disable_depth_test = true;
 
-  //m_scene->add(m_screen);
+  // m_scene->add(m_screen);
 
   float aspect_ratio = (float)m_width / (float)m_height, near = 0.1f, far = 150000.0f;
 
@@ -123,7 +121,7 @@ void App::init()
   float height = m_clipmap->get_terrain_height(glm::vec2(0));
 
 #if 1
-  //m_runway = gfx::Mesh::load("assets/models/falcon.obj", "assets/textures/falcon.jpg");
+  // m_runway = gfx::Mesh::load("assets/models/falcon.obj", "assets/textures/falcon.jpg");
   m_runway = gfx::Mesh::load("assets/models/runway.obj", "assets/textures/runway.jpg");
   m_runway->set_position(glm::vec3(0, height + 0.05f, 0));
   m_scene->add(m_runway);
@@ -157,8 +155,6 @@ void App::init()
   m_falcon->add(light);
 
   m_falcon->add(m_screen);
-
-
 
   // setup all transforms
   m_scene->update_transform();
@@ -277,12 +273,10 @@ void App::poll_events()
   } else {
   }
 
- if (state[SDL_SCANCODE_W] || state[SDL_SCANCODE_UP]) {
+  if (state[SDL_SCANCODE_W] || state[SDL_SCANCODE_UP]) {
   } else if (state[SDL_SCANCODE_S] || state[SDL_SCANCODE_DOWN]) {
   } else {
   }
-
-
 }
 
 void App::event_mousewheel(float value) { m_controller.radius *= (1.0 + glm::sign(value) * 0.1f); }
@@ -398,11 +392,47 @@ void App::game_loop(float dt)
 
   m_controller.update(*m_cameras[0], m_falcon->get_position(), dt);
 
+  // float pitch = m_airplane->get;
+  // m_hud->batch_line({glm::vec3(), glm::vec3()});
+
+  glm::vec3 v = glm::normalize(m_airplane->get_body_velocity());
+
+
+  float s;
+
+  // velocity vector
+  glm::vec2 o = glm::vec2(v.z, v.y);
+
+  // flightpath marker
+  s = 0.03f;
+  m_hud->batch_line({{-s + o.x, 0 + o.y, 0}, {+s + o.x, 0 + o.y, 0}});
+  m_hud->batch_line({{0 + o.x, +s + o.y, 0}, {0 + o.x, -s + o.y, 0}});
+
+  // forward
+  s = 0.02f;
+  m_hud->batch_line({{-s, 0, 0}, {+s, 0, 0}});
+  m_hud->batch_line({{0, +s, 0}, {0, -s, 0}});
+
+#if 1
+
+  float pitch = m_airplane->get_euler_angles().z;
+
+  //std::cout << pitch << std::endl;
+
+  // pitch ladder
+  for (int i = -5; i < 5; i ++)
+  {
+    float w = 0.25f;
+    float h = 0.1f;
+    m_hud->batch_line({{-w + o.x,  h * i + o.y - pitch, 0}, {+w + o.x, h * i + o.y - pitch, 0}});
+  }
+#endif
+
+
   gfx::Camera c(glm::radians(45.0f), 1.0, 0.1, 1000);
-  //c.set_position({0,0,10});
-  //c.update_transform();
   m_hud_renderer->render(&c, m_hud, m_hud_target);
 
+  m_hud->batch_clear();
 
   m_renderer->render(m_cameras[m_cameratype], m_scene);
 }

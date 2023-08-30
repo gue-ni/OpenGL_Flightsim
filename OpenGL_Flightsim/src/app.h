@@ -46,7 +46,7 @@ class App
 
 
   gfx::Renderer* m_hud_renderer;
-  gfx::Object3D* m_hud;
+  gfx::Line2d* m_hud;
   gfx::RenderTarget* m_hud_target;
 
   gfx::OrbitController m_controller;
