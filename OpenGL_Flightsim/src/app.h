@@ -42,6 +42,12 @@ class App
   std::array<gfx::Camera*, 3> m_cameras;
   gfx::Object3D* m_scene;
   gfx::Renderer* m_renderer;
+  gfx::Mesh* m_screen;
+
+
+  gfx::Renderer* m_hud_renderer;
+  gfx::Object3D* m_hud;
+  gfx::RenderTarget* m_hud_target;
 
   gfx::OrbitController m_controller;
 

@@ -59,8 +59,37 @@ App::~App()
 void App::init()
 {
   m_renderer = new gfx::Renderer(m_width, m_height);
+  m_hud_renderer = new gfx::Renderer(m_width, m_height);
+
+
+  auto tex = gfx::gl::Texture::load("assets/textures/container.jpg", {});
+  auto mat = std::make_shared<gfx::Material>("shaders/mesh", tex);
 
   m_scene = new gfx::Object3D();
+#if 1
+  m_hud = new gfx::Line2d();
+  
+#else
+  m_hud = new gfx::Mesh(gfx::make_cube_geometry(1.0f), mat);
+  m_hud->set_position({0,0,-5});
+  m_hud->set_rotation({phi::PI / 2, 0, 0});
+#endif
+  m_hud->update_transform();
+  m_hud_target = new gfx::RenderTarget(1024, 1024);
+
+  
+  auto mat1 = std::make_shared<gfx::Material>("shaders/default", m_hud_target->texture);
+  auto mat2 = std::make_shared<gfx::Material>("shaders/screen", tex);
+  m_screen = new gfx::Mesh(gfx::make_quad_geometry(), mat1);
+#if 1
+  m_screen->set_scale(glm::vec3(15.0f));
+  m_screen->set_position({15, 0,0});
+  m_screen->set_rotation({0, phi::PI / 2.0,0});
+#endif
+  m_screen->cast_shadow = false; 
+  m_screen->disable_depth_test = false;
+
+  //m_scene->add(m_screen);
 
   float aspect_ratio = (float)m_width / (float)m_height, near = 0.1f, far = 150000.0f;
 
@@ -91,6 +120,15 @@ void App::init()
   m_terrain->set_inertia(phi::inertia::sphere(m_terrain->mass, 1000.0f));
 #endif
 
+  float height = m_clipmap->get_terrain_height(glm::vec2(0));
+
+#if 1
+  //m_runway = gfx::Mesh::load("assets/models/falcon.obj", "assets/textures/falcon.jpg");
+  m_runway = gfx::Mesh::load("assets/models/runway.obj", "assets/textures/runway.jpg");
+  m_runway->set_position(glm::vec3(0, height + 0.05f, 0));
+  m_scene->add(m_runway);
+#endif
+
   init_airplane();
 
   glm::vec3 look_forward = glm::vec3(0, glm::radians(-90.0f), 0.0f);
@@ -107,7 +145,6 @@ void App::init()
   m_cameras[1]->set_rotation(look_forward);
   m_falcon->add(m_cameras[1]);
 
-  float height = m_clipmap->get_terrain_height(glm::vec2(0));
   m_airplane->position = glm::vec3(0, height + 15.0f, 0);
   m_airplane->velocity = glm::vec3(0, 0, 0);
   m_airplane->rotation = glm::quat(glm::vec3(0.0f, 0.0f, 0.0f));
@@ -119,10 +156,9 @@ void App::init()
   light->set_position(glm::vec3(2, 8, 2));
   m_falcon->add(light);
 
-  m_runway = gfx::Mesh::load("assets/models/runway.obj", "assets/textures/runway.jpg");
-  m_runway->set_position(glm::vec3(0, height + 0.05f, 0));
-  m_runway->receive_shadow = true;
-  m_scene->add(m_runway);
+  m_falcon->add(m_screen);
+
+
 
   // setup all transforms
   m_scene->update_transform();
@@ -361,6 +397,12 @@ void App::game_loop(float dt)
   }
 
   m_controller.update(*m_cameras[0], m_falcon->get_position(), dt);
+
+  gfx::Camera c(glm::radians(45.0f), 1.0, 0.1, 1000);
+  //c.set_position({0,0,10});
+  //c.update_transform();
+  m_hud_renderer->render(&c, m_hud, m_hud_target);
+
 
   m_renderer->render(m_cameras[m_cameratype], m_scene);
 }

@@ -54,6 +54,7 @@ constexpr float EPSILON = 1e-8f;
 constexpr float EARTH_GRAVITY = 9.80665f;
 constexpr float EARTH_RADIUS = 6371000.0f;
 constexpr float PI = 3.141592653589793f;
+constexpr float HALF_PI = 3.141592653589793f / 2.0f;
 
 // directions in body space
 constexpr glm::vec3 X_AXIS = {1.0f, 0.0f, 0.0f};

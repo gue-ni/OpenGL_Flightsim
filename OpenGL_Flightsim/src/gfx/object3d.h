@@ -56,6 +56,8 @@ class Object3D
   bool visible = true;
   bool wireframe = false;
   bool receive_shadow = true;
+  bool cast_shadow = true;
+  bool disable_depth_test = false;
 
   Object3D& add(Object3D* child);
 

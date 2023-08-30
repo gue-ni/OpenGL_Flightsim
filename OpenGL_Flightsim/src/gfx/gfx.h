@@ -198,6 +198,16 @@ class Billboard : public Object3D
   gl::ElementBuffer ebo;
 };
 
+class Line2d : public Object3D 
+{
+public:
+  Line2d();
+  void draw_self(RenderContext& context) override;
+private:
+  gl::VertexArrayObject vao;
+  gl::VertexBuffer vbo;
+};
+
 class Skybox : public Mesh
 {
  public:

@@ -292,17 +292,17 @@ GeometryPtr make_plane_geometry(int x_elements, int y_elements, float size)
 
 GeometryPtr make_quad_geometry()
 {
-  const std::vector<float> quad_vertices = {
-      -1.0f, 1.0f,  0.0f, 0.0f, 1.0f,  // top left
-      -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,  // bottom left
-      1.0f,  1.0f,  0.0f, 1.0f, 1.0f,  // top right
+  const std::vector<gl::Vertex> quad_vertices = {
+      {{-1, 1, 0}, {0, 0, 1}, {0, 1}},   // top left
+      {{-1, -1, 0}, {0, 0, 1}, {0, 0}},  // bottom left
+      {{1, 1, 0}, {0, 0, 1}, {1, 1}},    // top right
 
-      1.0f,  1.0f,  0.0f, 1.0f, 1.0f,  // top right
-      -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,  // bottom left
-      1.0f,  -1.0f, 0.0f, 1.0f, 0.0f,  // bottom right
+      {{1, 1, 0}, {0, 0, 1}, {1, 1}},    // top right
+      {{-1, -1, 0}, {0, 0, 1}, {0, 0}},  // bottom left
+      {{1, -1, 0}, {0, 0, 1}, {1, 0}},   // bottom right
   };
 
-  return std::make_shared<Geometry>(quad_vertices, Geometry::POS_UV);
+  return std::make_shared<Geometry>(quad_vertices);
 }
 
 Billboard::Billboard(gl::TexturePtr sprite, glm::vec3 color)
@@ -410,7 +410,7 @@ RenderTarget::RenderTarget(int w, int h) : RenderTargetBase(w, h)
   // setup texture
   texture = std::make_shared<gl::Texture>();
   texture->bind();
-  glTexImage2D(texture->target, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+  glTexImage2D(texture->target, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
   texture->set_parameter(GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   texture->set_parameter(GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   texture->unbind();
@@ -418,7 +418,6 @@ RenderTarget::RenderTarget(int w, int h) : RenderTargetBase(w, h)
   // setup depthmap
   depthbuffer.bind();
   glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
-  //glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH32F_STENCIL8_NV, width, height);
   depthbuffer.unbind();
 
   framebuffer.bind();
@@ -465,6 +464,8 @@ Mesh::Mesh(const GeometryPtr& geometry, const MaterialPtr& material)
 
 void Mesh::draw_self(RenderContext& context)
 {
+  if (disable_depth_test) glDisable(GL_DEPTH_TEST);
+
   if (!context.shadow_pass && context.shaders) {
     auto camera = context.camera;
 
@@ -528,6 +529,8 @@ void Mesh::draw_self(RenderContext& context)
 
     shader->unbind();
   }
+
+  if (disable_depth_test) glEnable(GL_DEPTH_TEST);
 }
 
 Object3D* Mesh::load(const std::string& path, const std::string& texture)
@@ -692,6 +695,39 @@ Object3D* Mesh::load_mesh(const std::string& path)
   return root;
 }
 
+Line2d::Line2d()
+{
+  std::vector<glm::vec3> points = {
+      {0.5, 0.0, 0.0},
+      {-0.5, 0.0, 0.0},
+  };
+
+  vao.bind();
+
+  vbo.bind();
+  vbo.buffer(points);
+
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+  glEnableVertexAttribArray(0);
+
+  vao.unbind();
+}
+
+void Line2d::draw_self(RenderContext& context)
+{
+  if (!context.shadow_pass && context.shaders) {
+    auto camera = context.camera;
+
+    gl::ShaderPtr shader = context.shaders->get_shader("shaders/line");
+    shader->bind();
+    // shader->set_uniform("u_Model", get_transform());
+
+    vao.bind();
+    glDrawArrays(GL_LINES, 0, 2);
+    vao.unbind();
+  }
+}
+
 Renderer::Renderer(GLsizei width, GLsizei height) : m_width(width), m_height(height)
 {
   // init renderer
@@ -710,6 +746,8 @@ Renderer::Renderer(GLsizei width, GLsizei height) : m_width(width), m_height(hei
   glEnable(GL_MULTISAMPLE);
   glEnable(GL_BLEND);
   glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+  bool shadowmap = true;
 
   // init skybox
 #if 1
@@ -732,15 +770,15 @@ Renderer::Renderer(GLsizei width, GLsizei height) : m_width(width), m_height(hei
   m_skybox->set_scale(glm::vec3(10.0f));
   m_skybox->update_transform();
 
-#if 1
-  m_shadowmap = std::make_shared<ShadowMap>(2048, 2048);
-#endif
+  if (shadowmap) {
+    m_shadowmap = std::make_shared<ShadowMap>(2048, 2048);
+  }
 
 #if 1
   m_rendertarget = std::make_shared<gfx::RenderTarget>(m_width, m_height);
 
   auto mat1 = std::make_shared<gfx::Material>("shaders/screen", m_rendertarget->texture);
-  auto mat2 = std::make_shared<gfx::Material>("shaders/shadow_debug", m_shadowmap->texture);
+  // auto mat2 = std::make_shared<gfx::Material>("shaders/shadow_debug", m_shadowmap->texture);
 
   m_screenquad = std::make_shared<gfx::Mesh>(gfx::make_quad_geometry(), mat1);
 #else
@@ -813,7 +851,7 @@ void Renderer::render(Camera* camera, Object3D* scene)
     scene->traverse([&context](Object3D* obj) {
       Mesh* mesh = dynamic_cast<Mesh*>(obj);
 
-      if (mesh != NULL) {
+      if (mesh != NULL && mesh->cast_shadow == true) {
         gl::ShaderPtr shader = context.shaders->get_shader("shaders/mesh");
         shader->bind();
         shader->set_uniform("u_Model", mesh->get_transform());
@@ -822,6 +860,7 @@ void Renderer::render(Camera* camera, Object3D* scene)
 
         auto geo = mesh->get_geometry();
 
+        // TODO: also handle indexed geometry
         geo->vao.bind();
         glDrawArrays(GL_TRIANGLES, 0, geo->count);
         geo->vao.unbind();
@@ -863,11 +902,16 @@ void Renderer::render(Camera* camera, Object3D* scene)
 void Renderer::render(Camera* camera, Object3D* scene, RenderTarget* target)
 {
   RenderContext context;
+  context.camera = camera;
+  context.shadow_pass = false;
   context.shaders = &m_shaders;
+  context.env_map = m_skybox->get_material()->get_texture();
+  context.depth_map = m_shadowmap->texture;
 
   glViewport(0, 0, target->width, target->height);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   target->framebuffer.bind();
+  glClearColor(0.0, 0.0, 0.0, 0.0);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   scene->draw(context);
   target->framebuffer.unbind();
 }
