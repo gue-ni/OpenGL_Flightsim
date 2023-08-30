@@ -133,8 +133,7 @@ class IndexedGeometry : public BaseGeometry
 class Material
 {
  public:
-  float alpha, shininess;
-  glm::vec3 emissive, ambient, diffuse, specular;
+  float shininess = 0.0f;
 
   Material(const std::string& shader_name, const gl::TexturePtr& texture)
       : m_shader_name(shader_name), m_texture(texture)

@@ -204,6 +204,13 @@ inline bool LandingGear::test(const phi::Transform* tf, const Heightmap* other, 
     info->normal = phi::DOWN;
     info->point = lowest_point;
     info->restitution_coeff = 0.5f;
+#if 0
+    info->static_friction_coeff = 0.9f;
+    info->kinetic_friction_coeff = 0.65f;
+#else
+    info->static_friction_coeff = 0.0f;
+    info->kinetic_friction_coeff = 0.0f;
+#endif
     return true;
   }
 

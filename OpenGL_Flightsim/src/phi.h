@@ -539,11 +539,9 @@ class RigidBody : public Transform
     a->add_impulse_at_world_point(-impulse, collision.point);
     b->add_impulse_at_world_point(+impulse, collision.point);
 
-#if 0 
-    assert(collision.static_friction_coeff > collision.dynamic_friction_coeff);
-
+#if 1 
     float j_s = collision.static_friction_coeff * j_r;
-    float j_d = collision.dynamic_friction_coeff * j_r;
+    float j_d = collision.kinetic_friction_coeff * j_r;
 
     glm::vec3 tangent;
     const float THRESHOLD = 0.001f;

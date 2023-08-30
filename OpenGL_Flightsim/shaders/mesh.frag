@@ -12,6 +12,8 @@ uniform sampler2D u_Texture_01;
 uniform bool u_ShadowPass;
 uniform bool u_ReceiveShadow;
 
+uniform float u_Shininess;
+
 in vec3 Normal;
 in vec3 WorldPos;
 in vec2 TexCoords;
@@ -95,9 +97,7 @@ void main() {
   vec3 texColor = texture(u_Texture_01, TexCoords).rgb;
   vec3 reflectedColor = texture(u_EnvMap, ReflectedVector).rgb;
 
-  float shininess = 0.0;
-
-  vec3 color = phongLighting(mix(texColor, reflectedColor, shininess), u_LightDir, u_LightColor);
+  vec3 color = phongLighting(mix(texColor, reflectedColor, u_Shininess), u_LightDir, u_LightColor);
 
   gl_FragColor = vec4(color, 1.0);
 }

@@ -512,6 +512,8 @@ void Mesh::draw_self(RenderContext& context)
     // shader->set_uniform("ks", 0.4f);
     // shader->set_uniform("alpha", 20.0f);
 
+    shader->set_uniform("u_Shininess", m_material->shininess);
+
     m_geometry->vao.bind();
 
     switch (m_geometry->draw_type) {
@@ -550,7 +552,6 @@ Object3D* Mesh::load(const std::string& path, const std::string& texture)
   }
 
   const gfx::gl::Texture::Params params = {.flip_vertically = true, .texture_mag_filter = GL_LINEAR};
-  MaterialPtr material = std::make_shared<Material>("shaders/mesh", texture);  // TODO: Fix this
 
   if (!tinyobj::LoadObj(&attributes, &shapes, &materials, &warning, &error, &source)) {
     std::cout << "Error: " << warning << error << std::endl;
@@ -597,6 +598,7 @@ Object3D* Mesh::load(const std::string& path, const std::string& texture)
       index_offset += 3;
     }
 
+    MaterialPtr material = std::make_shared<Material>("shaders/mesh", texture);
     GeometryPtr geometry = std::make_shared<Geometry>(vertices);
 
     Mesh* mesh = new Mesh(geometry, material);

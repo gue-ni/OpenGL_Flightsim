@@ -144,6 +144,8 @@ void App::init_airplane()
   //m_falcon = gfx::Mesh::load_mesh(glb);
   //m_falcon = new gfx::Mesh(geometry, material);
   m_falcon = gfx::Mesh::load(obj, jpg);
+  auto c = static_cast<gfx::Mesh*>(m_falcon->children[3]);
+  c->get_material()->shininess = 1.0f;
   m_falcon->receive_shadow = false;
   m_scene->add(m_falcon);
 
@@ -300,8 +302,8 @@ void App::draw_imgui(float dt)
   ImGui::SetNextWindowBgAlpha(0.35f);
   ImGui::Begin("Flightsim", nullptr, window_flags);
   ImGui::Text("ALT:   %.0f m", m_airplane->position.y);
-  ImGui::Text("SPD:   %.0f km/h", m_airplane->get_speed());
-  ImGui::Text("IAS:   %.0f km/h", m_airplane->get_ias());
+  ImGui::Text("SPD:   %.0f km/h", phi::units::kilometer_per_hour(m_airplane->get_speed()));
+  ImGui::Text("IAS:   %.0f km/h", phi::units::kilometer_per_hour(m_airplane->get_ias()));
   ImGui::Text("THR:   %.0f %%", std::abs(m_airplane->throttle * 100.0f));
   ImGui::Text("G:     %.1f", m_airplane->get_g());
   ImGui::Text("AoA:   %.2f", m_airplane->get_aoa());
