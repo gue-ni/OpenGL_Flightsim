@@ -317,6 +317,22 @@ struct Airplane : public phi::RigidBody {
     float dynamic_pressure = 0.5f * phi::sq(get_speed()) * air_density;  // bernoulli's equation
     return std::sqrt(2 * dynamic_pressure / isa::sea_level_air_density);
   }
+
+  glm::vec3 get_attitude() const {
+    // https://math.stackexchange.com/questions/3564608/calculate-yaw-pitch-roll-from-up-right-forward
+    // https://www.jldoty.com/code/DirectX/YPRfromUF/YPRfromUF.html
+    
+    float yaw = std::atan2(forward.z, forward.x);
+    float pitch = -std::asin(forward.y);
+    float roll = 0.0f; // TODO
+    
+    float planeRightX = sin(yaw);
+    float planeRightZ = -cos(yaw);
+
+    roll = asin(up.x * planeRightX + up.z * planeRightZ);
+    
+    return { roll, yaw, pitch };
+  }
 };
 
 #endif  // ! FLIGHTMODEL_H
