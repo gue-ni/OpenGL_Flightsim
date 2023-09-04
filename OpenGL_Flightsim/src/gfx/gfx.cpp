@@ -707,22 +707,22 @@ Line2d::Line2d()
   vao.unbind();
 }
 
-
-void Line2d::batch_line(const Line& line)
-{
-   m_lines.push_back(line);
-}
-
+void Line2d::batch_line(const Line& line) { m_lines.push_back(line); }
 
 void Line2d::batch_line(const Line& line, float angle)
 {
+  auto p0 = std::get<0>(line);
+  auto p1 = std::get<1>(line);
 
+  float sin_theta = sin(angle);
+  float cos_theta = cos(angle);
+
+  // TODO: rotate line
+  m_lines.push_back({{p0.x * cos_theta - p0.y * sin_theta, p0.x * sin_theta + p0.y * cos_theta, 0.0f},
+                     {p1.x * cos_theta - p1.y * sin_theta, p1.x * sin_theta + p1.y * cos_theta, 0.0f}});
 }
 
-void Line2d::batch_clear()
-{
-  m_lines.clear();
-}
+void Line2d::batch_clear() { m_lines.clear(); }
 
 void Line2d::draw_self(RenderContext& context)
 {
@@ -734,9 +734,7 @@ void Line2d::draw_self(RenderContext& context)
     vao.bind();
 
     vbo.bind();
-
     vbo.buffer(m_lines);
-
 
     glDrawArrays(GL_LINES, 0, m_lines.size() * 2);
     vao.unbind();

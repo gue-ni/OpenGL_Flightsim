@@ -35,6 +35,7 @@ SOFTWARE. */
 #include <glm/gtx/io.hpp>
 #include <glm/gtx/matrix_operation.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/euler_angles.hpp>
 #include <iostream>
 #include <numeric>
 #include <vector>
@@ -439,7 +440,13 @@ class RigidBody : public Transform
   inline float get_speed() const { return glm::length(velocity); }
 
   // get euler angles in radians
-  inline glm::vec3 get_euler_angles() const { return glm::eulerAngles(rotation); }
+  inline glm::vec3 get_euler_angles() const {
+    glm::vec3 euler = glm::eulerAngles(glm::normalize(rotation)); 
+    //if (std::fabs(euler.x >= ))
+
+    return euler;
+  
+  }
 
   // get torque in body space
   inline glm::vec3 get_torque() const { return m_torque; }

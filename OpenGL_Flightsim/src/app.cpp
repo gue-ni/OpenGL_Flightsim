@@ -143,7 +143,7 @@ void App::init()
   m_cameras[1]->set_rotation(look_forward);
   m_falcon->add(m_cameras[1]);
 
-  m_airplane->position = glm::vec3(0, height + 15.0f, 0);
+  m_airplane->position = glm::vec3(0, height + 10.0f, 0);
   m_airplane->velocity = glm::vec3(0, 0, 0);
   m_airplane->rotation = glm::quat(glm::vec3(0.0f, 0.0f, 0.0f));
 
@@ -210,8 +210,6 @@ void App::init_airplane()
       new LandingGear(glm::vec3(4.0f, -1.8f, 0.0f), glm::vec3(-1.0f, -1.8f, +2.0f), glm::vec3(-1.0f, -1.8f, -2.0f));
 
   m_airplane = new Airplane(mass, inertia, wings, {engine}, collider);
-
-  std::cout << *m_airplane << std::endl;
 
 #if 1
   gfx::Object3D* landing_gear = new gfx::Object3D();
@@ -355,6 +353,15 @@ void App::draw_imgui(float dt)
   ImGui::Text("AoA:   %.2f", m_airplane->get_aoa());
   ImGui::Text("FPS:   %.1f", 1.0f / dt);
   ImGui::End();
+
+  auto rotation = glm::degrees(m_airplane->get_euler_angles());
+
+  ImGui::SetNextWindowPos(ImVec2(180, 10));
+  ImGui::SetNextWindowSize(ImVec2(145, 135));
+  ImGui::SetNextWindowBgAlpha(0.35f);
+  ImGui::Begin("Debug", nullptr, window_flags);
+  ImGui::Text("%.1f, %.1f, %.1f", rotation.x, rotation.y, rotation.z);
+  ImGui::End();
 }
 
 void App::game_loop(float dt)
@@ -397,7 +404,6 @@ void App::game_loop(float dt)
 
   glm::vec3 v = glm::normalize(m_airplane->get_body_velocity());
 
-
   float s;
 
   // velocity vector
@@ -413,21 +419,23 @@ void App::game_loop(float dt)
   m_hud->batch_line({{-s, 0, 0}, {+s, 0, 0}});
   m_hud->batch_line({{0, +s, 0}, {0, -s, 0}});
 
-#if 1
+  auto rotation = m_airplane->get_euler_angles();
+  float yaw = rotation.y, pitch = rotation.z, roll = rotation.x;
 
-  float pitch = m_airplane->get_euler_angles().z;
+  float w = 0.25f;
+  float h = 0.1f;
+  // m_hud->batch_line({{-w,  - pitch, 0}, {+w,  - pitch, 0}}, roll);
 
-  //std::cout << pitch << std::endl;
+  // artificial horizon
+  m_hud->batch_line({{-w, 0, 0}, {+w, 0, 0}}, roll);
 
+#if 0
   // pitch ladder
   for (int i = -5; i < 5; i ++)
   {
-    float w = 0.25f;
-    float h = 0.1f;
-    m_hud->batch_line({{-w + o.x,  h * i + o.y - pitch, 0}, {+w + o.x, h * i + o.y - pitch, 0}});
+    m_hud->batch_line({{-w,  h * i - pitch, 0}, {+w, h * i - pitch, 0}}, roll);
   }
 #endif
-
 
   gfx::Camera c(glm::radians(45.0f), 1.0, 0.1, 1000);
   m_hud_renderer->render(&c, m_hud, m_hud_target);
