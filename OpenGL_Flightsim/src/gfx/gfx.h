@@ -210,6 +210,7 @@ public:
   void batch_line(const Line& line, float angle);
   void batch_line(const Line& line, const glm::mat4& matrix);
   void batch_line(float width, const glm::mat4& matrix);
+  void batch_circle(const glm::vec3& center, float radius);
   void batch_clear();
 private:
   std::vector<Line> m_lines;
