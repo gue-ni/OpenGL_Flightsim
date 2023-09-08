@@ -200,6 +200,7 @@ class Billboard : public Object3D
 
 using Line = std::tuple<glm::vec3, glm::vec3>;
 
+// context for drawing 2d lines 
 class Line2d : public Object3D 
 {
 public:
@@ -207,6 +208,8 @@ public:
   void draw_self(RenderContext& context) override;
   void batch_line(const Line& line);
   void batch_line(const Line& line, float angle);
+  void batch_line(const Line& line, const glm::mat4& matrix);
+  void batch_line(float width, const glm::mat4& matrix);
   void batch_clear();
 private:
   std::vector<Line> m_lines;
