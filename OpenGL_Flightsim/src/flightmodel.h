@@ -318,11 +318,15 @@ struct Airplane : public phi::RigidBody {
     return std::sqrt(2 * dynamic_pressure / isa::sea_level_air_density);
   }
 
-  inline glm::vec3 get_attitude() const
+  // positive yaw   -> nose goes right
+  // positive roll  -> lift left wing
+  // positive pitch -> nose goes up
+  glm::vec3 get_attitude() const
   {
     // https://math.stackexchange.com/questions/3564608/calculate-yaw-pitch-roll-from-up-right-forward
+#if 1
 
-    glm::vec3 up = this->up(), forward = this->forward();
+    glm::vec3 forward = this->forward(), up = this->up();
 
     float yaw = std::atan2(forward.z, forward.x);
     float pitch = -std::asin(forward.y);
@@ -332,6 +336,9 @@ struct Airplane : public phi::RigidBody {
     roll = ((0.0f <= roll) - (roll < 0.0f)) * 3.14f - roll;
 
     return {roll, yaw, pitch};
+#else
+    return glm::vec3();
+#endif
   }
 };
 
