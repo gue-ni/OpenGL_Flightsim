@@ -717,21 +717,26 @@ void Line2d::batch_line(const Line& line, float angle)
   float sin_theta = std::sin(angle);
   float cos_theta = std::cos(angle);
 
-  // TODO: rotate line
   m_lines.push_back({{p0.x * cos_theta - p0.y * sin_theta, p0.x * sin_theta + p0.y * cos_theta},
                      {p1.x * cos_theta - p1.y * sin_theta, p1.x * sin_theta + p1.y * cos_theta}});
 }
 
 void Line2d::batch_circle(const glm::vec2& center, float radius)
 {
-#if 0
-  int points = 8;
+#if 1
+  int points = 16;
   float angle = (2 * 3.14f) / points;
 
   for (int i = 0; i < points; i++) {
-    float x = radius * std::cos(angle * i) + center.x;
-    float y = radius * std::cos(angle * i) + center.y;
-    m_lines.push_back({x, y, 0.0f});
+    glm::vec2 p0;
+    p0.x = radius * std::sin(angle * i) + center.x;
+    p0.y = radius * std::cos(angle * i) + center.y;
+
+    glm::vec2 p1;
+    p1.x = radius * std::sin(angle * (i + 1)) + center.x;
+    p1.y = radius * std::cos(angle * (i + 1)) + center.y;
+
+    m_lines.push_back({p0, p1});
   }
 #endif
 }

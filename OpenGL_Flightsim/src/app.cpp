@@ -422,27 +422,34 @@ void App::game_loop(float dt)
   glm::vec2 o = glm::vec2(v.z, v.y);
 
   // flightpath marker
+#if 1
   s = 0.03f;
-  m_hud->batch_line({{-s + o.x, 0 + o.y}, {+s + o.x, 0 + o.y}});
-  m_hud->batch_line({{0 + o.x, +s + o.y}, {0 + o.x, -s + o.y}});
+  float r = 0.01f;
+  m_hud->batch_line({{0 + o.x, o.y + r}, {0 + o.x,  o.y + s}});
+  m_hud->batch_line({{o.x - s, o.y}, {o.x - r,  o.y}});
+  m_hud->batch_line({{o.x + s, o.y}, {o.x + r,  o.y}});
+  m_hud->batch_circle(o, r);
+#endif
 
   // forward
   s = 0.02f;
-  m_hud->batch_line({{-s, 0}, {+s, 0}});
-  m_hud->batch_line({{0, +s}, {0, -s}});
+  r = 0.01f;
+  m_hud->batch_line({{-s, 0}, {-r, 0}});
+  m_hud->batch_line({{+s, 0}, {+r, 0}});
+  m_hud->batch_line({{0, +r}, {0, +s}});
+  m_hud->batch_line({{0, -r}, {0, -s}});
 
   auto rotation = m_airplane->get_attitude();
   float roll = rotation.x, yaw = rotation.y, pitch = rotation.z;
 
   float w = 0.25f;
   float h = 0.1f;
-  // m_hud->batch_line({{-w, pitch, 0}, {+w, pitch, 0}});
 
   // artificial horizon
   float scale = -2.3f;
-  m_hud->batch_line({{-w, pitch * scale}, {+w, pitch * scale}}, roll);
+  //m_hud->batch_line({{-w, pitch * scale}, {+w, pitch * scale}}, roll);
 
-#if 1
+#if 0
   // pitch ladder
   for (int i = -5; i < 5; i++) {
     m_hud->batch_line({{-w, h * i + pitch * scale}, {+w, h * i + pitch * scale}}, roll);
