@@ -368,11 +368,11 @@ void App::draw_imgui(float dt)
   auto rotation2 = glm::degrees(m_airplane->get_euler_angles());
 
   ImGui::SetNextWindowPos(ImVec2(180, 10));
-  ImGui::SetNextWindowSize(ImVec2(145, 135));
+  ImGui::SetNextWindowSize(ImVec2(280, 50));
   ImGui::SetNextWindowBgAlpha(0.35f);
   ImGui::Begin("Debug", nullptr, window_flags);
-  ImGui::Text("%.1f, %.1f, %.1f", rotation1.x, rotation1.y, rotation1.z);
-  ImGui::Text("%.1f, %.1f, %.1f", rotation2.x, rotation2.y, rotation2.z);
+  ImGui::Text("bank: %.1f, yaw: %.1f, pitch: %.1f", rotation1.x, rotation1.y, rotation1.z);
+  ImGui::Text("bank: %.1f, yaw: %.1f, pitch: %.1f", rotation2.x, rotation2.y, rotation2.z);
   ImGui::End();
 }
 
@@ -423,30 +423,29 @@ void App::game_loop(float dt)
 
   // flightpath marker
   s = 0.03f;
-  m_hud->batch_line({{-s + o.x, 0 + o.y, 0}, {+s + o.x, 0 + o.y, 0}});
-  m_hud->batch_line({{0 + o.x, +s + o.y, 0}, {0 + o.x, -s + o.y, 0}});
+  m_hud->batch_line({{-s + o.x, 0 + o.y}, {+s + o.x, 0 + o.y}});
+  m_hud->batch_line({{0 + o.x, +s + o.y}, {0 + o.x, -s + o.y}});
 
   // forward
   s = 0.02f;
-  m_hud->batch_line({{-s, 0, 0}, {+s, 0, 0}});
-  m_hud->batch_line({{0, +s, 0}, {0, -s, 0}});
+  m_hud->batch_line({{-s, 0}, {+s, 0}});
+  m_hud->batch_line({{0, +s}, {0, -s}});
 
   auto rotation = m_airplane->get_attitude();
   float roll = rotation.x, yaw = rotation.y, pitch = rotation.z;
 
   float w = 0.25f;
   float h = 0.1f;
-// m_hud->batch_line({{-w, pitch, 0}, {+w, pitch, 0}});
+  // m_hud->batch_line({{-w, pitch, 0}, {+w, pitch, 0}});
 
-// artificial horizon
-float scale = -2.3f;
-  m_hud->batch_line({{-w, pitch * scale, 0}, {+w, pitch * scale, 0}}, roll);
+  // artificial horizon
+  float scale = -2.3f;
+  m_hud->batch_line({{-w, pitch * scale}, {+w, pitch * scale}}, roll);
 
 #if 1
   // pitch ladder
-  for (int i = -5; i < 5; i ++)
-  {
-    m_hud->batch_line({{-w,  h * i + pitch * scale, 0}, {+w, h * i + pitch * scale, 0}}, roll);
+  for (int i = -5; i < 5; i++) {
+    m_hud->batch_line({{-w, h * i + pitch * scale}, {+w, h * i + pitch * scale}}, roll);
   }
 #endif
 

@@ -198,7 +198,7 @@ class Billboard : public Object3D
   gl::ElementBuffer ebo;
 };
 
-using Line = std::tuple<glm::vec3, glm::vec3>;
+using Line = std::tuple<glm::vec2, glm::vec2>;
 
 // context for drawing 2d lines 
 class Line2d : public Object3D 
@@ -210,7 +210,7 @@ public:
   void batch_line(const Line& line, float angle);
   void batch_line(const Line& line, const glm::mat4& matrix);
   void batch_line(float width, const glm::mat4& matrix);
-  void batch_circle(const glm::vec3& center, float radius);
+  void batch_circle(const glm::vec2& center, float radius);
   void batch_clear();
 private:
   std::vector<Line> m_lines;

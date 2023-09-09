@@ -701,7 +701,7 @@ Line2d::Line2d()
 
   vbo.bind();
 
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (void*)0);
   glEnableVertexAttribArray(0);
 
   vao.unbind();
@@ -714,16 +714,17 @@ void Line2d::batch_line(const Line& line, float angle)
   auto p0 = std::get<0>(line);
   auto p1 = std::get<1>(line);
 
-  float sin_theta = sin(angle);
-  float cos_theta = cos(angle);
+  float sin_theta = std::sin(angle);
+  float cos_theta = std::cos(angle);
 
   // TODO: rotate line
-  m_lines.push_back({{p0.x * cos_theta - p0.y * sin_theta, p0.x * sin_theta + p0.y * cos_theta, 0.0f},
-                     {p1.x * cos_theta - p1.y * sin_theta, p1.x * sin_theta + p1.y * cos_theta, 0.0f}});
+  m_lines.push_back({{p0.x * cos_theta - p0.y * sin_theta, p0.x * sin_theta + p0.y * cos_theta},
+                     {p1.x * cos_theta - p1.y * sin_theta, p1.x * sin_theta + p1.y * cos_theta}});
 }
 
-void Line2d::batch_circle(const glm::vec3& center, float radius)
+void Line2d::batch_circle(const glm::vec2& center, float radius)
 {
+#if 0
   int points = 8;
   float angle = (2 * 3.14f) / points;
 
@@ -732,8 +733,8 @@ void Line2d::batch_circle(const glm::vec3& center, float radius)
     float y = radius * std::cos(angle * i) + center.y;
     m_lines.push_back({x, y, 0.0f});
   }
+#endif
 }
-
 
 void Line2d::batch_clear() { m_lines.clear(); }
 
