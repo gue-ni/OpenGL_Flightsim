@@ -149,7 +149,7 @@ struct CollisionInfo {
   float restitution_coeff = 0.75f;  // coefficient of restitution, 0 = perfectly inelastic, 1 = perfectly elastic
   glm::vec3 point;                  // contact point
   glm::vec3 normal;                 // contact normal
-  float penetration;                // penetration depth
+  float penetration = 0.0f;         // penetration depth
   float static_friction_coeff;
   float kinetic_friction_coeff;
   RigidBody *a, *b;  // the rigidbodies involved
@@ -440,13 +440,7 @@ class RigidBody : public Transform
   inline float get_speed() const { return glm::length(velocity); }
 
   // get euler angles in radians
-  inline glm::vec3 get_euler_angles() const {
-    glm::vec3 euler = glm::eulerAngles(glm::normalize(rotation)); 
-    //if (std::fabs(euler.x >= ))
-
-    return euler;
-  
-  }
+  inline glm::vec3 get_euler_angles() const { return glm::eulerAngles(glm::normalize(rotation)); }
 
   // get torque in body space
   inline glm::vec3 get_torque() const { return m_torque; }
@@ -572,7 +566,7 @@ class RigidBody : public Transform
 };
 
 template <typename RB>
-void step_physics(std::vector<RB>& objects, phi::Seconds dt)
+inline void step_physics(std::vector<RB>& objects, phi::Seconds dt)
 {
   for (RB& object : objects) {
     object.update(dt);

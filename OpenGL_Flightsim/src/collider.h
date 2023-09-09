@@ -51,8 +51,9 @@ struct Heightmap : public Collider {
 
 struct LandingGear : public Collider {
   const glm::vec3 center, left, right;  // wheel positions
+  const float wheel_radius;
   LandingGear(const glm::vec3& center_, const glm::vec3& left_, const glm::vec3& right_)
-      : center(center_), left(left_), right(right_)
+      : center(center_), left(left_), right(right_), wheel_radius(0.3f)
   {
   }
 
@@ -197,7 +198,7 @@ inline bool LandingGear::test(const phi::Transform* tf, const Heightmap* other, 
 
   float height = other->terrain->get_terrain_height(glm::vec2(lowest_point.x, lowest_point.z));
 
-  float penetration = height - lowest_point.y;
+  float penetration = height - (lowest_point.y - wheel_radius);
 
   if (penetration > 0) {
     info->penetration = penetration;

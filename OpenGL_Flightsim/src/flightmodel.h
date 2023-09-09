@@ -197,10 +197,10 @@ struct Wing {
 
     if (flap_ratio > 0.0f) {
       // at high speed there is lower max deflection
-      
+
 #if 0
       float deflection_ratio = std::tanh(control_input) * (1.0f / (speed / 200));
-#else 
+#else
       float deflection_ratio = control_input;
 #endif
       // lift coefficient changes based on flap deflection
@@ -273,10 +273,10 @@ struct Airplane : public phi::RigidBody {
   }
 
   // aircraft altitude
-  float get_altitude() const { return position.y; }
+  inline float get_altitude() const { return position.y; }
 
   // pitch g force
-  float get_g() const
+  inline float get_g() const
   {
     glm::vec3 velocity = get_body_velocity();
 
@@ -295,7 +295,7 @@ struct Airplane : public phi::RigidBody {
   }
 
   // mach number
-  float get_mach() const
+  inline float get_mach() const
   {
     float temperature = isa::get_air_temperature(get_altitude());
     float speed_of_sound = std::sqrt(1.402f * 286.f * temperature);
@@ -303,14 +303,14 @@ struct Airplane : public phi::RigidBody {
   }
 
   // angle of attack
-  float get_aoa() const
+  inline float get_aoa() const
   {
     auto velocity = get_body_velocity();
     return glm::degrees(std::asin(glm::dot(glm::normalize(-velocity), phi::UP)));
   }
 
   // indicated air speed
-  float get_ias() const
+  inline float get_ias() const
   {
     // See: https://aerotoolbox.com/airspeed-conversions/
     float air_density = isa::get_air_density(get_altitude());
@@ -318,20 +318,20 @@ struct Airplane : public phi::RigidBody {
     return std::sqrt(2 * dynamic_pressure / isa::sea_level_air_density);
   }
 
-  glm::vec3 get_attitude() const {
+  inline glm::vec3 get_attitude() const
+  {
     // https://math.stackexchange.com/questions/3564608/calculate-yaw-pitch-roll-from-up-right-forward
-    // https://www.jldoty.com/code/DirectX/YPRfromUF/YPRfromUF.html
-    
+
+    glm::vec3 up = this->up(), forward = this->forward();
+
     float yaw = std::atan2(forward.z, forward.x);
     float pitch = -std::asin(forward.y);
-    float roll = 0.0f; // TODO
-    
-    float planeRightX = sin(yaw);
-    float planeRightZ = -cos(yaw);
 
-    roll = asin(up.x * planeRightX + up.z * planeRightZ);
-    
-    return { roll, yaw, pitch };
+    float roll = 0.0f;
+    roll = std::asin(up.x * std::sin(yaw) + up.z * -std::cos(yaw));
+    roll = ((0.0f <= roll) - (roll < 0.0f)) * 3.14f - roll;
+
+    return {roll, yaw, pitch};
   }
 };
 

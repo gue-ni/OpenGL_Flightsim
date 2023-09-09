@@ -122,7 +122,7 @@ void App::init()
 
 #if 1
   // m_runway = gfx::Mesh::load("assets/models/falcon.obj", "assets/textures/falcon.jpg");
-  m_runway = gfx::Mesh::load("assets/models/runway.obj", "assets/textures/runway.jpg");
+  m_runway = gfx::Mesh::load("assets/models/runway2.obj", "assets/textures/runway.jpg");
   m_runway->set_position(glm::vec3(0, height + 0.05f, 0));
   m_scene->add(m_runway);
 #endif
@@ -139,13 +139,19 @@ void App::init()
   m_falcon->add(m_camera_attachment);
 
   // attached camera
-  m_cameras[1]->set_position({-10.0f, 1.5f, 3.0f});
+  m_cameras[1]->set_position({-25.0f, 4.5f, 0.0f});
   m_cameras[1]->set_rotation(look_forward);
   m_falcon->add(m_cameras[1]);
 
-  m_airplane->position = glm::vec3(0, height + 10.0f, 0);
+#if 1
+  m_airplane->position = glm::vec3(0, height + 10, 0);
   m_airplane->velocity = glm::vec3(0, 0, 0);
-  m_airplane->rotation = glm::quat(glm::vec3(0.0f, 0.0f, 0.0f));
+  m_airplane->rotation = glm::quat(glm::vec3(0, 0, 0));
+#else
+  m_airplane->position = glm::vec3(0, height + 1000, 0);
+  m_airplane->velocity = glm::vec3(150, 0, 0);
+  m_airplane->rotation = glm::quat(glm::vec3(0, 0, 0));
+#endif
 
   m_cameras[2]->set_transform(m_airplane->position - offset, glm::quat(look_forward));
 
@@ -207,7 +213,7 @@ void App::init_airplane()
   Engine* engine = new SimpleEngine(thrust);
 
   LandingGear* collider =
-      new LandingGear(glm::vec3(4.0f, -1.8f, 0.0f), glm::vec3(-1.0f, -1.8f, +2.0f), glm::vec3(-1.0f, -1.8f, -2.0f));
+      new LandingGear(glm::vec3(4.0f, -1.8f, 0.0f), glm::vec3(-1.0f, -1.8f, +1.5f), glm::vec3(-1.0f, -1.8f, -1.5f));
 
   m_airplane = new Airplane(mass, inertia, wings, {engine}, collider);
 
@@ -217,12 +223,16 @@ void App::init_airplane()
 
   auto wheel_texture = std::make_shared<gfx::gl::Texture>("assets/textures/container.jpg");
   auto wheel_material = std::make_shared<gfx::Material>("shaders/mesh", wheel_texture);
-  auto wheel_geometry = gfx::make_cube_geometry(0.5f);
+  auto wheel_geometry = gfx::Geometry::load("assets/models/wheel.obj");
+  // auto wheel_geometry = gfx::make_cube_geometry(0.5f);
 
   for (auto wheel : collider->wheels()) {
+    gfx::Object3D* obj = new gfx::Object3D();
+    obj->set_position(wheel);
     gfx::Mesh* wheel_mesh = new gfx::Mesh(wheel_geometry, wheel_material);
-    wheel_mesh->set_position(wheel);
-    landing_gear->add(wheel_mesh);
+    // wheel_mesh->set_position(wheel);
+    obj->add(wheel_mesh);
+    m_falcon->add(obj);
   }
 #endif
 }
@@ -354,13 +364,15 @@ void App::draw_imgui(float dt)
   ImGui::Text("FPS:   %.1f", 1.0f / dt);
   ImGui::End();
 
-  auto rotation = glm::degrees(m_airplane->get_euler_angles());
+  auto rotation1 = glm::degrees(m_airplane->get_attitude());
+  auto rotation2 = glm::degrees(m_airplane->get_euler_angles());
 
   ImGui::SetNextWindowPos(ImVec2(180, 10));
   ImGui::SetNextWindowSize(ImVec2(145, 135));
   ImGui::SetNextWindowBgAlpha(0.35f);
   ImGui::Begin("Debug", nullptr, window_flags);
-  ImGui::Text("%.1f, %.1f, %.1f", rotation.x, rotation.y, rotation.z);
+  ImGui::Text("%.1f, %.1f, %.1f", rotation1.x, rotation1.y, rotation1.z);
+  ImGui::Text("%.1f, %.1f, %.1f", rotation2.x, rotation2.y, rotation2.z);
   ImGui::End();
 }
 
@@ -419,23 +431,32 @@ void App::game_loop(float dt)
   m_hud->batch_line({{-s, 0, 0}, {+s, 0, 0}});
   m_hud->batch_line({{0, +s, 0}, {0, -s, 0}});
 
-  auto rotation = m_airplane->get_euler_angles();
-  float yaw = rotation.y, pitch = rotation.z, roll = rotation.x;
+  auto rotation = m_airplane->get_attitude();
+  float roll = rotation.x, yaw = rotation.y, pitch = rotation.z;
 
   float w = 0.25f;
   float h = 0.1f;
-  // m_hud->batch_line({{-w,  - pitch, 0}, {+w,  - pitch, 0}}, roll);
+// m_hud->batch_line({{-w, pitch, 0}, {+w, pitch, 0}});
 
-  // artificial horizon
-  m_hud->batch_line({{-w, 0, 0}, {+w, 0, 0}}, roll);
+// artificial horizon
+float scale = -2.3f;
+  m_hud->batch_line({{-w, pitch * scale, 0}, {+w, pitch * scale, 0}}, roll);
 
-#if 0
+#if 1
   // pitch ladder
   for (int i = -5; i < 5; i ++)
   {
-    m_hud->batch_line({{-w,  h * i - pitch, 0}, {+w, h * i - pitch, 0}}, roll);
+    m_hud->batch_line({{-w,  h * i + pitch * scale, 0}, {+w, h * i + pitch * scale, 0}}, roll);
   }
 #endif
+
+  for (int i = m_falcon->children.size() - 3; i < m_falcon->children.size(); i++) {
+    auto wheel = m_falcon->children[i];
+    if (wheel->children.size() > 0) {
+      auto c = wheel->children[0];
+      c->rotate_by(glm::vec3(0.0f, 0.0f, 0.001f));
+    }
+  }
 
   gfx::Camera c(glm::radians(45.0f), 1.0, 0.1, 1000);
   m_hud_renderer->render(&c, m_hud, m_hud_target);
