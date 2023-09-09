@@ -711,8 +711,7 @@ void Line2d::batch_line(const Line& line) { m_lines.push_back(line); }
 
 void Line2d::batch_line(const Line& line, float angle)
 {
-  auto p0 = std::get<0>(line);
-  auto p1 = std::get<1>(line);
+  glm::vec2 p0 = std::get<0>(line), p1 = std::get<1>(line);
 
   float sin_theta = std::sin(angle);
   float cos_theta = std::cos(angle);
@@ -721,22 +720,33 @@ void Line2d::batch_line(const Line& line, float angle)
                      {p1.x * cos_theta - p1.y * sin_theta, p1.x * sin_theta + p1.y * cos_theta}});
 }
 
-void Line2d::batch_circle(const glm::vec2& center, float radius)
+void Line2d::batch_line(const Line& line, const glm::mat4& matrix) {
+
+  glm::vec2 p0 = std::get<0>(line), p1 = std::get<1>(line);
+
+  glm::vec4 t0 = glm::vec4(p0.x, p0.y, 0.0f, 1.0f) * matrix;
+  glm::vec4 t1 = glm::vec4(p1.x, p1.y, 0.0f, 1.0f) * matrix;
+
+  batch_line({{t0.x, t0.y}, {t1.x, t1.y}});
+}
+
+void Line2d::batch_line(float width, const glm::mat4& matrix) {}
+
+void Line2d::batch_circle(const glm::vec2& center, float radius, int points)
 {
 #if 1
-  int points = 16;
   float angle = (2 * 3.14f) / points;
 
   for (int i = 0; i < points; i++) {
     glm::vec2 p0;
-    p0.x = radius * std::sin(angle * i) + center.x;
-    p0.y = radius * std::cos(angle * i) + center.y;
+    p0.x = radius * std::sin(angle * (i + 0)) + center.x;
+    p0.y = radius * std::cos(angle * (i + 0)) + center.y;
 
     glm::vec2 p1;
     p1.x = radius * std::sin(angle * (i + 1)) + center.x;
     p1.y = radius * std::cos(angle * (i + 1)) + center.y;
 
-    m_lines.push_back({p0, p1});
+    batch_line({p0, p1});
   }
 #endif
 }

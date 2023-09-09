@@ -70,6 +70,8 @@ class App
 
   void draw_imgui(float dt);
 
+  void draw_hud();
+
   void game_loop(float dt);
 
   // user input

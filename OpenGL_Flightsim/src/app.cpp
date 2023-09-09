@@ -143,7 +143,7 @@ void App::init()
   m_cameras[1]->set_rotation(look_forward);
   m_falcon->add(m_cameras[1]);
 
-#if 1
+#if 0
   m_airplane->position = glm::vec3(0, height + 10, 0);
   m_airplane->velocity = glm::vec3(0, 0, 0);
   m_airplane->rotation = glm::quat(glm::vec3(0, 0, 0));
@@ -231,6 +231,7 @@ void App::init_airplane()
     obj->set_position(wheel);
     gfx::Mesh* wheel_mesh = new gfx::Mesh(wheel_geometry, wheel_material);
     // wheel_mesh->set_position(wheel);
+    wheel_mesh->visible = false;
     obj->add(wheel_mesh);
     m_falcon->add(obj);
   }
@@ -376,6 +377,63 @@ void App::draw_imgui(float dt)
   ImGui::End();
 }
 
+void App::draw_hud()
+{
+  glm::vec3 v = glm::normalize(m_airplane->get_body_velocity());
+
+  float s, r;
+
+  // velocity vector
+  glm::vec2 o = glm::vec2(v.z, v.y);
+
+  // flightpath marker
+#if 1
+  s = 0.03f;
+  r = 0.01f;
+  m_hud->batch_line({{o.x, o.y + r}, {o.x, o.y + s}});
+  m_hud->batch_line({{o.x - s, o.y}, {o.x - r, o.y}});
+  m_hud->batch_line({{o.x + s, o.y}, {o.x + r, o.y}});
+  m_hud->batch_circle(o, r);
+#endif
+
+  // forward
+  s = 0.02f;
+  r = 0.01f;
+  m_hud->batch_line({{-s, 0}, {-r, 0}});
+  m_hud->batch_line({{+s, 0}, {+r, 0}});
+  m_hud->batch_line({{0, +r}, {0, +s}});
+  m_hud->batch_line({{0, -r}, {0, -s}});
+
+  auto rotation = m_airplane->get_attitude();
+  float roll = rotation.x, yaw = rotation.y, pitch = rotation.z;
+
+  float w1 = 0.25f;
+  float w2 = 0.1f;
+  float h = 0.25f;
+  float scale = -2.4f;
+  float pitch_offset = -pitch * scale;
+
+  auto mat = glm::rotate(glm::mat4(1.0f), roll, glm::vec3(0, 0, 1));
+
+#if 1
+  // pitch ladder
+  int n = 15;
+  for (int i = -n; i < n; i++) {
+    float offset = h * i;
+
+#if 0
+    m_hud->batch_line({o + glm::vec2{-w, offset + pitch_offset}, o + glm::vec2{-w2, offset + pitch_offset}}, mat);
+    m_hud->batch_line({o + glm::vec2{+w2, offset + pitch_offset}, o + glm::vec2{+w, offset + pitch_offset}}, mat);
+#else
+    m_hud->batch_line({glm::vec2{-w1, offset + pitch_offset}, glm::vec2{-w2, offset + pitch_offset}}, mat);
+    m_hud->batch_line({glm::vec2{+w2, offset + pitch_offset}, glm::vec2{+w1, offset + pitch_offset}}, mat);
+#endif
+  }
+#else
+  m_hud->batch_line({glm::vec2{o.x - w1, pitch_offset}, glm::vec2{o.x + w1, pitch_offset}}, mat);
+#endif
+}
+
 void App::game_loop(float dt)
 {
   if (!m_paused) {
@@ -402,6 +460,8 @@ void App::game_loop(float dt)
     //m_falcon->children[5]->set_rotation(glm::vec3(r.x, r.y, +m_airplane->joystick.x * 0.5f));
 #endif
 
+    draw_hud();
+
     // smooth following camera
     const float speed = 15.0f * dt;
     m_cameras[2]->set_transform(
@@ -410,51 +470,6 @@ void App::game_loop(float dt)
   }
 
   m_controller.update(*m_cameras[0], m_falcon->get_position(), dt);
-
-  // float pitch = m_airplane->get;
-  // m_hud->batch_line({glm::vec3(), glm::vec3()});
-
-  glm::vec3 v = glm::normalize(m_airplane->get_body_velocity());
-
-  float s;
-
-  // velocity vector
-  glm::vec2 o = glm::vec2(v.z, v.y);
-
-  // flightpath marker
-#if 1
-  s = 0.03f;
-  float r = 0.01f;
-  m_hud->batch_line({{0 + o.x, o.y + r}, {0 + o.x,  o.y + s}});
-  m_hud->batch_line({{o.x - s, o.y}, {o.x - r,  o.y}});
-  m_hud->batch_line({{o.x + s, o.y}, {o.x + r,  o.y}});
-  m_hud->batch_circle(o, r);
-#endif
-
-  // forward
-  s = 0.02f;
-  r = 0.01f;
-  m_hud->batch_line({{-s, 0}, {-r, 0}});
-  m_hud->batch_line({{+s, 0}, {+r, 0}});
-  m_hud->batch_line({{0, +r}, {0, +s}});
-  m_hud->batch_line({{0, -r}, {0, -s}});
-
-  auto rotation = m_airplane->get_attitude();
-  float roll = rotation.x, yaw = rotation.y, pitch = rotation.z;
-
-  float w = 0.25f;
-  float h = 0.1f;
-
-  // artificial horizon
-  float scale = -2.3f;
-  //m_hud->batch_line({{-w, pitch * scale}, {+w, pitch * scale}}, roll);
-
-#if 0
-  // pitch ladder
-  for (int i = -5; i < 5; i++) {
-    m_hud->batch_line({{-w, h * i + pitch * scale}, {+w, h * i + pitch * scale}}, roll);
-  }
-#endif
 
   for (int i = m_falcon->children.size() - 3; i < m_falcon->children.size(); i++) {
     auto wheel = m_falcon->children[i];

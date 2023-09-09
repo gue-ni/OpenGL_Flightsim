@@ -331,7 +331,7 @@ struct Airplane : public phi::RigidBody {
 
     float roll = 0.0f;
     roll = std::asin(up.x * std::sin(yaw) + up.z * -std::cos(yaw));
-    roll = ((0.0f <= roll) - (roll < 0.0f)) * 3.14f - roll;
+    //roll = ((0.0f <= roll) - (roll < 0.0f)) * 3.14f - roll;
 
     return {roll, yaw, pitch};
   }
