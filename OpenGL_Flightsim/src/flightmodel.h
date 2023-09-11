@@ -244,7 +244,7 @@ struct Airplane : public phi::RigidBody {
   // wings are in the order { left_wing, right_wing, elevator, rudder }
   Airplane(float mass_, const glm::mat3& inertia_, std::array<Wing, 4> wings_, std::vector<Engine*> engines_,
            Collider* collider_)
-      : phi::RigidBody({.mass = mass_, .inertia = inertia_, .collider = collider_}), wings(wings_), engines(engines_)
+      : phi::RigidBody({.mass = mass_, .inertia = inertia_, .collider = collider_}, "flightlog.csv"), wings(wings_), engines(engines_)
   {
     assert(wings.size() == 4);
   }
@@ -334,6 +334,14 @@ struct Airplane : public phi::RigidBody {
     //roll = ((0.0f <= roll) - (roll < 0.0f)) * 3.14f - roll;
 
     return {roll, yaw, pitch};
+  }
+
+  void inline set_speed_and_attitude(float speed, const glm::vec3& attitude)
+  {
+    glm::vec3 velocity = glm::vec3(speed, 0, 0);
+    this->rotation = glm::quat(attitude);
+    auto v = velocity * this->rotation;
+    this->velocity = v;
   }
 };
 

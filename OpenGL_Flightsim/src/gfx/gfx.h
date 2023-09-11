@@ -134,6 +134,7 @@ class Material
 {
  public:
   float shininess = 0.0f;
+  float opacity = 1.0f;
 
   Material(const std::string& shader_name, const gl::TexturePtr& texture)
       : m_shader_name(shader_name), m_texture(texture)

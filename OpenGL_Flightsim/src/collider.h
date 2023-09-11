@@ -176,6 +176,7 @@ inline bool LandingGear::test(const phi::Transform* tf, const Heightmap* other, 
   // no collision if landing gear is not pointing down
   if (glm::dot(phi::UP, tf->up()) < 0) return false;
 
+  bool back_wheel = false;
   glm::vec3 left_wheel = tf->transform_vector(left);
   glm::vec3 right_wheel = tf->transform_vector(right);
   glm::vec3 center_wheel = tf->transform_vector(center);
@@ -187,6 +188,7 @@ inline bool LandingGear::test(const phi::Transform* tf, const Heightmap* other, 
   if (center_wheel.y <= right_wheel.y && center_wheel.y <= left_wheel.y) {
     lowest_point = center_wheel;
   } else {
+    back_wheel = true;
     if (std::abs(right_wheel.y - left_wheel.y) < 0.1f) {
       lowest_point = (right_wheel + left_wheel) / 2.0f;
     } else if (right_wheel.y < left_wheel.y && right_wheel.y < center_wheel.y) {
@@ -209,8 +211,8 @@ inline bool LandingGear::test(const phi::Transform* tf, const Heightmap* other, 
     info->static_friction_coeff = 0.9f;
     info->kinetic_friction_coeff = 0.65f;
 #else
-    info->static_friction_coeff = 0.0f;
-    info->kinetic_friction_coeff = 0.0f;
+    info->static_friction_coeff = 0.2f;
+    info->kinetic_friction_coeff = 0.5f * (back_wheel ? 10.0f : 1.5f);
 #endif
     return true;
   }

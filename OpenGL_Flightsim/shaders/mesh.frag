@@ -13,6 +13,7 @@ uniform bool u_ShadowPass;
 uniform bool u_ReceiveShadow;
 
 uniform float u_Shininess;
+uniform float u_Opacity;
 
 in vec3 Normal;
 in vec3 WorldPos;
@@ -99,5 +100,5 @@ void main() {
 
   vec3 color = phongLighting(mix(texColor, reflectedColor, u_Shininess), u_LightDir, u_LightColor);
 
-  gl_FragColor = vec4(color, 1.0);
+  gl_FragColor = vec4(color, u_Opacity);
 }

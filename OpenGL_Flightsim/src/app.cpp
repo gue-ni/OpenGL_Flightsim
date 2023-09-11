@@ -95,12 +95,14 @@ void App::init()
   m_cameras[0] = new gfx::Camera(glm::radians(45.0f), aspect_ratio, near, far);
   m_scene->add(m_cameras[0]);
 
-  // attached
-  m_cameras[1] = new gfx::Camera(glm::radians(45.0f), aspect_ratio, near, far);
+  // cockpit camera
+  m_cameras[1] = new gfx::Camera(glm::radians(75.0f), aspect_ratio, 3.0f, far);
 
   // following camera
   m_cameras[2] = new gfx::Camera(glm::radians(45.0f), aspect_ratio, near, far);
   m_scene->add(m_cameras[2]);
+
+  m_cameratype = 0;
 
 #if 1
 #endif
@@ -138,19 +140,19 @@ void App::init()
   m_camera_attachment->set_rotation({0, glm::radians(-90.0f), 0.0f});
   m_falcon->add(m_camera_attachment);
 
-  // attached camera
-  m_cameras[1]->set_position({-25.0f, 4.5f, 0.0f});
+  // cockpit camera
+  m_cameras[1]->set_position({6.0f, 0.8f, 0.0f});
   m_cameras[1]->set_rotation(look_forward);
   m_falcon->add(m_cameras[1]);
 
 #if 0
   m_airplane->position = glm::vec3(0, height + 10, 0);
   m_airplane->velocity = glm::vec3(0, 0, 0);
-  m_airplane->rotation = glm::quat(glm::vec3(0, 0, 0));
+  m_airplane->rotation = glm::quat(glm::vec3(0.1, 0, 0.1));
+  // m_airplane->set_speed_and_attitude(150, glm::vec3(glm::radians(0.0f), glm::radians(0.0f), glm::radians(35.0f)));
 #else
-  m_airplane->position = glm::vec3(0, height + 1000, 0);
-  m_airplane->velocity = glm::vec3(150, 0, 0);
-  m_airplane->rotation = glm::quat(glm::vec3(0, 0, 0));
+  m_airplane->position = glm::vec3(-1500.0f, height + 100, 0);
+  m_airplane->set_speed_and_attitude(phi::units::meter_per_second(300.0f), glm::radians(glm::vec3(0, 0, 0)));
 #endif
 
   m_cameras[2]->set_transform(m_airplane->position - offset, glm::quat(look_forward));
@@ -184,7 +186,12 @@ void App::init_airplane()
   m_falcon = gfx::Mesh::load(obj, jpg);
   auto c = static_cast<gfx::Mesh*>(m_falcon->children[3]);
   c->get_material()->shininess = 1.0f;
+  c->get_material()->opacity = 0.25f;
   m_falcon->receive_shadow = false;
+  m_falcon->traverse([](gfx::Object3D* obj) {
+    obj->receive_shadow = false;
+    return true;
+  });
   m_scene->add(m_falcon);
 
   const float mass = 10000.0f;
@@ -212,8 +219,9 @@ void App::init_airplane()
 
   Engine* engine = new SimpleEngine(thrust);
 
-  LandingGear* collider =
-      new LandingGear(glm::vec3(4.0f, -1.8f, 0.0f), glm::vec3(-1.0f, -1.8f, +1.5f), glm::vec3(-1.0f, -1.8f, -1.5f));
+  float wheelbase = 2.5f;
+  LandingGear* collider = new LandingGear(glm::vec3(4.0f, -1.8f, 0.0f), glm::vec3(-1.0f, -1.8f, +wheelbase),
+                                          glm::vec3(-1.0f, -1.8f, -wheelbase));
 
   m_airplane = new Airplane(mass, inertia, wings, {engine}, collider);
 
@@ -230,8 +238,7 @@ void App::init_airplane()
     gfx::Object3D* obj = new gfx::Object3D();
     obj->set_position(wheel);
     gfx::Mesh* wheel_mesh = new gfx::Mesh(wheel_geometry, wheel_material);
-    // wheel_mesh->set_position(wheel);
-    wheel_mesh->visible = false;
+    wheel_mesh->visible = true;
     obj->add(wheel_mesh);
     m_falcon->add(obj);
   }
@@ -285,6 +292,12 @@ void App::poll_events()
   if (state[SDL_SCANCODE_W] || state[SDL_SCANCODE_UP]) {
   } else if (state[SDL_SCANCODE_S] || state[SDL_SCANCODE_DOWN]) {
   } else {
+  }
+
+  if (state[SDL_SCANCODE_B]) {
+    m_breaks = true;
+  } else {
+    m_breaks = false;
   }
 }
 
@@ -381,6 +394,10 @@ void App::draw_hud()
 {
   glm::vec3 v = glm::normalize(m_airplane->get_body_velocity());
 
+  if (m_airplane->get_speed() < 10.0f) {
+    v = glm::vec3(0);
+  }
+
   float s, r;
 
   // velocity vector
@@ -407,13 +424,19 @@ void App::draw_hud()
   auto rotation = m_airplane->get_attitude();
   float roll = rotation.x, yaw = rotation.y, pitch = rotation.z;
 
-  float w1 = 0.25f;
-  float w2 = 0.1f;
+  float w1 = 0.20f;
+  float w2 = 0.05f;
   float h = 0.25f;
   float scale = -2.4f;
   float pitch_offset = -pitch * scale;
 
-  auto mat = glm::rotate(glm::mat4(1.0f), roll, glm::vec3(0, 0, 1));
+  float side_offset = v.y * std::sin(glm::radians(90.0f) - roll);
+  std::cout << side_offset << std::endl;
+  //float side_offset = 0.0f;
+
+  glm::mat4 mat(1.0f);
+  mat = glm::rotate(mat, -roll, glm::vec3(0, 0, 1));
+  mat = glm::translate(mat, glm::vec3(0, pitch_offset, 0));
 
 #if 1
   // pitch ladder
@@ -421,16 +444,16 @@ void App::draw_hud()
   for (int i = -n; i < n; i++) {
     float offset = h * i;
 
-#if 0
-    m_hud->batch_line({o + glm::vec2{-w, offset + pitch_offset}, o + glm::vec2{-w2, offset + pitch_offset}}, mat);
-    m_hud->batch_line({o + glm::vec2{+w2, offset + pitch_offset}, o + glm::vec2{+w, offset + pitch_offset}}, mat);
-#else
-    m_hud->batch_line({glm::vec2{-w1, offset + pitch_offset}, glm::vec2{-w2, offset + pitch_offset}}, mat);
-    m_hud->batch_line({glm::vec2{+w2, offset + pitch_offset}, glm::vec2{+w1, offset + pitch_offset}}, mat);
-#endif
+    m_hud->batch_line({glm::vec2{-w1, offset}, glm::vec2{-w2, offset}}, mat);
+    m_hud->batch_line({glm::vec2{-w1, offset}, glm::vec2{-w1, offset + 0.03f * glm::sign(i)}}, mat);
+
+    m_hud->batch_line({glm::vec2{+w2, offset}, glm::vec2{+w1, offset}}, mat);
+    m_hud->batch_line({glm::vec2{+w1, offset}, glm::vec2{+w1, offset + 0.03f * glm::sign(i)}}, mat);
+
+    // m_hud->batch_line({glm::vec2{0, offset + 0.1f}, glm::vec2{0, offset - 0.1f}}, mat);
   }
 #else
-  m_hud->batch_line({glm::vec2{o.x - w1, pitch_offset}, glm::vec2{o.x + w1, pitch_offset}}, mat);
+  // m_hud->batch_line({glm::vec2{o.x - w1, pitch_offset}, glm::vec2{o.x + w1, pitch_offset}}, mat);
 #endif
 }
 
@@ -442,6 +465,10 @@ void App::game_loop(float dt)
 #if 1
     phi::CollisionInfo collision;
     if (test_collision(m_airplane, m_terrain, &collision)) {
+#if 0
+      if (!m_breaks)
+        collision.kinetic_friction_coeff = 0;
+#endif
       phi::RigidBody::impulse_collision(collision);
     }
 #endif
@@ -460,29 +487,22 @@ void App::game_loop(float dt)
     //m_falcon->children[5]->set_rotation(glm::vec3(r.x, r.y, +m_airplane->joystick.x * 0.5f));
 #endif
 
-    draw_hud();
-
     // smooth following camera
     const float speed = 15.0f * dt;
     m_cameras[2]->set_transform(
         glm::mix(m_cameras[2]->get_world_position(), m_camera_attachment->get_world_position(), speed),
         glm::mix(m_cameras[2]->get_world_rotation_quat(), m_camera_attachment->get_world_rotation_quat(), speed));
+
+    draw_hud();
+    gfx::Camera c(glm::radians(45.0f), 1.0, 0.1, 1000);
+    m_hud_renderer->render(&c, m_hud, m_hud_target);
+
+    m_screen->visible = (m_cameratype != 0);
+
+    m_hud->batch_clear();
   }
 
   m_controller.update(*m_cameras[0], m_falcon->get_position(), dt);
-
-  for (int i = m_falcon->children.size() - 3; i < m_falcon->children.size(); i++) {
-    auto wheel = m_falcon->children[i];
-    if (wheel->children.size() > 0) {
-      auto c = wheel->children[0];
-      c->rotate_by(glm::vec3(0.0f, 0.0f, 0.001f));
-    }
-  }
-
-  gfx::Camera c(glm::radians(45.0f), 1.0, 0.1, 1000);
-  m_hud_renderer->render(&c, m_hud, m_hud_target);
-
-  m_hud->batch_clear();
 
   m_renderer->render(m_cameras[m_cameratype], m_scene);
 }
@@ -497,9 +517,7 @@ int App::run()
     m_seconds += dt;
 
     draw_imgui(dt);
-
     poll_events();
-
     game_loop(dt);
 
     ImGui::Render();

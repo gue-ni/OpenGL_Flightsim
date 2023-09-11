@@ -37,8 +37,11 @@ SOFTWARE. */
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/euler_angles.hpp>
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <numeric>
 #include <vector>
+#include <format>
 
 // defined externally
 struct Collider;
@@ -48,6 +51,7 @@ namespace phi
 
 using Seconds = float;
 
+struct Logger;
 class RigidBody;
 
 // constants
@@ -289,6 +293,20 @@ inline float normal_force(float mass, const glm::vec3& up)
 
 };  // namespace calc
 
+struct Logger {
+  std::ofstream* file = nullptr;
+  float timer = 0.0f, time = 0.0f;
+  const float intervall = 1.0f / 10.0f;
+
+  Logger(const std::string& path);
+
+  static std::string to_csv(const glm::vec3& v);
+
+  static std::string to_csv(const glm::quat& q);
+
+  void log(const RigidBody* rb, float dt);
+};
+
 // default rigid body is a sphere with radius 1 meter and a mass of 100 kg
 const float DEFAULT_RB_MASS = 100.0f;
 const float INFINITE_RB_MASS = std::numeric_limits<float>::max();
@@ -311,7 +329,10 @@ class RigidBody : public Transform
  private:
   glm::vec3 m_force{};   // force vector in world space
   glm::vec3 m_torque{};  // torque vector in body space
-  glm::vec3 m_previous_force, m_previous_torque;
+  glm::vec3 m_previous_force{}, m_previous_torque{};
+
+  Logger* m_logger = nullptr;
+  bool enable_logging = false;
 
  public:
   float mass = DEFAULT_RB_MASS;        // rigidbody mass, kg
@@ -334,6 +355,11 @@ class RigidBody : public Transform
         active(true),
         collider(params.collider)
   {
+  }
+
+  RigidBody(const RigidBodyParams& params, const std::string& outfile_path) : RigidBody(params)
+  {
+    m_logger = new Logger(outfile_path);
   }
 
   // get velocity of relative point in body space
@@ -470,6 +496,10 @@ class RigidBody : public Transform
       rotation = glm::normalize(rotation);
     }
 
+    if (m_logger) {
+      m_logger->log(this, dt);
+    }
+
     // reset accumulators
     m_previous_force = m_force, m_previous_torque = m_torque;
     m_force = glm::vec3(0.0f), m_torque = glm::vec3(0.0f);
@@ -559,8 +589,10 @@ class RigidBody : public Transform
 
     float j_f = j_d;  // TODO
 
-    a->add_impulse_at_world_point(-j_f * tangent, collision.point);
-    b->add_impulse_at_world_point(+j_f * tangent, collision.point);
+    std::cout << tangent << j_f << std::endl;
+
+    a->add_impulse_at_world_point(+j_f * tangent, collision.point);
+    b->add_impulse_at_world_point(-j_f * tangent, collision.point);
 #endif
   }
 };

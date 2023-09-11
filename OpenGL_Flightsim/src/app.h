@@ -24,6 +24,7 @@ class App
 
   bool m_quit = false;
   bool m_paused = false;
+  bool m_breaks = false;
   bool m_orbitcamera = false;
 
   int m_cameratype = 0;
@@ -43,7 +44,6 @@ class App
   gfx::Object3D* m_scene;
   gfx::Renderer* m_renderer;
   gfx::Mesh* m_screen;
-
 
   gfx::Renderer* m_hud_renderer;
   gfx::Line2d* m_hud;

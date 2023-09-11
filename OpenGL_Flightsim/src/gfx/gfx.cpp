@@ -502,13 +502,14 @@ void Mesh::draw_self(RenderContext& context)
     // shadows
     context.depth_map->bind(7);
     shader->set_uniform("u_ShadowMap", 7);
-    shader->set_uniform("u_ReceiveShadow", receive_shadow);
+    shader->set_uniform("u_ReceiveShadow", receive_shadow ? 1 : 0);
     shader->set_uniform("u_ShadowPass", false);
 
     glm::vec3 rgb = glm::vec3(1.0f, 0.0f, 0.0f);
     shader->set_uniform("u_SolidObjectColor", rgb);
 
     // material pbr properties
+    shader->set_uniform("u_Opacity", m_material->opacity);
     shader->set_uniform("u_Shininess", m_material->shininess);
 
     m_geometry->vao.bind();
@@ -724,8 +725,8 @@ void Line2d::batch_line(const Line& line, const glm::mat4& matrix) {
 
   glm::vec2 p0 = std::get<0>(line), p1 = std::get<1>(line);
 
-  glm::vec4 t0 = glm::vec4(p0.x, p0.y, 0.0f, 1.0f) * matrix;
-  glm::vec4 t1 = glm::vec4(p1.x, p1.y, 0.0f, 1.0f) * matrix;
+  glm::vec4 t0 = matrix * glm::vec4(p0.x, p0.y, 0.0f, 1.0f);
+  glm::vec4 t1 = matrix * glm::vec4(p1.x, p1.y, 0.0f, 1.0f);
 
   batch_line({{t0.x, t0.y}, {t1.x, t1.y}});
 }
@@ -859,7 +860,6 @@ void Renderer::render(Camera* camera, Object3D* scene)
 
   // find the light
   scene->traverse([&center](Object3D* obj) {
-    // if (obj->type == Object3D::LIGHT)
     Light* light = dynamic_cast<Light*>(obj);
     if (light != NULL) {
       center = light->get_world_position();
