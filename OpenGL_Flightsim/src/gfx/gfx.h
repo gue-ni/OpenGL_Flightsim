@@ -18,6 +18,7 @@
 #include "gl.h"
 #include "object3d.h"
 #include "util.h"
+#include "particles.h"
 
 namespace gfx
 {

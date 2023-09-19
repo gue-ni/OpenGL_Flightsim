@@ -158,6 +158,7 @@ xcopy /y /i /s $(ProjectDir)..\lib\glew-2.2.0\bin\Release\x64\*.dll $(OutDir)</C
     <ClCompile Include="src\gfx\controller.cpp" />
     <ClCompile Include="src\gfx\gl.cpp" />
     <ClCompile Include="src\gfx\object3d.cpp" />
+    <ClCompile Include="src\gfx\particles.cpp" />
     <ClCompile Include="src\gfx\util.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\gfx\gfx.cpp" />
@@ -184,6 +185,7 @@ xcopy /y /i /s $(ProjectDir)..\lib\glew-2.2.0\bin\Release\x64\*.dll $(OutDir)</C
     <None Include="shaders\skybox.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\gfx\particles.h" />
     <ClInclude Include="src\ai.h" />
     <ClInclude Include="src\app.h" />
     <ClInclude Include="src\collider.h" />

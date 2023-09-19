@@ -194,6 +194,9 @@ void App::init_airplane()
   });
   m_scene->add(m_falcon);
 
+  const auto particles = new gfx::ParticleSystem({});
+  m_falcon->add(particles);
+
   const float mass = 10000.0f;
   const float thrust = 75000.0f;
 
@@ -431,7 +434,7 @@ void App::draw_hud()
   float pitch_offset = -pitch * scale;
 
   float side_offset = v.y * std::sin(glm::radians(90.0f) - roll);
-  std::cout << side_offset << std::endl;
+  //std::cout << side_offset << std::endl;
   //float side_offset = 0.0f;
 
   glm::mat4 mat(1.0f);
