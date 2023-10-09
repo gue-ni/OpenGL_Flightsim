@@ -8,8 +8,7 @@ namespace gfx
 {
 
 struct Particle {
-  glm::vec3 position, velocity;
-  glm::vec4 color;
+  glm::vec3 position, velocity, color;
   float lifetime;
   float alpha;
 
@@ -17,7 +16,8 @@ struct Particle {
     position(0.0f),
     velocity(0.0f),
     lifetime(0.0f),
-    alpha(0.0f)
+    alpha(0.0f),
+    color(glm::vec3(1.0f, 0.0f, 0.0f))
   {}
 };
 
@@ -40,7 +40,6 @@ class ParticleSystem : public Object3D
 
   const std::string m_shader = "shaders/particle";
 
-  int m_num_particles = 0;
 
   Particle m_particles[MAX_NUM_PARTICLES];
 };
