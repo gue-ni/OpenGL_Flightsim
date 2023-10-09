@@ -1,6 +1,5 @@
 # OpenGL Flight Simulator
 
-![Clang Format](https://github.com/gue-ni/OpenGL_Flightsim/actions/workflows/clang-format.yml/badge.svg)
 ![Linux CMake Build](https://github.com/gue-ni/OpenGL_Flightsim/actions/workflows/cmake.yml/badge.svg)
 ![Linux CMake Build](https://github.com/gue-ni/OpenGL_Flightsim/actions/workflows/msbuild.yml/badge.svg)
 

@@ -18,7 +18,7 @@
     <ClCompile Include="src\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\gfx.cpp">
+    <ClCompile Include="src\gfx\gfx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="lib\imgui\imgui.cpp">
@@ -42,6 +42,27 @@
     <ClCompile Include="lib\imgui\imgui_widgets.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\gfx\gl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gfx\util.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gfx\object3d.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gfx\controller.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\app.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\phi\phi.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gfx\particles.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\basic.frag" />
@@ -58,9 +79,11 @@
     <None Include="shaders\billboard.vert" />
     <None Include="shaders\phong.vert" />
     <None Include="shaders\terrain.vert" />
+    <None Include="shaders\mesh.frag" />
+    <None Include="shaders\mesh.vert" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\gfx.h">
+    <ClInclude Include="src\gfx\gfx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="lib\stb_image.h">
@@ -69,7 +92,7 @@
     <ClInclude Include="lib\tiny_obj_loader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\phi.h">
+    <ClInclude Include="src\phi\phi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\flightmodel.h">
@@ -115,6 +138,24 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\collider.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\gfx\gl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\gfx\util.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\app.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\gfx\object3d.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\gfx\controller.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\gfx\particles.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

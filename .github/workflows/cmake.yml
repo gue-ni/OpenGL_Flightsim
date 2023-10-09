@@ -12,7 +12,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Install dependencies
-      run: sudo apt update && sudo apt install libglm-dev libsdl2-dev libsdl2-image-dev libglew-dev libgle3-dev 
+      run: sudo apt update && sudo apt install libglm-dev libsdl2-dev libsdl2-image-dev libglew-dev libgle3-dev libassimp-dev
     - name: Create Build Environment
       working-directory: ${{runner.workspace}}/OpenGL_Flightsim/OpenGL_Flightsim
       run: cmake -E make_directory ${{runner.workspace}}/OpenGL_Flightsim/OpenGL_Flightsim/build

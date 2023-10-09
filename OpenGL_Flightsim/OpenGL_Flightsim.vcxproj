@@ -105,14 +105,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\jakob\Documents\libraries\glew-2.1.0\include;C:\Users\jakob\Documents\libraries\SDL2\include;C:\Users\jakob\Documents\libraries\glm-0.9.9.8\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\jakob\Documents\libraries\glew-2.1.0\include;C:\Users\jakob\Documents\libraries\SDL2\include;C:\Users\jakob\Documents\libraries\assimp-5.2.5\include;C:\Users\jakob\Documents\libraries\glm-0.9.9.8\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\jakob\Documents\libraries\glew-2.1.0\lib\Release\x64;C:\Users\jakob\Documents\libraries\SDL2\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>SDL2.lib;SDL2main.lib;glew32.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\Users\jakob\Documents\libraries\glew-2.1.0\lib\Release\x64;C:\Users\jakob\Documents\libraries\assimp-5.2.5\lib\Debug;C:\Users\jakob\Documents\libraries\SDL2\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>SDL2.lib;SDL2main.lib;glew32.lib;opengl32.lib;assimp-vc143-mtd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /y /i /s $(ProjectDir)assets  $(OutDir)assets
@@ -154,14 +154,23 @@ xcopy /y /i /s $(ProjectDir)..\lib\glew-2.2.0\bin\Release\x64\*.dll $(OutDir)</C
     <ClCompile Include="lib\imgui\imgui_impl_sdl2.cpp" />
     <ClCompile Include="lib\imgui\imgui_tables.cpp" />
     <ClCompile Include="lib\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="src\app.cpp" />
+    <ClCompile Include="src\gfx\controller.cpp" />
+    <ClCompile Include="src\gfx\gl.cpp" />
+    <ClCompile Include="src\gfx\object3d.cpp" />
+    <ClCompile Include="src\gfx\particles.cpp" />
+    <ClCompile Include="src\gfx\util.cpp" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\gfx.cpp" />
+    <ClCompile Include="src\gfx\gfx.cpp" />
+    <ClCompile Include="src\phi\phi.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\basic.frag" />
     <None Include="shaders\basic.vert" />
     <None Include="shaders\billboard.frag" />
     <None Include="shaders\billboard.vert" />
+    <None Include="shaders\mesh.frag" />
+    <None Include="shaders\mesh.vert" />
     <None Include="shaders\terrain.frag" />
     <None Include="shaders\terrain.vert" />
     <None Include="shaders\depth.frag" />
@@ -176,12 +185,18 @@ xcopy /y /i /s $(ProjectDir)..\lib\glew-2.2.0\bin\Release\x64\*.dll $(OutDir)</C
     <None Include="shaders\skybox.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\gfx\particles.h" />
     <ClInclude Include="src\ai.h" />
+    <ClInclude Include="src\app.h" />
     <ClInclude Include="src\collider.h" />
     <ClInclude Include="src\data.h" />
+    <ClInclude Include="src\gfx\controller.h" />
+    <ClInclude Include="src\gfx\gl.h" />
+    <ClInclude Include="src\gfx\object3d.h" />
+    <ClInclude Include="src\gfx\util.h" />
     <ClInclude Include="src\terrain.h" />
     <ClInclude Include="src\flightmodel.h" />
-    <ClInclude Include="src\gfx.h" />
+    <ClInclude Include="src\gfx\gfx.h" />
     <ClInclude Include="lib\imgui\imconfig.h" />
     <ClInclude Include="lib\imgui\imgui.h" />
     <ClInclude Include="lib\imgui\imgui_impl_opengl3.h" />
@@ -193,7 +208,7 @@ xcopy /y /i /s $(ProjectDir)..\lib\glew-2.2.0\bin\Release\x64\*.dll $(OutDir)</C
     <ClInclude Include="lib\imgui\imstb_truetype.h" />
     <ClInclude Include="lib\stb_image.h" />
     <ClInclude Include="lib\tiny_obj_loader.h" />
-    <ClInclude Include="src\phi.h" />
+    <ClInclude Include="src\phi\phi.h" />
     <ClInclude Include="src\pid.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

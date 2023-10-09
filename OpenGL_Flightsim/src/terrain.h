@@ -1,6 +1,6 @@
 #pragma once
 
-#include "gfx.h"
+#include "gfx/gfx.h"
 
 constexpr unsigned int primitive_restart = 0xFFFFU;
 constexpr float MAX_TILE_SIZE = 50708.0f * 4;
@@ -12,7 +12,8 @@ const std::string PATH = "assets/textures/terrain/data/9/268/178/";
 const int ZOOM_FACTOR = 1;
 #elif (DATA_SRC == 2)
 const std::string PATH = "assets/textures/terrain/data/10/536/356/";
-// const std::string PATH = "assets/textures/terrain/data/10/536/360/";
+///const std::string PATH = "assets/textures/terrain/data/10/536/360/";
+//const std::string PATH = "assets/textures/terrain/debug/";
 const int ZOOM_FACTOR = 2;
 #elif (DATA_SRC == 3)
 const std::string PATH = "assets/textures/terrain/data/11/1072/712/";
@@ -23,25 +24,45 @@ const int ZOOM_FACTOR = 4;
 #elif (DATA_SRC == 5)
 const std::string PATH = "assets/textures/terrain/data/13/4288/2848/";
 const int ZOOM_FACTOR = 5;
+#elif (DATA_SRC == 6)
+const std::string PATH = "assets/textures/terrain/data/14/8636/5752/";
+const int ZOOM_FACTOR = 5;
 #else
 #error Unknown DATA_SRC
 #endif
 
-constexpr gfx::gl::TextureParams params = {.texture_wrap = GL_REPEAT, .texture_mag_filter = GL_LINEAR};
+constexpr gfx::gl::Texture::Params params = {.texture_wrap = GL_REPEAT, .texture_mag_filter = GL_LINEAR};
 
 // pixel value in range [0, 1]
-float height_from_pixel(const glm::vec3& rgb)
+inline float height_from_pixel(const glm::vec3& rgb)
 {
   glm::vec3 pixel = rgb * 255.0f;
   return (pixel.r * 256.0f + pixel.g + pixel.b / 256.0f) - 32768.0f;
 }
 
-float scale(float input_val, float in_min, float in_max, float out_min, float out_max)
+
+inline glm::vec3 pixel_from_height(float height)
+{
+    // TODO
+    const float c =  32768.0f;
+    glm::vec3 pixel(0.0f);
+
+    double decodedHeight = height + 32768;
+    int redDec = static_cast<int>(decodedHeight / 256);
+    int greenDec = static_cast<int>(decodedHeight) % 256;
+    //int blueDec = static_cast<int>((decodedHeight * 256 - greenDec - redDec * 256) / 65536);
+    int blueDec = static_cast<int>(((decodedHeight * 256) - (greenDec * 256) - (redDec * 65536)) / 256);
+
+
+    return pixel / 256.0f;
+}
+
+inline float scale(float input_val, float in_min, float in_max, float out_min, float out_max)
 {
   return (input_val - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
-float sample_heightmap(const gfx::gl::Image& heightmap, const glm::vec2& pos, float terrain_size)
+inline float sample_heightmap(const gfx::Image& heightmap, const glm::vec2& pos, float terrain_size)
 {
   glm::vec2 coord = pos / (terrain_size / 2.0f);
   coord.x = scale(coord.x, -1.0, 1.0, 0.0, 1.0);
@@ -93,7 +114,7 @@ struct Seam {
 
 struct Block {
   gfx::gl::VertexBuffer vbo;
-  gfx::gl::ElementBufferObject ebo;
+  gfx::gl::ElementBuffer ebo;
   gfx::gl::VertexArrayObject vao;
   size_t index_count;
 
@@ -152,7 +173,7 @@ struct Block {
 class Clipmap : public gfx::Object3D
 {
  public:
-  Clipmap(int levels_ = 16, int segments_ = 16)
+  Clipmap(int levels_ = 12, int segments_ = 16)
       : segment_size(2.0f),
         levels(levels_),
         segments(segments_),
@@ -171,6 +192,25 @@ class Clipmap : public gfx::Object3D
         center(2 * segments + 2, 2 * segments + 2, segment_size),
         seam(2 * segments + 2, segment_size * 2)
   {
+      std::cout << "terrain_size = " << terrain_size << " m" << std::endl;
+
+      auto fog = gfx::rgb(0x5e5e6e);
+      auto color = glm::vec4(fog, 1.0f);
+
+      auto p = pixel_from_height(2561.0f);
+
+      terrain.bind();
+      terrain.set_parameter(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+      terrain.set_parameter(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+      terrain.set_parameter(GL_TEXTURE_BORDER_COLOR, glm::value_ptr(color));
+
+      heightmap.bind();
+      heightmap.set_parameter(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+      heightmap.set_parameter(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+      heightmap.set_parameter(GL_TEXTURE_BORDER_COLOR, glm::value_ptr(glm::vec4(pixel_from_height(0.0f), 1.0f)));
+
+
+
   }
 
   float get_terrain_height(const glm::vec2 pos) const { return sample_heightmap(heightmap_image, pos, terrain_size); }
@@ -179,7 +219,7 @@ class Clipmap : public gfx::Object3D
 
   void draw_self(gfx::RenderContext& context) override
   {
-    if (context.is_shadow_pass) {
+    if (context.shadow_pass) {
       return;
     }
     auto camera_pos = context.camera->get_world_position();
@@ -190,14 +230,17 @@ class Clipmap : public gfx::Object3D
     glm::vec2 origin = camera_pos_xy - glm::vec2(terrain_size / 2);
 
     shader.bind();
-    shader.uniform("u_Heightmap", 2);
-    shader.uniform("u_Normalmap", 3);
-    shader.uniform("u_Texture", 4);
-    shader.uniform("u_Background", context.background_color);
-    shader.uniform("u_View", context.camera->get_view_matrix());
-    shader.uniform("u_CameraPos", context.camera->get_world_position());
-    shader.uniform("u_Projection", context.camera->get_projection_matrix());
-    shader.uniform("u_TerrainSize", terrain_size);
+    shader.set_uniform("u_Heightmap", 2);
+    shader.set_uniform("u_Normalmap", 3);
+    shader.set_uniform("u_Texture_01", 4);
+    shader.set_uniform("u_FogColor", context.fog_color);
+    shader.set_uniform("u_View", context.camera->get_view_matrix());
+    shader.set_uniform("u_CameraPos", context.camera->get_world_position());
+    shader.set_uniform("u_Projection", context.camera->get_projection_matrix());
+    shader.set_uniform("u_TerrainSize", terrain_size);
+    shader.set_uniform("u_Shadowmap", 5);
+    shader.set_uniform("u_LightSpaceMatrix", context.light_space_matrix);
+
 
     glEnable(GL_CULL_FACE);
     glEnable(GL_PRIMITIVE_RESTART);
@@ -214,9 +257,9 @@ class Clipmap : public gfx::Object3D
       glm::vec2 snapped = glm::floor(camera_pos_xy / next_scale) * next_scale;
       auto base = calc_base(level, camera_pos_xy);
 
-      shader.uniform("u_Scale", scale);
-      shader.uniform("u_SegmentSize", scaled_segment_size);
-      shader.uniform("u_Level", static_cast<float>(level) / levels);
+      shader.set_uniform("u_Scale", scale);
+      shader.set_uniform("u_SegmentSize", scaled_segment_size);
+      shader.set_uniform("u_Level", static_cast<float>(level) / levels);
 
 #if 1
       // don't render lots of detail if we are very high up
@@ -229,10 +272,11 @@ class Clipmap : public gfx::Object3D
       heightmap.bind(2);
       normalmap.bind(3);
       terrain.bind(4);
+      context.depth_map->bind(5);
 
 #if 1
       if (level == min_level) {
-        shader.uniform("u_Model", transform_matrix(base + glm::vec2(tile_size, tile_size), scale));
+        shader.set_uniform("u_Model", transform_matrix(base + glm::vec2(tile_size, tile_size), scale));
         center.draw();
       } else {  // not at base level
         auto prev_base = calc_base(level - 1, camera_pos_xy);
@@ -242,7 +286,7 @@ class Clipmap : public gfx::Object3D
         if (diff.x == tile_size) {
           l_offset.x += (2 * segments + 1) * scaled_segment_size;
         }
-        shader.uniform("u_Model", transform_matrix(base + l_offset, scale));
+        shader.set_uniform("u_Model", transform_matrix(base + l_offset, scale));
         horizontal.draw();
 
         auto v_offset = glm::vec2(tile_size, tile_size);
@@ -250,7 +294,7 @@ class Clipmap : public gfx::Object3D
           v_offset.y += (2 * segments + 1) * scaled_segment_size;
         }
 
-        shader.uniform("u_Model", transform_matrix(base + v_offset, scale));
+        shader.set_uniform("u_Model", transform_matrix(base + v_offset, scale));
         vertical.draw();
       }
 #endif
@@ -261,28 +305,28 @@ class Clipmap : public gfx::Object3D
         for (int column = 0; column < columns; column++) {
           if (row == 0 || row == rows - 1 || column == 0 || column == columns - 1) {
             auto tile_pos = base + offset;
-            shader.uniform("u_Model", transform_matrix(tile_pos, scale));
+            shader.set_uniform("u_Model", transform_matrix(tile_pos, scale));
 
             if ((column != 2) && (row != 2)) {
               if (column == 0 && row == 0)  // east
               {
-                shader.uniform("u_Model", transform_matrix(tile_pos, scale));
+                shader.set_uniform("u_Model", transform_matrix(tile_pos, scale));
                 seam.draw();
               } else if (column == columns - 1 && row == rows - 1)  // west
               {
-                shader.uniform("u_Model", transform_matrix(tile_pos + glm::vec2(tile_size), scale, 180.0f));
+                shader.set_uniform("u_Model", transform_matrix(tile_pos + glm::vec2(tile_size), scale, 180.0f));
                 seam.draw();
               } else if (column == columns - 1 && row == 0)  // south
               {
-                shader.uniform("u_Model", transform_matrix(tile_pos + glm::vec2(0, tile_size), scale, 90.0f));
+                shader.set_uniform("u_Model", transform_matrix(tile_pos + glm::vec2(0, tile_size), scale, 90.0f));
                 seam.draw();
               } else if (column == 0 && row == rows - 1)  // north
               {
-                shader.uniform("u_Model", transform_matrix(tile_pos + glm::vec2(tile_size, 0), scale, -90.0f));
+                shader.set_uniform("u_Model", transform_matrix(tile_pos + glm::vec2(tile_size, 0), scale, -90.0f));
                 seam.draw();
               }
 
-              shader.uniform("u_Model", transform_matrix(tile_pos, scale));
+              shader.set_uniform("u_Model", transform_matrix(tile_pos, scale));
               tile.draw();
             } else if (column == 2) {
               col_fixup.draw();
@@ -323,7 +367,7 @@ class Clipmap : public gfx::Object3D
   const float terrain_size;  // width and length of the terrain represented by the heightmap
 
   gfx::gl::Shader shader;
-  gfx::gl::Image heightmap_image;
+  gfx::Image heightmap_image;
   gfx::gl::Texture heightmap, normalmap, terrain, terrain_0;
 
   Block tile;
