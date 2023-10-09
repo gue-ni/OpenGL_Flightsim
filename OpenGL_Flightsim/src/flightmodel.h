@@ -81,17 +81,15 @@ struct Airfoil {
   }
 };
 
-
-
 // simple jet-like engine
-struct Engine  {
+struct Engine {
   float throttle;
   const float thrust;
   glm::vec3 relative_position = glm::vec3(0);  // position relative to cg
 
   Engine(float thrust) : thrust(thrust), throttle(0.25f) {}
 
-  void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) 
+  void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt)
   {
     rigid_body->add_force_at_point({throttle * thrust, 0.0f, 0.0f}, relative_position);
   }
@@ -210,9 +208,8 @@ struct Airplane : public phi::RigidBody {
   // wings are in the order { left_wing, right_wing, elevator, rudder }
   Airplane(float mass_, const glm::mat3& inertia_, std::array<Wing, 4> wings_, std::vector<Engine> engines_,
            Collider* collider_)
-      : phi::RigidBody({.mass = mass_, .inertia = inertia_, .collider = collider_}, "flightlog.csv"), wings(wings_), engines(engines_)
+      : phi::RigidBody({.mass = mass_, .inertia = inertia_, .collider = collider_}), wings(wings_), engines(engines_)
   {
-    assert(wings.size() == 4);
   }
 
   void update(phi::Seconds dt) override
@@ -297,7 +294,7 @@ struct Airplane : public phi::RigidBody {
 
     float roll = 0.0f;
     roll = std::asin(up.x * std::sin(yaw) + up.z * -std::cos(yaw));
-    //roll = ((0.0f <= roll) - (roll < 0.0f)) * 3.14f - roll;
+    // roll = ((0.0f <= roll) - (roll < 0.0f)) * 3.14f - roll;
 
     return {roll, yaw, pitch};
   }

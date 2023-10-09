@@ -21,6 +21,8 @@ ParticleSystem::ParticleSystem(const Config& config)
   m_vao.unbind();
 }
 
+void ParticleSystem::update(float dt) {}
+
 void ParticleSystem::draw_self(RenderContext& context) {}
 
 }  // namespace gfx

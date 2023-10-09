@@ -246,9 +246,7 @@ void App::init_airplane()
 #endif
 }
 
-void App::init_flightmodel()
-{
-}
+void App::init_flightmodel() {}
 
 void App::destroy()
 {
@@ -468,7 +466,7 @@ void App::game_loop(float dt)
     m_airplane->update(dt);
 
 #if 1
-    phi::CollisionInfo collision;
+    phi::Collision collision;
     if (test_collision(m_airplane, m_terrain, &collision)) {
 #if 0
       if (!m_breaks)

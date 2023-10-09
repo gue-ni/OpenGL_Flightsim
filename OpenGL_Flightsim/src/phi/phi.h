@@ -8,7 +8,7 @@
  *
  * MIT License
  *
- * Copyright (c) 2023 jakob maier
+ * Copyright (c) 2023 Jakob Maier
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -114,7 +114,7 @@ constexpr inline float inverse_lerp(T a, T b, T v)
   return (v - a) / (b - a);
 }
 
-//
+// representation of a position and rotation in 3d space
 struct Transform {
   glm::vec3 position;
   glm::quat rotation;
@@ -153,7 +153,7 @@ struct Transform {
 };
 
 // information needed to resolve a collision
-struct CollisionInfo {
+struct Collision {
   float restitution_coeff = 0.75f;  // coefficient of restitution, 0 = perfectly inelastic, 1 = perfectly elastic
   glm::vec3 point;                  // contact point
   glm::vec3 normal;                 // contact normal
@@ -317,16 +317,6 @@ const float INFINITE_RB_MASS = std::numeric_limits<float>::max();
 const glm::quat DEFAULT_RB_ORIENTATION = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
 const glm::mat3 DEFAULT_RB_INERTIA = inertia::tensor(inertia::sphere(DEFAULT_RB_MASS, 1.0f));
 
-struct RigidBodyParams {
-  float mass = DEFAULT_RB_MASS;
-  glm::mat3 inertia = DEFAULT_RB_INERTIA;
-  glm::vec3 position = glm::vec3(0);
-  glm::quat rotation = DEFAULT_RB_ORIENTATION;
-  glm::vec3 velocity = glm::vec3(0);
-  glm::vec3 angular_velocity = glm::vec3(0);
-  Collider* collider = nullptr;
-};
-
 //
 class RigidBody : public Transform
 {
@@ -339,6 +329,16 @@ class RigidBody : public Transform
   bool enable_logging = false;
 
  public:
+  struct Params {
+    float mass = DEFAULT_RB_MASS;
+    glm::mat3 inertia = DEFAULT_RB_INERTIA;
+    glm::vec3 position = glm::vec3(0);
+    glm::quat rotation = DEFAULT_RB_ORIENTATION;
+    glm::vec3 velocity = glm::vec3(0);
+    glm::vec3 angular_velocity = glm::vec3(0);
+    Collider* collider = nullptr;
+  };
+
   float mass = DEFAULT_RB_MASS;        // rigidbody mass, kg
   glm::vec3 velocity;                  // velocity in world space, m/s
   glm::vec3 angular_velocity;          // object space, (x = roll, y = yaw, z = pitch), rad/s
@@ -348,7 +348,7 @@ class RigidBody : public Transform
 
   RigidBody() : RigidBody({DEFAULT_RB_MASS, DEFAULT_RB_INERTIA}) {}
 
-  RigidBody(const RigidBodyParams& params)
+  RigidBody(const Params& params)
       : Transform(params.position, params.rotation),
         mass(params.mass),
         velocity(params.velocity),
@@ -361,7 +361,7 @@ class RigidBody : public Transform
   {
   }
 
-  RigidBody(const RigidBodyParams& params, const std::string& outfile_path) : RigidBody(params)
+  RigidBody(const Params& params, const std::string& outfile_path) : RigidBody(params)
   {
     m_logger = new Logger(outfile_path);
   }
@@ -510,7 +510,7 @@ class RigidBody : public Transform
   }
 
   // impulse collision response without angular effects
-  static void linear_impulse_collision(const CollisionInfo& collision)
+  static void linear_impulse_collision(const Collision& collision)
   {
     RigidBody *a = collision.a, *b = collision.b;
 
@@ -536,7 +536,7 @@ class RigidBody : public Transform
 
   // impulse collision response with angular effects
   // TODO: friction (coulomb model)
-  static void impulse_collision(const CollisionInfo& collision)
+  static void impulse_collision(const Collision& collision)
   {
     RigidBody *a = collision.a, *b = collision.b;
 
