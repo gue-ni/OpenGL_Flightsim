@@ -6,6 +6,8 @@
 #include "flightmodel.h"
 #include "terrain.h"
 
+#define DRAW_HUD 0
+
 const Airfoil NACA_0012(NACA_0012_data);
 const Airfoil NACA_2412(NACA_2412_data);
 const Airfoil NACA_64_206(NACA_64_206_data);
@@ -96,7 +98,7 @@ void App::init()
   m_scene->add(m_cameras[0]);
 
   // cockpit camera
-  m_cameras[1] = new gfx::Camera(glm::radians(75.0f), aspect_ratio, 3.0f, far);
+  m_cameras[1] = new gfx::Camera(glm::radians(75.0f), aspect_ratio, 2.0f, far);
 
   // following camera
   m_cameras[2] = new gfx::Camera(glm::radians(45.0f), aspect_ratio, near, far);
@@ -141,18 +143,18 @@ void App::init()
   m_falcon->add(m_camera_attachment);
 
   // cockpit camera
-  m_cameras[1]->set_position({6.0f, 0.8f, 0.0f});
+  m_cameras[1]->set_position({6.5f, 0.8f, 0.0f});
   m_cameras[1]->set_rotation(look_forward);
   m_falcon->add(m_cameras[1]);
 
-#if 1
+#if 0
   m_airplane->position = glm::vec3(0, height + 10, 0);
   m_airplane->velocity = glm::vec3(0, 0, 0);
   m_airplane->rotation = glm::quat(glm::vec3(0.1, 0, 0.1));
   // m_airplane->set_speed_and_attitude(150, glm::vec3(glm::radians(0.0f), glm::radians(0.0f), glm::radians(35.0f)));
 #else
   m_airplane->position = glm::vec3(-1500.0f, height + 100, 0);
-  m_airplane->set_speed_and_attitude(phi::units::meter_per_second(300.0f), glm::radians(glm::vec3(0, 0, 0)));
+  m_airplane->set_speed_and_attitude(phi::units::meter_per_second(350.0f), glm::radians(glm::vec3(0, 0, 0)));
 #endif
 
   m_cameras[2]->set_transform(m_airplane->position - offset, glm::quat(look_forward));
@@ -496,9 +498,11 @@ void App::game_loop(float dt)
         glm::mix(m_cameras[2]->get_world_position(), m_camera_attachment->get_world_position(), speed),
         glm::mix(m_cameras[2]->get_world_rotation_quat(), m_camera_attachment->get_world_rotation_quat(), speed));
 
+#if DRAW_HUD
     draw_hud();
     gfx::Camera c(glm::radians(45.0f), 1.0, 0.1, 1000);
     m_hud_renderer->render(&c, m_hud, m_hud_target);
+#endif
 
     m_screen->visible = (m_cameratype != 0);
 
