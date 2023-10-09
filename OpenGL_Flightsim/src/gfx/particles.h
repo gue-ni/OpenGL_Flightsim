@@ -31,10 +31,12 @@ class ParticleSystem : public Object3D
 
   ParticleSystem(const Config& config);
   void draw_self(RenderContext& context) override;
+  void update(float dt);
 
  private:
   gl::VertexArrayObject m_vao;
-  gl::VertexBuffer m_vbo;
+  gl::VertexBuffer m_quad;
+  gl::VertexBuffer m_particle_data;
 
   const std::string m_shader = "shaders/particle";
 

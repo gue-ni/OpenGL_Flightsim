@@ -184,6 +184,17 @@ class ShaderCache
   std::unordered_map<std::string, gl::ShaderPtr> m_cache;
 };
 
+// TODO
+class ResourceManager 
+{
+public:
+  static gl::ShaderPtr get_shader(const std::string& path);
+  static gl::TexturePtr get_texture(const std::string& path);
+private:
+  static std::unordered_map<std::string, gl::ShaderPtr> m_shaders;
+  static std::unordered_map<std::string, gl::TexturePtr> m_textures;
+};
+
 class Billboard : public Object3D
 {
  public:
