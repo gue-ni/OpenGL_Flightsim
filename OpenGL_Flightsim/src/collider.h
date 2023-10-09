@@ -1,5 +1,6 @@
 #pragma once
-#include "phi.h"
+#include "gfx/gfx.h"
+#include "terrain.h"
 
 struct Collider;
 struct Sphere;
@@ -11,67 +12,86 @@ struct LandingGear;
 // collider abstract base class
 struct Collider {
   virtual bool test(const phi::Transform* tf, const Collider* other, const phi::Transform* other_tf,
-                    phi::CollisionInfo* info) const = 0;
+                    phi::Collision* info) const = 0;
   virtual bool test(const phi::Transform* tf, const Sphere* other, const phi::Transform* other_tf,
-                    phi::CollisionInfo* info) const = 0;
+                    phi::Collision* info) const = 0;
   virtual bool test(const phi::Transform* tf, const Heightmap* other, const phi::Transform* other_tf,
-                    phi::CollisionInfo* info) const = 0;
+                    phi::Collision* info) const = 0;
   virtual bool test(const phi::Transform* tf, const LandingGear* other, const phi::Transform* other_tf,
-                    phi::CollisionInfo* info) const = 0;
+                    phi::Collision* info) const = 0;
 };
 
 struct Sphere : public Collider {
   const float radius;
   Sphere(float radius_) : radius(radius_) {}
   bool test(const phi::Transform* tf, const Collider* other, const phi::Transform* other_tf,
-            phi::CollisionInfo* info) const override;
+            phi::Collision* info) const override;
   bool test(const phi::Transform* tf, const Sphere* other, const phi::Transform* other_tf,
-            phi::CollisionInfo* info) const override;
+            phi::Collision* info) const override;
   bool test(const phi::Transform* tf, const Heightmap* other, const phi::Transform* other_tf,
-            phi::CollisionInfo* info) const override;
+            phi::Collision* info) const override;
   bool test(const phi::Transform* tf, const LandingGear* other, const phi::Transform* other_tf,
-            phi::CollisionInfo* info) const override;
+            phi::Collision* info) const override;
 };
 
 struct Heightmap : public Collider {
-  const float height;
-  Heightmap(float height_) : height(height_) {}
+  const Clipmap* terrain = nullptr;
+
+  Heightmap(Clipmap* terrain_) : terrain(terrain_) {}
+
   bool test(const phi::Transform* tf, const Collider* other, const phi::Transform* other_tf,
-            phi::CollisionInfo* info) const override;
+            phi::Collision* info) const override;
   bool test(const phi::Transform* tf, const Sphere* other, const phi::Transform* other_tf,
-            phi::CollisionInfo* info) const override;
+            phi::Collision* info) const override;
   bool test(const phi::Transform* tf, const Heightmap* other, const phi::Transform* other_tf,
-            phi::CollisionInfo* info) const override;
+            phi::Collision* info) const override;
   bool test(const phi::Transform* tf, const LandingGear* other, const phi::Transform* other_tf,
-            phi::CollisionInfo* info) const override;
+            phi::Collision* info) const override;
 };
 
 struct LandingGear : public Collider {
   const glm::vec3 center, left, right;  // wheel positions
+  const float wheel_radius;
   LandingGear(const glm::vec3& center_, const glm::vec3& left_, const glm::vec3& right_)
-      : center(center_), left(left_), right(right_)
+      : center(center_), left(left_), right(right_), wheel_radius(0.3f)
   {
   }
+
+  std::vector<glm::vec3> wheels() const { return {center, left, right}; }
+
+  std::vector<glm::vec3> wheels_in_contact(float height) const
+  {
+    std::vector<glm::vec3> wic;
+
+    for (auto w : wheels()) {
+      if (w.y < height) {
+        wic.push_back(w);
+      }
+    }
+
+    return wic;
+  }
+
   bool test(const phi::Transform* tf, const Collider* other, const phi::Transform* other_tf,
-            phi::CollisionInfo* info) const override;
+            phi::Collision* info) const override;
   bool test(const phi::Transform* tf, const Sphere* other, const phi::Transform* other_tf,
-            phi::CollisionInfo* info) const override;
+            phi::Collision* info) const override;
   bool test(const phi::Transform* tf, const Heightmap* other, const phi::Transform* other_tf,
-            phi::CollisionInfo* info) const override;
+            phi::Collision* info) const override;
   bool test(const phi::Transform* tf, const LandingGear* other, const phi::Transform* other_tf,
-            phi::CollisionInfo* info) const override;
+            phi::Collision* info) const override;
 };
 
 /* ############### Sphere ############### */
 
 inline bool Sphere::test(const phi::Transform* tf, const Collider* other, const phi::Transform* other_tf,
-                         phi::CollisionInfo* info) const
+                         phi::Collision* info) const
 {
   return other->test(other_tf, this, tf, info);
 }
 
 inline bool Sphere::test(const phi::Transform* tf, const Sphere* other, const phi::Transform* other_tf,
-                         phi::CollisionInfo* info) const
+                         phi::Collision* info) const
 {
   float sum_radius = radius + other->radius;
   float distance = glm::length(tf->position - other_tf->position);
@@ -88,10 +108,10 @@ inline bool Sphere::test(const phi::Transform* tf, const Sphere* other, const ph
 }
 
 inline bool Sphere::test(const phi::Transform* tf, const Heightmap* other, const phi::Transform* other_tf,
-                         phi::CollisionInfo* info) const
+                         phi::Collision* info) const
 {
   float lowest_point = tf->position.y;
-  float diff = other->height - lowest_point;
+  float diff = other->terrain->get_terrain_height(glm::vec2(tf->position.x, tf->position.z)) - lowest_point;
   if (diff > 0) {
     info->penetration = diff;
     info->normal = phi::DOWN;  // b - a
@@ -102,7 +122,7 @@ inline bool Sphere::test(const phi::Transform* tf, const Heightmap* other, const
 }
 
 inline bool Sphere::test(const phi::Transform* tf, const LandingGear* other, const phi::Transform* other_tf,
-                         phi::CollisionInfo* info) const
+                         phi::Collision* info) const
 {
   assert(COLLISION_NOT_IMPLEMENTED);
   return false;
@@ -111,26 +131,26 @@ inline bool Sphere::test(const phi::Transform* tf, const LandingGear* other, con
 /* ############### Heightmap ############### */
 
 inline bool Heightmap::test(const phi::Transform* tf, const Collider* other, const phi::Transform* other_tf,
-                            phi::CollisionInfo* info) const
+                            phi::Collision* info) const
 {
   return other->test(other_tf, this, tf, info);
 }
 
 inline bool Heightmap::test(const phi::Transform* tf, const Sphere* other, const phi::Transform* other_tf,
-                            phi::CollisionInfo* info) const
+                            phi::Collision* info) const
 {
   return other->test(other_tf, this, tf, info);
 }
 
 inline bool Heightmap::test(const phi::Transform* tf, const Heightmap* other, const phi::Transform* other_tf,
-                            phi::CollisionInfo* info) const
+                            phi::Collision* info) const
 {
   assert(COLLISION_NOT_IMPLEMENTED);
   return false;
 }
 
 inline bool Heightmap::test(const phi::Transform* tf, const LandingGear* other, const phi::Transform* other_tf,
-                            phi::CollisionInfo* info) const
+                            phi::Collision* info) const
 {
   return other->test(other_tf, this, tf, info);
 }
@@ -138,26 +158,25 @@ inline bool Heightmap::test(const phi::Transform* tf, const LandingGear* other, 
 /* ############### LandingGear ############### */
 
 inline bool LandingGear::test(const phi::Transform* tf, const Collider* other, const phi::Transform* other_tf,
-                              phi::CollisionInfo* info) const
+                              phi::Collision* info) const
 {
   return other->test(other_tf, this, tf, info);
 }
 
 inline bool LandingGear::test(const phi::Transform* tf, const Sphere* other, const phi::Transform* other_tf,
-                              phi::CollisionInfo* info) const
+                              phi::Collision* info) const
 {
   assert(COLLISION_NOT_IMPLEMENTED);
   return false;
 }
 
 inline bool LandingGear::test(const phi::Transform* tf, const Heightmap* other, const phi::Transform* other_tf,
-                              phi::CollisionInfo* info) const
+                              phi::Collision* info) const
 {
   // no collision if landing gear is not pointing down
   if (glm::dot(phi::UP, tf->up()) < 0) return false;
 
-  float height = other->height;
-
+  bool back_wheel = false;
   glm::vec3 left_wheel = tf->transform_vector(left);
   glm::vec3 right_wheel = tf->transform_vector(right);
   glm::vec3 center_wheel = tf->transform_vector(center);
@@ -168,36 +187,33 @@ inline bool LandingGear::test(const phi::Transform* tf, const Heightmap* other, 
 
   if (center_wheel.y <= right_wheel.y && center_wheel.y <= left_wheel.y) {
     lowest_point = center_wheel;
-    wheel = "center wheel";
-
   } else {
+    back_wheel = true;
     if (std::abs(right_wheel.y - left_wheel.y) < 0.1f) {
       lowest_point = (right_wheel + left_wheel) / 2.0f;
-      wheel = "between wheels";
     } else if (right_wheel.y < left_wheel.y && right_wheel.y < center_wheel.y) {
       lowest_point = right_wheel;
-      wheel = "right wheel";
     } else {
       lowest_point = left_wheel;
-      wheel = "left wheel";
     }
   }
 
-  float penetration = height - lowest_point.y;
+  float height = other->terrain->get_terrain_height(glm::vec2(lowest_point.x, lowest_point.z));
+
+  float penetration = height - (lowest_point.y - wheel_radius);
 
   if (penetration > 0) {
-#if 0
-    std::cout << "########### start collision #############\n";
-    std::cout << wheel << std::endl;
-    std::cout << center_wheel << std::endl;
-    std::cout << left_wheel << std::endl;
-    std::cout << right_wheel << std::endl;
-    std::cout << "########### end collision #############\n";
-#endif
     info->penetration = penetration;
     info->normal = phi::DOWN;
     info->point = lowest_point;
     info->restitution_coeff = 0.5f;
+#if 0
+    info->static_friction_coeff = 0.9f;
+    info->kinetic_friction_coeff = 0.65f;
+#else
+    info->static_friction_coeff = 0.2f;
+    info->kinetic_friction_coeff = 0.5f * (back_wheel ? 10.0f : 1.5f);
+#endif
     return true;
   }
 
@@ -205,14 +221,14 @@ inline bool LandingGear::test(const phi::Transform* tf, const Heightmap* other, 
 }
 
 inline bool LandingGear::test(const phi::Transform* tf, const LandingGear* other, const phi::Transform* other_tf,
-                              phi::CollisionInfo* info) const
+                              phi::Collision* info) const
 {
   assert(COLLISION_NOT_IMPLEMENTED);
   return false;
 }
 
 // collision detection
-bool test_collision(phi::RigidBody* a, phi::RigidBody* b, phi::CollisionInfo* info)
+inline bool test_collision(phi::RigidBody* a, phi::RigidBody* b, phi::Collision* info)
 {
   assert((a && b) && (a->collider && b->collider));
 

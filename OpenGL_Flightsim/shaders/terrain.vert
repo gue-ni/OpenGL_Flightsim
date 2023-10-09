@@ -4,6 +4,7 @@ layout (location = 0) in vec3 a_Pos;
 uniform mat4 u_View;
 uniform mat4 u_Model;
 uniform mat4 u_Projection;
+uniform mat4 u_LightSpaceMatrix;
 
 uniform sampler2D u_Heightmap;
 uniform sampler2D u_Normalmap;
@@ -17,9 +18,21 @@ uniform float   u_TerrainSize;
 out vec3 Color;
 out vec3 Normal;
 out vec3 FragPos;
-out vec2 TexCoord;
+out vec2 TexCoords;
+out vec4 FragPosLightSpace;
+out float FragDepth;
+
 
 flat out float scaleFactor;
+
+vec4 snap(vec4 vertex, vec2 resolution)
+{
+    vec4 snappedPos = vertex;
+    snappedPos.xyz = vertex.xyz / vertex.w; // convert to normalised device coordinates (NDC)
+    snappedPos.xy = floor(resolution * snappedPos.xy) / resolution; // snap the vertex to the lower-resolution grid
+    snappedPos.xyz *= vertex.w; // convert back to projection-space
+    return snappedPos;
+}
 
 float scale(float input_val, float in_min, float in_max, float out_min, float out_max)
 {
@@ -34,7 +47,8 @@ float getHeight(vec2 uv)
 
 vec3 getNormal(vec2 uv)
 {
-    return normalize(texture(u_Normalmap, uv).rgb);
+    vec3 normal = texture(u_Normalmap, uv).rgb;
+    return normalize(normal * 2.0 - 1.0);   
 }
 
 vec2 getUV(vec2 pos)
@@ -51,15 +65,23 @@ void main()
     scaleFactor = u_TerrainSize / 2.0;
 
     FragPos = vec3(u_Model * vec4(a_Pos, 1.0));
-    TexCoord = getUV(FragPos.xz);
+    TexCoords = getUV(FragPos.xz);
 
-    FragPos.y = getHeight(TexCoord);
+    FragPos.y = getHeight(TexCoords);
 
-    Normal = getNormal(TexCoord);
+    Normal = getNormal(TexCoords);
 
     Color = vec3(1.0, u_Level, 0.0);
 
     gl_Position = u_Projection * u_View * vec4(FragPos, 1.0);
+
+#if 0
+    gl_Position = snap(gl_Position, vec2(320, 180));
+#endif
+
+  FragDepth = 1.0 + gl_Position.w;
+  FragPosLightSpace = u_LightSpaceMatrix * vec4(FragPos, 1.0);
+
 }
 
 

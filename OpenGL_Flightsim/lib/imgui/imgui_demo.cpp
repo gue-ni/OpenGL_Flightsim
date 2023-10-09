@@ -4203,13 +4203,13 @@ static void ShowDemoWindowTables()
         if (ImGui::BeginTable("table_padding_2", 3, flags2))
         {
             static char text_bufs[3 * 5][16]; // Mini text storage for 3x5 cells
-            static bool init = true;
+            static bool init_app = true;
             if (!show_widget_frame_bg)
                 ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
             for (int cell = 0; cell < 3 * 5; cell++)
             {
                 ImGui::TableNextColumn();
-                if (init)
+                if (init_app)
                     strcpy(text_bufs[cell], "edit me");
                 ImGui::SetNextItemWidth(-FLT_MIN);
                 ImGui::PushID(cell);
@@ -4218,7 +4218,7 @@ static void ShowDemoWindowTables()
             }
             if (!show_widget_frame_bg)
                 ImGui::PopStyleColor();
-            init = false;
+            init_app = false;
             ImGui::EndTable();
         }
         ImGui::PopStyleVar();
@@ -6124,10 +6124,10 @@ void ImGui::ShowStyleEditor(ImGuiStyle* ref)
     static ImGuiStyle ref_saved_style;
 
     // Default to using internal storage as reference
-    static bool init = true;
-    if (init && ref == NULL)
+    static bool init_app = true;
+    if (init_app && ref == NULL)
         ref_saved_style = style;
-    init = false;
+    init_app = false;
     if (ref == NULL)
         ref = &ref_saved_style;
 

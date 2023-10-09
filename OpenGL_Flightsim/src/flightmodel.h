@@ -1,4 +1,6 @@
 #pragma once
+#ifndef FLIGHTMODEL_H
+#define FLIGHTMODEL_H
 
 #include <algorithm>
 #include <cmath>
@@ -6,9 +8,8 @@
 #include <tuple>
 #include <vector>
 
-#include "data.h"
-#include "gfx.h"
-#include "phi.h"
+#include "phi/phi.h"
+#include "collider.h"
 
 //  International Standard Atmosphere (ISA)
 namespace isa
@@ -21,7 +22,7 @@ inline float get_air_temperature(float altitude)
 }
 
 // only accurate for altitudes < 11km
-float get_air_density(float altitude)
+inline float get_air_density(float altitude)
 {
   assert(0.0f <= altitude && altitude <= 11000.0f);
   float temperature = get_air_temperature(altitude);
@@ -36,7 +37,7 @@ const float sea_level_air_density = get_air_density(0.0f);
 namespace wgs84
 {
 // origin is degrees lat/lon, offset in meters
-glm::vec2 coordinates(const glm::vec2& origin, const glm::vec2& offset)
+inline glm::vec2 coordinates(const glm::vec2& origin, const glm::vec2& offset)
 {
   float latitude = origin.x, longitude = origin.y;
   float new_latitude = latitude + glm::degrees(offset.y / phi::EARTH_RADIUS);
@@ -70,7 +71,7 @@ struct Airfoil {
   // lift_coeff, drag_coeff
   std::tuple<float, float> sample(float alpha) const
   {
-    alpha = glm::clamp(alpha, min_alpha, max_alpha);
+    alpha = glm::clamp(alpha, min_alpha, max_alpha - 1);
     float t = phi::inverse_lerp(min_alpha, max_alpha, alpha) * max_index;
     float integer = std::floor(t);
     float fractional = t - integer;
@@ -80,53 +81,17 @@ struct Airfoil {
   }
 };
 
-// base engine
-struct Engine {
-  float throttle = 0.25f;
-  glm::vec3 relative_position = glm::vec3(0);  // position relative to cg
-  virtual void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) = 0;
-};
-
 // simple jet-like engine
-struct SimpleEngine : public Engine {
+struct Engine {
+  float throttle;
   const float thrust;
-  SimpleEngine(float thrust) : thrust(thrust) {}
+  glm::vec3 relative_position = glm::vec3(0);  // position relative to cg
 
-  void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) override
+  Engine(float thrust) : thrust(thrust), throttle(0.25f) {}
+
+  void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt)
   {
     rigid_body->add_force_at_point({throttle * thrust, 0.0f, 0.0f}, relative_position);
-  }
-};
-
-// does not yet implement engine torque
-struct PropellerEngine : public Engine {
-  float horsepower, rpm, propellor_diameter;
-
-  PropellerEngine(float horsepower, float rpm, float diameter)
-      : horsepower(horsepower), rpm(rpm), propellor_diameter(diameter)
-  {
-  }
-
-  void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) override
-  {
-    float speed = rigid_body->get_speed();
-    float altitude = rigid_body->position.y;
-    float engine_power = phi::units::watts(horsepower) * throttle;
-
-    const float a = 1.83f, b = -1.32f;  // efficiency curve fit coefficients
-    float turnover_rate = rpm / 60.0f;
-    float propellor_advance_ratio = speed / (turnover_rate * propellor_diameter);
-    float propellor_efficiency = a * propellor_advance_ratio + b * phi::cb(propellor_advance_ratio);
-    assert(0.0f <= propellor_efficiency && propellor_efficiency <= 1.0f);
-
-    const float c = 0.12f;  // mechanical power loss factor
-    float air_density = isa::get_air_density(altitude);
-    float power_drop_off_factor = ((air_density / isa::sea_level_air_density) - c) / (1 - c);
-    assert(0.0f <= power_drop_off_factor && power_drop_off_factor <= 1.0f);
-
-    float thrust = ((propellor_efficiency * engine_power) / speed) * power_drop_off_factor;
-    assert(0.0f < thrust);
-    rigid_body->add_force_at_point({thrust, 0.0f, 0.0f}, relative_position);
   }
 };
 
@@ -180,7 +145,7 @@ struct Wing {
     glm::vec3 local_velocity = rigid_body->get_point_velocity(center_of_pressure);
     float speed = glm::length(local_velocity);
 
-    if (speed <= phi::EPSILON) return;
+    if (speed <= 1.0f) return;
 
     // drag acts in the opposite direction of velocity
     glm::vec3 drag_direction = glm::normalize(-local_velocity);
@@ -195,8 +160,15 @@ struct Wing {
     auto [lift_coeff, drag_coeff] = airfoil->sample(angle_of_attack);
 
     if (flap_ratio > 0.0f) {
-      // lift coefficient changes based on flap deflection ie control input
-      float delta_lift_coeff = sqrt(flap_ratio) * airfoil->cl_max * control_input;
+      // at high speed there is lower max deflection
+
+#if 0
+      float deflection_ratio = std::tanh(control_input) * (1.0f / (speed / 200));
+#else
+      float deflection_ratio = control_input;
+#endif
+      // lift coefficient changes based on flap deflection
+      float delta_lift_coeff = sqrt(flap_ratio) * airfoil->cl_max * deflection_ratio;
       lift_coeff += delta_lift_coeff;
     }
 
@@ -229,16 +201,15 @@ struct Wing {
 struct Airplane : public phi::RigidBody {
   glm::vec4 joystick{};  // roll, yaw, pitch, elevator trim
   float throttle = 0.25f;
-  std::vector<Engine*> engines;
+  std::vector<Engine> engines;
   std::array<Wing, 4> wings;
   bool is_landed = false;
 
   // wings are in the order { left_wing, right_wing, elevator, rudder }
-  Airplane(float mass_, const glm::mat3& inertia_, std::array<Wing, 4> wings_, std::vector<Engine*> engines_,
+  Airplane(float mass_, const glm::mat3& inertia_, std::array<Wing, 4> wings_, std::vector<Engine> engines_,
            Collider* collider_)
       : phi::RigidBody({.mass = mass_, .inertia = inertia_, .collider = collider_}), wings(wings_), engines(engines_)
   {
-    assert(wings.size() == 4);
   }
 
   void update(phi::Seconds dt) override
@@ -256,19 +227,19 @@ struct Airplane : public phi::RigidBody {
       wing.apply_forces(this, dt);
     }
 
-    for (auto engine : engines) {
-      engine->throttle = throttle;
-      engine->apply_forces(this, dt);
+    for (auto& engine : engines) {
+      engine.throttle = throttle;
+      engine.apply_forces(this, dt);
     }
 
     phi::RigidBody::update(dt);
   }
 
   // aircraft altitude
-  float get_altitude() const { return position.y; }
+  inline float get_altitude() const { return position.y; }
 
   // pitch g force
-  float get_g() const
+  inline float get_g() const
   {
     glm::vec3 velocity = get_body_velocity();
 
@@ -287,7 +258,7 @@ struct Airplane : public phi::RigidBody {
   }
 
   // mach number
-  float get_mach() const
+  inline float get_mach() const
   {
     float temperature = isa::get_air_temperature(get_altitude());
     float speed_of_sound = std::sqrt(1.402f * 286.f * temperature);
@@ -295,18 +266,46 @@ struct Airplane : public phi::RigidBody {
   }
 
   // angle of attack
-  float get_aoa() const
+  inline float get_aoa() const
   {
     auto velocity = get_body_velocity();
     return glm::degrees(std::asin(glm::dot(glm::normalize(-velocity), phi::UP)));
   }
 
   // indicated air speed
-  float get_ias() const
+  inline float get_ias() const
   {
     // See: https://aerotoolbox.com/airspeed-conversions/
     float air_density = isa::get_air_density(get_altitude());
     float dynamic_pressure = 0.5f * phi::sq(get_speed()) * air_density;  // bernoulli's equation
     return std::sqrt(2 * dynamic_pressure / isa::sea_level_air_density);
   }
+
+  // positive yaw   -> nose goes right
+  // positive roll  -> lift left wing
+  // positive pitch -> nose goes up
+  glm::vec3 get_attitude() const
+  {
+    // https://math.stackexchange.com/questions/3564608/calculate-yaw-pitch-roll-from-up-right-forward
+    glm::vec3 forward = this->forward(), up = this->up();
+
+    float yaw = std::atan2(forward.z, forward.x);
+    float pitch = -std::asin(forward.y);
+
+    float roll = 0.0f;
+    roll = std::asin(up.x * std::sin(yaw) + up.z * -std::cos(yaw));
+    // roll = ((0.0f <= roll) - (roll < 0.0f)) * 3.14f - roll;
+
+    return {roll, yaw, pitch};
+  }
+
+  void inline set_speed_and_attitude(float speed, const glm::vec3& attitude)
+  {
+    glm::vec3 velocity = glm::vec3(speed, 0, 0);
+    this->rotation = glm::quat(attitude);
+    auto v = velocity * this->rotation;
+    this->velocity = v;
+  }
 };
+
+#endif  // ! FLIGHTMODEL_H
