@@ -57,7 +57,7 @@
     <ClCompile Include="src\app.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\phi.cpp">
+    <ClCompile Include="src\phi\phi.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\gfx\particles.cpp">
@@ -92,7 +92,7 @@
     <ClInclude Include="lib\tiny_obj_loader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\phi.h">
+    <ClInclude Include="src\phi\phi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\flightmodel.h">

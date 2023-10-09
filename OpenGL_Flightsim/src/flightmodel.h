@@ -8,7 +8,7 @@
 #include <tuple>
 #include <vector>
 
-#include "phi.h"
+#include "phi/phi.h"
 #include "collider.h"
 
 //  International Standard Atmosphere (ISA)
@@ -81,53 +81,19 @@ struct Airfoil {
   }
 };
 
-// base engine
-struct Engine {
-  float throttle = 0.25f;
-  glm::vec3 relative_position = glm::vec3(0);  // position relative to cg
-  virtual void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) = 0;
-};
+
 
 // simple jet-like engine
-struct SimpleEngine : public Engine {
+struct Engine  {
+  float throttle;
   const float thrust;
-  SimpleEngine(float thrust) : thrust(thrust) {}
+  glm::vec3 relative_position = glm::vec3(0);  // position relative to cg
 
-  void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) override
+  Engine(float thrust) : thrust(thrust), throttle(0.25f) {}
+
+  void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) 
   {
     rigid_body->add_force_at_point({throttle * thrust, 0.0f, 0.0f}, relative_position);
-  }
-};
-
-// does not yet implement engine torque
-struct PropellerEngine : public Engine {
-  float horsepower, rpm, propellor_diameter;
-
-  PropellerEngine(float horsepower, float rpm, float diameter)
-      : horsepower(horsepower), rpm(rpm), propellor_diameter(diameter)
-  {
-  }
-
-  void apply_forces(phi::RigidBody* rigid_body, phi::Seconds dt) override
-  {
-    float speed = rigid_body->get_speed();
-    float altitude = rigid_body->position.y;
-    float engine_power = phi::units::watts(horsepower) * throttle;
-
-    const float a = 1.83f, b = -1.32f;  // efficiency curve fit coefficients
-    float turnover_rate = rpm / 60.0f;
-    float propellor_advance_ratio = speed / (turnover_rate * propellor_diameter);
-    float propellor_efficiency = a * propellor_advance_ratio + b * phi::cb(propellor_advance_ratio);
-    assert(0.0f <= propellor_efficiency && propellor_efficiency <= 1.0f);
-
-    const float c = 0.12f;  // mechanical power loss factor
-    float air_density = isa::get_air_density(altitude);
-    float power_drop_off_factor = ((air_density / isa::sea_level_air_density) - c) / (1 - c);
-    assert(0.0f <= power_drop_off_factor && power_drop_off_factor <= 1.0f);
-
-    float thrust = ((propellor_efficiency * engine_power) / speed) * power_drop_off_factor;
-    assert(0.0f < thrust);
-    rigid_body->add_force_at_point({thrust, 0.0f, 0.0f}, relative_position);
   }
 };
 
@@ -237,12 +203,12 @@ struct Wing {
 struct Airplane : public phi::RigidBody {
   glm::vec4 joystick{};  // roll, yaw, pitch, elevator trim
   float throttle = 0.25f;
-  std::vector<Engine*> engines;
+  std::vector<Engine> engines;
   std::array<Wing, 4> wings;
   bool is_landed = false;
 
   // wings are in the order { left_wing, right_wing, elevator, rudder }
-  Airplane(float mass_, const glm::mat3& inertia_, std::array<Wing, 4> wings_, std::vector<Engine*> engines_,
+  Airplane(float mass_, const glm::mat3& inertia_, std::array<Wing, 4> wings_, std::vector<Engine> engines_,
            Collider* collider_)
       : phi::RigidBody({.mass = mass_, .inertia = inertia_, .collider = collider_}, "flightlog.csv"), wings(wings_), engines(engines_)
   {
@@ -264,9 +230,9 @@ struct Airplane : public phi::RigidBody {
       wing.apply_forces(this, dt);
     }
 
-    for (auto engine : engines) {
-      engine->throttle = throttle;
-      engine->apply_forces(this, dt);
+    for (auto& engine : engines) {
+      engine.throttle = throttle;
+      engine.apply_forces(this, dt);
     }
 
     phi::RigidBody::update(dt);

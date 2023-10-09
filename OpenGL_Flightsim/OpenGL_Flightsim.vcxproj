@@ -162,7 +162,7 @@ xcopy /y /i /s $(ProjectDir)..\lib\glew-2.2.0\bin\Release\x64\*.dll $(OutDir)</C
     <ClCompile Include="src\gfx\util.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\gfx\gfx.cpp" />
-    <ClCompile Include="src\phi.cpp" />
+    <ClCompile Include="src\phi\phi.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\basic.frag" />
@@ -208,7 +208,7 @@ xcopy /y /i /s $(ProjectDir)..\lib\glew-2.2.0\bin\Release\x64\*.dll $(OutDir)</C
     <ClInclude Include="lib\imgui\imstb_truetype.h" />
     <ClInclude Include="lib\stb_image.h" />
     <ClInclude Include="lib\tiny_obj_loader.h" />
-    <ClInclude Include="src\phi.h" />
+    <ClInclude Include="src\phi\phi.h" />
     <ClInclude Include="src\pid.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

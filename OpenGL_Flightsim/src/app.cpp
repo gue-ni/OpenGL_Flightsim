@@ -145,7 +145,7 @@ void App::init()
   m_cameras[1]->set_rotation(look_forward);
   m_falcon->add(m_cameras[1]);
 
-#if 0
+#if 1
   m_airplane->position = glm::vec3(0, height + 10, 0);
   m_airplane->velocity = glm::vec3(0, 0, 0);
   m_airplane->rotation = glm::quat(glm::vec3(0.1, 0, 0.1));
@@ -220,13 +220,11 @@ void App::init_airplane()
       Wing({tail_offset, 0.0f, 0.0f}, 5.31f, 3.10f, &NACA_0012, phi::RIGHT, 0.15f),  // rudder
   };
 
-  Engine* engine = new SimpleEngine(thrust);
-
   float wheelbase = 2.5f;
   LandingGear* collider = new LandingGear(glm::vec3(4.0f, -1.8f, 0.0f), glm::vec3(-1.0f, -1.8f, +wheelbase),
                                           glm::vec3(-1.0f, -1.8f, -wheelbase));
 
-  m_airplane = new Airplane(mass, inertia, wings, {engine}, collider);
+  m_airplane = new Airplane(mass, inertia, wings, {Engine(thrust)}, collider);
 
 #if 1
   gfx::Object3D* landing_gear = new gfx::Object3D();
@@ -246,6 +244,10 @@ void App::init_airplane()
     m_falcon->add(obj);
   }
 #endif
+}
+
+void App::init_flightmodel()
+{
 }
 
 void App::destroy()
@@ -434,8 +436,8 @@ void App::draw_hud()
   float pitch_offset = -pitch * scale;
 
   float side_offset = v.y * std::sin(glm::radians(90.0f) - roll);
-  //std::cout << side_offset << std::endl;
-  //float side_offset = 0.0f;
+  // std::cout << side_offset << std::endl;
+  // float side_offset = 0.0f;
 
   glm::mat4 mat(1.0f);
   mat = glm::rotate(mat, -roll, glm::vec3(0, 0, 1));

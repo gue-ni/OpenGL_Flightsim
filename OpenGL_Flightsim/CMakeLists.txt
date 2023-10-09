@@ -28,7 +28,8 @@ add_executable(flightsim
     src/gfx/object3d.cpp
     src/gfx/object3d.h
     src/main.cpp
-    src/phi.h
+    src/phi/phi.h
+    src/phi/phi.cpp
     src/pid.h
     lib/stb_image.h
     lib/tiny_obj_loader.h

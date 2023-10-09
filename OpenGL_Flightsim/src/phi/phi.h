@@ -31,6 +31,8 @@ SOFTWARE. */
 #ifndef PHI_H
 #define PHI_H
 
+#define COLLISION_FRICTION 0
+
 #include <glm/glm.hpp>
 #include <glm/gtx/io.hpp>
 #include <glm/gtx/matrix_operation.hpp>
@@ -572,7 +574,7 @@ class RigidBody : public Transform
     a->add_impulse_at_world_point(-impulse, collision.point);
     b->add_impulse_at_world_point(+impulse, collision.point);
 
-#if 1
+#if COLLISION_FRICTION
     float j_s = collision.static_friction_coeff * j_r;
     float j_d = collision.kinetic_friction_coeff * j_r;
 
