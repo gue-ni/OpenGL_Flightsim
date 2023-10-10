@@ -4,33 +4,15 @@
 namespace gfx
 {
 
-float random_01() { return static_cast<float>(rand()) / static_cast<float>(RAND_MAX); }
-
-glm::vec3 vector_in_sphere() { return glm::vec3(0.0f, 1.0f, 0.0f); }
-
-glm::vec3 vector_in_hemisphere()
-{
-  float r1 = random_01();
-  float r2 = random_01();
-
-  assert(0.0f <= r1 && r1 <= 1.0f);
-  assert(0.0f <= r2 && r2 <= 1.0f);
-
-  float phi = 2.0 * PI * r1;
-  float theta = std::acos(r2);
-
-  return glm::vec3(cos(phi) * sin(theta), cos(theta), sin(phi) * sin(theta)
-
-  );
-}
-
 ParticleSystem::ParticleSystem(const Config& config)
-    : m_max_particle_count(config.count),
+    : m_config(config),
+      m_max_particle_count(config.count),
       m_particles(config.count),
       m_position_buffer(config.count),
-      // m_texture(gl::Texture::load(config.texture_path)),
+      m_color_buffer(config.count),
       m_last_used_particle(0),
       m_particle_count(0)
+// m_texture(gl::Texture::load(config.texture_path)),
 
 {
   const std::vector<float> vertex_buffer_data = {
@@ -44,6 +26,9 @@ ParticleSystem::ParticleSystem(const Config& config)
 
   m_positions.bind();
   m_positions.buffer_data(nullptr, sizeof(m_position_buffer[0]) * m_position_buffer.size(), GL_STREAM_DRAW);
+
+  m_colors.bind();
+  m_colors.buffer_data(nullptr, sizeof(m_color_buffer[0]) * m_color_buffer.size(), GL_STREAM_DRAW);
 
   m_vao.unbind();
 }
@@ -79,13 +64,14 @@ void ParticleSystem::update(float dt)
 
     Particle* particle = &m_particles[unused_particle];
 
-    float speed = 5.0f;
-    float size = 1.0f;
+    glm::vec4 color = glm::vec4(1.0f, 0.0f, 1.0f, 1.0f);
 
     particle->distance_from_camera = 1.0f;
-    particle->lifetime = 2.0f;
-    particle->position = world_position;
-    particle->velocity = vector_in_hemisphere() * speed;
+    particle->position = world_position + vector_in_sphere() * m_config.emitter_radius;
+    particle->velocity = vector_in_hemisphere(m_config.emitter_cone) * m_config.speed * m_rotation;
+    particle->color = color;
+    particle->size = m_config.size;
+    particle->lifetime = m_config.lifetime;
   }
 
   // update particles
@@ -98,6 +84,8 @@ void ParticleSystem::update(float dt)
 
     if (0 < particle.lifetime) {
       particle.position += particle.velocity * dt;
+      particle.size *= 0.99f;
+      particle.color.a = particle.lifetime / m_config.lifetime;
       m_particle_count++;
     } else {
       particle.distance_from_camera = -1.0f;
@@ -107,12 +95,16 @@ void ParticleSystem::update(float dt)
   std::sort(m_particles.begin(), m_particles.end());
 
   for (int i = 0; i < m_particle_count; i++) {
-    m_position_buffer[i] = m_particles[i].position;
+    m_position_buffer[i] = glm::vec4(m_particles[i].position, m_particles[i].size);
+    m_color_buffer[i] = m_particles[i].color;
   }
 
   m_vao.bind();
   m_positions.bind();
   m_positions.buffer_sub_data(0, sizeof(m_position_buffer[0]) * m_position_buffer.size(), &m_position_buffer[0]);
+
+  m_colors.bind();
+  m_colors.buffer_sub_data(0, sizeof(m_color_buffer[0]) * m_color_buffer.size(), &m_color_buffer[0]);
   m_vao.unbind();
 }
 
@@ -132,17 +124,17 @@ void ParticleSystem::draw_self(RenderContext& context)
 
   // m_texture->bind(5);
 
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+  // glEnable(GL_BLEND);
+  // glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
   glDisable(GL_DEPTH_TEST);
   glDepthMask(GL_FALSE);
 
   shader->bind();
   shader->set_uniform("u_View", view);
   shader->set_uniform("u_Projection", projection);
-  // shader->set_uniform("u_Texture", 5);
   shader->set_uniform("u_Right", right);
   shader->set_uniform("u_Up", up);
+  // shader->set_uniform("u_Texture", 5);
 
   m_vao.bind();
 
@@ -154,15 +146,21 @@ void ParticleSystem::draw_self(RenderContext& context)
   // particle positions
   glEnableVertexAttribArray(1);
   m_positions.bind();
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+  glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, (void*)0);
+
+  glEnableVertexAttribArray(2);
+  m_colors.bind();
+  glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
   glVertexAttribDivisor(0, 0);
   glVertexAttribDivisor(1, 1);
+  glVertexAttribDivisor(2, 1);
 
   glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, m_particle_count);
 
   glDisableVertexAttribArray(0);
   glDisableVertexAttribArray(1);
+  glDisableVertexAttribArray(2);
 
   m_vao.unbind();
   shader->unbind();

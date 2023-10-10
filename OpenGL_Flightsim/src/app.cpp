@@ -6,9 +6,9 @@
 #include "flightmodel.h"
 #include "terrain.h"
 
-#define DRAW_HUD 0
+#define DRAW_HUD     0
 #define GROUND_START 1
-#define PARTICLES 1
+#define PARTICLES    1
 
 const Airfoil NACA_0012(NACA_0012_data);
 const Airfoil NACA_2412(NACA_2412_data);
@@ -199,8 +199,12 @@ void App::init_airplane()
   m_scene->add(m_falcon);
 
 #if PARTICLES
-  m_particles = new gfx::ParticleSystem({ .count = 1000U });
-  m_particles->set_position(glm::vec3(0.0f, 2.0f, 0.0f));
+  // afterburner
+  gfx::ParticleSystem::Config config = {
+      .count = 1000U, .emitter_radius = 0.3f, .emitter_cone = 0.1f, .speed = 10.0f, .size = 0.2f, .lifetime = 1.0f};
+  m_particles = new gfx::ParticleSystem(config);
+  m_particles->set_position(glm::vec3(-6.0f, 0.0f, 0.0f));
+  m_particles->set_rotation(glm::vec3(0.0f, 0.0f, glm::radians(-90.0f)));
   m_falcon->add(m_particles);
 #endif
 

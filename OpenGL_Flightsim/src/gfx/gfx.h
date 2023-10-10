@@ -23,7 +23,6 @@
 namespace gfx
 {
 
-constexpr float PI = 3.14159265359f;
 
 typedef glm::vec3 RGB;
 typedef glm::vec4 RGBA;

@@ -22,6 +22,9 @@
 
 namespace gfx
 {
+
+constexpr float PI = 3.14159265359f;
+
 std::string load_text_file(const std::string& path);
 
 // [0, 255] -> [0, 1]
@@ -39,6 +42,12 @@ constexpr glm::vec3 rgb(uint32_t hex)
   uint32_t b = (hex & 0x0000ffU) >> 0;
   return rgb(r, g, b);
 }
+
+float random_01();
+
+glm::vec3 vector_in_sphere();
+
+glm::vec3 vector_in_hemisphere(float factor = 1.0f);
 
 class Image
 {
