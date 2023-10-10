@@ -5,7 +5,7 @@
 #if 1
 #include <assimp/postprocess.h>  // Post processing flags
 #include <assimp/scene.h>        // Output data structure
-#include <assimp/Importer.hpp>  // C++ importer interface
+#include <assimp/Importer.hpp>   // C++ importer interface
 #endif
 
 #include <array>
@@ -38,17 +38,6 @@ constexpr glm::vec3 rgb(uint32_t hex)
   uint32_t g = (hex & 0x00ff00U) >> 8;
   uint32_t b = (hex & 0x0000ffU) >> 0;
   return rgb(r, g, b);
-}
-
-// TODO
-inline void import(const std::string& path)
-{
-#if 1
-  Assimp::Importer importer;
-  const aiScene* scene =
-      importer.ReadFile(path, aiProcess_JoinIdenticalVertices | aiProcess_Triangulate | aiProcess_FlipUVs);
-#endif
-
 }
 
 class Image

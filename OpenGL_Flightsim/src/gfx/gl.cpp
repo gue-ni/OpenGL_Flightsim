@@ -150,6 +150,11 @@ TexturePtr Texture::load(const std::string& path, const Params& params)
   return std::make_shared<Texture>(path, params);
 }
 
+TexturePtr Texture::load(const std::string& path)
+{
+  return Texture::load(path, {});
+}
+
 CubemapTexture::CubemapTexture(const std::array<std::string, 6>& paths, bool flip_vertically)
     : Texture(GL_TEXTURE_CUBE_MAP)
 {

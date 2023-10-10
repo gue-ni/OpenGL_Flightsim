@@ -58,6 +58,7 @@ class App
   Airplane* m_airplane;
   phi::RigidBody* m_terrain;
   Clipmap* m_clipmap;
+  gfx::ParticleSystem* m_particles;
 
   gfx::Object3D* m_falcon;
 

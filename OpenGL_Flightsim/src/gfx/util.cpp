@@ -40,15 +40,7 @@ glm::vec3 Image::sample(const glm::vec2 uv, GLint filter) const
       break;
     }
     case GL_LINEAR: {
-#if 0
-      glm::ivec2 lo = coord;
-      glm::ivec2 hi = lo + glm::ivec2(1.0f);
-      glm::vec2 t = glm::vec2(hi) - coord;
-
-      // glm::vec2 tmp = glm::mix()
-#else
       assert(false);
-#endif
       break;
     }
     default:

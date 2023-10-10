@@ -188,6 +188,7 @@ struct Texture : public Object {
   void set_parameter(GLenum pname, GLfloat param);
   void set_parameter(GLenum pname, const GLfloat* param);
   static TexturePtr load(const std::string& path, const Params& params);
+  static TexturePtr load(const std::string& path);
 };
 
 struct CubemapTexture : public Texture {

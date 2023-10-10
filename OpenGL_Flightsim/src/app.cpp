@@ -7,6 +7,8 @@
 #include "terrain.h"
 
 #define DRAW_HUD 0
+#define GROUND_START 1
+#define PARTICLES 1
 
 const Airfoil NACA_0012(NACA_0012_data);
 const Airfoil NACA_2412(NACA_2412_data);
@@ -147,7 +149,7 @@ void App::init()
   m_cameras[1]->set_rotation(look_forward);
   m_falcon->add(m_cameras[1]);
 
-#if 0
+#if GROUND_START
   m_airplane->position = glm::vec3(0, height + 10, 0);
   m_airplane->velocity = glm::vec3(0, 0, 0);
   m_airplane->rotation = glm::quat(glm::vec3(0.1, 0, 0.1));
@@ -196,8 +198,11 @@ void App::init_airplane()
   });
   m_scene->add(m_falcon);
 
-  const auto particles = new gfx::ParticleSystem({});
-  m_falcon->add(particles);
+#if PARTICLES
+  m_particles = new gfx::ParticleSystem({ .count = 1000U });
+  m_particles->set_position(glm::vec3(0.0f, 2.0f, 0.0f));
+  m_falcon->add(m_particles);
+#endif
 
   const float mass = 10000.0f;
   const float thrust = 75000.0f;
@@ -508,6 +513,10 @@ void App::game_loop(float dt)
 
     m_hud->batch_clear();
   }
+
+#if PARTICLES
+  m_particles->update(dt);
+#endif
 
   m_controller.update(*m_cameras[0], m_falcon->get_position(), dt);
 
