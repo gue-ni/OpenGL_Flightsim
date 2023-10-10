@@ -26,7 +26,8 @@ class ParticleSystem : public Object3D
  public:
 
    struct Config {
-     float lifetime;
+      size_t count;
+      float lifetime;
    };
 
   ParticleSystem(const Config& config);
@@ -36,11 +37,13 @@ class ParticleSystem : public Object3D
  private:
   gl::VertexArrayObject m_vao;
   gl::VertexBuffer m_quad;
-  gl::VertexBuffer m_particle_data;
+  gl::VertexBuffer m_positions_vbo;
 
   const std::string m_shader = "shaders/particle";
 
+  const size_t particle_count;
 
-  Particle m_particles[MAX_NUM_PARTICLES];
+  std::vector<Particle> m_particles;
+  std::vector<glm::vec3> m_positions;
 };
 }  // namespace gfx

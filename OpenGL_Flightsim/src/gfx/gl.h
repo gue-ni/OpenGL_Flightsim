@@ -103,6 +103,12 @@ struct Buffer : public Object {
     buffer_data(&data[0], sizeof(data[0]) * data.size(), usage);
   }
 
+  template <typename T>
+  void buffer_2(const std::vector<T>& data, GLenum usage = GL_STATIC_DRAW)
+  {
+    GL_CALL(glBufferData(target, sizeof(data[0]) * data.size(), &data[0], usage));
+  }
+
  protected:
   const GLenum target;
 };
