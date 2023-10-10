@@ -7,7 +7,7 @@
 #include "terrain.h"
 
 #define DRAW_HUD     0
-#define GROUND_START 0
+#define GROUND_START 1
 #define PARTICLES    1
 
 const Airfoil NACA_0012(NACA_0012_data);
@@ -203,13 +203,13 @@ void App::init_airplane()
   gfx::ParticleSystem::Config config = {.count = 5000U,
                                         .emitter_radius = 0.3f,
                                         .emitter_cone = 0.01f,
-                                        .speed = gfx::Range(10.0f, 10.0f),
+                                        .speed = gfx::Range(100.0f, 150.0f),
                                         .size = gfx::Range(0.1f, 0.25f),
-                                        .lifetime = gfx::Range(1.01f, 1.1f),
+                                        .lifetime = gfx::Range(0.01f, 0.1f),
                                         .color = gfx::Range(glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f))};
   m_particles = new gfx::ParticleSystem(config);
   m_particles->set_position(glm::vec3(-6.0f, 0.0f, 0.0f));
-  //m_particles->set_rotation(glm::vec3(0.0f, 0.0f, glm::radians(-90.0f)));
+  m_particles->set_rotation(glm::vec3(0.0f, 0.0f, glm::radians(90.0f)));
   m_falcon->add(m_particles);
 #endif
 
@@ -524,7 +524,7 @@ void App::game_loop(float dt)
   }
 
 #if PARTICLES
-  m_particles->update(dt);
+  m_particles->update(dt, m_airplane->velocity);
 #endif
 
   m_controller.update(*m_cameras[0], m_falcon->get_position(), dt);

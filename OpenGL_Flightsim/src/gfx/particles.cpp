@@ -52,9 +52,9 @@ int ParticleSystem::find_unused_particle()
   return 0;
 }
 
-void ParticleSystem::update(float dt)
+void ParticleSystem::update(float dt, const glm::vec3& emitter_velocity)
 {
-  int new_particles = 50;
+  int new_particles = 25;
 
   glm::vec3 world_position = get_world_position();
 
@@ -64,15 +64,24 @@ void ParticleSystem::update(float dt)
 
     Particle* particle = &m_particles[unused_particle];
 
-    // glm::vec4 color = glm::vec4(1.0f, 0.0f, 1.0f, 1.0f);
     glm::vec4 color = glm::vec4(m_config.color.min_value, 0.0f);
 
-    float speed = m_config.speed.value();
+    auto rotation = get_world_rotation_quat();
+    //auto rotation = parent->get_rotation_quat();
+
+    // this needs to be actually relative to the speed that the emitter is moving
+    float speed =  m_config.speed.value();
+#if 1
     glm::vec3 direction = vector_in_hemisphere(m_config.emitter_cone);
+#else
+    glm::vec3 direction = glm::vec3(-1.0f, 0.0f, 0.0f);
+#endif
+
+    auto velocity = rotation * (direction * speed);
 
     particle->distance_from_camera = 1.0f;
     particle->position = world_position + vector_in_sphere() * m_config.emitter_radius;
-    particle->velocity = (direction * speed) * get_world_rotation_quat();  // TODO: fix this
+    particle->velocity = emitter_velocity + velocity ;  // TODO: fix this
     particle->color = color;
     particle->size = m_config.size.value();
     particle->lifetime = m_config.lifetime.value();
@@ -90,7 +99,6 @@ void ParticleSystem::update(float dt)
       float t = particle.lifetime / m_config.lifetime.max_value;
       particle.position += particle.velocity * dt;
       particle.size *= 0.99f;
-      // particle.color.a = t;
       particle.color = glm::vec4(m_config.color.value(t), t);
       m_particle_count++;
     } else {

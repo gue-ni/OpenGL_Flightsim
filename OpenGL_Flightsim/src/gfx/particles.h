@@ -40,7 +40,7 @@ class ParticleSystem : public Object3D
 
   ParticleSystem(const Config& config);
   void draw_self(RenderContext& context) override;
-  void update(float dt);
+  void update(float dt, const glm::vec3& emitter_velocity = glm::vec3(0.0f));
 
  private:
   int find_unused_particle();
