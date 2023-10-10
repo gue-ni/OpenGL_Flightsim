@@ -54,7 +54,7 @@ int ParticleSystem::find_unused_particle()
 
 void ParticleSystem::update(float dt)
 {
-  int new_particles = 1;
+  int new_particles = 50;
 
   glm::vec3 world_position = get_world_position();
 
@@ -64,14 +64,18 @@ void ParticleSystem::update(float dt)
 
     Particle* particle = &m_particles[unused_particle];
 
-    glm::vec4 color = glm::vec4(1.0f, 0.0f, 1.0f, 1.0f);
+    // glm::vec4 color = glm::vec4(1.0f, 0.0f, 1.0f, 1.0f);
+    glm::vec4 color = glm::vec4(m_config.color.min_value, 0.0f);
+
+    float speed = m_config.speed.value();
+    glm::vec3 direction = vector_in_hemisphere(m_config.emitter_cone);
 
     particle->distance_from_camera = 1.0f;
     particle->position = world_position + vector_in_sphere() * m_config.emitter_radius;
-    particle->velocity = vector_in_hemisphere(m_config.emitter_cone) * m_config.speed * m_rotation;
+    particle->velocity = (direction * speed) * get_world_rotation_quat();  // TODO: fix this
     particle->color = color;
-    particle->size = m_config.size;
-    particle->lifetime = m_config.lifetime;
+    particle->size = m_config.size.value();
+    particle->lifetime = m_config.lifetime.value();
   }
 
   // update particles
@@ -83,9 +87,11 @@ void ParticleSystem::update(float dt)
     particle.lifetime -= dt;
 
     if (0 < particle.lifetime) {
+      float t = particle.lifetime / m_config.lifetime.max_value;
       particle.position += particle.velocity * dt;
       particle.size *= 0.99f;
-      particle.color.a = particle.lifetime / m_config.lifetime;
+      // particle.color.a = t;
+      particle.color = glm::vec4(m_config.color.value(t), t);
       m_particle_count++;
     } else {
       particle.distance_from_camera = -1.0f;

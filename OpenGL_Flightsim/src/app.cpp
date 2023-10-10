@@ -7,7 +7,7 @@
 #include "terrain.h"
 
 #define DRAW_HUD     0
-#define GROUND_START 1
+#define GROUND_START 0
 #define PARTICLES    1
 
 const Airfoil NACA_0012(NACA_0012_data);
@@ -200,11 +200,16 @@ void App::init_airplane()
 
 #if PARTICLES
   // afterburner
-  gfx::ParticleSystem::Config config = {
-      .count = 1000U, .emitter_radius = 0.3f, .emitter_cone = 0.1f, .speed = 10.0f, .size = 0.2f, .lifetime = 1.0f};
+  gfx::ParticleSystem::Config config = {.count = 5000U,
+                                        .emitter_radius = 0.3f,
+                                        .emitter_cone = 0.01f,
+                                        .speed = gfx::Range(10.0f, 10.0f),
+                                        .size = gfx::Range(0.1f, 0.25f),
+                                        .lifetime = gfx::Range(1.01f, 1.1f),
+                                        .color = gfx::Range(glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f))};
   m_particles = new gfx::ParticleSystem(config);
   m_particles->set_position(glm::vec3(-6.0f, 0.0f, 0.0f));
-  m_particles->set_rotation(glm::vec3(0.0f, 0.0f, glm::radians(-90.0f)));
+  //m_particles->set_rotation(glm::vec3(0.0f, 0.0f, glm::radians(-90.0f)));
   m_falcon->add(m_particles);
 #endif
 
