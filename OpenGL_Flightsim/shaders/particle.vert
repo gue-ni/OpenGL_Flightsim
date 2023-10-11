@@ -27,6 +27,17 @@ void main()
 
   FragDepth = 1.0 + gl_Position.w;
 
+	float angleRad = 1.4;
+
+	 mat2 rotationMatrix = mat2(
+        cos(angleRad), -sin(angleRad),
+        sin(angleRad), cos(angleRad)
+    );
+
+
 	TexCoords = a_VertexPos.xy + vec2(0.5, 0.5);
+	TexCoords = rotationMatrix * TexCoords;
+
+
 	Color = a_Color;
 }

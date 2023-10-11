@@ -36,9 +36,10 @@ class ParticleSystem : public Object3D
     Range<float> size = Range(0.1f, 0.2f);
     Range<float> lifetime = Range(1.0f, 2.0f);
     Range<glm::vec3> color = Range(glm::vec3(1.0f), glm::vec3(0.0f));
+    GLenum blend_src = GL_SRC_ALPHA, blend_dest = GL_ONE;
   };
 
-  ParticleSystem(const Config& config);
+  ParticleSystem(const Config& config, const std::string& path);
   void draw_self(RenderContext& context) override;
   void update(float dt, const glm::vec3& camera_position, const glm::vec3& emitter_velocity = glm::vec3(0.0f));
 

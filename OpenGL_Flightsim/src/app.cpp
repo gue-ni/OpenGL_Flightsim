@@ -200,14 +200,19 @@ void App::init_airplane()
 
 #if PARTICLES
   // afterburner
+
+  auto red_blue = gfx::Range(gfx::rgb(0xff0000), gfx::rgb(0x0000ff));
+  auto afterburner = gfx::Range(gfx::rgb(0xFFFFD4), gfx::rgb(0xA091A6));
   gfx::ParticleSystem::Config config = {.count = 5000U,
-                                        .emitter_radius = 0.3f,
+                                        .emitter_radius = 0.35f,
                                         .emitter_cone = 0.01f,
                                         .speed = gfx::Range(100.0f, 150.0f),
-                                        .size = gfx::Range(0.1f, 0.25f),
-                                        .lifetime = gfx::Range(0.01f, 0.03f),
-                                        .color = gfx::Range(glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f))};
-  m_particles = new gfx::ParticleSystem(config);
+                                        .size = gfx::Range(0.2f, 0.3f),
+                                        .lifetime = gfx::Range(0.02f, 0.03f),
+                                        .color = afterburner
+   };
+
+  m_particles = new gfx::ParticleSystem(config, "assets/textures/particle.png");
   m_particles->set_position(glm::vec3(-5.5f, 0.0f, 0.0f));
   m_particles->set_rotation(glm::vec3(0.0f, 0.0f, glm::radians(90.0f)));
   m_falcon->add(m_particles);

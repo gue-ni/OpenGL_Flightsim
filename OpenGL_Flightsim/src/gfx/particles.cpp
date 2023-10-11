@@ -4,15 +4,15 @@
 namespace gfx
 {
 
-ParticleSystem::ParticleSystem(const Config& config)
+ParticleSystem::ParticleSystem(const Config& config, const std::string& path)
     : m_config(config),
       m_max_particle_count(config.count),
       m_particles(config.count),
       m_position_buffer(config.count),
       m_color_buffer(config.count),
       m_last_used_particle(0),
-      m_particle_count(0)
-// m_texture(gl::Texture::load(config.texture_path)),
+      m_particle_count(0),
+      m_texture(gl::Texture::load(path))
 
 {
   const std::vector<float> vertex_buffer_data = {
@@ -54,7 +54,7 @@ int ParticleSystem::find_unused_particle()
 
 void ParticleSystem::update(float dt, const glm::vec3& camera_position, const glm::vec3& emitter_velocity)
 {
-  int new_particles = 50;
+  int new_particles = 100;
 
   glm::vec3 world_position = get_world_position();
 
@@ -88,19 +88,19 @@ void ParticleSystem::update(float dt, const glm::vec3& camera_position, const gl
   m_particle_count = 0;
 
   for (int i = 0; i < m_max_particle_count; i++) {
-    auto& particle = m_particles[i];
+    Particle* particle = &m_particles[i];
 
-    particle.lifetime -= dt;
+    particle->lifetime -= dt;
 
-    if (0 < particle.lifetime) {
-      float t = particle.lifetime / m_config.lifetime.max_value;
-      particle.position += particle.velocity * dt;
-      particle.size *= 0.99f;
-      particle.color = glm::vec4(m_config.color.value(t), t);
-      particle.distance_from_camera = glm::length(particle.position - camera_position);
+    if (0 < particle->lifetime) {
+      float t = particle->lifetime / m_config.lifetime.max_value;
+      particle->position += particle->velocity * dt;
+      particle->size *= 0.99f;
+      particle->color = glm::vec4(m_config.color.value(t), t);
+      particle->distance_from_camera = glm::length(particle->position - camera_position);
       m_particle_count++;
     } else {
-      particle.distance_from_camera = -1.0f;
+      particle->distance_from_camera = -1.0f;
     }
   }
 
@@ -134,21 +134,26 @@ void ParticleSystem::draw_self(RenderContext& context)
   glm::vec3 up = {view[0][1], view[1][1], view[2][1]};
   glm::vec3 right = {view[0][0], view[1][0], view[2][0]};
 
-  // m_texture->bind(5);
 
   // get currently set blend func
   GLint blendSrc, blendDst;
   glGetIntegerv(GL_BLEND_SRC, &blendSrc);
   glGetIntegerv(GL_BLEND_DST, &blendDst);
 
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glEnable(GL_BLEND);
+  glBlendFunc(m_config.blend_src, m_config.blend_dest);
 
   shader->bind();
   shader->set_uniform("u_View", view);
   shader->set_uniform("u_Projection", projection);
   shader->set_uniform("u_Right", right);
   shader->set_uniform("u_Up", up);
-  // shader->set_uniform("u_Texture", 5);
+
+  if (m_texture != nullptr)
+  {
+    m_texture->bind(5);
+    shader->set_uniform("u_Texture", 5);
+  }
 
   m_vao.bind();
 
