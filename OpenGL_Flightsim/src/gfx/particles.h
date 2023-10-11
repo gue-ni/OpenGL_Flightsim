@@ -37,16 +37,19 @@ class ParticleSystem : public Object3D
     Range<float> lifetime = Range(1.0f, 2.0f);
     Range<glm::vec3> color = Range(glm::vec3(1.0f), glm::vec3(0.0f));
     GLenum blend_src = GL_SRC_ALPHA, blend_dest = GL_ONE;
+    float start_alpha = 0.5f;
   };
 
   ParticleSystem(const Config& config, const std::string& path);
   void draw_self(RenderContext& context) override;
   void update(float dt, const glm::vec3& camera_position, const glm::vec3& emitter_velocity = glm::vec3(0.0f));
 
+
+  Config m_config;
+
  private:
   int find_unused_particle();
 
-  Config m_config;
 
   int m_last_used_particle;
   int m_particle_count;

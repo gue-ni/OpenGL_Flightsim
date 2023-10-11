@@ -54,7 +54,7 @@ int ParticleSystem::find_unused_particle()
 
 void ParticleSystem::update(float dt, const glm::vec3& camera_position, const glm::vec3& emitter_velocity)
 {
-  int new_particles = 100;
+  int new_particles = 200;
 
   glm::vec3 world_position = get_world_position();
 
@@ -67,10 +67,8 @@ void ParticleSystem::update(float dt, const glm::vec3& camera_position, const gl
     glm::vec4 color = glm::vec4(m_config.color.min_value, 0.0f);
 
     auto rotation = get_world_rotation_quat();
-    //auto rotation = parent->get_rotation_quat();
 
-    // this needs to be actually relative to the speed that the emitter is moving
-    float speed =  m_config.speed.value();
+    float speed = m_config.speed.value();
 
     glm::vec3 direction = vector_in_hemisphere(m_config.emitter_cone);
 
@@ -78,7 +76,7 @@ void ParticleSystem::update(float dt, const glm::vec3& camera_position, const gl
 
     particle->distance_from_camera = 1.0f;
     particle->position = world_position + vector_in_sphere() * m_config.emitter_radius;
-    particle->velocity = emitter_velocity + velocity ;  // TODO: fix this
+    particle->velocity = emitter_velocity + velocity;  // TODO: fix this
     particle->color = color;
     particle->size = m_config.size.value();
     particle->lifetime = m_config.lifetime.value();
@@ -95,8 +93,8 @@ void ParticleSystem::update(float dt, const glm::vec3& camera_position, const gl
     if (0 < particle->lifetime) {
       float t = particle->lifetime / m_config.lifetime.max_value;
       particle->position += particle->velocity * dt;
-      particle->size *= 0.99f;
-      particle->color = glm::vec4(m_config.color.value(t), t);
+      particle->size *= 0.95f;
+      particle->color = glm::vec4(m_config.color.value(t), glm::mix(m_config.start_alpha, 0.0f, t));
       particle->distance_from_camera = glm::length(particle->position - camera_position);
       m_particle_count++;
     } else {
@@ -134,7 +132,6 @@ void ParticleSystem::draw_self(RenderContext& context)
   glm::vec3 up = {view[0][1], view[1][1], view[2][1]};
   glm::vec3 right = {view[0][0], view[1][0], view[2][0]};
 
-
   // get currently set blend func
   GLint blendSrc, blendDst;
   glGetIntegerv(GL_BLEND_SRC, &blendSrc);
@@ -149,8 +146,7 @@ void ParticleSystem::draw_self(RenderContext& context)
   shader->set_uniform("u_Right", right);
   shader->set_uniform("u_Up", up);
 
-  if (m_texture != nullptr)
-  {
+  if (m_texture != nullptr) {
     m_texture->bind(5);
     shader->set_uniform("u_Texture", 5);
   }
@@ -186,8 +182,6 @@ void ParticleSystem::draw_self(RenderContext& context)
 
   // reset blend func
   glBlendFunc(blendSrc, blendDst);
-
 }
-
 
 }  // namespace gfx

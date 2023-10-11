@@ -53,6 +53,7 @@ class App
 
   gfx::Object3D* m_camera_attachment;
   gfx::Object3D* m_runway;
+  gfx::Object3D* landing_gear;
 
   // physics
   Airplane* m_airplane;

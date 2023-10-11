@@ -6,9 +6,10 @@
 #include "flightmodel.h"
 #include "terrain.h"
 
-#define DRAW_HUD     0
+#define DRAW_HUD     1
 #define GROUND_START 1
 #define PARTICLES    1
+#define RENDER_LANDING_GEAR 1
 
 const Airfoil NACA_0012(NACA_0012_data);
 const Airfoil NACA_2412(NACA_2412_data);
@@ -201,19 +202,18 @@ void App::init_airplane()
 #if PARTICLES
   // afterburner
 
-  auto red_blue = gfx::Range(gfx::rgb(0xff0000), gfx::rgb(0x0000ff));
-  auto afterburner = gfx::Range(gfx::rgb(0xFFFFD4), gfx::rgb(0xA091A6));
+  auto afterburner = gfx::Range(gfx::rgb(0xFFA500), gfx::rgb(0x0000ff));
   gfx::ParticleSystem::Config config = {.count = 5000U,
-                                        .emitter_radius = 0.35f,
+                                        .emitter_radius = 0.3f,
                                         .emitter_cone = 0.01f,
                                         .speed = gfx::Range(100.0f, 150.0f),
-                                        .size = gfx::Range(0.2f, 0.3f),
+                                        .size = gfx::Range(0.3f, 0.4f),
                                         .lifetime = gfx::Range(0.02f, 0.03f),
                                         .color = afterburner
    };
 
   m_particles = new gfx::ParticleSystem(config, "assets/textures/particle.png");
-  m_particles->set_position(glm::vec3(-5.5f, 0.0f, 0.0f));
+  m_particles->set_position(glm::vec3(-5.0f, 0.0f, 0.0f));
   m_particles->set_rotation(glm::vec3(0.0f, 0.0f, glm::radians(90.0f)));
   m_falcon->add(m_particles);
 #endif
@@ -247,8 +247,9 @@ void App::init_airplane()
 
   m_airplane = new Airplane(mass, inertia, wings, {Engine(thrust)}, collider);
 
-#if 1
-  gfx::Object3D* landing_gear = new gfx::Object3D();
+#if RENDER_LANDING_GEAR
+  landing_gear = new gfx::Object3D();
+  std::cout << "landing gear id = " << landing_gear->id << std::endl;
   m_falcon->add(landing_gear);
 
   auto wheel_texture = std::make_shared<gfx::gl::Texture>("assets/textures/container.jpg");
@@ -262,7 +263,8 @@ void App::init_airplane()
     gfx::Mesh* wheel_mesh = new gfx::Mesh(wheel_geometry, wheel_material);
     wheel_mesh->visible = true;
     obj->add(wheel_mesh);
-    m_falcon->add(obj);
+    //m_falcon->add(obj);
+    landing_gear->add(obj);
   }
 #endif
 }
@@ -341,6 +343,9 @@ void App::event_keydown(SDL_Keycode key)
       break;
     case SDLK_p:
       m_paused = !m_paused;
+      break;
+    case SDLK_g: 
+      landing_gear->visible = !landing_gear->visible;
       break;
   }
 }
@@ -527,9 +532,16 @@ void App::game_loop(float dt)
     m_hud->batch_clear();
 
 #if PARTICLES
+    float throttle = glm::clamp(m_airplane->throttle, 0.0f, 1.0f);
+    m_particles->m_config.lifetime.min_value = 0.005f + 0.02f * throttle;
+    m_particles->m_config.lifetime.max_value = 0.007f + 0.03f * throttle;
+    //m_particles->m_config.lifetime.max_value = 0.02f + 0.02f * m_airplane->throttle;
     m_particles->update(dt, m_cameras[m_cameratype]->get_world_position(), m_airplane->velocity);
 #endif
   }
+
+  //landing_gear->visible = false;
+  //m_falcon->visible = false;
 
   m_controller.update(*m_cameras[0], m_falcon->get_position(), dt);
 

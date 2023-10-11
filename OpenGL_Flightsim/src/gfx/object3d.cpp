@@ -17,8 +17,9 @@ void Object3D::draw(RenderContext& context)
     draw_self(context);
 
     if (wireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+    draw_children(context);
   }
-  draw_children(context);
 }
 
 void Object3D::draw_self(RenderContext& context) {}
@@ -113,7 +114,7 @@ glm::mat4 Object3D::get_transform() const
 {
   // this function must only be called after updating the transform
   if (m_dirty) {
-    //assert(!m_dirty);
+    // assert(!m_dirty);
   }
   return m_transform;
 }
