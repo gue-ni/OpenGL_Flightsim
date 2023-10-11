@@ -156,7 +156,11 @@ xcopy /y /i /s $(ProjectDir)..\lib\glew-2.2.0\bin\Release\x64\*.dll $(OutDir)</C
     <ClCompile Include="lib\imgui\imgui_widgets.cpp" />
     <ClCompile Include="src\app.cpp" />
     <ClCompile Include="src\gfx\controller.cpp" />
+    <ClCompile Include="src\gfx\geometry.cpp" />
     <ClCompile Include="src\gfx\gl.cpp" />
+    <ClCompile Include="src\gfx\line2d.cpp" />
+    <ClCompile Include="src\gfx\material.cpp" />
+    <ClCompile Include="src\gfx\mesh.cpp" />
     <ClCompile Include="src\gfx\object3d.cpp" />
     <ClCompile Include="src\gfx\particles.cpp" />
     <ClCompile Include="src\gfx\util.cpp" />
@@ -185,6 +189,11 @@ xcopy /y /i /s $(ProjectDir)..\lib\glew-2.2.0\bin\Release\x64\*.dll $(OutDir)</C
     <None Include="shaders\skybox.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="mesh.h" />
+    <ClInclude Include="src\gfx\geometry.h" />
+    <ClInclude Include="src\gfx\line2d.h" />
+    <ClInclude Include="src\gfx\material.h" />
+    <ClInclude Include="src\gfx\mesh.h" />
     <ClInclude Include="src\gfx\particles.h" />
     <ClInclude Include="src\ai.h" />
     <ClInclude Include="src\app.h" />

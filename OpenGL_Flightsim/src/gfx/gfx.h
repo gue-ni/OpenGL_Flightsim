@@ -19,6 +19,9 @@
 #include "object3d.h"
 #include "util.h"
 #include "particles.h"
+#include "material.h"
+#include "geometry.h"
+#include "line2d.h"
 
 namespace gfx
 {
@@ -36,8 +39,6 @@ class BaseGeometry;
 class Material;
 class ShaderCache;
 
-using GeometryPtr = std::shared_ptr<BaseGeometry>;
-using MaterialPtr = std::shared_ptr<Material>;
 using MeshPtr = std::shared_ptr<Mesh>;
 
 GeometryPtr make_cube_geometry(float size);
@@ -85,74 +86,6 @@ class Light : public Object3D
   glm::mat4 light_space_matrix();
 };
 
-class BaseGeometry
-{
- public:
-  enum DrawType { DRAW_ARRAYS, DRAW_ELEMENTS, /* TODO: instanced */ };
-
-  // stride
-  enum VertexLayout : int {
-    POS = 3,         // pos
-    POS_UV = 5,      // pos, uv
-    POS_NORM = 6,    // pos, normal
-    POS_NORM_UV = 8  // pos, normal, uv
-  };
-
-  BaseGeometry(DrawType type) : draw_type(type) {}
-
-  GLsizei count;
-  gl::VertexArrayObject vao;
-  const DrawType draw_type;
-};
-
-class Geometry : public BaseGeometry
-{
- public:
-  Geometry(const std::vector<float>& vertices, const VertexLayout& layout);
-  Geometry(const std::vector<gl::Vertex>& vertices);
-
-  static GeometryPtr load(const std::string& path);
-  static GeometryPtr quad();
-  static GeometryPtr plane();
-  static GeometryPtr box();
-
- private:
-  gl::VertexBuffer vbo;
-};
-
-class IndexedGeometry : public BaseGeometry
-{
- public:
-  IndexedGeometry(const std::vector<gl::Vertex>& vertices, const std::vector<GLuint>& indices);
-
- private:
-  gl::VertexBuffer vbo;
-  gl::ElementBuffer ebo;
-};
-
-class Material
-{
- public:
-  float shininess = 0.0f;
-  float opacity = 1.0f;
-
-  Material(const std::string& shader_name, const gl::TexturePtr& texture)
-      : m_shader_name(shader_name), m_texture(texture)
-  {
-  }
-
-  Material(const std::string& shader_name, const std::string& texture)
-      : m_shader_name(shader_name), m_texture(gl::Texture::load(texture, {.flip_vertically = true}))
-  {
-  }
-
-  gl::TexturePtr get_texture() const { return m_texture; }
-  std::string& get_shader_name() { return m_shader_name; }
-
- private:
-  gl::TexturePtr m_texture = nullptr;
-  std::string m_shader_name;
-};
 
 class Mesh : public Object3D
 {
@@ -210,25 +143,6 @@ class Billboard : public Object3D
   gl::ElementBuffer ebo;
 };
 
-using Line = std::tuple<glm::vec2, glm::vec2>;
-
-// context for drawing 2d lines 
-class Line2d : public Object3D 
-{
-public:
-  Line2d();
-  void draw_self(RenderContext& context) override;
-  void batch_line(const Line& line);
-  void batch_line(const Line& line, float angle);
-  void batch_line(const Line& line, const glm::mat4& matrix);
-  void batch_line(float width, const glm::mat4& matrix);
-  void batch_circle(const glm::vec2& center, float radius, int points = 16);
-  void batch_clear();
-private:
-  std::vector<Line> m_lines;
-  gl::VertexArrayObject vao;
-  gl::VertexBuffer vbo;
-};
 
 class Skybox : public Mesh
 {
