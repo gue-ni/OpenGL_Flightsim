@@ -205,10 +205,10 @@ void App::init_airplane()
                                         .emitter_cone = 0.01f,
                                         .speed = gfx::Range(100.0f, 150.0f),
                                         .size = gfx::Range(0.1f, 0.25f),
-                                        .lifetime = gfx::Range(0.01f, 0.1f),
+                                        .lifetime = gfx::Range(0.01f, 0.03f),
                                         .color = gfx::Range(glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f))};
   m_particles = new gfx::ParticleSystem(config);
-  m_particles->set_position(glm::vec3(-6.0f, 0.0f, 0.0f));
+  m_particles->set_position(glm::vec3(-5.5f, 0.0f, 0.0f));
   m_particles->set_rotation(glm::vec3(0.0f, 0.0f, glm::radians(90.0f)));
   m_falcon->add(m_particles);
 #endif
@@ -519,13 +519,12 @@ void App::game_loop(float dt)
 #endif
 
     m_screen->visible = (m_cameratype != 0);
-
     m_hud->batch_clear();
-  }
 
 #if PARTICLES
-  m_particles->update(dt, m_airplane->velocity);
+    m_particles->update(dt, m_cameras[m_cameratype]->get_world_position(), m_airplane->velocity);
 #endif
+  }
 
   m_controller.update(*m_cameras[0], m_falcon->get_position(), dt);
 

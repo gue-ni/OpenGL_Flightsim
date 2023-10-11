@@ -52,9 +52,9 @@ int ParticleSystem::find_unused_particle()
   return 0;
 }
 
-void ParticleSystem::update(float dt, const glm::vec3& emitter_velocity)
+void ParticleSystem::update(float dt, const glm::vec3& camera_position, const glm::vec3& emitter_velocity)
 {
-  int new_particles = 25;
+  int new_particles = 50;
 
   glm::vec3 world_position = get_world_position();
 
@@ -71,11 +71,8 @@ void ParticleSystem::update(float dt, const glm::vec3& emitter_velocity)
 
     // this needs to be actually relative to the speed that the emitter is moving
     float speed =  m_config.speed.value();
-#if 1
+
     glm::vec3 direction = vector_in_hemisphere(m_config.emitter_cone);
-#else
-    glm::vec3 direction = glm::vec3(-1.0f, 0.0f, 0.0f);
-#endif
 
     auto velocity = rotation * (direction * speed);
 
@@ -100,6 +97,7 @@ void ParticleSystem::update(float dt, const glm::vec3& emitter_velocity)
       particle.position += particle.velocity * dt;
       particle.size *= 0.99f;
       particle.color = glm::vec4(m_config.color.value(t), t);
+      particle.distance_from_camera = glm::length(particle.position - camera_position);
       m_particle_count++;
     } else {
       particle.distance_from_camera = -1.0f;
@@ -138,9 +136,12 @@ void ParticleSystem::draw_self(RenderContext& context)
 
   // m_texture->bind(5);
 
-  glEnable(GL_BLEND);
-  //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  //glDepthMask(GL_TRUE);
+  // get currently set blend func
+  GLint blendSrc, blendDst;
+  glGetIntegerv(GL_BLEND_SRC, &blendSrc);
+  glGetIntegerv(GL_BLEND_DST, &blendDst);
+
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   shader->bind();
   shader->set_uniform("u_View", view);
@@ -178,10 +179,10 @@ void ParticleSystem::draw_self(RenderContext& context)
   m_vao.unbind();
   shader->unbind();
 
-
-  //glDepthMask(GL_TRUE);
-  //glDisable(GL_BLEND);
+  // reset blend func
+  glBlendFunc(blendSrc, blendDst);
 
 }
+
 
 }  // namespace gfx

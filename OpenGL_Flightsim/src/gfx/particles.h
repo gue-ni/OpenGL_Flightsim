@@ -40,7 +40,7 @@ class ParticleSystem : public Object3D
 
   ParticleSystem(const Config& config);
   void draw_self(RenderContext& context) override;
-  void update(float dt, const glm::vec3& emitter_velocity = glm::vec3(0.0f));
+  void update(float dt, const glm::vec3& camera_position, const glm::vec3& emitter_velocity = glm::vec3(0.0f));
 
  private:
   int find_unused_particle();
@@ -56,6 +56,6 @@ class ParticleSystem : public Object3D
   std::vector<Particle> m_particles;
   std::vector<glm::vec4> m_position_buffer;  // x,y,z,size
   std::vector<glm::vec4> m_color_buffer;     // rgba
-  // gl::TexturePtr m_texture;
+  gl::TexturePtr m_texture = nullptr;
 };
 }  // namespace gfx
