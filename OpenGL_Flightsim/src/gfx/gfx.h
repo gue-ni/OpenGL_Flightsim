@@ -22,10 +22,11 @@
 #include "material.h"
 #include "geometry.h"
 #include "line2d.h"
+#include "billboard.h"
+#include "mesh.h"
 
 namespace gfx
 {
-
 
 typedef glm::vec3 RGB;
 typedef glm::vec4 RGBA;
@@ -87,24 +88,6 @@ class Light : public Object3D
 };
 
 
-class Mesh : public Object3D
-{
- public:
-  Mesh(const GeometryPtr& geometry, const MaterialPtr& material);
-
-  MaterialPtr get_material() { return m_material; }
-  GeometryPtr get_geometry() { return m_geometry; }
-
-  // TODO: return shared ptr
-  static Object3D* load(const std::string& path, const std::string& texture);
-
-  static Object3D* load_mesh(const std::string& path);
-
- protected:
-  MaterialPtr m_material;
-  GeometryPtr m_geometry;
-  void draw_self(RenderContext& context) override;
-};
 
 class ShaderCache
 {
@@ -117,39 +100,17 @@ class ShaderCache
 };
 
 // TODO
-class ResourceManager 
+class ResourceManager
 {
-public:
+ public:
   static gl::ShaderPtr get_shader(const std::string& path);
   static gl::TexturePtr get_texture(const std::string& path);
-private:
+
+ private:
   static std::unordered_map<std::string, gl::ShaderPtr> m_shaders;
   static std::unordered_map<std::string, gl::TexturePtr> m_textures;
 };
 
-class Billboard : public Object3D
-{
- public:
-  Billboard(gl::TexturePtr sprite, glm::vec3 color = glm::vec3(1.0f));
-  void draw_self(RenderContext& context) override;
-  Object3D& add(Object3D* child) = delete;
-
- private:
-  glm::vec3 color;
-  gl::Shader shader;
-  gl::TexturePtr texture;
-  gl::VertexArrayObject vao;
-  gl::VertexBuffer vbo;
-  gl::ElementBuffer ebo;
-};
-
-
-class Skybox : public Mesh
-{
- public:
-  Skybox(const std::array<std::string, 6>& faces);
-  Object3D& add(Object3D* child) = delete;
-};
 
 struct RenderTargetBase {
   RenderTargetBase(int w, int h) : width(w), height(h) {}

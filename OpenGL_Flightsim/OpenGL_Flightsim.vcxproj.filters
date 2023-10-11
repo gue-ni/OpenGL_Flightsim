@@ -75,6 +75,9 @@
     <ClCompile Include="src\gfx\line2d.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\gfx\billboard.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\basic.frag" />
@@ -183,6 +186,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\gfx\line2d.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\gfx\billboard.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
