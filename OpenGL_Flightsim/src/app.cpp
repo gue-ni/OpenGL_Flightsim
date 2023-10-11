@@ -107,7 +107,7 @@ void App::init()
   m_cameras[2] = new gfx::Camera(glm::radians(45.0f), aspect_ratio, near, far);
   m_scene->add(m_cameras[2]);
 
-  m_cameratype = 0;
+  m_selected_camera = 0;
 
 #if 1
 #endif
@@ -143,31 +143,31 @@ void App::init()
   glm::vec3 offset(-20.0f, 4.5f, 0.0f);
   m_camera_attachment->set_position(offset);
   m_camera_attachment->set_rotation({0, glm::radians(-90.0f), 0.0f});
-  m_falcon->add(m_camera_attachment);
+  m_airplane_model->add(m_camera_attachment);
 
   // cockpit camera
   m_cameras[1]->set_position({6.5f, 0.8f, 0.0f});
   m_cameras[1]->set_rotation(look_forward);
-  m_falcon->add(m_cameras[1]);
+  m_airplane_model->add(m_cameras[1]);
 
 #if GROUND_START
-  m_airplane->position = glm::vec3(0, height + 10, 0);
-  m_airplane->velocity = glm::vec3(0, 0, 0);
-  m_airplane->rotation = glm::quat(glm::vec3(0.1, 0, 0.1));
+  m_flightmodel->position = glm::vec3(0, height + 10, 0);
+  m_flightmodel->velocity = glm::vec3(0, 0, 0);
+  m_flightmodel->rotation = glm::quat(glm::vec3(0.1, 0, 0.1));
   // m_airplane->set_speed_and_attitude(150, glm::vec3(glm::radians(0.0f), glm::radians(0.0f), glm::radians(35.0f)));
 #else
-  m_airplane->position = glm::vec3(-1500.0f, height + 100, 0);
-  m_airplane->set_speed_and_attitude(phi::units::meter_per_second(350.0f), glm::radians(glm::vec3(0, 0, 0)));
+  m_flightmodel->position = glm::vec3(-1500.0f, height + 100, 0);
+  m_flightmodel->set_speed_and_attitude(phi::units::meter_per_second(350.0f), glm::radians(glm::vec3(0, 0, 0)));
 #endif
 
-  m_cameras[2]->set_transform(m_airplane->position - offset, glm::quat(look_forward));
+  m_cameras[2]->set_transform(m_flightmodel->position - offset, glm::quat(look_forward));
 
   gfx::Light* light = new gfx::Light(glm::vec3(1.0f));
   light->transform_flags = OBJ3D_TRANSFORM;
   light->set_position(glm::vec3(2, 8, 2));
-  m_falcon->add(light);
+  m_airplane_model->add(light);
 
-  m_falcon->add(m_screen);
+  m_airplane_model->add(m_screen);
 
   // setup all transforms
   m_scene->update_transform();
@@ -188,16 +188,16 @@ void App::init_airplane()
   // m_falcon = new gfx::Mesh(tmp2, material);
   // m_falcon = gfx::Mesh::load_mesh(glb);
   // m_falcon = new gfx::Mesh(geometry, material);
-  m_falcon = gfx::Mesh::load(obj, jpg);
-  auto c = static_cast<gfx::Mesh*>(m_falcon->children[3]);
+  m_airplane_model = gfx::Mesh::load(obj, jpg);
+  auto c = static_cast<gfx::Mesh*>(m_airplane_model->children[3]);
   c->get_material()->shininess = 1.0f;
   c->get_material()->opacity = 0.25f;
-  m_falcon->receive_shadow = false;
-  m_falcon->traverse([](gfx::Object3D* obj) {
+  m_airplane_model->receive_shadow = false;
+  m_airplane_model->traverse([](gfx::Object3D* obj) {
     obj->receive_shadow = false;
     return true;
   });
-  m_scene->add(m_falcon);
+  m_scene->add(m_airplane_model);
 
 #if PARTICLES
   // afterburner
@@ -214,7 +214,7 @@ void App::init_airplane()
   m_particles = new gfx::ParticleSystem(config, "assets/textures/particle.png");
   m_particles->set_position(glm::vec3(-5.0f, 0.0f, 0.0f));
   m_particles->set_rotation(glm::vec3(0.0f, 0.0f, glm::radians(90.0f)));
-  m_falcon->add(m_particles);
+  m_airplane_model->add(m_particles);
 #endif
 
   const float mass = 10000.0f;
@@ -244,12 +244,12 @@ void App::init_airplane()
   LandingGear* collider = new LandingGear(glm::vec3(4.0f, -1.8f, 0.0f), glm::vec3(-1.0f, -1.8f, +wheelbase),
                                           glm::vec3(-1.0f, -1.8f, -wheelbase));
 
-  m_airplane = new Airplane(mass, inertia, wings, {Engine(thrust)}, collider);
+  m_flightmodel = new Airplane(mass, inertia, wings, {Engine(thrust)}, collider);
 
 #if RENDER_LANDING_GEAR
-  landing_gear = new gfx::Object3D();
-  std::cout << "landing gear id = " << landing_gear->id << std::endl;
-  m_falcon->add(landing_gear);
+  m_landing_gear = new gfx::Object3D();
+  std::cout << "landing gear id = " << m_landing_gear->id << std::endl;
+  m_airplane_model->add(m_landing_gear);
 
   for (auto wheel : collider->wheels()) {
     gfx::Object3D* obj = new gfx::Object3D();
@@ -257,7 +257,7 @@ void App::init_airplane()
     auto wheel_mesh = gfx::Mesh::load("assets/models/wheel.obj", "assets/textures/container.jpg");
     wheel_mesh->visible = true;
     obj->add(wheel_mesh);
-    landing_gear->add(obj);
+    m_landing_gear->add(obj);
   }
 #endif
 }
@@ -329,7 +329,7 @@ void App::event_keydown(SDL_Keycode key)
       m_quit = true;
       break;
     case SDLK_o:
-      m_cameratype = (m_cameratype + 1) % m_cameras.size();
+      m_selected_camera = (m_selected_camera + 1) % m_cameras.size();
       break;
     case SDLK_i:
       m_clipmap->wireframe = !m_clipmap->wireframe;
@@ -338,7 +338,7 @@ void App::event_keydown(SDL_Keycode key)
       m_paused = !m_paused;
       break;
     case SDLK_g:
-      landing_gear->visible = !landing_gear->visible;
+      m_landing_gear->visible = !m_landing_gear->visible;
       break;
   }
 }
@@ -352,16 +352,16 @@ void App::event_joyaxis(uint8_t axis, int16_t value)
 {
   switch (axis) {
     case 0:
-      m_airplane->joystick.x = std::pow(scale(value), 3.0f);
+      m_flightmodel->joystick.x = std::pow(scale(value), 3.0f);
       break;
     case 1:
-      m_airplane->joystick.z = std::pow(scale(value), 3.0f);
+      m_flightmodel->joystick.z = std::pow(scale(value), 3.0f);
       break;
     case 2:
-      m_airplane->throttle = (scale(value) + 1.0f) / 2.0f;
+      m_flightmodel->throttle = (scale(value) + 1.0f) / 2.0f;
       break;
     case 4:
-      m_airplane->joystick.y = std::pow(scale(value), 3.0f);
+      m_flightmodel->joystick.y = std::pow(scale(value), 3.0f);
       break;
     default:
       break;
@@ -391,17 +391,17 @@ void App::draw_imgui(float dt)
   ImGui::SetNextWindowSize(ImVec2(145, 135));
   ImGui::SetNextWindowBgAlpha(0.35f);
   ImGui::Begin("Flightsim", nullptr, window_flags);
-  ImGui::Text("ALT:   %.0f m", m_airplane->position.y);
-  ImGui::Text("SPD:   %.0f km/h", phi::units::kilometer_per_hour(m_airplane->get_speed()));
-  ImGui::Text("IAS:   %.0f km/h", phi::units::kilometer_per_hour(m_airplane->get_ias()));
-  ImGui::Text("THR:   %.0f %%", std::abs(m_airplane->throttle * 100.0f));
-  ImGui::Text("G:     %.1f", m_airplane->get_g());
-  ImGui::Text("AoA:   %.2f", m_airplane->get_aoa());
+  ImGui::Text("ALT:   %.0f m", m_flightmodel->position.y);
+  ImGui::Text("SPD:   %.0f km/h", phi::units::kilometer_per_hour(m_flightmodel->get_speed()));
+  ImGui::Text("IAS:   %.0f km/h", phi::units::kilometer_per_hour(m_flightmodel->get_ias()));
+  ImGui::Text("THR:   %.0f %%", std::abs(m_flightmodel->throttle * 100.0f));
+  ImGui::Text("G:     %.1f", m_flightmodel->get_g());
+  ImGui::Text("AoA:   %.2f", m_flightmodel->get_aoa());
   ImGui::Text("FPS:   %.1f", 1.0f / dt);
   ImGui::End();
 
-  auto rotation1 = glm::degrees(m_airplane->get_attitude());
-  auto rotation2 = glm::degrees(m_airplane->get_euler_angles());
+  auto rotation1 = glm::degrees(m_flightmodel->get_attitude());
+  auto rotation2 = glm::degrees(m_flightmodel->get_euler_angles());
 
   ImGui::SetNextWindowPos(ImVec2(180, 10));
   ImGui::SetNextWindowSize(ImVec2(280, 50));
@@ -414,9 +414,9 @@ void App::draw_imgui(float dt)
 
 void App::draw_hud()
 {
-  glm::vec3 v = glm::normalize(m_airplane->get_body_velocity());
+  glm::vec3 v = glm::normalize(m_flightmodel->get_body_velocity());
 
-  if (m_airplane->get_speed() < 10.0f) {
+  if (m_flightmodel->get_speed() < 10.0f) {
     v = glm::vec3(0);
   }
 
@@ -443,7 +443,7 @@ void App::draw_hud()
   m_hud->batch_line({{0, +r}, {0, +s}});
   m_hud->batch_line({{0, -r}, {0, -s}});
 
-  auto rotation = m_airplane->get_attitude();
+  auto rotation = m_flightmodel->get_attitude();
   float roll = rotation.x, yaw = rotation.y, pitch = rotation.z;
 
   float w1 = 0.20f;
@@ -482,11 +482,11 @@ void App::draw_hud()
 void App::game_loop(float dt)
 {
   if (!m_paused) {
-    m_airplane->update(dt);
+    m_flightmodel->update(dt);
 
 #if 1
     phi::Collision collision;
-    if (test_collision(m_airplane, m_terrain, &collision)) {
+    if (test_collision(m_flightmodel, m_terrain, &collision)) {
 #if 0
       if (!m_breaks)
         collision.kinetic_friction_coeff = 0;
@@ -496,13 +496,13 @@ void App::game_loop(float dt)
 #endif
 
     // airplane model
-    m_falcon->set_transform(m_airplane->position, m_airplane->rotation);
+    m_airplane_model->set_transform(m_flightmodel->position, m_flightmodel->rotation);
 
 #if 0
     // control surfaces
     glm::vec3 r;
     r = m_falcon->children[2]->get_rotation();
-   m_falcon->children[2]->set_rotation(glm::vec3(r.x, r.y, phi::PI + m_airplane->joystick.z * 0.1f));
+   m_falcon->children[2]->set_rotation(glm::vec3(r.x, r.y, phi::PI + m_flightmodel->joystick.z * 0.1f));
 
     r = m_falcon->children[6]->get_rotation();
     //m_falcon->children[6]->set_rotation(glm::vec3(r.x, r.y, -m_airplane->joystick.x * 0.5f));
@@ -521,23 +521,23 @@ void App::game_loop(float dt)
     m_hud_renderer->render(&c, m_hud, m_hud_target);
 #endif
 
-    m_screen->visible = (m_cameratype != 0);
+    m_screen->visible = (m_selected_camera != 0);
     m_hud->batch_clear();
 
 #if PARTICLES
-    float throttle = glm::clamp(m_airplane->throttle, 0.01f, 1.0f);
+    float throttle = glm::clamp(m_flightmodel->throttle, 0.05f, 1.0f);
     m_particles->m_config.lifetime.min_value = 0.005f + 0.02f * throttle;
     m_particles->m_config.lifetime.max_value = 0.007f + 0.03f * throttle;
-    m_particles->update(dt, m_cameras[m_cameratype]->get_world_position(), m_airplane->velocity);
+    m_particles->update(dt, m_cameras[m_selected_camera]->get_world_position(), m_flightmodel->velocity);
 #endif
   }
 
   // landing_gear->visible = false;
   // m_falcon->visible = false;
 
-  m_controller.update(*m_cameras[0], m_falcon->get_position(), dt);
+  m_controller.update(*m_cameras[0], m_airplane_model->get_position(), dt);
 
-  m_renderer->render(m_cameras[m_cameratype], m_scene);
+  m_renderer->render(m_cameras[m_selected_camera], m_scene);
 }
 
 int App::run()

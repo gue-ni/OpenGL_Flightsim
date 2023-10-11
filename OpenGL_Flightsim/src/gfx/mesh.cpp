@@ -199,7 +199,7 @@ Object3D* Mesh::load(const std::string& path, const std::string& texture)
     return nullptr;
   }
 
-#if 1
+#if 0
   printf("path = %s\n", path.c_str());
   printf("# of vertices  = %d\n", (int)(attributes.vertices.size()) / 3);
   printf("# of normals   = %d\n", (int)(attributes.normals.size()) / 3);

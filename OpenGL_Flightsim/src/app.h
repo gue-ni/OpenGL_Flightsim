@@ -27,7 +27,7 @@ class App
   bool m_breaks = false;
   bool m_orbitcamera = false;
 
-  int m_cameratype = 0;
+  int m_selected_camera = 0;
 
   unsigned int m_frames = 0;
   float m_seconds = 0.0f;
@@ -45,23 +45,22 @@ class App
   gfx::Renderer* m_renderer;
   gfx::Mesh* m_screen;
 
-  gfx::Renderer* m_hud_renderer;
   gfx::Line2d* m_hud;
+  gfx::Renderer* m_hud_renderer;
   gfx::RenderTarget* m_hud_target;
 
   gfx::OrbitController m_controller;
 
+  gfx::Object3D* m_airplane_model;
   gfx::Object3D* m_camera_attachment;
   gfx::Object3D* m_runway;
-  gfx::Object3D* landing_gear;
-
-  // physics
-  Airplane* m_airplane;
-  phi::RigidBody* m_terrain;
-  Clipmap* m_clipmap;
+  gfx::Object3D* m_landing_gear;
   gfx::ParticleSystem* m_particles;
 
-  gfx::Object3D* m_falcon;
+  // physics
+  Airplane* m_flightmodel;
+  phi::RigidBody* m_terrain;
+  Clipmap* m_clipmap;
 
   void init_airplane();
   void init_flightmodel();

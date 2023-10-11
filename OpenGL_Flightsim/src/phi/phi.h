@@ -297,20 +297,6 @@ inline float normal_force(float mass, const glm::vec3& up)
 
 };  // namespace calc
 
-struct Logger {
-  std::ofstream* file = nullptr;
-  float timer = 0.0f, time = 0.0f;
-  const float intervall = 1.0f / 10.0f;
-
-  Logger(const std::string& path);
-
-  static std::string to_csv(const glm::vec3& v);
-
-  static std::string to_csv(const glm::quat& q);
-
-  void log(const RigidBody* rb, float dt);
-};
-
 // default rigid body is a sphere with radius 1 meter and a mass of 100 kg
 const float DEFAULT_RB_MASS = 100.0f;
 const float INFINITE_RB_MASS = std::numeric_limits<float>::max();
@@ -324,9 +310,6 @@ class RigidBody : public Transform
   glm::vec3 m_force{};   // force vector in world space
   glm::vec3 m_torque{};  // torque vector in body space
   glm::vec3 m_previous_force{}, m_previous_torque{};
-
-  Logger* m_logger = nullptr;
-  bool enable_logging = false;
 
  public:
   struct Params {
@@ -359,11 +342,6 @@ class RigidBody : public Transform
         active(true),
         collider(params.collider)
   {
-  }
-
-  RigidBody(const Params& params, const std::string& outfile_path) : RigidBody(params)
-  {
-    m_logger = new Logger(outfile_path);
   }
 
   // get velocity of relative point in body space
@@ -498,10 +476,6 @@ class RigidBody : public Transform
       angular_velocity += inverse_inertia * (m_torque - glm::cross(angular_velocity, inertia * angular_velocity)) * dt;
       rotation += rotation * glm::quat(0.0f, angular_velocity) * 0.5f * dt;
       rotation = glm::normalize(rotation);
-    }
-
-    if (m_logger) {
-      m_logger->log(this, dt);
     }
 
     // reset accumulators

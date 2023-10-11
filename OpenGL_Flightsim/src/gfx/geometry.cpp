@@ -173,8 +173,8 @@ void push_back(std::vector<float>& vector, const glm::vec3& pos, const glm::vec3
   push_back(vector, uv);
 }
 
-GeometryPtr Geometry::plane(int x_elements, int y_elements, float size) { 
-  
+GeometryPtr Geometry::plane(int x_elements, int y_elements, float size)
+{
   const float width = size, height = size;
 
   std::vector<float> vertices;
@@ -204,14 +204,11 @@ GeometryPtr Geometry::plane(int x_elements, int y_elements, float size) {
   }
 
   return std::make_shared<Geometry>(vertices, Geometry::POS_NORM_UV);
-
-
-
 }
 
-GeometryPtr Geometry::box(float size) { 
-  
-    float s = size / 2;
+GeometryPtr Geometry::box(float size)
+{
+  float s = size / 2;
 
   // clang-format off
   std::vector<float> vertices = {
@@ -266,10 +263,6 @@ GeometryPtr Geometry::box(float size) {
   };
   // clang-format on
   return std::make_shared<Geometry>(vertices, Geometry::POS_NORM_UV);
-
-  
-  
-
 }
 
 }  // namespace gfx
