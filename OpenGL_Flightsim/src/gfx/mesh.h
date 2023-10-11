@@ -23,6 +23,7 @@ class Mesh : public Object3D
   void draw_self(RenderContext& context) override;
 };
 
+
 class Skybox : public Mesh
 {
  public:

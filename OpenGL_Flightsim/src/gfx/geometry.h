@@ -2,9 +2,8 @@
 
 #include "gl.h"
 
-namespace gfx {
-
-
+namespace gfx
+{
 
 class BaseGeometry
 {
@@ -26,7 +25,6 @@ class BaseGeometry
   const DrawType draw_type;
 };
 
-
 using GeometryPtr = std::shared_ptr<BaseGeometry>;
 
 class Geometry : public BaseGeometry
@@ -35,10 +33,9 @@ class Geometry : public BaseGeometry
   Geometry(const std::vector<float>& vertices, const VertexLayout& layout);
   Geometry(const std::vector<gl::Vertex>& vertices);
 
-  static GeometryPtr load(const std::string& path);
   static GeometryPtr quad();
-  static GeometryPtr plane();
-  static GeometryPtr box();
+  static GeometryPtr plane(int x_elements, int y_elements, float size);
+  static GeometryPtr box(float size);
 
  private:
   gl::VertexBuffer vbo;
@@ -54,6 +51,4 @@ class IndexedGeometry : public BaseGeometry
   gl::ElementBuffer ebo;
 };
 
-
-
-}
+}  // namespace gfx

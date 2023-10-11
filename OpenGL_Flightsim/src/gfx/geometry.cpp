@@ -1,10 +1,7 @@
 
 #include "geometry.h"
 
-//#define TINYOBJLOADER_IMPLEMENTATION
-//#include "../../lib/tiny_obj_loader.h"
-
-
+#include "../../lib/tiny_obj_loader.h"
 
 namespace gfx
 {
@@ -81,9 +78,9 @@ IndexedGeometry::IndexedGeometry(const std::vector<gl::Vertex>& vertices, const 
   vao.unbind();
 }
 
+#if 0
 GeometryPtr Geometry::load(const std::string& path)
 {
-#if 0
   std::vector<gl::Vertex> vertices;
 
   std::istringstream source(load_text_file(path));
@@ -138,25 +135,141 @@ GeometryPtr Geometry::load(const std::string& path)
   }
 
   return std::make_shared<Geometry>(vertices);
-#else
-  return nullptr;
-#endif
 }
+#endif
 
 GeometryPtr Geometry::quad()
 {
-  const std::vector<gl::Vertex> vertices = {
+  const std::vector<gl::Vertex> quad_vertices = {
+      {{-1, 1, 0}, {0, 0, 1}, {0, 1}},   // top left
+      {{-1, -1, 0}, {0, 0, 1}, {0, 0}},  // bottom left
+      {{1, 1, 0}, {0, 0, 1}, {1, 1}},    // top right
 
+      {{1, 1, 0}, {0, 0, 1}, {1, 1}},    // top right
+      {{-1, -1, 0}, {0, 0, 1}, {0, 0}},  // bottom left
+      {{1, -1, 0}, {0, 0, 1}, {1, 0}},   // bottom right
   };
-  return std::make_shared<Geometry>(vertices);
+
+  return std::make_shared<Geometry>(quad_vertices);
 }
 
-GeometryPtr Geometry::plane() { return nullptr; }
-
-GeometryPtr Geometry::box()
+void push_back(std::vector<float>& vector, const glm::vec3& v)
 {
-  const std::vector<gl::Vertex> vertices = {};
-  return std::make_shared<Geometry>(vertices);
+  vector.push_back(v.x);
+  vector.push_back(v.y);
+  vector.push_back(v.z);
+}
+
+void push_back(std::vector<float>& vector, const glm::vec2& v)
+{
+  vector.push_back(v.x);
+  vector.push_back(v.y);
+}
+
+void push_back(std::vector<float>& vector, const glm::vec3& pos, const glm::vec3& normal, const glm::vec2& uv)
+{
+  push_back(vector, pos);
+  push_back(vector, normal);
+  push_back(vector, uv);
+}
+
+GeometryPtr Geometry::plane(int x_elements, int y_elements, float size) { 
+  
+  const float width = size, height = size;
+
+  std::vector<float> vertices;
+
+  glm::vec3 normal(0.0f, 1.0f, 0.0f);
+
+  for (int y = 0; y < y_elements; y++) {
+    for (int x = 0; x < x_elements; x++) {
+      auto bottom_left = glm::vec3((x + 0) * width, 0.0f, (y + 0) * height);
+      auto bottom_right = glm::vec3((x + 1) * width, 0.0f, (y + 0) * height);
+      auto top_left = glm::vec3((x + 0) * width, 0.0f, (y + 1) * height);
+      auto top_right = glm::vec3((x + 1) * width, 0.0f, (y + 1) * height);
+
+      auto tex_coord = glm::vec2(static_cast<float>(x) / static_cast<float>(x_elements),
+                                 static_cast<float>(y) / static_cast<float>(y_elements));
+
+      // triangle 1
+      push_back(vertices, top_right, normal, glm::vec2(1.0f, 1.0f));
+      push_back(vertices, bottom_right, normal, glm::vec2(1, 0.0f));
+      push_back(vertices, bottom_left, normal, glm::vec2(0.0f, 0.0f));
+
+      // triangle 2
+      push_back(vertices, bottom_left, normal, glm::vec2(0.0f, 0.0f));
+      push_back(vertices, top_left, normal, glm::vec2(0.0f, 1.0f));
+      push_back(vertices, top_right, normal, glm::vec2(1.0f, 1.0f));
+    }
+  }
+
+  return std::make_shared<Geometry>(vertices, Geometry::POS_NORM_UV);
+
+
+
+}
+
+GeometryPtr Geometry::box(float size) { 
+  
+    float s = size / 2;
+
+  // clang-format off
+  std::vector<float> vertices = {
+      // left
+      -s, -s, -s, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,
+      s, -s, -s, 0.0f, 0.0f,-1.0f,1.0f,0.0f,
+      s,s,-s,0.0f,0.0f,-1.0f,1.0f,1.0f,
+      s,s,-s,0.0f,0.0f,-1.0f,1.0f,1.0f,
+      -s,s,-s,0.0f,0.0f,-1.0f,0.0f,1.0f,
+      -s,-s,-s,0.0f,0.0f,-1.0f,0.0f,0.0f,
+
+      // right
+      -s,-s,s,0.0f,0.0f,1.0f,0.0f,0.0f,
+      s,-s,s,0.0f,0.0f,1.0f,1.0f,0.0f,
+      s,s,s,0.0f,0.0f,1.0f,1.0f,1.0f,
+      s,s,s,0.0f,0.0f,1.0f,1.0f,1.0f,
+      -s,s,s,0.0f,0.0f,1.0f,0.0f,1.0f,
+      -s,-s,s,0.0f,0.0f,1.0f,0.0f,0.0f,
+
+      // backward
+      -s,s,s,-1.0f,0.0f,0.0f,0.0f,0.0f,
+      -s,s,-s,-1.0f,0.0f,0.0f,1.0f,0.0f,
+      -s,-s,-s,-1.0f,0.0f,0.0f,1.0f,1.0f,
+      -s,-s,-s,-1.0f,0.0f,0.0f,1.0f,1.0f,
+      -s,-s,s,-1.0f,0.0f,0.0f,0.0f,1.0f,
+      -s,s,s,-1.0f,0.0f,0.0f,0.0f,0.0f,
+
+      // forward
+      s,s,s,1.0f,0.0f,0.0f,0.0f,0.0f,
+      s,s,-s,1.0f,0.0f,0.0f,1.0f,0.0f,
+      s,-s,-s,1.0f,0.0f,0.0f,1.0f,1.0f,
+      s,-s,-s,1.0f,0.0f,0.0f,1.0f,1.0f,
+      s,-s,s,1.0f,0.0f,0.0f,0.0f,1.0f,
+      s,s,s,1.0f,0.0f,0.0f,0.0f,0.0f,
+
+      // down
+      -s,-s,-s,0.0f,-1.0f,0.0f,0.0f,0.0f,
+      s,-s,-s,0.0f,-1.0f,0.0f,1.0f,0.0f,
+      s,-s,s,0.0f,-1.0f,0.0f,1.0f,1.0f,
+      s,-s,s,0.0f,-1.0f,0.0f,1.0f,1.0f,
+      -s,-s,s,0.0f,-1.0f,0.0f,0.0f,1.0f,
+      -s,-s,-s,0.0f,-1.0f,0.0f,0.0f,0.0f,
+
+      // up
+      -s,s,-s,0.0f,1.0f,0.0f,0.0f,0.0f,
+      s,s,-s,0.0f,1.0f,0.0f,1.0f,0.0f,
+      s,s,s,0.0f,1.0f,0.0f,1.0f,1.0f,
+      s,s,s,0.0f,1.0f,0.0f,1.0f,1.0f,
+      -s,s,s,0.0f,1.0f,0.0f,0.0f,1.0f,
+      -s,s,-s,0.0f,1.0f,0.0f,0.0f,0.0f,
+
+  };
+  // clang-format on
+  return std::make_shared<Geometry>(vertices, Geometry::POS_NORM_UV);
+
+  
+  
+
 }
 
 }  // namespace gfx

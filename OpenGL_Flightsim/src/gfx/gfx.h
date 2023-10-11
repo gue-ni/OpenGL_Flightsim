@@ -42,10 +42,6 @@ class ShaderCache;
 
 using MeshPtr = std::shared_ptr<Mesh>;
 
-GeometryPtr make_cube_geometry(float size);
-GeometryPtr make_plane_geometry(int x_elements, int y_elements, float size);
-GeometryPtr make_quad_geometry();
-
 struct RenderContext {
   bool shadow_pass;
   glm::vec3 fog_color;
@@ -87,8 +83,6 @@ class Light : public Object3D
   glm::mat4 light_space_matrix();
 };
 
-
-
 class ShaderCache
 {
  public:
@@ -98,19 +92,6 @@ class ShaderCache
  private:
   std::unordered_map<std::string, gl::ShaderPtr> m_cache;
 };
-
-// TODO
-class ResourceManager
-{
- public:
-  static gl::ShaderPtr get_shader(const std::string& path);
-  static gl::TexturePtr get_texture(const std::string& path);
-
- private:
-  static std::unordered_map<std::string, gl::ShaderPtr> m_shaders;
-  static std::unordered_map<std::string, gl::TexturePtr> m_textures;
-};
-
 
 struct RenderTargetBase {
   RenderTargetBase(int w, int h) : width(w), height(h) {}
