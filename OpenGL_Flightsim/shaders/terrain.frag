@@ -90,7 +90,6 @@ void main()
 
   //vec4 terrainColor = vec4(calculateDirLight(lightDir, Normal, texture(u_Texture_01, TexCoord).rgb), 1.0);
 
-
   vec3 LightDir = vec3(0,1,0);
   vec3 LightColor = vec3(1.0);
   
@@ -103,9 +102,9 @@ void main()
   FragColor = mix(vec4(Color, 1.0), terrainColor, 0.5);
 #endif
 
-  float farPlane = 150000.0;
-  float coeff = 2.0 / (log2(farPlane + 1.0) / 0.693);
+#if 1
+  float far = 150000.0;
+  float coeff = 2.0 / (log2(far + 1.0) / 0.693);
   gl_FragDepth = log2(FragDepth) * coeff * 0.5;
-
-  //FragColor = terrainColor;
+#endif
 }

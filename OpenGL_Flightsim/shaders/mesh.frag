@@ -91,9 +91,11 @@ void main() {
     return;
   }
 
-  float farPlane = 150000.0;
-  float coeff = 2.0 / (log2(farPlane + 1.0) / 0.693);
+#if 1
+  float far = 150000.0;
+  float coeff = 2.0 / (log2(far + 1.0) / 0.693);
   gl_FragDepth = log2(FragDepth) * coeff * 0.5;
+#endif
 
   vec3 texColor = texture(u_Texture_01, TexCoords).rgb;
   vec3 reflectedColor = texture(u_EnvMap, ReflectedVector).rgb;
@@ -101,4 +103,8 @@ void main() {
   vec3 color = phongLighting(mix(texColor, reflectedColor, u_Shininess), u_LightDir, u_LightColor);
 
   gl_FragColor = vec4(color, u_Opacity);
+
+
+	//gl_FragColor = vec4(vec3(gl_FragCoord.z), 1.0);
+
 }

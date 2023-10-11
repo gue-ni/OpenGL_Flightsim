@@ -138,10 +138,9 @@ void ParticleSystem::draw_self(RenderContext& context)
 
   // m_texture->bind(5);
 
-  // glEnable(GL_BLEND);
-  // glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-  glDisable(GL_DEPTH_TEST);
-  glDepthMask(GL_FALSE);
+  glEnable(GL_BLEND);
+  //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  //glDepthMask(GL_TRUE);
 
   shader->bind();
   shader->set_uniform("u_View", view);
@@ -179,8 +178,10 @@ void ParticleSystem::draw_self(RenderContext& context)
   m_vao.unbind();
   shader->unbind();
 
-  glEnable(GL_DEPTH_TEST);
-  glDepthMask(GL_TRUE);
+
+  //glDepthMask(GL_TRUE);
+  //glDisable(GL_BLEND);
+
 }
 
 }  // namespace gfx
