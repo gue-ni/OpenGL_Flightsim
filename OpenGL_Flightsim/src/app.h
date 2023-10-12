@@ -29,8 +29,8 @@ class App
 
   int m_selected_camera = 0;
 
-  unsigned int m_frames = 0;
   float m_seconds = 0.0f;
+  unsigned int m_frames = 0;
 
   uint64_t last = 0, now = 0;
 
@@ -70,7 +70,6 @@ class App
   void destroy();
 
   void draw_imgui(float dt);
-
   void draw_hud();
 
   void game_loop(float dt);

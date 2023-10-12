@@ -45,9 +45,9 @@ constexpr glm::vec3 rgb(uint32_t hex)
 
 float random_01();
 
-glm::vec3 vector_in_sphere();
-
-glm::vec3 vector_in_hemisphere(float factor = 1.0f);
+glm::vec3 point_on_sphere();
+glm::vec3 point_on_ellipsoid();
+glm::vec3 point_on_hemisphere(float factor = 1.0f);
 
 class Image
 {

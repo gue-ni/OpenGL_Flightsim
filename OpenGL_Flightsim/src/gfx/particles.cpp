@@ -6,14 +6,13 @@ namespace gfx
 
 ParticleSystem::ParticleSystem(const Config& config, const std::string& path)
     : m_config(config),
-      m_max_particle_count(config.count),
+      m_max_particle_count(static_cast<int>(config.particles_per_second * config.lifetime.max_value)),
       m_particles(config.count),
       m_position_buffer(config.count),
       m_color_buffer(config.count),
       m_last_used_particle(0),
       m_particle_count(0),
       m_texture(gl::Texture::load(path))
-
 {
   const std::vector<float> vertex_buffer_data = {
       -0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f, -0.5f, 0.5f, 0.0f, 0.5f, 0.5f, 0.0f,
@@ -54,7 +53,10 @@ int ParticleSystem::find_unused_particle()
 
 void ParticleSystem::update(float dt, const glm::vec3& camera_position, const glm::vec3& emitter_velocity)
 {
-  int new_particles = 200;
+  int new_particles = static_cast<int>(dt * m_config.particles_per_second);
+  new_particles = glm::max(new_particles, 1);
+
+  // std::cout << "new_particles " << new_particles << std::endl;
 
   glm::vec3 world_position = get_world_position();
 
@@ -70,12 +72,12 @@ void ParticleSystem::update(float dt, const glm::vec3& camera_position, const gl
 
     float speed = m_config.speed.value();
 
-    glm::vec3 direction = vector_in_hemisphere(m_config.emitter_cone);
+    glm::vec3 direction = point_on_hemisphere(m_config.emitter_cone);
 
     auto velocity = rotation * (direction * speed);
 
     particle->distance_from_camera = 1.0f;
-    particle->position = world_position + vector_in_sphere() * m_config.emitter_radius;
+    particle->position = world_position + point_on_sphere() * m_config.emitter_radius;
     particle->velocity = emitter_velocity + velocity;  // TODO: fix this
     particle->color = color;
     particle->size = m_config.size.value();

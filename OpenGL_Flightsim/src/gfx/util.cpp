@@ -15,10 +15,9 @@ std::string load_text_file(const std::string& path)
   return buffer.str();
 }
 
-
 float random_01() { return static_cast<float>(rand()) / static_cast<float>(RAND_MAX); }
 
-glm::vec3 vector_in_sphere()
+glm::vec3 point_on_sphere()
 {
   float r1 = random_01();
   float r2 = random_01();
@@ -27,7 +26,7 @@ glm::vec3 vector_in_sphere()
   return glm::vec3(cos(phi) * sin(theta), cos(theta), sin(phi) * sin(theta));
 }
 
-glm::vec3 vector_in_hemisphere(float factor)
+glm::vec3 point_on_hemisphere(float factor)
 {
   float r1 = random_01();
   float r2 = random_01();

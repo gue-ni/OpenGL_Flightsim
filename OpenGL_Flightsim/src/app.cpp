@@ -7,7 +7,7 @@
 #include "terrain.h"
 
 #define DRAW_HUD            1
-#define GROUND_START        1
+#define GROUND_START        0
 #define PARTICLES           1
 #define RENDER_LANDING_GEAR 1
 
@@ -101,7 +101,7 @@ void App::init()
   m_scene->add(m_cameras[0]);
 
   // cockpit camera
-  m_cameras[1] = new gfx::Camera(glm::radians(75.0f), aspect_ratio, 2.0f, far);
+  m_cameras[1] = new gfx::Camera(glm::radians(70.0f), aspect_ratio, 0.1f, far);
 
   // following camera
   m_cameras[2] = new gfx::Camera(glm::radians(45.0f), aspect_ratio, near, far);
@@ -146,7 +146,7 @@ void App::init()
   m_airplane_model->add(m_camera_attachment);
 
   // cockpit camera
-  m_cameras[1]->set_position({6.5f, 0.8f, 0.0f});
+  m_cameras[1]->set_position({5.8f, 0.85f, 0.0f});
   m_cameras[1]->set_rotation(look_forward);
   m_airplane_model->add(m_cameras[1]);
 
@@ -209,7 +209,8 @@ void App::init_airplane()
                                         .speed = gfx::Range(100.0f, 150.0f),
                                         .size = gfx::Range(0.3f, 0.4f),
                                         .lifetime = gfx::Range(0.02f, 0.03f),
-                                        .color = afterburner};
+                                        .color = afterburner,
+                                        .particles_per_second = 50000};
 
   m_particles = new gfx::ParticleSystem(config, "assets/textures/particle.png");
   m_particles->set_position(glm::vec3(-5.0f, 0.0f, 0.0f));
@@ -218,7 +219,7 @@ void App::init_airplane()
 #endif
 
   const float mass = 10000.0f;
-  const float thrust = 75000.0f;
+  const float thrust = 100000.0f;
 
   const float wing_offset = -1.0f;
   const float tail_offset = -6.6f;
@@ -510,7 +511,7 @@ void App::game_loop(float dt)
 #endif
 
     // smooth following camera
-    const float speed = 15.0f * dt;
+    const float speed = 35.0f * dt;
     m_cameras[2]->set_transform(
         glm::mix(m_cameras[2]->get_world_position(), m_camera_attachment->get_world_position(), speed),
         glm::mix(m_cameras[2]->get_world_rotation_quat(), m_camera_attachment->get_world_rotation_quat(), speed));
@@ -522,6 +523,8 @@ void App::game_loop(float dt)
 #endif
 
     m_screen->visible = (m_selected_camera != 0);
+    m_airplane_model->children[3]->visible = (m_selected_camera != 1);
+
     m_hud->batch_clear();
 
 #if PARTICLES
