@@ -167,6 +167,7 @@ xcopy /y /i /s $(ProjectDir)..\lib\glew-2.2.0\bin\Release\x64\*.dll $(OutDir)</C
     <ClCompile Include="src\gfx\util.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\gfx\gfx.cpp" />
+    <ClCompile Include="src\terrain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\basic.frag" />

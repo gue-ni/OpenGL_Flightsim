@@ -112,7 +112,7 @@ void App::init()
 #if 1
 #endif
 #if 1
-  m_clipmap = new Clipmap();
+  m_clipmap = new GeometryClipmap();
   m_clipmap->visible = true;
   m_scene->add(m_clipmap);
 #endif

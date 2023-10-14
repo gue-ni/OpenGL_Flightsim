@@ -60,7 +60,7 @@ class App
   // physics
   Airplane* m_flightmodel;
   phi::RigidBody* m_terrain;
-  Clipmap* m_clipmap;
+  GeometryClipmap* m_clipmap;
 
   void init_airplane();
   void init_flightmodel();

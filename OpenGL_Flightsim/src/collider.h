@@ -35,9 +35,9 @@ struct Sphere : public Collider {
 };
 
 struct Heightmap : public Collider {
-  const Clipmap* terrain = nullptr;
+  const GeometryClipmap* terrain = nullptr;
 
-  Heightmap(Clipmap* terrain_) : terrain(terrain_) {}
+  Heightmap(GeometryClipmap* terrain_) : terrain(terrain_) {}
 
   bool test(const phi::Transform* tf, const Collider* other, const phi::Transform* other_tf,
             phi::Collision* info) const override;
