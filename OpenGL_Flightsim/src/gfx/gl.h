@@ -170,9 +170,9 @@ struct Texture : public Object {
 
   struct Params {
     bool flip_vertically = false;
-    GLint texture_wrap = GL_REPEAT;
-    GLint texture_min_filter = GL_LINEAR_MIPMAP_LINEAR;
-    GLint texture_mag_filter = GL_NEAREST;
+    GLint wrap = GL_REPEAT;
+    GLint min_filter = GL_LINEAR_MIPMAP_LINEAR;
+    GLint mag_filter = GL_NEAREST;
   };
 
   Texture(GLenum target_ = GL_TEXTURE_2D) : target(target_) { glGenTextures(1, &m_id); }
@@ -181,9 +181,8 @@ struct Texture : public Object {
   Texture(const std::string& path, const Params& params);
   Texture(const Image& image, const Params& params);
   void bind() const;
-  void bind(GLuint active_texture) const;
+  void bind(GLuint texture_unit) const;
   void unbind() const;
-  GLint get_format(int channels);
   void set_parameter(GLenum pname, GLint param);
   void set_parameter(GLenum pname, GLfloat param);
   void set_parameter(GLenum pname, const GLfloat* param);
@@ -193,6 +192,35 @@ struct Texture : public Object {
 
 struct CubemapTexture : public Texture {
   CubemapTexture(const std::array<std::string, 6>& paths, bool flip_vertically = false);
+};
+
+class TextureArray : public Object
+{
+ public:
+  struct Params {
+    Image::Format format{Image::Format::RGB};
+    glm::ivec2 texture_size{1024};
+    int array_size{1};
+    GLint wrap_s{GL_CLAMP_TO_BORDER}, wrap_t{GL_CLAMP_TO_BORDER};
+    GLint min_filter{GL_LINEAR}, mag_filter{GL_LINEAR};
+  };
+
+  TextureArray(const Params& params);
+  void bind() const;
+  void bind(GLuint texture_unit) const;
+  void unbind() const;
+  void add_image(const Image& image);
+  void set_parameter(GLenum pname, GLint param);
+  void set_parameter(GLenum pname, GLfloat param);
+  void set_parameter(GLenum pname, const GLfloat* param);
+
+  const GLenum target = GL_TEXTURE_2D_ARRAY;
+
+ private:
+  const Image::Format m_format;
+  const glm::ivec2 m_texture_size;
+  const int m_array_size;
+  int m_image_index = 0;
 };
 
 }  // namespace gl

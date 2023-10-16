@@ -9,6 +9,7 @@ uniform vec3 u_CameraPos;
 uniform sampler2D u_Heightmap;
 uniform sampler2D u_Normalmap;
 uniform sampler2D u_Texture_01;
+uniform sampler2DArray u_TextureArray;
 
 
 uniform sampler2D u_Shadowmap;
@@ -69,15 +70,15 @@ vec3 phongLighting(vec3 texColor, vec3 lightDir, vec3 lightColor)
   vec3 reflectDir = reflect(-lightDir, Normal);  
   vec3 specular = ks * pow(max(dot(viewDir, reflectDir), 0.0), alpha) * lightColor;
 
- // float shadow = 0.0;
- float shadow = ShadowCalculation(FragPosLightSpace);                      
+  // float shadow = 0.0;
+  float shadow = ShadowCalculation(FragPosLightSpace);                      
 
   return (ambient + (1.0 - shadow) * (diffuse + specular)) * texColor;
 }
 
 void main()
 {
-  vec3 lightDir = vec3(-2.0, 4.0, -1.0);
+  vec3 lightDir = vec3(-2.0, 1.0, -1.0);
 
   // Calculate fog
   float fogMindist = 1000.0;
@@ -93,7 +94,8 @@ void main()
   vec3 LightDir = vec3(0,1,0);
   vec3 LightColor = vec3(1.0);
   
-  vec3 texColor = texture(u_Texture_01, TexCoords).rgb;
+  //vec3 texColor = texture(u_Texture_01, TexCoords).rgb;
+  vec3 texColor = texture(u_TextureArray, vec3(TexCoords, 0)).rgb;
   vec4 terrainColor = vec4(phongLighting(texColor, LightDir, LightColor), 1.0);
 
 #if 1

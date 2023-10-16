@@ -1,6 +1,12 @@
 #include "terrain.h"
 
-TextureCLipmap::TextureCLipmap() {}
+TextureClipmap::TextureClipmap() : texture({.texture_size = glm::ivec2(1024), .array_size = 1}), m_center(0.0f) {}
+
+void TextureClipmap::update(const glm::vec3& center) {}
+
+void TextureClipmap::bind(GLuint texture_unit) { texture.bind(texture_unit); }
+
+void TextureClipmap::unbind() { texture.unbind(); }
 
 Seam::Seam(int columns, float size)
 {
@@ -115,6 +121,12 @@ GeometryClipmap::GeometryClipmap(int levels_, int segments_)
   terrain.set_parameter(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
   terrain.set_parameter(GL_TEXTURE_BORDER_COLOR, glm::value_ptr(color));
 
+  m_texture_clipmap.texture.bind();
+  m_texture_clipmap.texture.set_parameter(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+  m_texture_clipmap.texture.set_parameter(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+  m_texture_clipmap.texture.set_parameter(GL_TEXTURE_BORDER_COLOR, glm::value_ptr(color));
+  m_texture_clipmap.texture.add_image(gfx::Image("assets/textures/terrain/data/10/536/356/texture.png"));
+
   heightmap.bind();
   heightmap.set_parameter(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
   heightmap.set_parameter(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
@@ -137,6 +149,7 @@ void GeometryClipmap::draw_self(gfx::RenderContext& context)
   shader.set_uniform("u_Heightmap", 2);
   shader.set_uniform("u_Normalmap", 3);
   shader.set_uniform("u_Texture_01", 4);
+  shader.set_uniform("u_TextureArray", 8);
   shader.set_uniform("u_FogColor", context.fog_color);
   shader.set_uniform("u_View", context.camera->get_view_matrix());
   shader.set_uniform("u_CameraPos", context.camera->get_world_position());
@@ -175,6 +188,7 @@ void GeometryClipmap::draw_self(gfx::RenderContext& context)
     heightmap.bind(2);
     normalmap.bind(3);
     terrain.bind(4);
+    m_texture_clipmap.bind(8);
     context.depth_map->bind(5);
 
 #if 1

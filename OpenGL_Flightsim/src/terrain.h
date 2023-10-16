@@ -31,7 +31,7 @@ const int ZOOM_FACTOR = 5;
 #error Unknown DATA_SRC
 #endif
 
-constexpr gfx::gl::Texture::Params params = {.texture_wrap = GL_REPEAT, .texture_mag_filter = GL_LINEAR};
+constexpr gfx::gl::Texture::Params params = {.wrap = GL_REPEAT, .mag_filter = GL_LINEAR};
 
 // pixel value in range [0, 1]
 inline float height_from_pixel(const glm::vec3& rgb)
@@ -93,31 +93,34 @@ struct Block {
   void draw();
 };
 
-// A texture clipmap is a way of represinting a texture of arbitrary size
-class TextureCLipmap
+// https://www-f9.ijs.si/~matevz/docs/007-2392-003/sgi_html/ch08.html#LE62092-PARENT
+class TextureClipmap
 {
  public:
-  TextureCLipmap();
+  TextureClipmap();
+  void update(const glm::vec3& center);
+  void bind(GLuint texture_unit);
+  void unbind();
+
+  gfx::gl::TextureArray texture;
 
  private:
-  gfx::gl::Texture m_texture;
+  glm::vec3 m_center;
 };
 
-// Geometry Clipmap
 // https://developer.nvidia.com/gpugems/gpugems2/part-i-geometric-complexity/chapter-2-terrain-rendering-using-gpu-based-geometry
 // https://mikejsavage.co.uk/blog/geometry-clipmaps.html
 class GeometryClipmap : public gfx::Object3D
 {
  public:
   GeometryClipmap(int levels_ = 12, int segments_ = 16);
-  
 
   float get_terrain_height(const glm::vec2 pos) const { return sample_heightmap(heightmap_image, pos, terrain_size); }
 
   float get_terrain_size() const { return terrain_size; }
 
   void draw_self(gfx::RenderContext& context) override;
-  
+
  private:
   const float segment_size;
   const int levels;
@@ -127,6 +130,8 @@ class GeometryClipmap : public gfx::Object3D
   gfx::gl::Shader shader;
   gfx::Image heightmap_image;
   gfx::gl::Texture heightmap, normalmap, terrain, terrain_0;
+
+  TextureClipmap m_texture_clipmap;
 
   Block tile, center, col_fixup, row_fixup, horizontal, vertical;
   Seam seam;

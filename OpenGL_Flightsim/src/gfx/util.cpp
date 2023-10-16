@@ -26,6 +26,11 @@ glm::vec3 point_on_sphere()
   return glm::vec3(cos(phi) * sin(theta), cos(theta), sin(phi) * sin(theta));
 }
 
+glm::vec3 point_on_ellipsoid()
+{
+    return glm::vec3();
+}
+
 glm::vec3 point_on_hemisphere(float factor)
 {
   float r1 = random_01();
@@ -77,10 +82,10 @@ int Image::height() const { return m_height; }
 
 int Image::channels() const { return m_channels; }
 
-GLint Image::format() const
+Image::Format Image::format() const
 {
   assert(1 <= m_channels && m_channels <= 4);
-  static GLint formats[] = {GL_RED, GL_RG, GL_RGB, GL_RGBA};
+  static Format formats[] = {RED, RG, RGB, RGBA};
   return formats[m_channels - 1];
 }
 

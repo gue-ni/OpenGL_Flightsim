@@ -52,6 +52,8 @@ glm::vec3 point_on_hemisphere(float factor = 1.0f);
 class Image
 {
  public:
+  enum Format : GLint { RED = GL_RED, RG = GL_RG, RGB = GL_RGB, RGBA = GL_RGBA };
+
   Image(const std::string& path, bool flip_vertically = false);
   ~Image();
   glm::vec3 sample(const glm::vec2 uv, GLint filter = GL_NEAREST) const;
@@ -59,7 +61,7 @@ class Image
   int width() const;
   int height() const;
   int channels() const;
-  GLint format() const;
+  Format format() const;
 
  private:
   unsigned char* m_data = nullptr;

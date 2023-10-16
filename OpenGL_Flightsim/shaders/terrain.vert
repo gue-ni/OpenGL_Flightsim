@@ -8,6 +8,7 @@ uniform mat4 u_LightSpaceMatrix;
 
 uniform sampler2D u_Heightmap;
 uniform sampler2D u_Normalmap;
+uniform sampler2DArray u_TextureArray;
 
 uniform vec3    u_CameraPos;
 uniform float   u_Scale;

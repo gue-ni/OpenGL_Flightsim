@@ -192,7 +192,7 @@ Object3D* Mesh::load(const std::string& path, const std::string& texture)
     std::cout << material.name << std::endl;
   }
 
-  const gfx::gl::Texture::Params params = {.flip_vertically = true, .texture_mag_filter = GL_LINEAR};
+  const gfx::gl::Texture::Params params = {.flip_vertically = true, .mag_filter = GL_LINEAR};
 
   if (!tinyobj::LoadObj(&attributes, &shapes, &materials, &warning, &error, &source)) {
     std::cout << "Error: " << warning << error << std::endl;

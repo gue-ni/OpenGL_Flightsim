@@ -117,12 +117,12 @@ Texture::Texture(const std::string& path, const Params& params) : Texture(Image(
 
 Texture::Texture(const Image& image, const Params& params) : Texture(GL_TEXTURE_2D)
 {
-  glBindTexture(GL_TEXTURE_2D, m_id);
+  glBindTexture(target, m_id);
 
-  set_parameter(GL_TEXTURE_WRAP_S, params.texture_wrap);
-  set_parameter(GL_TEXTURE_WRAP_T, params.texture_wrap);
-  set_parameter(GL_TEXTURE_MIN_FILTER, params.texture_min_filter);
-  set_parameter(GL_TEXTURE_MAG_FILTER, params.texture_mag_filter);
+  set_parameter(GL_TEXTURE_WRAP_S, params.wrap);
+  set_parameter(GL_TEXTURE_WRAP_T, params.wrap);
+  set_parameter(GL_TEXTURE_MIN_FILTER, params.min_filter);
+  set_parameter(GL_TEXTURE_MAG_FILTER, params.mag_filter);
 
   glTexImage2D(target, 0, image.format(), image.width(), image.height(), 0, image.format(), GL_UNSIGNED_BYTE,
                image.data());
@@ -150,10 +150,7 @@ TexturePtr Texture::load(const std::string& path, const Params& params)
   return std::make_shared<Texture>(path, params);
 }
 
-TexturePtr Texture::load(const std::string& path)
-{
-  return Texture::load(path, {});
-}
+TexturePtr Texture::load(const std::string& path) { return Texture::load(path, {}); }
 
 CubemapTexture::CubemapTexture(const std::array<std::string, 6>& paths, bool flip_vertically)
     : Texture(GL_TEXTURE_CUBE_MAP)
@@ -171,6 +168,47 @@ CubemapTexture::CubemapTexture(const std::array<std::string, 6>& paths, bool fli
   set_parameter(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   set_parameter(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   set_parameter(GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+}
+
+TextureArray::TextureArray(const Params& params)
+    : m_format(params.format), m_texture_size(params.texture_size), m_array_size(params.array_size)
+{
+  glBindTexture(target, m_id);
+
+  set_parameter(GL_TEXTURE_WRAP_S, params.wrap_s);
+  set_parameter(GL_TEXTURE_WRAP_T, params.wrap_t);
+  set_parameter(GL_TEXTURE_MIN_FILTER, params.min_filter);
+  set_parameter(GL_TEXTURE_MAG_FILTER, params.mag_filter);
+
+  glTexImage3D(target, 0, m_format, m_texture_size.x, m_texture_size.y, m_array_size, 0, m_format, GL_UNSIGNED_BYTE,
+               NULL);
+}
+
+void TextureArray::bind() const { glBindTexture(target, m_id); }
+
+void TextureArray::bind(GLuint texture_unit) const
+{
+  glActiveTexture(GL_TEXTURE0 + texture_unit);
+  glBindTexture(target, m_id);
+}
+
+void TextureArray::unbind() const { glBindTexture(target, 0); }
+
+void TextureArray::set_parameter(GLenum pname, GLint param) { glTexParameteri(target, pname, param); }
+
+void TextureArray::set_parameter(GLenum pname, GLfloat param) { glTexParameterf(target, pname, param); }
+
+void TextureArray::set_parameter(GLenum pname, const GLfloat* param) { glTexParameterfv(target, pname, param); }
+
+void TextureArray::add_image(const Image& image)
+{
+  assert(m_format == image.format());
+  assert(m_image_index < m_array_size);
+  assert(m_texture_size.x == image.width() && m_texture_size.y == image.height());
+
+  glTexSubImage3D(target, 0, 0, 0, m_image_index++, image.width(), image.height(), 1, image.format(), GL_UNSIGNED_BYTE,
+                  image.data());
+  glGenerateMipmap(target);
 }
 
 }  // namespace gl

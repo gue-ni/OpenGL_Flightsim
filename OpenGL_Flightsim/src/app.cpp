@@ -179,7 +179,7 @@ void App::init_airplane()
   const std::string glb = "assets/models/Falcon.glb";
   const std::string jpg = "assets/textures/falcon.jpg";
 
-  const gfx::gl::Texture::Params params = {.flip_vertically = true, .texture_mag_filter = GL_LINEAR};
+  const gfx::gl::Texture::Params params = {.flip_vertically = true, .mag_filter = GL_LINEAR};
   const auto texture = gfx::gl::Texture::load(jpg, params);
   // const auto geometry = gfx::Geometry::load(obj);
   const auto cube = gfx::Geometry::box(1.0f);
