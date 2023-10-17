@@ -5,7 +5,7 @@
 constexpr unsigned int primitive_restart = 0xFFFFU;
 constexpr float MAX_TILE_SIZE = 50708.0f * 4;
 
-#define DATA_SRC 2
+#define DATA_SRC 5
 
 #if (DATA_SRC == 1)
 const std::string PATH = "assets/textures/terrain/data/9/268/178/";
@@ -60,6 +60,10 @@ inline float scale(float input_val, float in_min, float in_max, float out_min, f
   return (input_val - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
+  // [-1, 1] -> [0, 1]
+  // (input_val - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+  // (input_val - -1) * (1 - 0) / (1 - -1) + 0
+  // (input_val + 1) / 2
 inline float sample_heightmap(const gfx::Image& heightmap, const glm::vec2& pos, float terrain_size)
 {
   glm::vec2 coord = pos / (terrain_size / 2.0f);
@@ -70,7 +74,8 @@ inline float sample_heightmap(const gfx::Image& heightmap, const glm::vec2& pos,
   return height_from_pixel(glm::vec3(pixel));
 }
 
-struct Seam {
+class Seam {
+public:
   gfx::gl::VertexBuffer vbo;
   gfx::gl::VertexArrayObject vao;
   size_t index_count;
@@ -81,7 +86,8 @@ struct Seam {
   void draw();
 };
 
-struct Block {
+class Block {
+public:
   gfx::gl::VertexBuffer vbo;
   gfx::gl::ElementBuffer ebo;
   gfx::gl::VertexArrayObject vao;
@@ -93,19 +99,31 @@ struct Block {
   void draw();
 };
 
+// A TextureClipmap is used to represent a Texture of arbitrary 'virtual' size
 // https://www-f9.ijs.si/~matevz/docs/007-2392-003/sgi_html/ch08.html#LE62092-PARENT
 class TextureClipmap
 {
  public:
-  TextureClipmap();
-  void update(const glm::vec3& center);
+  TextureClipmap(int clipsize, int levels);
+
+  // update center in texel coordinate space
+  void update(const glm::vec2& center);
   void bind(GLuint texture_unit);
   void unbind();
 
   gfx::gl::TextureArray texture;
 
  private:
-  glm::vec3 m_center;
+   const int m_levels;
+   const int m_tilesize;
+   const glm::ivec2 m_clipsize;
+   const glm::ivec2 m_virtual_size; 
+
+   glm::ivec2 m_center;
+
+   static int pow2(int n);
+   // manhattan distance
+   static int manhattan(const glm::ivec2& a, const glm::ivec2& b);
 };
 
 // https://developer.nvidia.com/gpugems/gpugems2/part-i-geometric-complexity/chapter-2-terrain-rendering-using-gpu-based-geometry

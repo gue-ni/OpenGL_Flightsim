@@ -1,8 +1,61 @@
 #include "terrain.h"
 
-TextureClipmap::TextureClipmap() : texture({.texture_size = glm::ivec2(1024), .array_size = 1}), m_center(0.0f) {}
+TextureClipmap::TextureClipmap(int clipsize, int levels)
+    : m_levels{levels},
+      m_tilesize{256},
+      m_clipsize{clipsize},
+      m_center{0},
+      m_virtual_size{m_clipsize * pow2(levels - 1)},
+      texture({.texture_size{clipsize, clipsize}, .array_size{levels}})
+{
+  m_center = m_virtual_size / 2;
+  std::cout << "clipmap:" << std::endl;
+  std::cout << "levels = " << m_levels << std::endl;
+  std::cout << "clipsize = " << m_clipsize << std::endl;
+  std::cout << "virtual size = " << m_virtual_size << std::endl;
+  std::cout << "inital center = " << m_center << std::endl;
+}
 
-void TextureClipmap::update(const glm::vec3& center) {}
+int TextureClipmap::pow2(int n) { return 1 << n; }
+
+int TextureClipmap::manhattan(const glm::ivec2& a, const glm::ivec2& b)
+{
+  return glm::abs(a.x - b.x) + glm::abs(a.y - b.y);
+}
+
+// center in uv coordinate [0, 1] of virtual texture size
+void TextureClipmap::update(const glm::vec2& center)
+{
+  glm::ivec2 new_center = center * glm::vec2(m_virtual_size);
+
+  // start at 1, as level 0 is never updated
+  for (int level = 1; level < m_levels; level++) {
+    // TODO: possibly load new tiles, update center
+
+    auto size = m_clipsize * pow2(level);
+
+    // the 256x256 tile we are currently in
+    glm::ivec2 tile_offset = new_center / m_tilesize;
+
+    // TODO: check if manhatten distance from old center (snapped to grid) is larger
+    // than some value, if so, move center and load tiles
+
+    glm::ivec2 clipped_center = tile_offset * m_tilesize;
+
+    // shift tiles if difference between new_center and center is greater than one
+    // tile in any direction
+
+    glm::ivec2 difference = new_center - m_center;
+
+    auto shift = glm::greaterThan(glm::abs(difference), glm::ivec2(m_tilesize));
+
+    if (glm::any(shift)) {
+      m_center += m_tilesize * (glm::sign(difference) * glm::ivec2(shift));
+
+      // TODO:
+    }
+  }
+}
 
 void TextureClipmap::bind(GLuint texture_unit) { texture.bind(texture_unit); }
 
@@ -107,7 +160,8 @@ GeometryClipmap::GeometryClipmap(int levels_, int segments_)
       horizontal(2 * segments + 2, 1, segment_size),
       vertical(1, 2 * segments + 2, segment_size),
       center(2 * segments + 2, 2 * segments + 2, segment_size),
-      seam(2 * segments + 2, segment_size * 2)
+      seam(2 * segments + 2, segment_size * 2),
+      m_texture_clipmap(1024, 2)
 {
   std::cout << "terrain_size = " << terrain_size << " m" << std::endl;
 
@@ -125,7 +179,7 @@ GeometryClipmap::GeometryClipmap(int levels_, int segments_)
   m_texture_clipmap.texture.set_parameter(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
   m_texture_clipmap.texture.set_parameter(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
   m_texture_clipmap.texture.set_parameter(GL_TEXTURE_BORDER_COLOR, glm::value_ptr(color));
-  m_texture_clipmap.texture.add_image(gfx::Image("assets/textures/terrain/data/10/536/356/texture.png"));
+  m_texture_clipmap.texture.add_image(gfx::Image(PATH + "texture.png"));
 
   heightmap.bind();
   heightmap.set_parameter(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
@@ -144,6 +198,25 @@ void GeometryClipmap::draw_self(gfx::RenderContext& context)
 
   // TODO: select proper texture LOD
   glm::vec2 origin = camera_pos_xy - glm::vec2(terrain_size / 2);
+
+  // coordinate in range [-1, 1]
+  glm::vec2 relative_position = camera_pos_xy / glm::vec2(terrain_size / 2);
+
+  // std::cout << "relpos = " << relative_position << std::endl;
+
+#if 0
+  assert(
+    glm::all(glm::greaterThanEqual(glm::vec2(-1.0), relative_position))
+    && glm::all(glm::lessThanEqual(relative_position, glm::vec2(1.0)))
+  );
+#endif
+
+  // remap to [0, 1]
+  glm::vec2 clipmap_center = (relative_position + glm::vec2(1.0f)) / 2.0f;
+
+  // std::cout << "cc = " << clipmap_center << std::endl;
+
+  m_texture_clipmap.update(clipmap_center);
 
   shader.bind();
   shader.set_uniform("u_Heightmap", 2);
