@@ -123,13 +123,15 @@ class TextureClipmap
    const int m_tilesize;
    const glm::ivec2 m_clipsize;
    const glm::ivec2 m_virtual_size;
-   std::vector<glm::ivec2> m_centers;
-
-
+   std::vector<glm::ivec2> m_centers; // the current center of the levels
 
    static int pow2(int n);
+   
    // manhattan distance
    static int manhattan(const glm::ivec2& a, const glm::ivec2& b);
+
+   // chebyshev distance
+   static int chebyshev(const glm::ivec2& a, const glm::ivec2& b);
 };
 
 // https://developer.nvidia.com/gpugems/gpugems2/part-i-geometric-complexity/chapter-2-terrain-rendering-using-gpu-based-geometry

@@ -28,23 +28,36 @@ int TextureClipmap::manhattan(const glm::ivec2& a, const glm::ivec2& b)
   return glm::abs(a.x - b.x) + glm::abs(a.y - b.y);
 }
 
+int TextureClipmap::chebyshev(const glm::ivec2& a, const glm::ivec2& b)
+{
+  return std::max(glm::abs(a.x - b.x), glm::abs(a.y - b.y));
+}
+
 // center in uv coordinate [0, 1] of virtual texture size
 void TextureClipmap::update(const glm::vec2& center)
 {
-  glm::ivec2 new_center = center * glm::vec2(m_virtual_size);
+  glm::ivec2 new_center = glm::clamp(center, glm::vec2(0.0f), glm::vec2(1.0f)) * glm::vec2(m_virtual_size);
 
   // level 0 is the level with the highest resolution 
   for (int level = 0; level < m_levels; level++) {
 
-    // the tile on which to center the 4x4 tiles that are loaded into the texture
+    // the tile which we are currently in
+    // used to center the 4x4 tiles that are loaded into the texture
     glm::ivec2 center_tile = new_center / (m_tilesize << level);
 
-    // we need to clamp the coordinate so there is always space for the 4x4 tiles
+    // clamp to stay inside the grid
     int max_tile_num = 4 << (m_levels - 1);
-    center_tile = glm::clamp(center_tile, glm::ivec2(1), glm::ivec2((max_tile_num >> level) - 1));
+    center_tile = glm::clamp(center_tile, glm::ivec2(0), glm::ivec2((max_tile_num >> level) - 1));
+
 
     if (center_tile != m_centers[level]) {
+      // maybe actually calculate manhattan distance?
+      auto d = chebyshev(center_tile , m_centers[level]);
+
+      // if the x difference is negatie
+
       m_centers[level] = center_tile;
+
       load_tiles(level, center_tile);
     }
   }
@@ -52,8 +65,15 @@ void TextureClipmap::update(const glm::vec2& center)
 
 void TextureClipmap::load_tiles(int level, const glm::ivec2& center_tile)
 {
+  if (level == 2)
+  {
   std::cout << "update level = " << level << ", center = " << center_tile << std::endl;
+  }
   // TODO: load images and update texture array with glSubTex...
+
+  // if we are to close to the border, do nothing
+
+  // if we have moved within the inner 2x2 tiles, do nothing
 }
 
 void TextureClipmap::bind(GLuint texture_unit) { texture.bind(texture_unit); }
@@ -247,9 +267,9 @@ void GeometryClipmap::draw_self(gfx::RenderContext& context)
 
     shader.set_uniform("u_Scale", scale);
     shader.set_uniform("u_SegmentSize", scaled_segment_size);
-    shader.set_uniform("u_Level", static_cast<float>(level) / levels);
+    shader.set_uniform("u_Level", static_cast<float>(level) / static_cast<float>(levels));
 
-#if 1
+#if 0
     // don't render lots of detail if we are very high up
     if (tile_size * 5 < height * 2.5) {
       min_level = level + 1;
