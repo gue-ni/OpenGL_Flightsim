@@ -4,16 +4,21 @@ TextureClipmap::TextureClipmap(int clipsize, int levels)
     : m_levels{levels},
       m_tilesize{256},
       m_clipsize{clipsize},
-      m_center{0},
-      m_virtual_size{m_clipsize * pow2(levels - 1)},
+      m_virtual_size{m_clipsize << (levels - 1)},
+      m_centers(levels),
       texture({.texture_size{clipsize, clipsize}, .array_size{levels}})
 {
-  m_center = m_virtual_size / 2;
   std::cout << "clipmap:" << std::endl;
   std::cout << "levels = " << m_levels << std::endl;
   std::cout << "clipsize = " << m_clipsize << std::endl;
-  std::cout << "virtual size = " << m_virtual_size << std::endl;
-  std::cout << "inital center = " << m_center << std::endl;
+  std::cout << "virtual_size = " << m_virtual_size << std::endl;
+
+  glm::ivec2 center = m_virtual_size / 2;
+
+  for (int level = 0; level < m_levels; level++) {
+    m_centers[level] = center / (m_tilesize << level);
+    // std::cout << m_centers[level] << std::endl;
+  }
 }
 
 int TextureClipmap::pow2(int n) { return 1 << n; }
@@ -28,33 +33,27 @@ void TextureClipmap::update(const glm::vec2& center)
 {
   glm::ivec2 new_center = center * glm::vec2(m_virtual_size);
 
-  // start at 1, as level 0 is never updated
-  for (int level = 1; level < m_levels; level++) {
-    // TODO: possibly load new tiles, update center
+  // level 0 is the level with the highest resolution 
+  for (int level = 0; level < m_levels; level++) {
 
-    auto size = m_clipsize * pow2(level);
+    // the tile on which to center the 4x4 tiles that are loaded into the texture
+    glm::ivec2 center_tile = new_center / (m_tilesize << level);
 
-    // the 256x256 tile we are currently in
-    glm::ivec2 tile_offset = new_center / m_tilesize;
+    // we need to clamp the coordinate so there is always space for the 4x4 tiles
+    int max_tile_num = 4 << (m_levels - 1);
+    center_tile = glm::clamp(center_tile, glm::ivec2(1), glm::ivec2((max_tile_num >> level) - 1));
 
-    // TODO: check if manhatten distance from old center (snapped to grid) is larger
-    // than some value, if so, move center and load tiles
-
-    glm::ivec2 clipped_center = tile_offset * m_tilesize;
-
-    // shift tiles if difference between new_center and center is greater than one
-    // tile in any direction
-
-    glm::ivec2 difference = new_center - m_center;
-
-    auto shift = glm::greaterThan(glm::abs(difference), glm::ivec2(m_tilesize));
-
-    if (glm::any(shift)) {
-      m_center += m_tilesize * (glm::sign(difference) * glm::ivec2(shift));
-
-      // TODO:
+    if (center_tile != m_centers[level]) {
+      m_centers[level] = center_tile;
+      load_tiles(level, center_tile);
     }
   }
+}
+
+void TextureClipmap::load_tiles(int level, const glm::ivec2& center_tile)
+{
+  std::cout << "update level = " << level << ", center = " << center_tile << std::endl;
+  // TODO: load images and update texture array with glSubTex...
 }
 
 void TextureClipmap::bind(GLuint texture_unit) { texture.bind(texture_unit); }
@@ -161,7 +160,7 @@ GeometryClipmap::GeometryClipmap(int levels_, int segments_)
       vertical(1, 2 * segments + 2, segment_size),
       center(2 * segments + 2, 2 * segments + 2, segment_size),
       seam(2 * segments + 2, segment_size * 2),
-      m_texture_clipmap(1024, 2)
+      m_texture_clipmap(1024, 3)
 {
   std::cout << "terrain_size = " << terrain_size << " m" << std::endl;
 

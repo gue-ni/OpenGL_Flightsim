@@ -100,6 +100,7 @@ public:
 };
 
 // A TextureClipmap is used to represent a Texture of arbitrary 'virtual' size
+// Level 0 is the largest, with the highest resolution
 // https://www-f9.ijs.si/~matevz/docs/007-2392-003/sgi_html/ch08.html#LE62092-PARENT
 class TextureClipmap
 {
@@ -108,6 +109,10 @@ class TextureClipmap
 
   // update center in texel coordinate space
   void update(const glm::vec2& center);
+
+  // load grid of 4x4 tiles centered on 'center_tile'
+  void load_tiles(int level, const glm::ivec2& center_tile);
+
   void bind(GLuint texture_unit);
   void unbind();
 
@@ -117,9 +122,10 @@ class TextureClipmap
    const int m_levels;
    const int m_tilesize;
    const glm::ivec2 m_clipsize;
-   const glm::ivec2 m_virtual_size; 
+   const glm::ivec2 m_virtual_size;
+   std::vector<glm::ivec2> m_centers;
 
-   glm::ivec2 m_center;
+
 
    static int pow2(int n);
    // manhattan distance
