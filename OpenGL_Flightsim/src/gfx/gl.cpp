@@ -206,9 +206,11 @@ void TextureArray::add_image(const Image& image)
   assert(m_image_index < m_array_size);
   assert(m_texture_size.x == image.width() && m_texture_size.y == image.height());
 
+  bind();
   glTexSubImage3D(target, 0, 0, 0, m_image_index++, image.width(), image.height(), 1, image.format(), GL_UNSIGNED_BYTE,
                   image.data());
   glGenerateMipmap(target);
+  unbind();
 }
 
 }  // namespace gl

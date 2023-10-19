@@ -60,6 +60,14 @@ vec2 getUV(vec2 pos)
     return coord;
 }
 
+
+// TODO: figure out in which LOD the current pos is, and then
+// sample from the correct level with the correct uv
+vec3 sampleTextureClipmap(vec2 pos, vec2 cameraPos)
+{
+  return vec3(0.0);
+}
+
 void main()
 {
     // size of the area covered by the heightmap
@@ -72,7 +80,8 @@ void main()
 
     Normal = getNormal(TexCoords);
 
-    Color = vec3(1.0, u_Level, 0.0);
+    //Color = vec3(1.0, u_Level, 0.0);
+    Color = mix(vec3(1,0,0), vec3(0,0,1), u_Level);
 
     gl_Position = u_Projection * u_View * vec4(FragPos, 1.0);
 

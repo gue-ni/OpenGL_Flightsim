@@ -108,7 +108,7 @@ class TextureClipmap
   TextureClipmap(int clipsize, int levels);
 
   // update center in texel coordinate space
-  void update(const glm::vec2& center);
+  void update(const glm::vec2& center_);
 
   // load grid of 4x4 tiles centered on 'center_tile'
   void load_tiles(int level, const glm::ivec2& center_tile);
@@ -124,6 +124,8 @@ class TextureClipmap
    const glm::ivec2 m_clipsize;
    const glm::ivec2 m_virtual_size;
    std::vector<glm::ivec2> m_centers; // the current center of the levels
+   
+   std::vector<glm::ivec2> m_base; 
 
    static int pow2(int n);
    
@@ -155,7 +157,7 @@ class GeometryClipmap : public gfx::Object3D
 
   gfx::gl::Shader shader;
   gfx::Image heightmap_image;
-  gfx::gl::Texture heightmap, normalmap, terrain, terrain_0;
+  gfx::gl::Texture heightmap, normalmap, terrain;
 
   TextureClipmap m_texture_clipmap;
 

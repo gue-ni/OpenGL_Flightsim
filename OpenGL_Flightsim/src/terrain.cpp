@@ -6,6 +6,7 @@ TextureClipmap::TextureClipmap(int clipsize, int levels)
       m_clipsize{clipsize},
       m_virtual_size{m_clipsize << (levels - 1)},
       m_centers(levels),
+      m_base(levels),
       texture({.texture_size{clipsize, clipsize}, .array_size{levels}})
 {
   std::cout << "clipmap:" << std::endl;
@@ -15,9 +16,27 @@ TextureClipmap::TextureClipmap(int clipsize, int levels)
 
   glm::ivec2 center = m_virtual_size / 2;
 
+  int tile_zoom = 12;
+
+  // base offset
+  glm::ivec2 offsets[] = {
+  {8576, 5696}, // lvl 14
+  {4288, 2848}, // lvl 13
+  {2144, 1424}, // lvl 12
+  {1072, 712}, // lvl 11
+  {536, 356}, // lvl 10
+  };
+
+  m_base[0] = offsets[2];
+  m_base[1] = offsets[3];
+  //m_base[2] = offsets[0];
+
   for (int level = 0; level < m_levels; level++) {
     m_centers[level] = center / (m_tilesize << level);
-    // std::cout << m_centers[level] << std::endl;
+    load_tiles(level, m_centers[level]);
+
+    // starting at level 12
+    //m_base[level] = offsets[2 + level];
   }
 }
 
@@ -34,46 +53,92 @@ int TextureClipmap::chebyshev(const glm::ivec2& a, const glm::ivec2& b)
 }
 
 // center in uv coordinate [0, 1] of virtual texture size
-void TextureClipmap::update(const glm::vec2& center)
+void TextureClipmap::update(const glm::vec2& center_)
 {
+#if 1
+  glm::vec2 center = glm::clamp(center_, glm::vec2(0.0f), glm::vec2(1.0f));
+#else
+  glm::vec2 center = center_;
+#endif
+
   glm::ivec2 new_center = glm::clamp(center, glm::vec2(0.0f), glm::vec2(1.0f)) * glm::vec2(m_virtual_size);
 
-  // level 0 is the level with the highest resolution 
-  for (int level = 0; level < m_levels; level++) {
+  // level 0 is the level with the highest resolution
+  for (int level = 0; level < m_levels - 1; level++) {
+    glm::ivec2 scaled_tile_size = glm::ivec2(m_tilesize) << level;
 
-    // the tile which we are currently in
-    // used to center the 4x4 tiles that are loaded into the texture
-    glm::ivec2 center_tile = new_center / (m_tilesize << level);
+    glm::ivec2 scaled_level_size = m_virtual_size >> level;
 
-    // clamp to stay inside the grid
+    glm::ivec2 scaled_center = center * glm::vec2(scaled_level_size);
+
+    glm::ivec2 old_scaled_center = m_centers[level] * m_tilesize;
+
+    int distance = chebyshev(scaled_center, old_scaled_center);
+
+    // std::cout << "distance = " << distance  << ", oc = " << old_scaled_center << ", c = " << scaled_center <<
+    // std::endl; std::cout << "old_center = " << old_scaled_center << std::endl; std::cout << "new_center = " <<
+    // scaled_center << std::endl;
+
+    if (distance > m_tilesize) {
+      // std::cout << "distance > " << m_tilesize << std::endl;
+
+      int max_tile_num = 4 << (m_levels - 1);
+      glm::ivec2 tile_index = new_center / scaled_tile_size;
+      tile_index = glm::clamp(tile_index, glm::ivec2(0), glm::ivec2((max_tile_num >> level) - 1));
+
+      m_centers[level] = tile_index;
+
+      load_tiles(level, tile_index);
+    }
+
+#if 0
     int max_tile_num = 4 << (m_levels - 1);
-    center_tile = glm::clamp(center_tile, glm::ivec2(0), glm::ivec2((max_tile_num >> level) - 1));
+    tile_index = glm::clamp(tile_index, glm::ivec2(0), glm::ivec2((max_tile_num >> level) - 1));
 
 
-    if (center_tile != m_centers[level]) {
+    if (tile_index != m_centers[level]) {
       // maybe actually calculate manhattan distance?
-      auto d = chebyshev(center_tile , m_centers[level]);
+      //auto d = chebyshev(tile_index , m_centers[level]);
 
       // if the x difference is negatie
 
-      m_centers[level] = center_tile;
 
-      load_tiles(level, center_tile);
+      m_centers[level] = tile_index;
+      load_tiles(level, tile_index);
+
     }
+#endif
   }
 }
 
 void TextureClipmap::load_tiles(int level, const glm::ivec2& center_tile)
 {
-  if (level == 2)
-  {
-  std::cout << "update level = " << level << ", center = " << center_tile << std::endl;
+  std::cout << "level = " << level << ", center = " << center_tile << std::endl;
+
+  int zoom = 12 - level;
+  std::string tile_path = "C:/Users/jakob/Pictures/tiles/" + std::to_string(zoom) + "/";
+
+  texture.bind();
+
+  for (int x = 0; x < 4; x++) {
+    for (int y = 0; y < 4; y++) {
+      glm::ivec2 xy = {x, y};
+      glm::ivec2 offset = center_tile - glm::ivec2(2) + xy;
+      glm::ivec2 coord = m_base[level] + offset;
+
+      std::string path = tile_path + std::to_string(coord.x) + "/" + std::to_string(coord.y) + "/texture.jpg";
+      std::cout << "load img " << path << std::endl;
+#if 1
+      gfx::Image image(path);
+      glTexSubImage3D(texture.target, 0, x * m_tilesize, y * m_tilesize, level, image.width(), image.height(), 1,
+                      image.format(), GL_UNSIGNED_BYTE, image.data());
+      glGenerateMipmap(texture.target);
+
+#endif
+    }
   }
-  // TODO: load images and update texture array with glSubTex...
 
-  // if we are to close to the border, do nothing
-
-  // if we have moved within the inner 2x2 tiles, do nothing
+  texture.unbind();
 }
 
 void TextureClipmap::bind(GLuint texture_unit) { texture.bind(texture_unit); }
@@ -172,7 +237,6 @@ GeometryClipmap::GeometryClipmap(int levels_, int segments_)
       heightmap(heightmap_image, params),
       normalmap(PATH + "normal.png", params),
       terrain(PATH + "texture.png", params),
-      terrain_0(),
       tile(segments, segments, segment_size),
       col_fixup(2, segments, segment_size),
       row_fixup(segments, 2, segment_size),
@@ -180,7 +244,7 @@ GeometryClipmap::GeometryClipmap(int levels_, int segments_)
       vertical(1, 2 * segments + 2, segment_size),
       center(2 * segments + 2, 2 * segments + 2, segment_size),
       seam(2 * segments + 2, segment_size * 2),
-      m_texture_clipmap(1024, 3)
+      m_texture_clipmap(1024, 2)
 {
   std::cout << "terrain_size = " << terrain_size << " m" << std::endl;
 
@@ -198,7 +262,7 @@ GeometryClipmap::GeometryClipmap(int levels_, int segments_)
   m_texture_clipmap.texture.set_parameter(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
   m_texture_clipmap.texture.set_parameter(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
   m_texture_clipmap.texture.set_parameter(GL_TEXTURE_BORDER_COLOR, glm::value_ptr(color));
-  m_texture_clipmap.texture.add_image(gfx::Image(PATH + "texture.png"));
+  // m_texture_clipmap.texture.add_image(gfx::Image(PATH + "texture.png"));
 
   heightmap.bind();
   heightmap.set_parameter(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
@@ -240,7 +304,7 @@ void GeometryClipmap::draw_self(gfx::RenderContext& context)
   shader.bind();
   shader.set_uniform("u_Heightmap", 2);
   shader.set_uniform("u_Normalmap", 3);
-  shader.set_uniform("u_Texture_01", 4);
+  // shader.set_uniform("u_Texture_01", 4);
   shader.set_uniform("u_TextureArray", 8);
   shader.set_uniform("u_FogColor", context.fog_color);
   shader.set_uniform("u_View", context.camera->get_view_matrix());
