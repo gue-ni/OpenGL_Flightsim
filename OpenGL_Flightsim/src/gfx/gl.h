@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "util.h"
+#include "image.h"
 
 #if 1
 #define GL_CALL(stmt)                      \

@@ -159,6 +159,7 @@ xcopy /y /i /s $(ProjectDir)..\lib\glew-2.2.0\bin\Release\x64\*.dll $(OutDir)</C
     <ClCompile Include="src\gfx\controller.cpp" />
     <ClCompile Include="src\gfx\geometry.cpp" />
     <ClCompile Include="src\gfx\gl.cpp" />
+    <ClCompile Include="src\gfx\image.cpp" />
     <ClCompile Include="src\gfx\line2d.cpp" />
     <ClCompile Include="src\gfx\material.cpp" />
     <ClCompile Include="src\gfx\mesh.cpp" />
@@ -193,6 +194,7 @@ xcopy /y /i /s $(ProjectDir)..\lib\glew-2.2.0\bin\Release\x64\*.dll $(OutDir)</C
     <ClInclude Include="mesh.h" />
     <ClInclude Include="src\gfx\billboard.h" />
     <ClInclude Include="src\gfx\geometry.h" />
+    <ClInclude Include="src\gfx\image.h" />
     <ClInclude Include="src\gfx\line2d.h" />
     <ClInclude Include="src\gfx\material.h" />
     <ClInclude Include="src\gfx\mesh.h" />

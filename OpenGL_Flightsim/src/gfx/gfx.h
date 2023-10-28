@@ -24,6 +24,7 @@
 #include "line2d.h"
 #include "billboard.h"
 #include "mesh.h"
+#include "image.h"
 
 namespace gfx
 {
